@@ -1,0 +1,195 @@
+body {
+	background: white
+	background-attachment: fixed
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif
+	font-size: 18px
+	height: 100%
+	margin: 0
+}
+
+a:focus {
+	border-radius: 5px
+	outline: 2px solid cornflowerblue
+}
+
+img {
+	vertical-align: middle
+}
+
+header {
+	display: block
+	background: #361b68
+	background-image: url('/media/hexabump.png')
+	box-shadow: 0 0 10px -2px #361b68
+	height: 120px
+	line-height: 120px
+
+	center {
+		margin: 0 auto
+		max-width: 960px
+		width: calc(100% - 40px)
+		height: inherit
+
+		logo {
+			color: white
+			float: left
+			height: inherit
+			width: 220px
+			display: grid
+			align-items: center
+
+			img {
+				display: inline-block
+			}
+
+			a {
+				display: inline-block
+				text-decoration: none
+				color: white
+			}
+		}
+
+		links {
+			float: right
+			font-weight: 300
+			text-transform: uppercase
+
+			a {
+				display: inline-block
+				color: white
+				border-bottom: 3px solid transparent
+				margin-left: 2em
+				line-height: 3em
+				transform: scaleY(1.1)
+				text-decoration: none
+
+				&[aria-current] {
+					border-bottom: 3px solid white
+					line-height: 2em
+				}
+			}
+
+			img {
+				width: 40px
+			}
+		}
+	}
+}
+
+main {
+	display: block
+	font-weight: 300
+	line-height: 1.5em
+	margin: 0 auto
+	max-width: 960px
+	width: calc(100% - 40px)
+	min-height: calc(100vh - 120px - 214px)
+
+	h1 {
+		color: black
+		font-size: 3.25em
+		font-weight: black
+		line-height: 1em
+		margin: 1em 0 0 0
+		outline: none
+		text-align: center
+		text-shadow: 1px 1px 1px white
+	}
+
+	h2 {
+		color: black
+		font-size: 2.25em
+		font-weight: lighter
+		line-height: 1em
+		margin: 0.5em 0 1.57em
+		outline: none
+		text-align: center
+		text-shadow: 1px 1px 1px white
+	}
+
+	projects {
+		display: flex
+		flex-flow: row wrap
+		justify-content: flex-start
+
+		.project {
+			background: #ffffff
+			color: #000
+			cursor: pointer
+			flex: 0 1 calc(33.33% - 20px)
+			margin: 0 20px 2.5em 0
+			position: relative
+			text-decoration: none
+
+			&:hover {
+				project-image {
+					box-shadow: rgba(9, 30, 66, 0.5) 0px 4px 8px -2px, rgba(9, 30, 66, 0.16) 0px 0px 0px 1px
+				}
+
+				span {
+					background: #351364
+					color: white
+					text-decoration: underline
+				}
+			}
+
+			&:nth-child(3n) {
+				margin-right: 0
+			}
+
+			project-image {
+				background: lightgray
+				background-repeat: no-repeat
+				background-size: cover
+				border-radius: 5px
+				display: block
+				height: 230px
+				box-shadow: rgba(9, 30, 66, 0.25) 0px 4px 8px -2px, rgba(9, 30, 66, 0.08) 0px 0px 0px 1px
+				width: 100%
+				transition: all 0.15s ease-in-out
+			}
+
+			project-description {
+				display: block
+				font-weight: lighter
+				line-height: 1.5em
+				padding: 0.5em 1em
+				text-align: center
+				top: 255px
+			}
+
+			project-title {
+				height: 2em
+				left: 0
+				line-height: 2em
+				position: absolute
+				font-weight: 400
+				right: 0
+				text-align: center
+				top: -0.75em
+
+				span {
+					background: black
+					border: 1px solid rgba(0, 0, 0, 0.5)
+					border-radius: 5px
+					color: white
+					display: inline-block
+					padding: 0 1.25em
+					transition: background 0.15s ease-in-out, color 0.15s ease-in-out
+				}
+			}
+		}
+	}
+}
+
+footer {
+	display: block
+	background: #361b68
+	background-image: url('/media/hexabump.png')
+	border-top: 1px solid #8f43c7
+	color: white
+	font-style: italic
+	margin-top: 3em
+	line-height: 100px
+	text-align: center
+}
