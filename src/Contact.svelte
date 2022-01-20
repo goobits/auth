@@ -1,32 +1,44 @@
 <title>MIKO.ART - Contact</title>
 
-<h1>Contact Miko 💕</h1>
-<p>Want to collaborate with me?</p>
+<h1>Contact Miko 🌿</h1>
+<h2>Want to collaborate with me?</h2>
 
 <script>
-	import {form, field, combined} from 'svelte-forms'
-	import {required} from 'svelte-forms/validators'
+	import {form, field} from 'svelte-forms'
+	import {email, required} from 'svelte-forms/validators'
 
-	const firstname = field('firstname', '', [required()])
-	const lastname = field('lastname', '', [required()])
-	const fullname = combined('fullname', [firstname, lastname], ([firstname, lastname]) => [firstname.value, lastname.value].join(' '))
+	const yourName = field('firstname', '', [required()])
+	const yourEmail = field('name', '', [email(), required()])
+	const yourMessage = field('message', '', [required()])
 
-	const myForm = form(name);
+	const myForm = form(yourName, yourEmail)
+
+    async function blah() {
+        console.log(await myForm.validate())
+    }
 </script>
 
-<!--<section>-->
-<!--    <input type="text" bind:value={$firstname.value}>-->
-<!--    <input type="text" bind:value={$lastname.value}>-->
+<section>
+    Name
+    <input type="text" bind:value={$yourName.value}><br>
 
-<!--    {#if $myForm.hasError('firstname.required')}-->
-<!--        <div>Firstname is required</div>-->
-<!--    {/if}-->
+    Email
+    <input type="text" bind:value={$yourEmail.value}><br>
 
-<!--    {#if $myForm.hasError('lastname.required')}-->
-<!--        <div>Lastname is required</div>-->
-<!--    {/if}-->
+    Your Message
+    <textarea bind:value={$yourMessage.value}></textarea>
 
-<!--    <div>Welcome {$fullname.value}</div>-->
+    {#if $myForm.hasError('yourName.required')}
+        <div>Firstname is required</div>
+    {/if}
 
-<!--    <button on:click={name.validate}>Validate field</button>-->
-<!--</section>-->
+    {#if $myForm.hasError('yourEmail.required')}
+        <div>Lastname is required</div>
+    {/if}
+
+    {#if $myForm.hasError('yourMessage.required')}
+        <div>Message is required</div>
+    {/if}
+
+    <button on:click={blah}>Send</button>
+</section>

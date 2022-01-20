@@ -4,8 +4,10 @@
 <h2>Developer, designer & musician :)</h2>
 
 <img src="/media/miko.jpg" alt="Miko" class="miko" width="300" style="float: right; border-radius: 5px;" />
-<p>I’m passionate about creating colorful, educational & utilitarian applications!</p>
-<p>My current focus is <a href="https://sketch.io/">Sketch.IO</a>. At Sketch.IO we develop design tools:</p>
+<p>I’m passionate about creating colorful, creative & educational applications!</p>
+<p>Co-Founder & Creative Director of <a href="https://portlandiafoods.com/" target="_blank">Portlandia Foods</a> 🪴</p>
+<p>Founder & CTO of <a href="https://sketch.io/" target="_blank">Sketch.IO</a> 🎨</p>
+<p>At Sketch.IO we develop design tools:</p>
 <ul>
     <li>Annotations &amp; editing for online news</li>
     <li>Colorful educational musical apps</li>
@@ -15,23 +17,26 @@
     <li>Realtime collaborative apps</li>
     <li>User based product customization for printing</li>
 </ul>
-<h4>Selected Clients:</h4>
+<h4>Clients, Selected:</h4>
 <ul>
     <li>AAA</li>
     <li>ABCya Games</li>
     <li>Draw It To Know It: Medical & Biological Sciences</li>
-    <li>Estee Lauder</li>
     <li>Google: Made With Code</li>
-    <li>Made In Oregon</li>
-    <li>Portland Timbers</li>
+    <li>Jo Malone London</li>
+    <li>Los Alamos National Laboratory</li>
+    <li>Portland Timbers: RCTID</li>
+    <li>Scotties</li>
+    <li>Travel Portland</li>
+    <li>Upworthy</li>
 </ul>
-<h4>Selected Exhibits:</h4>
+<h4>Exhibits, Selected:</h4>
 <ul>
-    <li>Art Gallery Of Ontario</li>
-    <li>Dubai Art In Transit</li>
-    <li>Google IO 2010</li>
-    <li>Google IO 2014</li>
-    <li>Google IO 2015</li>
+    <li>Art Gallery Of Ontario: Illusions Exhibition</li>
+    <li>Dubai Union Metro: Art In Transit</li>
+    <li>Google IO 2010: Darkroom</li>
+    <li>Google IO 2012: Sketch Mobile</li>
+    <li>Google IO 2013: Webcam FX</li>
     <li>Mackinac State Historic Parks</li>
     <li>Tel Aviv Museum Of Modern Art</li>
 </ul>
