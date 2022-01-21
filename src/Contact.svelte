@@ -1,6 +1,6 @@
 <title>MIKO.ART - Contact</title>
-
-<h1>Contact Miko 🌿</h1>
+<!--🌿-->
+<h1>Contact Miko <img src="/media/emoji-herb.png" height="56" width="56" style="vertical-align: top" alt=""></h1>
 <h2>Got a question? Drop me a line.</h2>
 
 <script>
@@ -13,13 +13,13 @@
 
 	const myForm = form(yourName, yourEmail, yourMessage)
 
-	async function blah() {
+	async function submitForm() {
 		console.log(await myForm.validate())
 	}
 </script>
 
 <contact-form>
-    <img src="https://image.freepik.com/free-vector/cute-cat-super-hero-cartoon-icon-illustration-animal-hero-icon-concept-isolated-flat-cartoon-style_138676-3127.jpg" style="float: right; width: 35%">
+    <img src="/media/super-cat.png" style="float: right; width: 27%">
     <div style="float: left; width: 60%">
         <form-title>Name <span>*</span></form-title>
         <input type="text" bind:value={$yourName.value}><br>
@@ -31,17 +31,19 @@
         <textarea bind:value={$yourMessage.value}></textarea>
 
         {#if $myForm.hasError('yourName.required')}
-            <div>Name is required</div>
+            <div>Name is required!</div>
         {/if}
 
         {#if $myForm.hasError('yourEmail.required')}
-            <div>Email is required</div>
+            <div>Email is required!</div>
+        {:else if $myForm.hasError('yourEmail.not_an_email')}
+            <div>Email is invalid!</div>
         {/if}
 
         {#if $myForm.hasError('yourMessage.required')}
-            <div>Message is required</div>
+            <div>Message is required!</div>
         {/if}
 
-        <button on:click={myForm.validate}>Send</button>
+        <button on:click={submitForm}>Send</button>
     </div>
 </contact-form>
