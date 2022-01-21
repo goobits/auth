@@ -3,7 +3,7 @@
 <h1>Haai! I’m Miko 🦄</h1>
 <h2>Developer, designer & musician :)</h2>
 
-<img src="/media/miko.jpg" alt="Miko" class="miko" width="300" style="float: right; border-radius: 5px;" />
+<img src="/media/miko.jpg" alt="Miko" class="miko" width="300" style="float: right; border-radius: 5px" />
 <p>I’m passionate about creating colorful, creative & educational applications!</p>
 <p>Co-Founder & Creative Director of <a href="https://portlandiafoods.com/" target="_blank">Portlandia Foods</a> 🪴</p>
 <p>Founder & CTO of <a href="https://sketch.io/" target="_blank">Sketch.IO</a> 🎨</p>

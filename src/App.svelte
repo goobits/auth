@@ -36,6 +36,7 @@
 		</Route>
 
 		<Route path="contact">
+			<style src="./Contact.styl"></style>
 			<Contact/>
 		</Route>
 	</main>
