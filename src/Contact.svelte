@@ -46,4 +46,5 @@
 
         <button on:click={submitForm}>Send</button>
     </div>
+    <div style="clear: both"></div>
 </contact-form>

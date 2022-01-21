@@ -30,7 +30,9 @@ textarea {
 	border: 1px solid rgba(0, 0, 0, 0.25)
 	border-radius: 5px
 	color: #666
-	font-size: 14px
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif
+	font-size: 18px
+	font-weight: 300
 	margin-bottom: 15px
 	margin-top: 2px
 	padding: 8px 12px
@@ -42,9 +44,9 @@ textarea {
 button {
 	align-items: center
 	background-color: #1ca260
+	border: 0
 	border-radius: 5px
 	border-style: solid
-	border: 0
 	color: #fff
 	cursor: pointer
 	display: inline-flex
@@ -59,16 +61,19 @@ button {
 }
 
 header {
-	display: block
 	background: #361b68
 	background-image: url('/media/hexabump.png')
 	box-shadow: 0 0 10px -2px #361b68
+	display: block
 	height: 120px
 	line-height: 120px
+	min-width: 640px
+	padding: 0 1em
 	white-space: nowrap
 
 	center {
 		margin: 0 auto
+		min-width: inherit
 		max-width: 960px
 		width: calc(100% - 40px)
 		height: inherit
@@ -102,13 +107,20 @@ header {
 				color: white
 				border-bottom: 3px solid transparent
 				margin-left: 2em
-				line-height: 3em
+				line-height: 2em
 				transform: scaleY(1.1)
 				text-decoration: none
 
-				&[aria-current] {
+				&[aria-current],
+				&[aria-current]:hover {
 					border-bottom: 3px solid white
-					line-height: 2em
+					color: white
+					cursor: default
+					pointer-events: none
+				}
+
+				&:hover {
+					border-bottom: 3px solid #ff3c52
 				}
 			}
 
@@ -125,8 +137,10 @@ main {
 	line-height: 1.5em
 	margin: 0 auto
 	max-width: 960px
+	min-width: 640px
 	width: calc(100% - 40px)
 	min-height: calc(100vh - 120px - 214px)
+	padding: 0 1em
 
 	h1 {
 		color: black
@@ -226,14 +240,16 @@ main {
 }
 
 footer {
-	display: block
 	background: #361b68
 	background-image: url('/media/hexabump.png')
 	border-top: 1px solid #8f43c7
 	color: white
+	display: block
 	font-style: italic
-	margin-top: 3em
 	line-height: 100px
+	margin-top: 3em
+	min-width: 640px
+	padding: 0 1em
 	text-align: center
 	white-space: nowrap
 }
