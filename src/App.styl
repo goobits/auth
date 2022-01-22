@@ -10,7 +10,12 @@ body {
 a {
 	color: #0074d9
 
-	&:hover {
+	&:visited {
+		color: #0074d9
+	}
+
+	&:hover,
+	&:hover:visited {
 		color: #ff3c52
 	}
 
@@ -121,6 +126,10 @@ header {
 
 				&:hover {
 					border-bottom: 3px solid #ff3c52
+				}
+
+				&:visited {
+					color: white
 				}
 			}
 
@@ -246,10 +255,19 @@ footer {
 	color: white
 	display: block
 	font-style: italic
-	line-height: 100px
+	height: calc(100px - 2em)
+	line-height: 32px
 	margin-top: 3em
 	min-width: 640px
-	padding: 0 1em
+	padding: 1em 1em
 	text-align: center
 	white-space: nowrap
+
+	a {
+		color: white
+
+		&:visited {
+			color: white
+		}
+	}
 }
