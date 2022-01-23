@@ -1,8 +1,9 @@
 <script>
 	import {Router, Route, Link} from "svelte-navigator"
-	import Home from "./Home.svelte"
 	import About from "./About.svelte"
 	import Contact from "./Contact.svelte"
+	import Home from "./Home.svelte"
+	import NotFound from "./404.svelte"
 	import PrivacyPolicy from "./Privacy-Policy.svelte"
 </script>
 
@@ -43,6 +44,11 @@
 
         <Route path="privacy-policy">
             <PrivacyPolicy/>
+        </Route>
+
+        <Route>
+            <style src="./404.styl"></style>
+            <NotFound/>
         </Route>
     </main>
 
