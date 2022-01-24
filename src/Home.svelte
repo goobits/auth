@@ -1,5 +1,5 @@
 <script>
-    import {apps, art} from './_projects.js'
+    import {apps, art} from './HomeProjects.js'
 </script>
 
 <title>MIKO.ART - Code & Design</title>

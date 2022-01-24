@@ -47,7 +47,6 @@
         </Route>
 
         <Route>
-            <style src="./404.styl"></style>
             <NotFound/>
         </Route>
     </main>
