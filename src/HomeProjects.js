@@ -24,9 +24,9 @@ export const apps = [
 		url: 'https://sandpainting.app/'
 	},
 	{
-		id: 'breathing-mandalas',
+		id: 'melodic-mandalas',
 		description: 'Generate hypnotic patterns & ambient tones with this colorful interactive audio-visual experience.',
-		title: 'Breathing Mandalas',
+		title: 'Melodic Mandalas',
 		url: 'https://miko.art/breathing-mandalas/'
 	}
 ]

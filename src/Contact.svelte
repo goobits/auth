@@ -19,7 +19,7 @@
 </script>
 
 <contact-form>
-    <img src="/media/super-racoon.svg" style="float: right; width: 31%">
+    <img src="/media/super-racoon.svg" style="float: right; width: 31%" alt="">
     <div style="float: left; width: 60%">
         <form-title>Your Name <span>*</span></form-title>
         <input type="text" bind:value={$yourName.value}><br>
