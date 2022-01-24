@@ -19,12 +19,12 @@
 </script>
 
 <contact-form>
-    <img src="/media/super-racoon.svg" style="float: right; width: 30%">
+    <img src="/media/super-racoon.svg" style="float: right; width: 31%">
     <div style="float: left; width: 60%">
-        <form-title>Name <span>*</span></form-title>
+        <form-title>Your Name <span>*</span></form-title>
         <input type="text" bind:value={$yourName.value}><br>
 
-        <form-title>Email <span>*</span></form-title>
+        <form-title>Your Email <span>*</span></form-title>
         <input type="text" bind:value={$yourEmail.value}><br>
 
         <form-title>Your Message <span>*</span></form-title>
