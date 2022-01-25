@@ -19,9 +19,9 @@
                 </a>
             </logo>
             <links>
-                <Link to="/">Home</Link>
-                <Link to="/about">About</Link>
-                <Link to="/contact">Contact</Link>
+                <a href="/">Home</a>
+                <a href="/about/">About</a>
+                <a href="/contact/">Contact</a>
                 <a href="https://twitter.com/mudcube/" target="_blank" style="transform: none">
                     <img src="/media/twitter.png" alt="twitter"/>
                 </a>
@@ -58,7 +58,7 @@
     </main>
 
     <footer>
-        <a href="/privacy-policy">Privacy Policy</a><br>
+        <a href="/privacy-policy/">Privacy Policy</a><br>
         Copyright &copy; {new Date().getFullYear()} by MIKO. All rights reserved.
     </footer>
 
