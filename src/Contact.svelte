@@ -14,21 +14,35 @@
 	const myForm = form(yourName, yourEmail, yourMessage)
 
 	async function submitForm() {
-		console.log(await myForm.validate())
+		await myForm.validate()
+
+		if ($myForm.valid) {
+			const formData = new FormData(document.querySelector('form'))
+			const request = new XMLHttpRequest()
+			request.open('POST', '/contact.php')
+			request.send(formData)
+			request.onload = function () {
+				if (request.status === 200) {
+					window.location.href = '/contact-thank-you/'
+				} else {
+					alert('Something went wrong. Please try again.')
+				}
+			}
+		}
 	}
 </script>
 
 <contact-form>
     <img src="/media/super-racoon.svg" style="float: right; width: 31%" alt="">
-    <div style="float: left; width: 60%">
+    <form style="float: left; width: 60%">
         <form-title>Your Name <span>*</span></form-title>
-        <input type="text" bind:value={$yourName.value}><br>
+        <input type="text" name="name" bind:value={$yourName.value}><br>
 
         <form-title>Your Email <span>*</span></form-title>
-        <input type="text" bind:value={$yourEmail.value}><br>
+        <input type="text" name="email" bind:value={$yourEmail.value}><br>
 
         <form-title>Your Message <span>*</span></form-title>
-        <textarea bind:value={$yourMessage.value}></textarea>
+        <textarea name="message" bind:value={$yourMessage.value}></textarea>
 
         <contact-form-errors>
             {#if $myForm.hasError('yourName.required')}
@@ -47,6 +61,6 @@
         </contact-form-errors>
 
         <button on:click={submitForm}>Send</button>
-    </div>
+    </form>
     <div style="clear: both"></div>
 </contact-form>
