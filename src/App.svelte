@@ -55,4 +55,14 @@
         <a href="/privacy-policy">Privacy Policy</a><br>
         Copyright &copy; {new Date().getFullYear()} by MIKO. All rights reserved.
     </footer>
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-400768-7"></script>
+    <script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+
+		gtag('config', 'UA-400768-7');
+    </script>
 </Router>
