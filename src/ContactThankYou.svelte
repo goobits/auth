@@ -1,3 +1,5 @@
+<title>MIKO.ART - Thank You</title>
+
 <h1>
     <img src="/media/contact-thank-you.svg" alt=""/>
 </h1>

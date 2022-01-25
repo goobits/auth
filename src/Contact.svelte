@@ -34,7 +34,7 @@
 
 <contact-form>
     <img src="/media/super-racoon.svg" style="float: right; width: 31%" alt="">
-    <form style="float: left; width: 60%">
+    <form style="float: left; width: 60%" action="javascript:">
         <form-title>Your Name <span>*</span></form-title>
         <input type="text" name="name" bind:value={$yourName.value}><br>
 
