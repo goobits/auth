@@ -30,19 +30,21 @@
         <form-title>Your Message <span>*</span></form-title>
         <textarea bind:value={$yourMessage.value}></textarea>
 
-        {#if $myForm.hasError('yourName.required')}
-            <div>Name is required!</div>
-        {/if}
+        <contact-form-errors>
+            {#if $myForm.hasError('yourName.required')}
+                <li>Name is required</li>
+            {/if}
 
-        {#if $myForm.hasError('yourEmail.required')}
-            <div>Email is required!</div>
-        {:else if $myForm.hasError('yourEmail.not_an_email')}
-            <div>Email is invalid!</div>
-        {/if}
+            {#if $myForm.hasError('yourEmail.required')}
+                <li>Email is required</li>
+            {:else if $myForm.hasError('yourEmail.not_an_email')}
+                <li>Email is invalid</li>
+            {/if}
 
-        {#if $myForm.hasError('yourMessage.required')}
-            <div>Message is required!</div>
-        {/if}
+            {#if $myForm.hasError('yourMessage.required')}
+                <li>Message is required</li>
+            {/if}
+        </contact-form-errors>
 
         <button on:click={submitForm}>Send</button>
     </div>
