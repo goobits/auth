@@ -18,8 +18,8 @@
 
 		if ($myForm.valid) {
 			const formData = new FormData(document.querySelector('form'))
-			const data = {};
-			formData.forEach((value, key) => (data[key] = value));
+			const data = {}
+			formData.forEach((value, key) => (data[key] = value))
 			const request = new XMLHttpRequest()
 			request.open('POST', 'https://miko.art/api/email')
 			request.send(JSON.stringify(data))
