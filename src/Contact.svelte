@@ -19,7 +19,7 @@
 		if ($myForm.valid) {
 			const formData = new FormData(document.querySelector('form'))
 			const request = new XMLHttpRequest()
-			request.open('POST', '/contact.php')
+			request.open('POST', 'https://miko.art/api/email')
 			request.send(formData)
 			request.onload = function () {
 				if (request.status === 200) {

@@ -1,11 +1,11 @@
 <script>
-	import {Router, Route, Link} from "svelte-navigator"
 	import About from "./About.svelte"
 	import Contact from "./Contact.svelte"
 	import ContactThankYou from "./ContactThankYou.svelte"
 	import Home from "./Home.svelte"
 	import NotFound from "./404.svelte"
 	import PrivacyPolicy from "./Privacy-Policy.svelte"
+	import {Router, Route, Link} from "svelte-navigator"
 </script>
 
 <Router>
@@ -19,9 +19,9 @@
                 </a>
             </logo>
             <links>
-                <a href="/">Home</a>
-                <a href="/about/">About</a>
-                <a href="/contact/">Contact</a>
+                <Link to="/">Home</Link>
+                <Link to="/about/">About</Link>
+                <Link to="/contact/">Contact</Link>
                 <a href="https://twitter.com/mudcube/" target="_blank" style="transform: none">
                     <img src="/media/twitter.png" alt="twitter"/>
                 </a>
@@ -34,21 +34,21 @@
             <Home/>
         </Route>
 
-        <Route path="about">
+        <Route path="/about/">
             <About/>
         </Route>
 
-        <Route path="contact">
+        <Route path="/contact/">
             <style src="./Contact.styl"></style>
             <Contact/>
         </Route>
 
-        <Route path="contact-thank-you">
+        <Route path="/contact-thank-you/">
             <style src="./ContactThankYou.styl"></style>
             <ContactThankYou/>
         </Route>
 
-        <Route path="privacy-policy">
+        <Route path="/privacy-policy/">
             <PrivacyPolicy/>
         </Route>
 
