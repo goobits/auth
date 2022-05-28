@@ -20,7 +20,7 @@ export const apps = [
 	{
 		id: 'sandscapes',
 		description: 'Make your own meditative & beautiful sandscapes through the art of pouring coloured sands.',
-		title: 'Sandpainting',
+		title: 'Sand Painting',
 		url: 'https://sandpainting.app/'
 	},
 	{
