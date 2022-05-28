@@ -1,11 +1,10 @@
 {
-	"name": "svelte-app",
-	"version": "1.0.0",
+	"name": "miko-art",
+	"version": "1.0.1",
 	"private": true,
 	"scripts": {
 		"build": "rollup -c",
-		"dev": "rollup -c -w",
-		"start": "sirv public --single --port 6060"
+		"dev": "rollup -c -w"
 	},
 	"devDependencies": {
 		"@rollup/plugin-commonjs": "^17.0.0",
