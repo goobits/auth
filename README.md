@@ -19,13 +19,13 @@ npm run dev
 FIX:
 - ColorSphere.app
 - Convert journal to static pages: https://wordpress.org/plugins/simply-static/
-- Look through /labs* for any issues...
-- labs/melodic-mandalas/
 - SandPainting.app
-- Sketchpad Mobile
-- Sketchpad v1.0
-- Thumbnailer
-- ZenBG
+- labs/*
+- labs/melodic-mandalas/
+- labs/sketchpad-mobile/
+- labs/sketchpad-1.0/
+- labs/thumbnailer/
+- labs/zen-bg/
 
 301 redirects:
 - Colorjack.com -> Miko.art via Porkbun redirect
