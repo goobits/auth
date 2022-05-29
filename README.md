@@ -20,7 +20,7 @@ FIX:
 - ColorSphere.app
 - Convert journal to static pages: https://wordpress.org/plugins/simply-static/
 - SandPainting.app
-- labs/*
+- labs/ - use SvelteKit - https://joshcollinsworth.com/blog/build-static-sveltekit-markdown-blog#returning-posts-from-an-endpoint
 - labs/melodic-mandalas/
 - labs/sketchpad-mobile/
 - labs/sketchpad-1.0/
