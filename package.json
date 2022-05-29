@@ -3,6 +3,7 @@
 	"version": "1.0.1",
 	"private": true,
 	"scripts": {
+		"start": "sirv public --single --port 6060",
 		"build": "rollup -c",
 		"dev": "rollup -c -w"
 	},
