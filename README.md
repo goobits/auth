@@ -17,7 +17,6 @@ npm run dev
 ```
 
 FIX:
-- ColorSphere.app
 - Convert journal to static pages: https://wordpress.org/plugins/simply-static/
 - labs/ - use SvelteKit - https://joshcollinsworth.com/blog/build-static-sveltekit-markdown-blog#returning-posts-from-an-endpoint
 - labs/melodic-mandalas/
@@ -35,6 +34,7 @@ FIX:
 - Mudcube.com -> Miko.art via Porkbun redirect
 
 Check:
-- test all redirects!
+- Test all apps in modern browsers!
+- Test all redirects!
 
 https://www.orbitmedia.com/blog/deleting-old-content/

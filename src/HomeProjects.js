@@ -6,28 +6,28 @@ export const apps = [
 		url: 'https://sketchpad.app/'
 	},
 	{
-		id: 'colorpiano',
+		id: 'color-piano',
 		description: 'Learn music theory essentials, and visualize amazing composers with this interactive color piano.',
 		title: 'Color Piano',
 		url: 'https://colorpiano.app/'
 	},
 	{
-		id: 'colorsphere',
+		id: 'color-sphere',
 		description: 'Learn color harmony essentials, create color schemes, and export your own color palettes.',
 		title: 'Color Sphere',
 		url: 'https://colorsphere.app/'
 	},
 	{
-		id: 'sandscapes',
+		id: 'sand-art',
 		description: 'Make your own meditative & beautiful sandscapes through the art of pouring coloured sands.',
-		title: 'Sand Painting',
-		url: 'https://sandpainting.app/'
+		title: 'Sand Art',
+		url: 'https://sandart.app/'
 	},
 	{
 		id: 'melodic-mandalas',
 		description: 'Generate hypnotic patterns & ambient tones with this colorful interactive audio-visual experience.',
-		title: 'Melodic Mandalas',
-		url: 'https://miko.art/breathing-mandalas/'
+		title: 'Zendala',
+		url: 'https://zendala.app/'
 	}
 ]
 
