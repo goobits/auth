@@ -73,13 +73,11 @@ header {
 	display: block
 	height: 120px
 	line-height: 120px
-	min-width: 640px
 	padding: 0 1em
 	white-space: nowrap
 
 	center {
 		margin: 0 auto
-		min-width: inherit
 		max-width: 960px
 		width: calc(100% - 40px)
 		height: inherit
@@ -147,7 +145,6 @@ main {
 	line-height: 1.5em
 	margin: 0 auto
 	max-width: 960px
-	min-width: 640px
 	width: calc(100% - 40px)
 	min-height: calc(100vh - 120px - 214px)
 	padding: 0 1em
@@ -175,9 +172,10 @@ main {
 	}
 
 	projects {
-		display: flex
-		flex-flow: row wrap
-		justify-content: flex-start
+		display: grid
+		grid-template-columns: repeat(auto-fit, 305px)
+		grid-gap: 0 1em
+		justify-content: center
 
 		.project {
 			background: #ffffff
@@ -261,7 +259,6 @@ footer {
 	height: calc(101px - 2em)
 	line-height: 32px
 	margin-top: 3em
-	min-width: 640px
 	padding: 1em 1em
 	text-align: center
 	white-space: nowrap
