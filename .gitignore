@@ -2,3 +2,5 @@
 /.parcel-cache
 /dist
 /public/build
+/public/labs/sketchpad-1.0/dist
+/public/labs/sketchpad-1.0/.parcel-cache
