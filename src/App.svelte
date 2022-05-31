@@ -58,7 +58,9 @@
     </main>
 
     <footer>
-        <a href="/privacy-policy/">Privacy Policy</a><br>
+        <a href="/labs/">Labs</a> &middot;
+        <a href="/privacy-policy/">Privacy Policy</a>
+        <br>
         Copyright &copy; {new Date().getFullYear()} by MIKO. All rights reserved.
     </footer>
 

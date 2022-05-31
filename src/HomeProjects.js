@@ -36,36 +36,36 @@ export const art = [
 		id: 'purring-hills',
 		description: 'Lorem ipsum, or lipsum as it is sometimes known',
 		title: 'Purring Hills',
-		url: 'https://miko.art/generative-purring-hills/'
+		url: 'https://meowtains.com/'
 	},
 	{
 		id: 'growing-ferns',
 		description: 'Lorem ipsum, or lipsum as it is sometimes known',
 		title: 'Growing Ferns',
-		url: 'https://miko.art/generative-growing-ferns/'
+		url: 'https://miko.art/labs/generative-growing-ferns/'
 	},
 	{
 		id: 'crystals',
 		description: 'Lorem ipsum, or lipsum as it is sometimes known',
 		title: 'Crystals',
-		url: 'https://miko.art/generative-crystals/'
+		url: 'https://miko.art/labs/generative-crystals/'
 	},
 	{
 		id: 'supershapes',
 		description: 'Lorem ipsum, or lipsum as it is sometimes known',
 		title: 'Supershapes',
-		url: 'https://miko.art/generative-supershapes/'
+		url: 'https://miko.art/labs/generative-supershapes/'
 	},
 	{
 		id: 'cards',
 		description: 'Lorem ipsum, or lipsum as it is sometimes known',
 		title: 'C.A.R.D.S.',
-		url: 'https://miko.art/generative-cards/'
+		url: 'https://miko.art/labs/generative-cards/'
 	},
 	{
 		id: 'glsl',
 		description: 'Lorem ipsum, or lipsum as it is sometimes known',
 		title: 'GLSL',
-		url: 'https://miko.art/generative-webcamfx/'
+		url: 'https://miko.art/labs/webcamfx/'
 	}
 ]
