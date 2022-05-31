@@ -33,7 +33,7 @@ FIX:
 - Mudcube.com -> Miko.art via Porkbun redirect
 
 Check:
-- Ensure all apps have Google Analytics
+- Ensure all domain.app's have their own Google Analytics!
 - Test all apps in modern browsers!
 - Test all redirects!
 

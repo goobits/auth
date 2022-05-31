@@ -3,6 +3,7 @@
 	import Contact from "./Contact.svelte"
 	import ContactThankYou from "./ContactThankYou.svelte"
 	import Home from "./Home.svelte"
+	import Labs from "./Labs.svelte"
 	import NotFound from "./404.svelte"
 	import PrivacyPolicy from "./Privacy-Policy.svelte"
 	import {Router, Route, Link} from "svelte-navigator"
@@ -50,6 +51,11 @@
 
         <Route path="/privacy-policy/">
             <PrivacyPolicy/>
+        </Route>
+
+        <Route path="/labs/">
+            <style src="./Labs.styl"></style>
+            <Labs/>
         </Route>
 
         <Route>
