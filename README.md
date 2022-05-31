@@ -21,7 +21,6 @@ FIX:
 - labs/ - use SvelteKit - https://joshcollinsworth.com/blog/build-static-sveltekit-markdown-blog#returning-posts-from-an-endpoint
 - labs/sketchpad-1.0/ - fix css quirks
 - labs/sketchpad-mobile/ - 301 from sketch.io/mobile
-- labs/zen-bg/ - how to fix?
 - SandPainting.app
 - Zendala.app
 
