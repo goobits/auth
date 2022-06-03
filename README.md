@@ -20,17 +20,20 @@ FIX:
 - Convert journal to static pages: https://wordpress.org/plugins/simply-static/
 - labs/ - use SvelteKit - https://joshcollinsworth.com/blog/build-static-sveltekit-markdown-blog#returning-posts-from-an-endpoint
 - labs/sketchpad-1.0/ - fix css quirks
-- labs/sketchpad-mobile/ - 301 from sketch.io/mobile
+- labs/sketchpad-mobile/
 - SandPainting.app
 - Zendala.app
 
-301 redirects:
+Domain redirects:
 - Colorjack.com -> Miko.art via Porkbun redirect
 - Colourjack.com -> Miko.art via Porkbun redirect
 - Galactic.ink -> Miko.art via Porkbun redirect
 - GalacticMilk.com -> Miko.art via Porkbun redirect
 - Mudcu.be -> Miko.art via Porkbun redirect
 - Mudcube.com -> Miko.art via Porkbun redirect
+
+App redirects:
+- Sketch.io/mobile -> Miko.art/labs/sketchpad-mobile/
 
 Check:
 - Ensure all domain.app's have their own Google Analytics!
