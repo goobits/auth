@@ -19,8 +19,6 @@ npm run dev
 FIX:
 - Convert journal to static pages: https://wordpress.org/plugins/simply-static/
 - labs/ - use SvelteKit - https://joshcollinsworth.com/blog/build-static-sveltekit-markdown-blog#returning-posts-from-an-endpoint
-- labs/sketchpad-1.0/ - fix css quirks
-- labs/sketchpad-mobile/
 - SandPainting.app
 - Zendala.app
 
