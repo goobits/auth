@@ -148,16 +148,16 @@ main {
 	line-height: 1.5em
 	margin: 0 auto
 	max-width: 960px
+	min-height: calc(100vh - 120px - 194px)
+	padding: 2em 1em 0
 	width: calc(100% - 40px)
-	min-height: calc(100vh - 120px - 214px)
-	padding: 0 1em
 
 	h1 {
 		color: black
 		font-size: 3.25em
 		font-weight: black
 		line-height: 1em
-		margin: 1em 0 0 0
+		margin: 0
 		outline: none
 		text-align: center
 		text-shadow: 1px 1px 1px white
@@ -259,7 +259,7 @@ footer {
 	color: white
 	display: block
 	font-style: italic
-	height: calc(101px - 2em)
+	height: calc(102px - 2em)
 	line-height: 32px
 	margin-top: 3em
 	padding: 1em 0
@@ -289,54 +289,57 @@ footer {
 
 		h2 {
 			font-size: 5vw
+
+			img {
+				width: 5vw
+				height: 5vw
+			}
+		}
+	}
+
+	header {
+		center {
+			links {
+				background: #361b68
+				background-image: url('/media/hexabump.png')
+				border-radius: 5px
+				padding: 0 1em
+				position: absolute
+				right: 0
+				text-align: right
+
+				&:before {
+					content: "🍔"
+					cursor: pointer
+					display: block
+					font-size: 2em
+				}
+
+				&.open {
+					a,
+					a[aria-current] {
+						display: block
+
+						&.twitter {
+							display: none
+						}
+					}
+				}
+
+				a,
+				a[aria-current] {
+					margin: 0
+					border-bottom: none !important
+					text-align: left
+					display: none
+					position: relative
+					top: -0.5em
+				}
+			}
 		}
 	}
 
 	footer {
-		font-size: max(1em, 4vw)
+		font-size: max(1em, 3vw)
 	}
-
-	header center {
-		links {
-			background: #361b68
-			background-image: url('/media/hexabump.png')
-			border-radius: 5px
-			position: absolute
-			padding: 0 1em
-			text-align: right
-			right: 0
-
-			&.open {
-				a,
-				a[aria-current] {
-					display: block
-
-					&.twitter {
-						display: none
-					}
-				}
-			}
-
-			&:before {
-				content: "🍔"
-				cursor: pointer
-				display: block
-				font-size: 8vw
-			}
-
-			a,
-			a[aria-current] {
-				margin: 0
-				border-bottom: none !important
-				text-align: left
-				display: none
-				position: relative
-				top: -0.5em
-			}
-		}
-	}
-}
-
-@media (max-width: 600px) {
-
 }
