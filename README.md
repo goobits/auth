@@ -17,8 +17,6 @@ npm run dev
 ```
 
 FIX:
-- Mobile support for Toolbar 
-- Mobile support for Labs
 - Convert journal to static pages: https://wordpress.org/plugins/simply-static/
 - SandPainting.app
 - Zendala.app

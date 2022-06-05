@@ -1,6 +1,6 @@
 <title>MIKO.ART - Labs</title>
 <h1>Labs ✨</h1>
-<h2>Little projects over the years :)</h2>
+<h2>Experiments through the ages.</h2>
 <div id="listing">
     <div>
         <a href="/labs/color-galaxy/">
