@@ -1,3 +1,4 @@
+<title>MIKO.ART - Privacy Policy</title>
 <div data-custom-class="body">
     <h1>PRIVACY NOTICE</h1>
     <h2>Last updated <bdt class="question">January 21, 2022</h2>

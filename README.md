@@ -17,8 +17,9 @@ npm run dev
 ```
 
 FIX:
+- Mobile support for Toolbar 
+- Mobile support for Labs
 - Convert journal to static pages: https://wordpress.org/plugins/simply-static/
-- labs/ - use SvelteKit - https://joshcollinsworth.com/blog/build-static-sveltekit-markdown-blog#returning-posts-from-an-endpoint
 - SandPainting.app
 - Zendala.app
 

@@ -23,7 +23,7 @@
                 <Link to="/">Home</Link>
                 <Link to="/about/">About</Link>
                 <Link to="/contact/">Contact</Link>
-                <a href="https://twitter.com/mudcube/" target="_blank" style="transform: none">
+                <a href="https://twitter.com/mudcube/" target="_blank" class="twitter">
                     <img src="/media/twitter.png" alt="twitter"/>
                 </a>
             </links>
@@ -36,6 +36,7 @@
         </Route>
 
         <Route path="/about/">
+            <style src="./About.styl"></style>
             <About/>
         </Route>
 
