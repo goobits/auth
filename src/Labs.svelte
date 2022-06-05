@@ -11,25 +11,25 @@
     <div>
         <a href="/labs/js1k/BreathingGalaxies.html">
             <img src="../media/dir-listing/folder.png" alt="js1k/"/>
-            <strong>JS1K - Breathing Galaxies</strong>
+            <strong>JS1k - Breathing Galaxies</strong>
         </a>
     </div>
     <div>
         <a href="/labs/js1k/Daltonize.html">
             <img src="../media/dir-listing/folder.png" alt="js1k/"/>
-            <strong>JS1K - Daltonize</strong>
+            <strong>JS1k - Daltonize</strong>
         </a>
     </div>
     <div>
         <a href="/labs/js1k/MicroSketchpad.html">
             <img src="../media/dir-listing/folder.png" alt="js1k/"/>
-            <strong>JS1K - Micro Sketchpad</strong>
+            <strong>JS1k - Micro Sketchpad</strong>
         </a>
     </div>
     <div>
         <a href="/labs/js1k/SpectrumDJ.html">
             <img src="../media/dir-listing/folder.png" alt="js1k/"/>
-            <strong>JS1K - Spectrum DJ</strong>
+            <strong>JS1k - Spectrum DJ</strong>
         </a>
     </div>
     <div>

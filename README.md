@@ -17,7 +17,6 @@ npm run dev
 ```
 
 FIX:
-- JS1k 
 - Convert journal to static pages: https://wordpress.org/plugins/simply-static/
 - SandPainting.app
 - Zendala.app
