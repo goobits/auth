@@ -35,13 +35,13 @@
     <div>
         <a href="/labs/midi-js/">
             <img src="../media/dir-listing/folder.png" alt="midi-js/"/>
-            <strong>MIDI JS</strong>
+            <strong>MIDI.js</strong>
         </a>
     </div>
     <div>
         <a href="/labs/sketch-js/">
             <img src="../media/dir-listing/folder.png" alt="sketch-js/"/>
-            <strong>Sketch JS</strong>
+            <strong>Sketch.js</strong>
         </a>
     </div>
     <div>

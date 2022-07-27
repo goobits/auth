@@ -17,12 +17,48 @@ export const apps = [
 		title: 'Color Sphere',
 		url: 'https://colorsphere.app/'
 	},
+	// {
+	// 	id: 'draw-meow',
+	// 	description: 'Generate hypnotic patterns & ambient tones with this colorful interactive audio-visual experience.',
+	// 	title: 'Draw Meow',
+	// 	url: 'https://drawmeow.app/'
+	// },
+	// {
+	// 	id: 'gradient-designer',
+	// 	description: 'Learn color harmony essentials, create color schemes, and export your own color palettes.',
+	// 	title: 'Gradient Designer',
+	// 	url: 'https://gradientdesigner.app/'
+	// },
+	// {
+	// 	id: 'mindful-journal',
+	// 	description: 'Generate hypnotic patterns & ambient tones with this colorful interactive audio-visual experience.',
+	// 	title: 'Mindful Journal',
+	// 	url: 'https://mindfuljournal.app/'
+	// },
 	{
 		id: 'sand-art',
 		description: 'Make your own meditative & beautiful sandscapes through the art of pouring coloured sands.',
 		title: 'Sand Art',
 		url: 'https://sandart.app/'
 	},
+	// {
+	// 	id: 'sound-puppet',
+	// 	description: 'Make your own meditative & beautiful sandscapes through the art of pouring coloured sands.',
+	// 	title: 'Sound Puppet',
+	// 	url: 'https://soundpuppet.app/'
+	// },
+	// {
+	// 	id: 'speak-peace',
+	// 	description: 'Make your own meditative & beautiful sandscapes through the art of pouring coloured sands.',
+	// 	title: 'Speak Peace',
+	// 	url: 'https://speakpeace.app/'
+	// },
+	// {
+	// 	id: 'touch-timer',
+	// 	description: 'Generate hypnotic patterns & ambient tones with this colorful interactive audio-visual experience.',
+	// 	title: 'Touch Timer',
+	// 	url: 'https://touchtimer.app/'
+	// },
 	{
 		id: 'melodic-mandalas',
 		description: 'Generate hypnotic patterns & ambient tones with this colorful interactive audio-visual experience.',
@@ -33,9 +69,9 @@ export const apps = [
 
 export const art = [
 	{
-		id: 'purring-hills',
+		id: 'meowtains',
 		description: 'Lorem ipsum, or lipsum as it is sometimes known',
-		title: 'Purring Hills',
+		title: 'Meowtains!',
 		url: 'https://meowtains.com/'
 	},
 	{
