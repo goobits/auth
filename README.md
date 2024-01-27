@@ -23,7 +23,6 @@ FIX:
 
 Domain redirects:
 - Galactic.ink -> Miko.art via Porkbun redirect
-- GalacticMilk.com -> Miko.art via Porkbun redirect
 - Mudcu.be -> Miko.art via Porkbun redirect
 - Mudcube.com -> Miko.art via Porkbun redirect
 
@@ -35,5 +34,7 @@ Check:
 - Ensure all domain.app's have their own Google Analytics!
 - Test all apps in modern browsers!
 - Test all redirects!
+- https://www.orbitmedia.com/blog/deleting-old-content/
 
-https://www.orbitmedia.com/blog/deleting-old-content/
+Route53
+- Delete Galactic.ink (Now managed by Porkbun)
