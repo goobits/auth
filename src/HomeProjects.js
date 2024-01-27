@@ -1,19 +1,25 @@
 export const apps = [
+	// {
+	// 	id: 'be-here-meow',
+	// 	description: 'Where mindfulness meets creativity in a purr-fectly designed app for journaling and personal growth 😸✨.',
+	// 	title: 'Be Here Meow',
+	// 	url: 'https://beheremeow.app/'
+	// },
 	{
 		id: 'sketchpad',
-		description: 'Draw, create & share with this online drawing application. Free for all since 2008. Fun for all ages!',
+		description: 'Draw, create & share with this online drawing application. Free for all since 2008. Fun for all ages 🦄!',
 		title: 'Sketchpad',
-		url: 'https://sketchpad.app/'
+		url: 'https://sketchpad.com/'
 	},
 	{
 		id: 'color-piano',
-		description: 'Learn music theory essentials, and visualize amazing composers with this interactive color piano.',
+		description: 'Learn music theory essentials, and visualize amazing composers with this interactive color piano 🎵.',
 		title: 'Color Piano',
-		url: 'https://colorpiano.app/'
+		url: 'https://colorpiano.com/'
 	},
 	{
 		id: 'color-sphere',
-		description: 'Learn color harmony essentials, create color schemes, and export your own color palettes.',
+		description: 'Learn color harmony essentials, create color schemes, and export your own color palettes 🎨.',
 		title: 'Color Sphere',
 		url: 'https://colorsphere.app/'
 	},
@@ -37,7 +43,7 @@ export const apps = [
 	// },
 	{
 		id: 'sand-art',
-		description: 'Make your own meditative & beautiful sandscapes through the art of pouring coloured sands.',
+		description: 'Make your own meditative & beautiful sandscapes through the art of pouring coloured sands 🧘.',
 		title: 'Sand Art',
 		url: 'https://sandart.app/'
 	},
@@ -61,7 +67,7 @@ export const apps = [
 	// },
 	{
 		id: 'melodic-mandalas',
-		description: 'Generate hypnotic patterns & ambient tones with this colorful interactive audio-visual experience.',
+		description: 'Generate hypnotic patterns & ambient tones with this colorful audio-visual interactive experience 🌈.',
 		title: 'Zendala',
 		url: 'https://zendala.app/'
 	}
