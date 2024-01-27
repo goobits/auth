@@ -9,26 +9,26 @@
         </a>
     </div>
     <div>
-        <a href="/labs/JS1k/BreathingGalaxies.html">
-            <img src="../media/dir-listing/folder.png" alt="JS1k/"/>
+        <a href="/labs/js1k/BreathingGalaxies.html">
+            <img src="../media/dir-listing/folder.png" alt="js1k/"/>
             <strong>JS1k - Breathing Galaxies</strong>
         </a>
     </div>
     <div>
-        <a href="/labs/JS1k/Daltonize.html">
-            <img src="../media/dir-listing/folder.png" alt="JS1k/"/>
+        <a href="/labs/js1k/Daltonize.html">
+            <img src="../media/dir-listing/folder.png" alt="js1k/"/>
             <strong>JS1k - Daltonize</strong>
         </a>
     </div>
     <div>
-        <a href="/labs/JS1k/MicroSketchpad.html">
-            <img src="../media/dir-listing/folder.png" alt="JS1k/"/>
+        <a href="/labs/js1k/MicroSketchpad.html">
+            <img src="../media/dir-listing/folder.png" alt="js1k/"/>
             <strong>JS1k - Micro Sketchpad</strong>
         </a>
     </div>
     <div>
-        <a href="/labs/JS1k/SpectrumDJ.html">
-            <img src="../media/dir-listing/folder.png" alt="JS1k/"/>
+        <a href="/labs/js1k/SpectrumDJ.html">
+            <img src="../media/dir-listing/folder.png" alt="js1k/"/>
             <strong>JS1k - Spectrum DJ</strong>
         </a>
     </div>
