@@ -22,8 +22,6 @@ FIX:
 - Zendala.app
 
 Domain redirects:
-- Colorjack.com -> Miko.art via Porkbun redirect
-- Colourjack.com -> Miko.art via Porkbun redirect
 - Galactic.ink -> Miko.art via Porkbun redirect
 - GalacticMilk.com -> Miko.art via Porkbun redirect
 - Mudcu.be -> Miko.art via Porkbun redirect
@@ -31,6 +29,7 @@ Domain redirects:
 
 App redirects:
 - Sketch.io/mobile -> Miko.art/labs/sketchpad-mobile/
+- Galactic.ink/labs/JS1k -> Miko.art/labs/js1k/
 
 Check:
 - Ensure all domain.app's have their own Google Analytics!
