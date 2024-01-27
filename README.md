@@ -1,19 +1,19 @@
 ## Get started
 
 ```bash
-npm install
+yarn
 ```
 
 ## Build
 
 ```bash
-npm run build
+yarn build
 ```
 
 ## Development
 
 ```bash
-npm run dev
+yarn dev
 ```
 
 FIX:
