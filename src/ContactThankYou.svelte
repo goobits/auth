@@ -1,9 +1,9 @@
 <title>MIKO.ART - Thank You</title>
 
 <h1>
-    <img src="/media/contact-thank-you.svg" alt=""/>
+	<img src="/media/contact-thank-you.svg" alt="" />
 </h1>
 <h2>
-    Thank you for your message!<br>
-    I'll get back to you as soon as possible :)
+	Thank you for your message!<br>
+	I'll get back to you as soon as possible :)
 </h2>
