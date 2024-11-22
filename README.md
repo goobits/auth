@@ -17,7 +17,6 @@ yarn dev
 ```
 
 FIX:
-- Convert journal to static pages: https://wordpress.org/plugins/simply-static/
 - Zendala.app
 
 Domain redirects:

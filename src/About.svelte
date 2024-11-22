@@ -19,7 +19,7 @@
 <p>I’m passionate about creating colorful, creative & educational applications!</p>
 <p>Founder & CTO of <a href="https://sketch.io/" target="_blank">Sketch.IO</a> creators of
 	<a href="https://sketchpad.com/" target="_blank">Sketchpad</a> 🎨</p>
-<p>Co-Founder of <a href="https://portlandiafoods.com/" target="_blank">Portlandia Foods</a> 🪴 (acquired 2023)</p>
+<p>Co-Founder of <a href="https://portlandiafoods.com/" target="_blank">Portlandia Foods</a> creators of Portland Ketchup 🪴 (acquired 2023)</p>
 <p>Co-Founder of <a href="https://lyricsfreak.com/" target="_blank">Lyrics Freak</a> 🎵 (acquired 2010)</p>
 <!--<p>Co-Founder of <a href="https://beheremeow.app/" target="_blank">Be Here Meow</a> 😸</p>-->
 
