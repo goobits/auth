@@ -8,3 +8,4 @@
 /software/zen-bg/dist
 /software/zen-bg/.parcel-cache
 /.yarn
+/.svelte-kit

@@ -1,4 +1,4 @@
-<head>
+<svelte:head>
 	<style>
 		ul {
 			max-width: 640px;
@@ -8,7 +8,7 @@
 			font-weight: bold;
 		}
 	</style>
-</head>
+</svelte:head>
 
 <title>MIKO.ART - About</title>
 <!--🦄-->
