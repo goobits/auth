@@ -1,3 +1,7 @@
+<script>
+	import './ContactThankYou.styl'
+</script>
+
 <title>MIKO.ART - Thank You</title>
 
 <h1>
