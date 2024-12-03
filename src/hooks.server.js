@@ -5,28 +5,24 @@ import { redirects } from '@src/redirects.js'
 import { sequence } from '@sveltejs/kit/hooks'
 
 const handleIndexHtml = async ({ event, resolve }) => {
-	// Only add trailing slash for static directory paths that exist
 	const pathname = event.url.pathname
 	const staticPath = path.join('static', pathname)
+	const indexPath = path.join('static', pathname, 'index.html')
 
-	try {
-		const stats = await fs.stat(staticPath)
-		if (stats.isDirectory() && !pathname.endsWith('/')) {
-			throw redirect(301, `${ pathname }/`)
-		}
-	} catch {
-	} // Ignore stat errors
-
-	// Try serving index.html
-	try {
-		const indexPath = path.join('static', pathname, 'index.html')
-		const html = await fs.readFile(indexPath, 'utf-8')
-		return new Response(html, {
-			headers: { 'Content-Type': 'text/html' }
-		})
-	} catch {
+	const exists = await fs.access(indexPath).then(() => true).catch(() => false)
+	if (!exists) {
 		return resolve(event)
 	}
+
+	if (!pathname.endsWith('/')) {
+		console.log('Redirecting to', `${ pathname }/`)
+		throw redirect(301, `${ pathname }/`)
+	}
+
+	const html = await fs.readFile(indexPath, 'utf-8')
+	return new Response(html, {
+		headers: { 'Content-Type': 'text/html' }
+	})
 }
 
 const handleRedirects = async ({ event, resolve }) => {
