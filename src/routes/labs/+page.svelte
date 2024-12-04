@@ -1,3 +1,7 @@
+<script>
+    import './Labs.scss'
+</script>
+
 <svelte:head>
     <title>MIKO.ART - Labs</title>
 </svelte:head>

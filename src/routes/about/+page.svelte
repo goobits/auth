@@ -1,3 +1,7 @@
+<script>
+    import './About.scss'
+</script>
+
 <svelte:head>
     <title>MIKO.ART - About</title>
 </svelte:head>
