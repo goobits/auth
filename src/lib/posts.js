@@ -53,6 +53,7 @@ export async function getPost({ year, month, slug }) {
 
 		const mdContent = readFileSync(join(monthPath, posts[0], 'index.md'), 'utf-8')
 		const compiled = await compile(mdContent)
+		const strippedContent = compiled.code.replace(/{@html `(.*?)`}/gs, '$1')
 
 		// Extract date same as above
 		let postDate
@@ -67,7 +68,7 @@ export async function getPost({ year, month, slug }) {
 			year,
 			month,
 			slug,
-			content: compiled.code,
+			content: strippedContent,
 			metadata: compiled.data,
 			date: postDate
 		}
