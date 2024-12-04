@@ -21,7 +21,7 @@
 			request.send(JSON.stringify(data))
 			request.onload = function () {
 				if (request.status === 200) {
-					window.location.href = '/contact/thank-you/'
+					window.location.href = '/contact/thank-you'
 				} else {
 					alert('Something went wrong. Please try again.')
 				}
