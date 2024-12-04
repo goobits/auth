@@ -1,4 +1,3 @@
-import { error } from '@sveltejs/kit'
 import { getJournalPosts } from '$lib/posts'
 
 export const prerender = true
