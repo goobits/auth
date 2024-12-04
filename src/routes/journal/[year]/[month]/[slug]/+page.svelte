@@ -2,6 +2,12 @@
 	let { data } = $props()
 </script>
 
+<svelte:head>
+    <title>
+        {data.post.metadata.fm.title} - MIKO.ART
+    </title>
+</svelte:head>
+
 <nav>
     <a href="/journal" class="back-btn">← Back</a>
 </nav>
@@ -10,7 +16,7 @@
     <div class="header">
         {#if data.post.metadata.fm.coverImage}
             <img
-                    src={`images/${data.post.metadata.fm.coverImage}`}
+                    src={data.post.metadata.fm.coverImage.startsWith('http') ? data.post.metadata.fm.coverImage : `images/${data.post.metadata.fm.coverImage}`}
                     alt={data.post.metadata.fm.title}
                     class="cover-image"
             />
@@ -58,20 +64,24 @@
 		font-family: "Source Serif Pro", serif;
 		margin: 0 auto;
 		max-width: 700px;
-        line-height: 1.6em;
+		line-height: 1.6em;
+
+		:global(h2) {
+			text-align: left;
+		}
 
 		:global(img) {
 			max-width: 100%;
 			height: auto;
-            display: block;
+			display: block;
 		}
 
 		.cover-image {
 			width: 100%;
 			height: auto;
 			margin-bottom: 2rem;
-            border-radius: 0.5rem;
-            border: 1px solid #d8d8d8;
+			border-radius: 0.5rem;
+			border: 1px solid #d8d8d8;
 		}
 
 		.header {

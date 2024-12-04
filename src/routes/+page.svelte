@@ -2,10 +2,23 @@
 	import { apps, art } from './_projects.js'
 </script>
 
-<title>MIKO.ART - Code & Design</title>
-<!--💖-->
-<h1>MAKE, LEARN&hellip; PLAY!</h1>
-<h2>APPS CRAFTED WITH <img src="/media/emoji-sparkling-heart.png" height="40" width="40" style="vertical-align: top" alt=""></h2>
+<svelte:head>
+    <title>MIKO.ART - Code & Design</title>
+</svelte:head>
+
+<div class="hero">
+    <h1>MAKE, LEARN&hellip; PLAY!</h1>
+    <h2>APPS CRAFTED WITH
+        <img
+                src="/media/emoji-sparkling-heart.png"
+                height="40"
+                width="40"
+                style="vertical-align: top"
+                alt=""
+        />
+    </h2>
+</div>
+
 <projects>
     {#each apps as { id, description, title, url }, i}
         <a class="project" href="{url}">

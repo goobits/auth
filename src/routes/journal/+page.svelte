@@ -2,12 +2,23 @@
 	let { data } = $props()
 </script>
 
+<svelte:head>
+    <title>
+        MIKO.ART - Journal
+    </title>
+</svelte:head>
+
+
 <div class="posts">
     {#each data.posts as post}
         <article>
             <h2>
                 <a href={`/${post.urlPath}`}>{post.metadata.fm.title}</a>
-                <time>{new Date(post.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' })}</time>
+                <time>{new Date(post.date).toLocaleDateString('en-US', {
+					month: 'numeric',
+					day: 'numeric',
+					year: 'numeric'
+				})}</time>
             </h2>
             {#if post.metadata.fm.categories}
                 <div class="categories">
@@ -35,7 +46,7 @@
 		font-weight: 400;
 		font-size: 2rem;
 		margin: 0;
-        text-align: left;
+		text-align: left;
 		font-family: "Playfair Display", serif;
 	}
 
@@ -46,7 +57,7 @@
 	}
 
 	a {
-        display: block;
+		display: block;
 		text-decoration: none;
 	}
 
