@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte'
 	import { page } from '$app/stores'
 
-	onMount(() => {
+    onMount(() => {
         // Toggle hamburger menu visibility
 		void function () {
 			const $links = document.querySelector('links')

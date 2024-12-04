@@ -2,7 +2,7 @@
 export const redirects = [
 	{ from: '/bg*', to: '/labs/zen-bg', status: 301 },
 	{ from: '/journal/human*', to: '/about', status: 301 },
-	{ from: '/labs/JS1k(.*)', to: '/labs/js1k$1', status: 301 },
+	{ from: '/labs/js1k(.*)', to: '/labs/js1k$1', status: 301 },
 	{ from: '/labs/piano*', to: 'https://colorpiano.com', status: 301 },
 	{ from: '/midi-js*', to: '/labs/midi-js', status: 301 },
 	{ from: '/piano*', to: 'https://colorpiano.com', status: 301 },
