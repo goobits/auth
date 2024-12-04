@@ -1,8 +1,3 @@
-<title>MIKO.ART - Contact</title>
-<!--🌿-->
-<h1>Contact Miko <img src="/media/emoji-herb.png" height="56" width="56" style="vertical-align: top" alt=""></h1>
-<h2>Got a question? Drop me a line.</h2>
-
 <script>
 	import './Contact.styl'
 	import { form, field } from 'svelte-forms'
@@ -34,6 +29,15 @@
 		}
 	}
 </script>
+
+<svelte:head>
+    <title>MIKO.ART - Contact</title>
+</svelte:head>
+
+<div class="hero">
+    <h1>Contact Miko <img src="/media/emoji-herb.png" height="56" width="56" style="vertical-align: top" alt=""></h1>
+    <h2>Got a question? Drop me a line.</h2>
+</div>
 
 <contact-form>
     <img src="/media/super-racoon.svg" style="float: right; width: 31%" alt="">
