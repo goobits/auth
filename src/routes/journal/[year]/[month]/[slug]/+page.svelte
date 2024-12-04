@@ -8,6 +8,13 @@
 
 <article>
     <div class="header">
+        {#if data.post.metadata.fm.coverImage}
+            <img
+                    src={`images/${data.post.metadata.fm.coverImage}`}
+                    alt={data.post.metadata.fm.title}
+                    class="cover-image"
+            />
+        {/if}
         <h1>{data.post.metadata.fm.title}</h1>
         <div class="metadata">
             <time datetime={data.post.date.toISOString()}>
@@ -47,25 +54,35 @@
 		}
 	}
 
-    article {
+	article {
 		font-family: "Source Serif Pro", serif;
-		max-width: 700px;
 		margin: 0 auto;
+		max-width: 700px;
+        line-height: 1.6em;
 
 		:global(img) {
 			max-width: 100%;
 			height: auto;
+            display: block;
+		}
+
+		.cover-image {
+			width: 100%;
+			height: auto;
+			margin-bottom: 2rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d8d8d8;
 		}
 
 		.header {
-			margin-bottom: 3rem;
+			margin-bottom: 2rem;
 
 			h1 {
 				font-family: "Playfair Display", serif;
 				font-size: 3rem;
-				font-weight: 400;
-				text-align: left;
+				font-weight: 500;
 				margin: 0;
+				text-align: left;
 			}
 
 			.metadata {
@@ -84,18 +101,6 @@
 						margin: 0 0.25rem;
 					}
 				}
-			}
-		}
-
-		.content {
-			line-height: 1.6;
-
-			:global(a) {
-				color: inherit;
-			}
-
-			:global(p) {
-				margin: 1.5em 0;
 			}
 		}
 	}
