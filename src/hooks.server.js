@@ -4,35 +4,40 @@ import { redirect } from '@sveltejs/kit'
 import { redirects } from '@src/redirects.js'
 import { sequence } from '@sveltejs/kit/hooks'
 
+const isExternalUrl = (url) => {
+	return url.startsWith('http://') || url.startsWith('https://')
+}
+
 const handleIndexHtml = async ({ event, resolve }) => {
 	const pathname = event.url.pathname
-	if (!pathname.endsWith('/') && pathname !== '/') {
-		const staticPath = path.join('static', pathname)
-		const indexExists = await fs.access(path.join(staticPath, 'index.html'))
-			.then(() => true)
-			.catch(() => false)
+	const staticPath = path.join('static', pathname)
+	const indexPath = path.join('static', pathname, 'index.html')
 
-		if (indexExists) {
-			throw redirect(301, `${ pathname }/`)
-		}
+	const exists = await fs.access(indexPath).then(() => true).catch(() => false)
+	if (!exists) {
+		return resolve(event)
 	}
 
-	return resolve(event)
+	if (!pathname.endsWith('/')) {
+		console.log('Redirecting to', `${ pathname }/`)
+		throw redirect(301, `${ pathname }/`)
+	}
+
+	const html = await fs.readFile(indexPath, 'utf-8')
+	return new Response(html, {
+		headers: { 'Content-Type': 'text/html' }
+	})
 }
 
 const handleRedirects = async ({ event, resolve }) => {
 	const pathname = event.url.pathname.toLowerCase()
-
 	const matchingRedirect = redirects.find(redirect => {
 		if (redirect.from.includes('(.*)')) {
-			// Handle regex capture groups
-			const pattern = new RegExp(`^${redirect.from}$`)
+			const pattern = new RegExp(redirect.from)
 			return pattern.test(pathname)
 		}
 		if (redirect.from.endsWith('*')) {
-			// Handle wildcard matches more efficiently
-			const prefix = redirect.from.slice(0, -1)
-			return pathname.startsWith(prefix)
+			return pathname.startsWith(redirect.from.slice(0, -1))
 		}
 		return redirect.from === pathname
 	})
@@ -41,31 +46,29 @@ const handleRedirects = async ({ event, resolve }) => {
 		let redirectTo = matchingRedirect.to
 
 		if (matchingRedirect.from.includes('(.*)')) {
-			// Handle capture group replacement
-			const pattern = new RegExp(`^${matchingRedirect.from}$`)
-			redirectTo = pathname.replace(pattern, redirectTo)
+			const pattern = new RegExp(matchingRedirect.from)
+			redirectTo = pathname.replace(pattern, matchingRedirect.to)
 		}
 
-		// Check if destination is a folder with index.html
-		const destPath = path.join('static', redirectTo)
-		const hasIndex = await fs.access(path.join(destPath, 'index.html'))
-			.then(() => true)
-			.catch(() => false)
+		// For external URLs, redirect immediately
+		if (isExternalUrl(redirectTo)) {
+			throw redirect(matchingRedirect.status, redirectTo)
+		}
 
-		// Add trailing slash if it's a folder and doesn't have one
-		if (hasIndex && !redirectTo.endsWith('/')) {
+		// For internal URLs, check if it's a directory and add trailing slash if needed
+		const finalPath = path.join('static', redirectTo, 'index.html')
+		const isDirectory = await fs.access(finalPath).then(() => true).catch(() => false)
+
+		if (isDirectory && !redirectTo.endsWith('/')) {
 			redirectTo = `${ redirectTo }/`
 		}
 
 		throw redirect(matchingRedirect.status, redirectTo)
 	}
-
 	return resolve(event)
 }
 
-const handle = sequence(
+export const handle = sequence(
 	handleIndexHtml,
 	handleRedirects
 )
-
-export { handle }
