@@ -7,6 +7,7 @@ body {
 	font-size: 18px;
 	height: 100%;
 	margin: 0;
+
 }
 
 a {
@@ -70,6 +71,7 @@ header {
 	display: block;
 	height: 120px;
 	line-height: 120px;
+	letter-spacing: 0.05em;
 	white-space: nowrap;
 	width: 100vw;
 
@@ -107,7 +109,7 @@ header {
 				display: inline-block;
 				color: white;
 				border-bottom: 3px solid transparent;
-				margin-left: 2em;
+				margin-right: 2em;
 				line-height: 2em;
 				transform: scaleY(1.1);
 				text-decoration: none;
@@ -254,8 +256,9 @@ footer {
 	color: white;
 	display: block;
 	font-style: italic;
-	height: calc(102px - 4vh);
-	line-height: 32px;
+	font-weight: 100;
+	line-height: 2.5rem;
+	letter-spacing: 0.05em;
 	margin-top: 4vh;
 	padding: 1.5vh 0 2.5vh;
 	text-align: center;
@@ -264,6 +267,7 @@ footer {
 
 	a {
 		color: white;
+		font-weight: 300;
 
 		&:visited {
 			color: white;

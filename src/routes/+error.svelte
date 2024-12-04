@@ -7,7 +7,6 @@
         <img
                 src="/media/404-cat.svg"
                 alt="404 Cat"
-                style="max-height: calc(100vh - 300px)"
         />
     </a>
 </div>
@@ -17,6 +16,15 @@
 		align-items: center;
 		display: flex;
 		justify-content: center;
-		min-height: 70vh;
+		width: 100%;
+
+		a {
+			width: 100%;
+		}
+
+		img {
+			width: inherit;
+			max-height: calc(100vh - 300px);
+		}
 	}
 </style>

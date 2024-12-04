@@ -36,8 +36,9 @@
 </main>
 
 <footer>
+    <a href="/journal">Journal</a> &middot;
     <a href="/labs">Labs</a> &middot;
     <a href="/privacy-policy">Privacy Policy</a>
     <br>
-    Copyright © {new Date().getFullYear()} by MIKO. All rights reserved.
+    Copyright © {new Date().getFullYear()} by MIKO.ART. All rights reserved.
 </footer>
