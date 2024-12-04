@@ -4,11 +4,15 @@ import { redirect } from '@sveltejs/kit'
 import { redirects } from '@src/redirects.js'
 import { sequence } from '@sveltejs/kit/hooks'
 
-const isExternalUrl = (url) => {
-	return url.startsWith('http://') || url.startsWith('https://')
-}
-
-const handleIndexHtml = async ({ event, resolve }) => {
+/**
+ * Handles serving index.html files for directory paths
+ * @param {Object} options - Handler options
+ * @param {Object} options.event - SvelteKit event object
+ * @param {Function} options.resolve - SvelteKit resolve function
+ * @returns {Promise<Response>} Response object with HTML content or passed to next handler
+ * @throws {Redirect} Redirects to path with trailing slash if missing
+ */
+async function handleIndexHtml({ event, resolve }) {
 	const pathname = event.url.pathname
 	const staticPath = path.join('static', pathname)
 	const indexPath = path.join('static', pathname, 'index.html')
@@ -29,7 +33,15 @@ const handleIndexHtml = async ({ event, resolve }) => {
 	})
 }
 
-const handleRedirects = async ({ event, resolve }) => {
+/**
+ * Processes redirects based on configured rules
+ * @param {Object} options - Handler options
+ * @param {Object} options.event - SvelteKit event object
+ * @param {Function} options.resolve - SvelteKit resolve function
+ * @returns {Promise<Response>} Passed to next handler if no redirect matches
+ * @throws {Redirect} Redirects to target URL if a match is found
+ */
+async function handleRedirects({ event, resolve }) {
 	const pathname = event.url.pathname.toLowerCase()
 	const matchingRedirect = redirects.find(redirect => {
 		if (redirect.from.includes('(.*)')) {
@@ -42,33 +54,48 @@ const handleRedirects = async ({ event, resolve }) => {
 		return redirect.from === pathname
 	})
 
-	if (matchingRedirect) {
-		let redirectTo = matchingRedirect.to
+	if (!matchingRedirect) {
+		return resolve(event)
+	}
 
-		if (matchingRedirect.from.includes('(.*)')) {
-			const pattern = new RegExp(matchingRedirect.from)
-			redirectTo = pathname.replace(pattern, matchingRedirect.to)
-		}
+	let redirectTo = matchingRedirect.to
 
-		// For external URLs, redirect immediately
-		if (isExternalUrl(redirectTo)) {
-			throw redirect(matchingRedirect.status, redirectTo)
-		}
+	// Handle regex capture group replacements
+	if (matchingRedirect.from.includes('(.*)')) {
+		const pattern = new RegExp(matchingRedirect.from)
+		redirectTo = pathname.replace(pattern, matchingRedirect.to)
+	}
 
-		// For internal URLs, check if it's a directory and add trailing slash if needed
-		const finalPath = path.join('static', redirectTo, 'index.html')
-		const isDirectory = await fs.access(finalPath).then(() => true).catch(() => false)
-
-		if (isDirectory && !redirectTo.endsWith('/')) {
-			redirectTo = `${ redirectTo }/`
-		}
-
+	// Handle external redirects immediately
+	if (isExternalUrl(redirectTo)) {
 		throw redirect(matchingRedirect.status, redirectTo)
 	}
-	return resolve(event)
+
+	// Check if internal redirect target is a directory
+	const finalPath = path.join('static', redirectTo, 'index.html')
+	const isDirectory = await fs.access(finalPath).then(() => true).catch(() => false)
+
+	if (isDirectory && !redirectTo.endsWith('/')) {
+		redirectTo = `${ redirectTo }/`
+	}
+
+	throw redirect(matchingRedirect.status, redirectTo)
 }
 
+/**
+ * Combined request handler that processes redirects and serves index.html files
+ */
 export const handle = sequence(
-	handleIndexHtml,
-	handleRedirects
+	handleRedirects,
+	handleIndexHtml
 )
+
+/**
+ * Checks if a URL is external (starts with http:// or https://)
+ * @param {string} url - The URL to check
+ * @returns {boolean} True if the URL is external, false otherwise
+ */
+function isExternalUrl(url) {
+	return url.startsWith('http://')
+		|| url.startsWith('https://')
+}
