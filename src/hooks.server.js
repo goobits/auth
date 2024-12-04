@@ -86,8 +86,8 @@ async function handleRedirects({ event, resolve }) {
  * Combined request handler that processes redirects and serves index.html files
  */
 export const handle = sequence(
-	handleRedirects,
-	handleIndexHtml
+	handleRedirects, // 1.
+	handleIndexHtml // 2.
 )
 
 /**
