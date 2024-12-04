@@ -2,8 +2,21 @@
     <title>MIKO.ART - 404</title>
 </svelte:head>
 
-<h1>
-    <a href="/static">
-        <img src="/media/404-cat.svg" alt="" style="max-height: calc(100vh - 300px)"/>
+<div class="error-container">
+    <a href="/">
+        <img
+                src="/media/404-cat.svg"
+                alt="404 Cat"
+                style="max-height: calc(100vh - 300px)"
+        />
     </a>
-</h1>
+</div>
+
+<style>
+	.error-container {
+		align-items: center;
+		display: flex;
+		justify-content: center;
+		min-height: 70vh;
+	}
+</style>
