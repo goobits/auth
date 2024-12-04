@@ -26,7 +26,7 @@ const handleIndexHtml = async ({ event, resolve }) => {
 }
 
 const handleRedirects = async ({ event, resolve }) => {
-	const pathname = event.url.pathname
+	const pathname = event.url.pathname.toLowerCase()
 	const matchingRedirect = redirects.find(redirect => {
 		if (redirect.from.includes('(.*)')) {
 			const pattern = new RegExp(redirect.from)

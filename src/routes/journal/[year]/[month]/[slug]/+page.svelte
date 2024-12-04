@@ -1,5 +1,7 @@
 <script>
-	let { data } = $props()
+	const { data } = $props()
+	const rawImage = data.post.metadata.fm.coverImage
+	const coverImage = rawImage.startsWith('http') || rawImage.startsWith('/') ? rawImage : `images/${ rawImage }`
 </script>
 
 <svelte:head>
@@ -16,7 +18,7 @@
     <div class="header">
         {#if data.post.metadata.fm.coverImage}
             <img
-                    src={data.post.metadata.fm.coverImage.startsWith('http') ? data.post.metadata.fm.coverImage : `images/${data.post.metadata.fm.coverImage}`}
+                    src={coverImage}
                     alt={data.post.metadata.fm.title}
                     class="cover-image"
             />
