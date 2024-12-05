@@ -1,4 +1,6 @@
 <script>
+	import MetadataValues from '@components/Journal/MetadataValues.svelte'
+
 	/** @type {[]} */
 	export let posts = []
 	export let category = ''
@@ -9,10 +11,6 @@
 		return value.split('-')
 			.map(word => word.charAt(0).toUpperCase() + word.slice(1))
 			.join(' ')
-	}
-
-	const slugifyValue = (value) => {
-		return value.toLowerCase().replace(/\s+/g, '-')
 	}
 </script>
 
@@ -40,20 +38,14 @@
 					year: 'numeric'
 				})}</time>
             </h2>
-            {#if post.metadata.fm[type === 'tag' ? 'tags' : 'categories']}
-                <div class="values">
-                    {#each post.metadata.fm.categories as value}
-                        <a href={`/journal/category/${slugifyValue(value)}`}>
-                            <span class="value">{formatValue(value)}</span>
-                        </a>
-                    {/each}
-                    {#each post.metadata.fm.tags as value}
-                        <a href={`/journal/tag/${slugifyValue(value)}`}>
-                            <span class="value">{formatValue(value)}</span>
-                        </a>
-                    {/each}
-                </div>
-            {/if}
+            <div style="display: flex">
+                {#if post.metadata.fm.categories}
+                    <MetadataValues values={post.metadata.fm.categories} type="category"/>
+                {/if}
+                {#if post.metadata.fm.tags}
+                    <MetadataValues values={post.metadata.fm.tags} type="tag"/>
+                {/if}
+            </div>
         </article>
     {/each}
 </div>
@@ -79,6 +71,11 @@
 		margin: 0 auto;
 	}
 
+	article {
+		margin-bottom: 3rem;
+		font-family: "Source Serif Pro", serif;
+	}
+
 	h1 {
 		font-family: "Playfair Display", serif;
 		font-size: 3rem;
@@ -92,51 +89,26 @@
 		display: flex;
 	}
 
-	article {
-		margin-bottom: 3rem;
-		font-family: "Source Serif Pro", serif;
-	}
-
 	h2 {
 		font-weight: 400;
 		font-size: 2rem;
 		margin: 0;
 		text-align: left;
 		font-family: "Playfair Display", serif;
+
+		a {
+			display: block;
+			text-decoration: none;
+		}
+
+		a:hover {
+			text-decoration: underline;
+		}
 	}
 
 	time {
 		font-family: "Source Serif Pro", serif;
 		font-size: 1rem;
 		color: #666;
-	}
-
-	a {
-		display: block;
-		text-decoration: none;
-	}
-
-	a:hover {
-		text-decoration: underline;
-	}
-
-	.values {
-		margin-top: 0.5rem;
-		display: flex;
-
-		.value {
-			font-size: 0.875rem;
-			color: #666;
-			background: #f2f2f2;
-			padding: 0.2rem 0.6rem;
-			border-radius: 3px;
-			margin: 0 0.25rem;
-			text-decoration: none;
-			display: inline-block;
-
-			&:hover {
-				background: #e5e5e5;
-			}
-		}
 	}
 </style>

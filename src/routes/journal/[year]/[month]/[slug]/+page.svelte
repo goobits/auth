@@ -1,17 +1,9 @@
 <script>
+	import MetadataValues from '@components/Journal/MetadataValues.svelte'
+
 	const { data } = $props()
 	const rawImage = data.post.metadata.fm.coverImage || ''
 	const coverImage = rawImage.startsWith('http') || rawImage.startsWith('/') ? rawImage : `images/${ rawImage }`
-
-	const formatCategory = (category) => {
-		return category.split('-')
-			.map(word => word.charAt(0).toUpperCase() + word.slice(1))
-			.join(' ')
-	}
-
-	const slugifyCategory = (category) => {
-		return category.toLowerCase().replace(/\s+/g, '-')
-	}
 </script>
 
 <svelte:head>
@@ -40,18 +32,14 @@
 					year: 'numeric'
 				})}
             </time>
-            {#if data.post.metadata.fm.categories}
-                <div class="categories">
-                    {#each data.post.metadata.fm.categories as category}
-                        <a
-                                href={`/journal/category/${slugifyCategory(category)}`}
-                                class="category"
-                        >
-                            {formatCategory(category)}
-                        </a>
-                    {/each}
-                </div>
-            {/if}
+            <div style="display: flex">
+                {#if data.post.metadata.fm.categories}
+                    <MetadataValues values={data.post.metadata.fm.categories} type="category"/>
+                {/if}
+                {#if data.post.metadata.fm.tags}
+                    <MetadataValues values={data.post.metadata.fm.tags} type="tag"/>
+                {/if}
+            </div>
         </div>
     </div>
     <div class="content">
@@ -113,25 +101,6 @@
 			.metadata {
 				margin-top: 1rem;
 				color: #666;
-
-				.categories {
-					margin-top: 0.5rem;
-
-					.category {
-						font-size: 0.875rem;
-						color: #666;
-						background: #f2f2f2;
-						padding: 0.2rem 0.6rem;
-						border-radius: 3px;
-						margin: 0 0.25rem;
-						text-decoration: none;
-						display: inline-block;
-
-						&:hover {
-							background: #e5e5e5;
-						}
-					}
-				}
 			}
 		}
 	}
