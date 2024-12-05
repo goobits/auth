@@ -128,7 +128,7 @@
 		font-weight: 100;
 		line-height: 3rem;
 		letter-spacing: 0.05em;
-		margin-top: 4vh;
+		margin-top: 3rem;
 		padding: 2rem 0;
 		text-align: center;
 		white-space: nowrap;
