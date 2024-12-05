@@ -10,6 +10,7 @@
 
 
 <div class="posts">
+    <h1>Journal</h1>
     {#each data.posts as post}
         <article>
             <h2>
@@ -42,7 +43,18 @@
 		font-family: "Source Serif Pro", serif;
 	}
 
-	h2 {
+	h1 {
+		font-family: "Playfair Display", serif;
+		font-size: 3rem;
+		line-height: 3rem;
+		border-bottom: 3px solid #d8d8d8;
+		padding-bottom: 1rem;
+		font-weight: 500;
+		margin: 0 0 2rem;
+		text-align: left;
+	}
+
+    h2 {
 		font-weight: 400;
 		font-size: 2rem;
 		margin: 0;

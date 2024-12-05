@@ -2,12 +2,20 @@
 	const { data } = $props()
 	const rawImage = data.post.metadata.fm.coverImage || ''
 	const coverImage = rawImage.startsWith('http') || rawImage.startsWith('/') ? rawImage : `images/${ rawImage }`
+
+	const formatCategory = (category) => {
+		return category.split('-')
+			.map(word => word.charAt(0).toUpperCase() + word.slice(1))
+			.join(' ')
+	}
+
+	const slugifyCategory = (category) => {
+		return category.toLowerCase().replace(/\s+/g, '-')
+	}
 </script>
 
 <svelte:head>
-    <title>
-        {data.post.metadata.fm.title} - MIKO.ART
-    </title>
+    <title>{data.post.metadata.fm.title} - MIKO.ART</title>
 </svelte:head>
 
 <nav>
@@ -35,7 +43,12 @@
             {#if data.post.metadata.fm.categories}
                 <div class="categories">
                     {#each data.post.metadata.fm.categories as category}
-                        <span class="category">{category}</span>
+                        <a
+                                href={`/journal/category/${slugifyCategory(category)}`}
+                                class="category"
+                        >
+                            {formatCategory(category)}
+                        </a>
                     {/each}
                 </div>
             {/if}
@@ -111,6 +124,12 @@
 						padding: 0.2rem 0.6rem;
 						border-radius: 3px;
 						margin: 0 0.25rem;
+						text-decoration: none;
+						display: inline-block;
+
+						&:hover {
+							background: #e5e5e5;
+						}
 					}
 				}
 			}

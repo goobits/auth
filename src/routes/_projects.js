@@ -1,10 +1,4 @@
 export const apps = [
-	// {
-	// 	id: 'be-here-meow',
-	// 	description: 'Where mindfulness meets creativity in a purr-fectly designed app for journaling and personal growth 😸✨.',
-	// 	title: 'Be Here Meow',
-	// 	url: 'https://beheremeow.app/'
-	// },
 	{
 		id: 'sketchpad',
 		description: 'Draw, create & share with this online drawing application. Free for all since 2008. Fun for all ages 🦄!',
@@ -16,6 +10,12 @@ export const apps = [
 		description: 'Learn music theory essentials, and visualize amazing composers with this interactive color piano 🎵.',
 		title: 'Color Piano',
 		url: 'https://colorpiano.com/'
+	},
+	{
+		id: 'be-here-meow',
+		description: 'Where mindfulness meets creativity in a purr-fectly designed app for journaling and personal growth 😸✨.',
+		title: 'Be Here Meow',
+		url: 'https://beheremeow.app/'
 	},
 	{
 		id: 'color-sphere',
@@ -34,12 +34,6 @@ export const apps = [
 	// 	description: 'Learn color harmony essentials, create color schemes, and export your own color palettes.',
 	// 	title: 'Gradient Designer',
 	// 	url: 'https://gradientdesigner.app/'
-	// },
-	// {
-	// 	id: 'mindful-journal',
-	// 	description: 'Generate hypnotic patterns & ambient tones with this colorful interactive audio-visual experience.',
-	// 	title: 'Mindful Journal',
-	// 	url: 'https://mindfuljournal.app/'
 	// },
 	{
 		id: 'sand-art',
@@ -66,7 +60,7 @@ export const apps = [
 	// 	url: 'https://touchtimer.app/'
 	// },
 	{
-		id: 'melodic-mandalas',
+		id: 'zendala',
 		description: 'Generate hypnotic patterns & ambient tones with this colorful audio-visual interactive experience 🌈.',
 		title: 'Zendala',
 		url: 'https://zendala.app/'
