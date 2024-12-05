@@ -1,12 +1,28 @@
-<script>
-	import './ContactThankYou.styl'
-</script>
-
 <svelte:head>
     <title>MIKO.ART - Thank You</title>
 </svelte:head>
 
 <div class="hero">
+    <style>
+		body {
+			background: #441f87;
+		}
+
+		main {
+			h1 {
+				img {
+					max-height: calc(100vh - 450px);
+				}
+			}
+
+			h2 {
+				line-height: 1.33em;
+				margin-top: 0;
+				color: white;
+				text-shadow: none;
+			}
+		}
+    </style>
     <h1>
         <img src="/media/contact-thank-you.svg" alt=""/>
     </h1>
