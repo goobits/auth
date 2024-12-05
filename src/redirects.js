@@ -1,3 +1,9 @@
+/**
+ * ★ IMPORTANT ★
+ * Sync with NGINX configuration:
+ * /etc/nginx/sites-available/miko.art
+ */
+
 /** @type {Array<Object>} */
 export const redirects = [
 	{ from: '/bg*', to: '/labs/zen-bg/', status: 301 },
