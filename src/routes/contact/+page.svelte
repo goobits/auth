@@ -31,7 +31,7 @@
 </script>
 
 <svelte:head>
-    <title>MIKO.ART - Contact</title>
+    <title>Contact - MIKO.ART</title>
 </svelte:head>
 
 <div class="hero">

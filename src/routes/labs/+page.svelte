@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head>
-    <title>MIKO.ART - Labs</title>
+    <title>Labs - MIKO.ART</title>
 </svelte:head>
 
 <div class="hero">

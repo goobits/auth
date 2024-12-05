@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-    <title>MIKO.ART - Code & Design</title>
+    <title>Code & Design - MIKO.ART</title>
 </svelte:head>
 
 <div class="hero">

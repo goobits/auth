@@ -1,5 +1,5 @@
 <svelte:head>
-    <title>MIKO.ART - Privacy Policy</title>
+    <title>Privacy Policy - MIKO.ART</title>
 </svelte:head>
 
 <div data-custom-class="body">

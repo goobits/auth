@@ -1,5 +1,5 @@
 <svelte:head>
-    <title>MIKO.ART - Thank You</title>
+    <title>Thank You - MIKO.ART</title>
 </svelte:head>
 
 <div class="hero">

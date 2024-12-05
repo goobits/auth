@@ -1,5 +1,5 @@
 <svelte:head>
-    <title>MIKO.ART - 404</title>
+    <title>404 - MIKO.ART</title>
 </svelte:head>
 
 <div class="error-container">

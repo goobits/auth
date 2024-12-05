@@ -3,9 +3,7 @@
 </script>
 
 <svelte:head>
-    <title>
-        MIKO.ART - Journal
-    </title>
+    <title>Journal - MIKO.ART</title>
 </svelte:head>
 
 
