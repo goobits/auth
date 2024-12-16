@@ -3,8 +3,8 @@
 	import { onMount } from 'svelte'
 	import { page } from '$app/stores'
 
-    onMount(() => {
-        // Toggle hamburger menu visibility
+	onMount(() => {
+		// Toggle hamburger menu visibility
 		void function () {
 			const $links = document.querySelector('links')
 			$links.addEventListener('click', () => {
@@ -173,7 +173,7 @@
 						font-size: 2em;
 					}
 
-					&.open {
+					:global(&.open) {
 						a,
 						a[aria-current] {
 							display: block;
