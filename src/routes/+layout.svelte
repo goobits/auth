@@ -5,48 +5,47 @@
 
 	onMount(() => {
 		// Toggle hamburger menu visibility
-		void function () {
-			const $links = document.querySelector('links')
-			$links.addEventListener('click', () => {
+		const links = document.querySelector('links')
+		if (links) {
+			links.addEventListener('click', () => {
 				if (window.innerWidth < 700) {
-					$links.classList.toggle('open')
+					links.classList.toggle('open')
 				}
 			})
-		}()
+		}
 	})
 </script>
 
 <header>
-    <center>
-        <logo>
-            <a href="/">
-                <img src="/media/logo.svg" alt="logo"/>
-            </a>
-        </logo>
-        <links>
-            <a href="/" class:active={$page.url.pathname === '/'}>Home</a>
-            <a href="/about" class:active={$page.url.pathname === '/about'}>About</a>
-            <a href="/contact" class:active={$page.url.pathname === '/contact'}>Contact</a>
-        </links>
-    </center>
+	<center>
+		<logo>
+			<a href="/">
+				<img src="/media/logo.svg" alt="logo" />
+			</a>
+		</logo>
+		<links>
+			<a href="/" class:active={$page.url.pathname === '/'}>Home</a>
+			<a href="/about" class:active={$page.url.pathname === '/about'}>About</a>
+			<a href="/contact" class:active={$page.url.pathname === '/contact'}>Contact</a>
+		</links>
+	</center>
 </header>
 
 <main>
-    <slot/>
+	<slot />
 </main>
 
 <footer>
-    <a href="/journal">Journal</a> &middot;
-    <a href="/labs">Labs</a> &middot;
-    <a href="/privacy-policy">Privacy Policy</a>
-    <br>
-    Copyright © {new Date().getFullYear()} by MIKO MEOW™. All rights reserved.
+	<a href="/journal">Journal</a> &middot;
+	<a href="/labs">Labs</a> &middot;
+	<a href="/privacy-policy">Privacy Policy</a>
+	<br>
+	Copyright © {new Date().getFullYear()} by MIKO MEOW™. All rights reserved.
 </footer>
 
 <style>
 	header {
-		background: #361b68;
-		background-image: url('/media/hexabump.png');
+		background: #361b68 url('/media/hexabump.png');
 		border-bottom: 1px solid #2b1259;
 		box-shadow: 0 0 10px -2px #361b68;
 		display: block;
@@ -119,9 +118,8 @@
 	}
 
 	footer {
-		background: #361b68;
-		background-image: url('/media/hexabump.png');
-		border-top: 1px solid #2b1259;
+        background: #361b68 url('/media/hexabump.png');
+        border-top: 1px solid #2b1259;
 		color: white;
 		display: block;
 		font-style: italic;
@@ -158,9 +156,8 @@
 		header {
 			center {
 				links {
-					background: #361b68;
-					background-image: url('/media/hexabump.png');
-					border-radius: 5px;
+                    background: #361b68 url('/media/hexabump.png');
+                    border-radius: 5px;
 					padding: 0 1em;
 					position: absolute;
 					right: 0;

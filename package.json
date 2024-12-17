@@ -1,6 +1,6 @@
 {
 	"name": "miko-art",
-	"version": "1.0.48",
+	"version": "1.0.49",
 	"private": true,
 	"scripts": {
 		"build": "yarn version:patch && NODE_ENV=production vite build",
