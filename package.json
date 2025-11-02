@@ -1,0 +1,45 @@
+{
+  "name": "@goobits/auth",
+  "version": "0.1.0",
+  "description": "Pluggable authentication system for SvelteKit applications",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./adapters": "./src/adapters/index.js",
+    "./adapters/database": "./src/adapters/database/index.js",
+    "./adapters/session": "./src/adapters/session/index.js",
+    "./adapters/token": "./src/adapters/token/index.js",
+    "./adapters/tokens": "./src/adapters/tokens/index.js",
+    "./providers": "./src/providers/index.js",
+    "./handlers": "./src/handlers/index.js",
+    "./utils": "./src/utils/index.js",
+    "./types": "./src/types/index.js"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:ui": "vitest --ui",
+    "test:integration": "vitest run --testPathPattern=integration"
+  },
+  "keywords": [
+    "auth",
+    "authentication",
+    "oauth",
+    "sveltekit",
+    "session",
+    "drizzle"
+  ],
+  "author": "@goobits",
+  "license": "MIT",
+  "peerDependencies": {
+    "@sveltejs/kit": "^2.0.0",
+    "drizzle-orm": "^0.44.0"
+  },
+  "dependencies": {
+    "arctic": "^3.7.0",
+    "@oslojs/crypto": "^1.0.1",
+    "@oslojs/encoding": "^1.1.0"
+  },
+  "devDependencies": {}
+}
