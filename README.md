@@ -464,6 +464,36 @@ const adapter = new CookieTokenAdapter({
 });
 ```
 
+#### DrizzleVerificationTokenAdapter
+
+Manages verification tokens for email verification, password reset, and other flows.
+
+```javascript
+import { DrizzleVerificationTokenAdapter } from '@goobits/auth/adapters';
+
+const adapter = new DrizzleVerificationTokenAdapter(db, {
+  tokensTable: verificationTokens,  // Required: Drizzle table definition
+  usersTable: users,                 // Required: Drizzle table definition
+});
+```
+
+**Methods:**
+
+- `createToken({ userId, type, expiresInMs }): Promise<string>`
+  - Creates a verification token for a user
+  - `type`: Token type (e.g., 'email_verification', 'password_reset')
+  - `expiresInMs`: Optional expiration time in milliseconds (default: 1 hour)
+  - Returns the token string
+
+- `consumeToken({ token, type }): Promise<User | null>`
+  - Validates and consumes a verification token (one-time use)
+  - Returns user object if valid, null if expired or invalid
+  - Automatically deletes the token after consumption
+
+- `deleteUserTokens({ userId, type }): Promise<void>`
+  - Deletes all tokens of a specific type for a user
+  - Useful for invalidating all pending verification emails
+
 ### Providers
 
 #### GoogleProvider
@@ -616,6 +646,90 @@ const safeUser = sanitizeUser(userFromDb);
 // Removes: passwordHash, token, any field starting with 'password'
 ```
 
+### Handlers
+
+Pre-built handlers for common authentication flows. These can be used directly or as reference implementations.
+
+#### createSignupHandler
+
+Creates a handler for user signup with email/password.
+
+```javascript
+import { createSignupHandler } from '@goobits/auth/handlers';
+
+const handler = createSignupHandler({
+  userAdapter,              // Required: User adapter instance
+  sessionAdapter,           // Required: Session adapter instance
+  verificationTokenAdapter, // Optional: For email verification
+  validatePassword,         // Optional: Custom password validator
+  onSuccess: async (user) => {
+    // Optional: Send welcome email, etc.
+  },
+});
+
+// Use in SvelteKit route
+export const POST = handler;
+```
+
+#### createSigninHandler
+
+Creates a handler for user signin with email/password.
+
+```javascript
+import { createSigninHandler } from '@goobits/auth/handlers';
+
+const handler = createSigninHandler({
+  userAdapter,     // Required: User adapter instance
+  sessionAdapter,  // Required: Session adapter instance
+  onSuccess: async (user) => {
+    // Optional: Log signin, update last login time, etc.
+  },
+});
+
+// Use in SvelteKit route
+export const POST = handler;
+```
+
+#### createPasswordResetRequestHandler
+
+Creates a handler for requesting a password reset (step 1 of password reset flow).
+
+```javascript
+import { createPasswordResetRequestHandler } from '@goobits/auth/handlers';
+
+const handler = createPasswordResetRequestHandler({
+  userAdapter,              // Required: User adapter instance
+  verificationTokenAdapter, // Required: Verification token adapter
+  sendEmail: async (email, token) => {
+    // Required: Send password reset email with token
+    await sendPasswordResetEmail(email, token);
+  },
+});
+
+// Use in SvelteKit route
+export const POST = handler;
+```
+
+#### createPasswordResetConfirmHandler
+
+Creates a handler for confirming a password reset (step 2 of password reset flow).
+
+```javascript
+import { createPasswordResetConfirmHandler } from '@goobits/auth/handlers';
+
+const handler = createPasswordResetConfirmHandler({
+  userAdapter,              // Required: User adapter instance
+  verificationTokenAdapter, // Required: Verification token adapter
+  validatePassword,         // Optional: Custom password validator
+  onSuccess: async (user) => {
+    // Optional: Send confirmation email, etc.
+  },
+});
+
+// Use in SvelteKit route
+export const POST = handler;
+```
+
 ## Database Schema
 
 ### Required Tables
@@ -640,7 +754,7 @@ CREATE TABLE sessions (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- OAuth tokens table (optional, for token storage)
+-- OAuth tokens table (optional, for OAuth token storage)
 CREATE TABLE oauth_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -648,6 +762,16 @@ CREATE TABLE oauth_tokens (
   tokens TEXT NOT NULL,  -- Encrypted JSON
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Verification tokens table (optional, for email verification and password reset)
+CREATE TABLE verification_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token TEXT NOT NULL UNIQUE,
+  type TEXT NOT NULL,  -- e.g., 'email_verification', 'password_reset'
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 ```
 
@@ -680,6 +804,15 @@ export const oauthTokens = pgTable('oauth_tokens', {
   tokens: text('tokens').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const verificationTokens = pgTable('verification_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  type: text('type').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 ```
 
