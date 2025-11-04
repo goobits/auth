@@ -1,12 +1,15 @@
 # @goobits/auth
 
-Pluggable authentication system for SvelteKit applications with support for OAuth, sessions, and multiple storage backends.
+Pluggable authentication system for SvelteKit applications with support for OAuth, local auth (email/password), sessions, and multiple storage backends.
 
 ## Features
 
 - **Pluggable Adapters**: Database, session, and token storage adapters
 - **Multiple Backends**: Drizzle ORM, cookie-based, or bring your own
 - **OAuth Support**: Google, Apple, and extensible provider system
+- **Local Authentication**: Email/password signup, signin, and password management
+- **Password Security**: Argon2id hashing with configurable validation
+- **Email Verification**: Built-in verification token system for email and password reset flows
 - **Security First**: Automatic user sanitization, encrypted tokens, secure sessions
 - **Type Safe**: Full JSDoc/TypeScript support throughout
 - **SvelteKit Native**: Built specifically for SvelteKit with hooks integration
@@ -164,6 +167,198 @@ export const actions = {
 };
 ```
 
+## Local Authentication (Email/Password)
+
+### 1. Setup Credentials Provider
+
+```javascript
+// src/lib/auth/config.js
+import { CredentialsProvider } from '@goobits/auth/providers';
+import { DrizzleSessionAdapter, DrizzleUserAdapter, DrizzleVerificationTokenAdapter } from '@goobits/auth/adapters';
+import { validatePasswordStrength } from '@goobits/auth/utils';
+import { db } from '$lib/db';
+import { users, sessions, verificationTokens } from '$lib/db/schema';
+
+// Create adapters
+export const userAdapter = new DrizzleUserAdapter(db, {
+  usersTable: users,
+});
+
+export const sessionAdapter = new DrizzleSessionAdapter(db, {
+  sessionsTable: sessions,
+  usersTable: users,
+});
+
+export const verificationTokenAdapter = new DrizzleVerificationTokenAdapter(db, {
+  tokensTable: verificationTokens,
+  usersTable: users,
+});
+
+// Create credentials provider with custom password validation
+export const credentialsProvider = new CredentialsProvider({
+  validatePassword: validatePasswordStrength, // Optional custom validator
+});
+```
+
+### 2. Signup Route
+
+```javascript
+// src/routes/(auth)/sign-up/+page.server.js
+import { hashPassword } from '@goobits/auth/utils';
+import { sessionAdapter, userAdapter, verificationTokenAdapter, createUserVerificationToken, VERIFICATION_TOKEN_TYPES } from '$lib/auth/config.js';
+import { sendVerificationEmail } from '$lib/emails';
+import { redirect } from '@sveltejs/kit';
+
+export const actions = {
+  default: async ({ request, cookies }) => {
+    const formData = await request.formData();
+    const email = formData.get('email');
+    const password = formData.get('password');
+    const name = formData.get('name');
+
+    try {
+      // Check if user exists
+      const existingUser = await userAdapter.getUserByEmail(email);
+      if (existingUser) {
+        return { error: 'Email already in use' };
+      }
+
+      // Hash password
+      const passwordHash = await hashPassword(password);
+
+      // Create user
+      const user = await userAdapter.createUser(
+        { email, name, verified_email: false },
+        { password: passwordHash, provider: 'email' }
+      );
+
+      // Create session
+      const session = await sessionAdapter.createSession(user.id);
+      sessionAdapter.setSessionCookie(cookies, session);
+
+      // Send verification email
+      const token = await createUserVerificationToken({
+        userId: user.id,
+        type: VERIFICATION_TOKEN_TYPES.EMAIL_VERIFICATION,
+      });
+      await sendVerificationEmail(email, token);
+
+      throw redirect(303, '/dashboard');
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+};
+```
+
+### 3. Signin Route
+
+```javascript
+// src/routes/(auth)/sign-in/+page.server.js
+import { verifyPassword } from '@goobits/auth/utils';
+import { sessionAdapter, userAdapter } from '$lib/auth/config.js';
+import { redirect } from '@sveltejs/kit';
+
+export const actions = {
+  default: async ({ request, cookies }) => {
+    const formData = await request.formData();
+    const email = formData.get('email');
+    const password = formData.get('password');
+
+    try {
+      // Get user with password (use internal method)
+      const user = await userAdapter._getUserWithPassword(email);
+      if (!user || !user.password) {
+        return { error: 'Invalid email or password' };
+      }
+
+      // Verify password
+      const valid = await verifyPassword(user.password, password);
+      if (!valid) {
+        return { error: 'Invalid email or password' };
+      }
+
+      // Create session
+      const session = await sessionAdapter.createSession(user.id);
+      sessionAdapter.setSessionCookie(cookies, session);
+
+      throw redirect(303, '/dashboard');
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+};
+```
+
+### 4. Password Reset Request
+
+```javascript
+// src/routes/(auth)/password/reset/+page.server.js
+import { userAdapter, verificationTokenAdapter, createUserVerificationToken, VERIFICATION_TOKEN_TYPES } from '$lib/auth/config.js';
+import { sendPasswordResetEmail } from '$lib/emails';
+
+export const actions = {
+  default: async ({ request }) => {
+    const formData = await request.formData();
+    const email = formData.get('email');
+
+    try {
+      const user = await userAdapter.getUserByEmail(email);
+      if (!user) {
+        // Don't reveal user doesn't exist (security)
+        return { success: true };
+      }
+
+      const token = await createUserVerificationToken({
+        userId: user.id,
+        type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET,
+      });
+
+      await sendPasswordResetEmail(email, token);
+      return { success: true };
+    } catch (error) {
+      return { error: 'Failed to send reset email' };
+    }
+  }
+};
+```
+
+### 5. Password Reset Confirmation
+
+```javascript
+// src/routes/(auth)/password/reset/[token]/+page.server.js
+import { hashPassword } from '@goobits/auth/utils';
+import { userAdapter, consumeUserVerificationToken, VERIFICATION_TOKEN_TYPES } from '$lib/auth/config.js';
+import { redirect } from '@sveltejs/kit';
+
+export const actions = {
+  default: async ({ params, request }) => {
+    const formData = await request.formData();
+    const newPassword = formData.get('password');
+
+    try {
+      // Consume token and get user
+      const user = await consumeUserVerificationToken({
+        token: params.token,
+        type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET,
+      });
+
+      if (!user) {
+        return { error: 'Invalid or expired token' };
+      }
+
+      // Update password
+      const passwordHash = await hashPassword(newPassword);
+      await userAdapter.updateUser(user.id, { password: passwordHash });
+
+      throw redirect(303, '/sign-in?reset=success');
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+};
+```
+
 ## API Reference
 
 ### Adapters
@@ -315,7 +510,58 @@ const provider = new AppleProvider({
 });
 ```
 
+#### CredentialsProvider
+
+Local authentication provider for email/password authentication.
+
+```javascript
+import { CredentialsProvider } from '@goobits/auth/providers';
+
+const provider = new CredentialsProvider({
+  validatePassword: (password) => {  // Optional: custom password validator
+    const errors = [];
+    if (password.length < 8) errors.push('Too short');
+    return { valid: errors.length === 0, errors };
+  }
+});
+```
+
+**Methods:**
+
+- `authenticate({ email, password, userAdapter }): Promise<{ user, valid }>`
+  - Authenticate a user with email and password
+  - Returns user object and validity flag
+
+- `signUp({ email, password, name, metadata, userAdapter }): Promise<User>`
+  - Create a new user with email and password
+  - Password is automatically hashed with Argon2id
+  - Returns sanitized user object
+
+- `updatePassword({ userId, newPassword, userAdapter }): Promise<User>`
+  - Update user's password
+  - Password is automatically hashed
+
+- `changePassword({ email, currentPassword, newPassword, userAdapter }): Promise<{ user, valid }>`
+  - Change password after verifying current password
+  - Returns user object and validity flag
+
 ### Utilities
+
+#### Password Utilities
+
+```javascript
+import { hashPassword, verifyPassword, validatePasswordStrength } from '@goobits/auth/utils';
+
+// Hash a password
+const hash = await hashPassword('user-password');
+
+// Verify a password
+const isValid = await verifyPassword(storedHash, 'user-password');
+
+// Validate password strength
+const validation = validatePasswordStrength('weak');
+// Returns: { valid: false, errors: ['Password must be at least 8 characters...'] }
+```
 
 #### OAuth Helpers
 

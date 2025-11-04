@@ -1,5 +1,6 @@
 export { encryptTokens, decryptTokens, generateEncryptionKey } from "./crypto.js";
 export { sanitizeUser } from "./sanitize.js";
+export { hashPassword, verifyPassword, validatePasswordStrength } from "./password.js";
 export {
 	createOAuthCookies,
 	cleanupOAuthCookies,

@@ -37,9 +37,12 @@
     "drizzle-orm": "^0.44.0"
   },
   "dependencies": {
-    "arctic": "^3.7.0",
     "@oslojs/crypto": "^1.0.1",
-    "@oslojs/encoding": "^1.1.0"
+    "@oslojs/encoding": "^1.1.0",
+    "arctic": "^3.7.0",
+    "oslo": "^1.2.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "vitest": "^4.0.6"
+  }
 }

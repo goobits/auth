@@ -4,7 +4,7 @@ import { encodeBase64url } from "@oslojs/encoding";
 /**
  * Cookie-based Session Adapter
  * Simple session management using cookies only (no database)
- * Best for stateless applications like Quest Keeper
+ * Best for stateless applications or serverless deployments
  */
 export class CookieSessionAdapter extends SessionAdapter {
 	/**
