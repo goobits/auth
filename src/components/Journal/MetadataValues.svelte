@@ -27,9 +27,9 @@
 		display: inline-block;
 
 		.value {
-			background: #f2f2f2;
+			background: var(--tag-bg);
 			border-radius: 3px;
-			color: #666;
+			color: var(--muted);
 			display: inline-block;
 			font-size: 0.875rem;
 			margin: 0 0.25rem;
@@ -37,7 +37,7 @@
 			text-decoration: none;
 
 			&:hover {
-				background: #e5e5e5;
+				background: var(--tag-hover-bg);
 			}
 		}
 	}

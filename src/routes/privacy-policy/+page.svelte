@@ -2,7 +2,7 @@
     <title>Privacy Policy - MIKO.ART</title>
 </svelte:head>
 
-<div data-custom-class="body">
+<div data-custom-class="body" class="privacy-policy">
     <div class="hero">
         <h1>PRIVACY NOTICE</h1>
         <h2>Last updated
@@ -1565,3 +1565,25 @@
         </bdt>
     </div>
 </div>
+
+<style>
+	.privacy-policy {
+		color: var(--text);
+	}
+
+	.privacy-policy [style*="color: rgb(127, 127, 127)"] {
+		color: var(--muted) !important;
+	}
+
+	.privacy-policy [style*="color: rgb(0, 0, 0)"] {
+		color: var(--text) !important;
+	}
+
+	.privacy-policy [style*="color: rgb(48, 48, 241)"] {
+		color: var(--link) !important;
+	}
+
+	.privacy-policy a {
+		color: var(--link) !important;
+	}
+</style>

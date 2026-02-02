@@ -5,7 +5,7 @@
 <div class="hero">
     <style>
 		body {
-			background: #441f87;
+			background: var(--accent-bg);
 		}
 
 		main {
@@ -18,7 +18,7 @@
 			h2 {
 				line-height: 1.33em;
 				margin-top: 0;
-				color: white;
+				color: var(--button-text);
 				text-shadow: none;
 			}
 		}

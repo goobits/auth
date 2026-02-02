@@ -53,7 +53,7 @@
 		margin: 0 auto 1rem;
 
 		.back-btn {
-			color: #666;
+			color: var(--muted);
 			text-decoration: none;
 			font-family: "Source Serif Pro", serif;
 
@@ -84,7 +84,7 @@
 			height: auto;
 			margin-bottom: 2rem;
 			border-radius: 0.5rem;
-			border: 1px solid #d8d8d8;
+			border: 1px solid var(--border);
 		}
 
 		.header {
@@ -100,7 +100,7 @@
 
 			.metadata {
 				margin-top: 1rem;
-				color: #666;
+				color: var(--muted);
 			}
 		}
 	}

@@ -127,7 +127,7 @@ pre.line-numbers > code
 	left: -3.8em;
 	width: 3em; /* works for line-numbers below 1000 lines */
 	letter-spacing: -1px;
-	border-right: 1px solid #999;
+	border-right: 1px solid var(--comment);
 
 	-webkit-user-select: none;
 	-moz-user-select: none;
@@ -145,7 +145,7 @@ pre.line-numbers > code
 .line-numbers-rows > span:before
 {
 	content: counter(linenumber);
-	color: #999;
+	color: var(--comment);
 	display: block;
 	padding-right: 0.8em;
 	text-align: right;
@@ -507,32 +507,32 @@ pre[class*="language-"]
 
 .token.number
 {
-	color: rgba(189, 147, 249, 1);
+	color: var(--purple);
 }
 
 .token.operator
 {
-	color: rgba(139, 233, 253, 1);
+	color: var(--cyan);
 }
 
 .token.char
 {
-	color: rgba(255, 135, 157, 1);
+	color: var(--pink);
 }
 
 .token.symbol
 {
-	color: rgba(255, 184, 108, 1);
+	color: var(--orange);
 }
 
 .token.deleted
 {
-	color: #e2777a;
+	color: var(--red);
 }
 
 .token.namespace
 {
-	color: #e2777a;
+	color: var(--red);
 }
 
 /* Line Highlighter */

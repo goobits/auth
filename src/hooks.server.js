@@ -3,6 +3,8 @@ import path from 'path'
 import { redirect } from '@sveltejs/kit'
 import { redirects } from '@src/redirects.js'
 import { sequence } from '@sveltejs/kit/hooks'
+import { createThemeHooks } from '@goobits/themes/server'
+import { themeConfig } from '$lib/config/theme.js'
 
 /**
  * Handles serving index.html files for directory paths
@@ -85,9 +87,14 @@ async function handleRedirects({ event, resolve }) {
 /**
  * Combined request handler that processes redirects and serves index.html files
  */
+const themeHandle = createThemeHooks(themeConfig, {
+	blockingScript: true
+}).transform
+
 export const handle = sequence(
-	handleRedirects, // 1.
-	handleIndexHtml // 2.
+	themeHandle, // 1.
+	handleRedirects, // 2.
+	handleIndexHtml // 3.
 )
 
 /**

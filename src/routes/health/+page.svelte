@@ -22,11 +22,11 @@
 				font-weight: 500;
 
 				&.ok {
-					color: #22c55e;
+					color: var(--status-success-text);
 				}
 
 				&.error {
-					color: #ef4444;
+					color: var(--status-error-text);
 				}
 			}
 		}

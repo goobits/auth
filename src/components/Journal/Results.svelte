@@ -56,7 +56,7 @@
 		margin: 0 auto 1rem;
 
 		.back-btn {
-			color: #666;
+			color: var(--muted);
 			text-decoration: none;
 			font-family: "Source Serif Pro", serif;
 
@@ -80,7 +80,7 @@
 		font-family: "Playfair Display", serif;
 		font-size: 3rem;
 		line-height: 3rem;
-		background: rgba(0, 0, 0, 0.05);
+		background: var(--shadow-panel);
 		border-radius: 1rem;
 		padding: 1rem 2rem;
 		font-weight: 500;
@@ -109,6 +109,6 @@
 	time {
 		font-family: "Source Serif Pro", serif;
 		font-size: 1rem;
-		color: #666;
+		color: var(--muted);
 	}
 </style>

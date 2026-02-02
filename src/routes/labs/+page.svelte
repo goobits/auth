@@ -41,34 +41,34 @@
 	}
 
 	.listing {
-		background-color: #ffffff;
+		background-color: var(--lab-bg);
 		border-radius: 0 0 0.5rem 0.5rem;
 		display: grid;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+		box-shadow: 0 2px 4px var(--shadow-panel);
 
 		.lab-item {
 			display: flex;
 			align-items: center;
 			gap: 1rem;
             padding: 0.5rem 1rem;
-			background-color: #f8fafc;
+			background-color: var(--lab-item-bg);
 			border-radius: 0.5rem;
-			color: #2d3748;
+			color: var(--lab-item-text);
 			text-decoration: none;
 			transition: all 0.2s ease;
 
 			&:hover {
-				background-color: #edf2f7;
+				background-color: var(--lab-item-hover-bg);
 				transform: translateY(-1px);
-				box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+				box-shadow: 0 2px 4px var(--shadow-panel);
 
 				.folder-icon {
-					fill: #4299e1;
+					fill: var(--lab-icon-hover);
 				}
 			}
 
 			.folder-icon {
-				fill: #63b3ed;
+				fill: var(--lab-icon);
 				transition: fill 0.2s;
 			}
 

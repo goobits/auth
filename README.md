@@ -1,23 +1,23 @@
 ## Get started
 
 ```bash
-yarn
+pnpm install
 ```
 
 ## Development
 
 ```bash
-yarn dev
+pnpm dev
 ```
 
 ## Build
 
 ```bash
-yarn build
+pnpm build
 ```
 
 ## Production
 
 ```bash
-yarn start
+pnpm start
 ```

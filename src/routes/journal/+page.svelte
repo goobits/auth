@@ -45,7 +45,7 @@
 		font-family: "Playfair Display", serif;
 		font-size: 3rem;
 		line-height: 3rem;
-		border-bottom: 3px solid #d8d8d8;
+		border-bottom: 3px solid var(--border);
 		padding-bottom: 1rem;
 		font-weight: 500;
 		margin: 0 0 2rem;
@@ -63,7 +63,7 @@
 	time {
 		font-family: "Source Serif Pro", serif;
 		font-size: 1rem;
-		color: #666;
+		color: var(--muted);
 	}
 
 	a {
@@ -81,8 +81,8 @@
 
 	.category {
 		font-size: 0.875rem;
-		color: #666;
-		background: #f2f2f2;
+		color: var(--muted);
+		background: var(--tag-bg);
 		padding: 0.2rem 0.6rem;
 		border-radius: 3px;
 		margin-right: 0.5rem;
