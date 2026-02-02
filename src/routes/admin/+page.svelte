@@ -334,8 +334,7 @@
 	{#if viewBooking}
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<div class="modal-overlay" role="dialog" aria-modal="true" tabindex="-1" onclick={() => viewBooking = null} onkeydown={(e) => e.key === 'Escape' && (viewBooking = null)}>
-			<!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-			<div class="modal-card" onclick={(e) => e.stopPropagation()}>
+			<div class="modal-card" role="document" onkeydown={() => {}} onclick={(e) => e.stopPropagation()}>
 				<h3 class="modal-title">Booking details</h3>
 				<p class="modal-sub">Here's what we have on file.</p>
 				<div class="modal-rows">

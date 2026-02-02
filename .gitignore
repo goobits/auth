@@ -11,3 +11,11 @@
 /.svelte-kit
 /build
 node_modules/
+
+# Local dev artifacts
+.DS_Store
+.dev/
+.pnpm-store/
+.wrangler/
+tasks/
+vm.yaml
