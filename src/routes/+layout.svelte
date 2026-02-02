@@ -1,7 +1,12 @@
 <script>
 	import '../app.scss'
+	import '@goobits/themes/themes/bundle.css'
+	import { ThemeProvider, ThemeToggle } from '@goobits/themes/svelte'
+	import { themeConfig } from '$lib/config/theme.js'
 	import { onMount } from 'svelte'
 	import { page } from '$app/stores'
+
+	const { data } = $props()
 
 	onMount(() => {
 		// Toggle hamburger menu visibility
@@ -16,38 +21,43 @@
 	})
 </script>
 
-<header>
-	<center>
-		<logo>
-			<a href="/">
-				<img src="/media/logo.svg" alt="logo" />
-			</a>
-		</logo>
-		<links>
-			<a href="/" class:active={$page.url.pathname === '/'}>Home</a>
-			<a href="/about" class:active={$page.url.pathname === '/about'}>About</a>
-			<a href="/contact" class:active={$page.url.pathname === '/contact'}>Contact</a>
-		</links>
-	</center>
-</header>
+<ThemeProvider config={themeConfig} serverPreferences={data.preferences}>
+	<header>
+		<center>
+			<logo>
+				<a href="/">
+					<img src="/media/logo.svg" alt="logo" />
+				</a>
+			</logo>
+			<links>
+				<a href="/" class:active={$page.url.pathname === '/'}>Home</a>
+				<a href="/about" class:active={$page.url.pathname === '/about'}>About</a>
+				<a href="/contact" class:active={$page.url.pathname === '/contact'}>Contact</a>
+				<theme-toggle>
+					<ThemeToggle />
+				</theme-toggle>
+			</links>
+		</center>
+	</header>
 
-<main>
-	<slot />
-</main>
+	<main>
+		<slot />
+	</main>
 
-<footer>
-	<a href="/journal">Journal</a> &middot;
-	<a href="/labs">Labs</a> &middot;
-	<a href="/privacy-policy">Privacy Policy</a>
-	<br>
-	Copyright © {new Date().getFullYear()} by MIKO MEOW™. All rights reserved.
-</footer>
+	<footer>
+		<a href="/journal">Journal</a> &middot;
+		<a href="/labs">Labs</a> &middot;
+		<a href="/privacy-policy">Privacy Policy</a>
+		<br>
+		Copyright © {new Date().getFullYear()} by MIKO MEOW™. All rights reserved.
+	</footer>
+</ThemeProvider>
 
 <style>
 	header {
-		background: #361b68 url('/media/hexabump.png');
-		border-bottom: 1px solid #2b1259;
-		box-shadow: 0 0 10px -2px #361b68;
+		background: var(--header-bg) url('/media/hexabump.png');
+		border-bottom: 1px solid var(--border);
+		box-shadow: none;
 		display: block;
 		height: 120px;
 		line-height: 120px;
@@ -57,7 +67,7 @@
 
 		center {
 			margin: 0 auto;
-			max-width: 960px;
+			max-width: var(--max-width);
 			width: calc(100% - 2em);
 			height: inherit;
 
@@ -102,7 +112,7 @@
 					}
 
 					&:hover {
-						border-bottom: 3px solid #ff3c52;
+						border-bottom: 3px solid var(--link-hover);
 					}
 
 					&:visited {
@@ -118,8 +128,8 @@
 	}
 
 	footer {
-        background: #361b68 url('/media/hexabump.png');
-        border-top: 1px solid #2b1259;
+        background: var(--footer-bg) url('/media/hexabump.png');
+        border-top: 1px solid var(--border);
 		color: white;
 		display: block;
 		font-style: italic;
@@ -143,20 +153,10 @@
 	}
 
 	@media (max-width: 700px) {
-		main {
-			h1 {
-				font-size: 8vw;
-			}
-
-			h2 {
-				font-size: 5vw;
-			}
-		}
-
 		header {
 			center {
 				links {
-                    background: #361b68 url('/media/hexabump.png');
+                    background: var(--header-bg) url('/media/hexabump.png');
                     border-radius: 5px;
 					padding: 0 1em;
 					position: absolute;
@@ -192,6 +192,23 @@
 
 		footer {
 			font-size: max(1em, 2.5vw);
+		}
+	}
+
+	theme-toggle {
+		display: inline-flex;
+		align-items: center;
+		margin-left: 0.5em;
+		color: white;
+
+		:global(button) {
+			padding: 0;
+			background: transparent;
+		}
+
+		:global(svg) {
+			width: 24px;
+			height: 24px;
 		}
 	}
 </style>
