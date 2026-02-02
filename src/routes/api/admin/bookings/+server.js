@@ -1,9 +1,9 @@
 import { json } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.js'
 
-export async function GET({ url }) {
+export async function GET({ url, platform }) {
 	try {
-		const env = buildEnv()
+		const env = await buildEnv(platform)
 		const db = env.DB
 
 		// Get upcoming bookings (next 30 days by default)

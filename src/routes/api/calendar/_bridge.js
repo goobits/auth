@@ -1,20 +1,38 @@
-function jsonResponse(data, status = 200) {
-	return new Response(JSON.stringify(data), {
-		status,
-		headers: { 'Content-Type': 'application/json' }
-	})
-}
+import { dev } from '$app/environment'
 
-import { createSqliteDb } from '../../../lib/dev/sqliteDb.js'
+let cachedDevDb = null
 
-let cachedDb = null
-
-export function buildEnv() {
-	if (!cachedDb) {
-		cachedDb = createSqliteDb()
+/**
+ * Builds the environment object for API handlers.
+ *
+ * Production: Uses Cloudflare D1 from platform.env.DB
+ * Development: Falls back to local SQLite with D1-compatible wrapper
+ */
+export async function buildEnv(platform) {
+	// Cloudflare Pages provides bindings via platform.env
+	if (platform?.env?.DB) {
+		return {
+			...Object.fromEntries(
+				Object.entries(process.env).filter(([_, v]) => typeof v === 'string')
+			),
+			...platform.env
+		}
 	}
-	return {
-		...process.env,
-		DB: cachedDb
+
+	// Development fallback: use local SQLite
+	if (dev) {
+		if (!cachedDevDb) {
+			// Dynamic import - only executed in dev, tree-shaken in prod
+			const { createSqliteDb } = await import('$lib/dev/sqliteDb.js')
+			cachedDevDb = createSqliteDb()
+		}
+		return {
+			...process.env,
+			DB: cachedDevDb
+		}
 	}
+
+	throw new Error(
+		'Database not available. Ensure D1 is configured in wrangler.toml.'
+	)
 }

@@ -1,9 +1,9 @@
 import { json } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.js'
 
-export async function GET() {
+export async function GET({ platform }) {
 	try {
-		const env = buildEnv()
+		const env = await buildEnv(platform)
 		const db = env.DB
 
 		// Check if Google connection exists
@@ -15,13 +15,22 @@ export async function GET() {
 		const expiresAt = connection?.expires_at || null
 		const expired = expiresAt ? Date.now() > expiresAt : false
 
-		// Get current rules from env
+		// Get current rules from settings table, fallback to env
+		const settingsRes = await db.prepare(
+			`SELECT key, value FROM settings WHERE key IN ('hoursFrom', 'hoursTo', 'buffer', 'notice', 'capacity')`
+		).all()
+
+		const settings = {}
+		for (const row of settingsRes?.results || []) {
+			settings[row.key] = row.value
+		}
+
 		const rules = {
-			hoursFrom: env.BOOKING_HOURS_FROM || '06:00',
-			hoursTo: env.BOOKING_HOURS_TO || '22:00',
-			buffer: parseInt(env.BOOKING_BUFFER_MINUTES || '15', 10),
-			notice: parseInt(env.BOOKING_MIN_NOTICE_HOURS || '24', 10),
-			capacity: parseInt(env.BOOKING_CAPACITY || '4', 10)
+			hoursFrom: settings.hoursFrom || env.BOOKING_HOURS_FROM || '06:00',
+			hoursTo: settings.hoursTo || env.BOOKING_HOURS_TO || '22:00',
+			buffer: parseInt(settings.buffer || env.BOOKING_BUFFER_MINUTES || '15', 10),
+			notice: parseInt(settings.notice || env.BOOKING_MIN_NOTICE_HOURS || '24', 10),
+			capacity: parseInt(settings.capacity || env.BOOKING_CAPACITY || '4', 10)
 		}
 
 		return json({
