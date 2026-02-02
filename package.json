@@ -49,8 +49,10 @@
 	"packageManager": "pnpm@10.28.2",
 	"pnpm": {
 		"onlyBuiltDependencies": [
+			"@parcel/watcher",
 			"better-sqlite3",
 			"esbuild",
+			"sharp",
 			"workerd"
 		]
 	}
