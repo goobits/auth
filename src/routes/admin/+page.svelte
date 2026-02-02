@@ -1,6 +1,6 @@
 <script>
 	import { onMount } from 'svelte'
-	import './Admin.scss'
+	import { Clock, Calendar, Check, RefreshCw, Save, ChevronRight } from '@lucide/svelte'
 
 	let tab = $state('dash')
 	let hours = $state({ from: '06:00', to: '22:00' })
@@ -22,9 +22,11 @@
 		{ label: 'Calendar', id: 'cal' }
 	]
 
+	const adminCode = import.meta.env.VITE_ADMIN_PASSCODE || ''
+
 	async function loadStatus() {
 		try {
-			const res = await fetch('/api/admin/status')
+			const res = await fetch(`/api/admin/status?code=${adminCode}`)
 			const data = await res.json()
 			if (data.ok) {
 				connected = data.google?.connected ?? false
@@ -45,7 +47,7 @@
 		loading = true
 		error = ''
 		try {
-			const res = await fetch('/api/admin/bookings')
+			const res = await fetch(`/api/admin/bookings?code=${adminCode}`)
 			const data = await res.json()
 			if (data.ok) {
 				bookings = data.bookings || []
@@ -67,7 +69,14 @@
 	}
 
 	async function reconnect() {
-		window.location.href = '/api/calendar/oauth-start'
+		const res = await fetch(`/api/calendar/oauth-start?code=${adminCode}`)
+		const data = await res.json()
+		if (data.authUrl) {
+			window.location.href = data.authUrl
+		} else {
+			console.error('Failed to start OAuth:', data.error)
+			error = data.error?.message || 'Failed to connect to Google'
+		}
 	}
 
 	onMount(() => {
@@ -80,8 +89,7 @@
 	<title>Admin - Rainbow Gym</title>
 </svelte:head>
 
-<div class="admin-root">
-	<div class="admin-shell">
+<div class="admin-shell">
 		<!-- Sidebar -->
 		<aside class="sidebar">
 			<div class="side-title">Manage</div>
@@ -92,9 +100,9 @@
 					onclick={() => tab = n.id}
 				>
 					{#if n.id === 'dash'}
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+						<Clock size={16} strokeWidth={1.8} />
 					{:else}
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+						<Calendar size={16} strokeWidth={1.8} />
 					{/if}
 					{n.label}
 				</button>
@@ -131,7 +139,7 @@
 						<h3 class="section-title">Google Calendar</h3>
 						<span class="badge" class:connected={connected && !connectionExpired}>
 							{#if connected && !connectionExpired}
-								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+								<Check size={14} strokeWidth={2.5} />
 								Connected
 							{:else if connected && connectionExpired}
 								Token expired
@@ -143,7 +151,7 @@
 					<p class="section-desc">Availability and bookings stay in sync with your Google Calendar — automatically.</p>
 					<div class="btn-row">
 						<button class="btn-sec" onclick={reconnect}>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6"/><path d="M2.5 22v-6h6"/><path d="M2.5 11.5a10 10 0 0 1 18.8-4.3"/><path d="M21.5 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+							<RefreshCw size={14} />
 							{connected ? 'Reconnect' : 'Connect'}
 						</button>
 					</div>
@@ -190,7 +198,10 @@
 							</div>
 						</div>
 					</div>
-					<button class="btn-pri" onclick={save}>Save rules</button>
+					<button class="btn-sec" onclick={save}>
+						<Save size={12} />
+						Save rules
+					</button>
 				</div>
 
 				<!-- Bookings -->
@@ -221,7 +232,7 @@
 									<span class="badge" class:confirmed={b.status === 'confirmed'} class:pending={b.status === 'pending'}>
 										{b.status === 'confirmed' ? 'Confirmed' : 'Pending'}
 									</span>
-									<svg class="booking-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+									<ChevronRight class="booking-arrow" size={14} />
 								</button>
 								{#if i < bookings.length - 1}
 									<div class="booking-divider"></div>
@@ -240,7 +251,7 @@
 						<h3 class="section-title">Google Calendar</h3>
 						<span class="badge" class:connected={connected && !connectionExpired}>
 							{#if connected && !connectionExpired}
-								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+								<Check size={14} strokeWidth={2.5} />
 								Connected
 							{:else if connected && connectionExpired}
 								Token expired
@@ -252,7 +263,7 @@
 					<p class="section-desc">Your bookings automatically appear on your calendar. Blocked times on your calendar automatically remove availability from clients.</p>
 					<div class="btn-row">
 						<button class="btn-sec" onclick={reconnect}>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6"/><path d="M2.5 22v-6h6"/><path d="M2.5 11.5a10 10 0 0 1 18.8-4.3"/><path d="M21.5 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+							<RefreshCw size={14} />
 							Reconnect
 						</button>
 					</div>
@@ -310,8 +321,7 @@
 	<!-- Save toast -->
 	{#if saved}
 		<div class="toast">
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+			<Check size={14} strokeWidth={2.5} />
 			Rules saved successfully.
 		</div>
 	{/if}
-</div>
