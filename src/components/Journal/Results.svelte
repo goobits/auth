@@ -5,7 +5,8 @@
 	export let posts = []
 	export let category = ''
 	export let showBackButton = true
-	export let type = 'category' // 'category' or 'tag'
+	/** @type {'category' | 'tag'} */
+	export const type = 'category'
 
 	const formatValue = (value) => {
 		return value.split('-')

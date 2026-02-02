@@ -284,13 +284,13 @@
 	<!-- Calendar -->
 	<section class="section">
 		<div class="calendar-header">
-			<button class="month-btn" onclick={prevMonth}>
+			<button class="month-btn" onclick={prevMonth} aria-label="Previous month">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<polyline points="15 18 9 12 15 6"/>
 				</svg>
 			</button>
 			<h2 class="month-label">{monthLabel}</h2>
-			<button class="month-btn" onclick={nextMonth}>
+			<button class="month-btn" onclick={nextMonth} aria-label="Next month">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 					<polyline points="9 18 15 12 9 6"/>
 				</svg>

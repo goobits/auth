@@ -3,6 +3,8 @@ import path from 'path'
 import { dev } from '$app/environment'
 import { getJournalPosts } from '$lib/posts'
 
+export const prerender = true
+
 const ROUTES_DIR = 'src/routes'
 
 // Categories to hide in production

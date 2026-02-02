@@ -7,9 +7,9 @@
 	let collapsedCategories = $state({})
 	let viewMode = $state('detailed')
 
-	const availableTags = data.isDev
+	const availableTags = $derived(data.isDev
 		? ['SSR', 'CSR', 'Dynamic', 'Auth', 'NoIndex', 'API', 'Layout']
-		: ['SSR', 'CSR', 'Dynamic', 'Layout']
+		: ['SSR', 'CSR', 'Dynamic', 'Layout'])
 
 	const categoryOrder = [
 		'Main Pages',

@@ -559,6 +559,22 @@ input[type="number"] {
 	z-index: 100;
 }
 
+// Spinner animation
+:global(.spin) {
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+
+// Disabled state
+button:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
 // Responsive
 @media (max-width: 600px) {
 	.admin-shell {

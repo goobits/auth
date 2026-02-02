@@ -6,7 +6,7 @@
     <div class="hero">
         <h1>PRIVACY NOTICE</h1>
         <h2>Last updated
-            <bdt class="question">January 21, 2022
+            <bdt class="question">January 21, 2022</bdt>
         </h2>
     </div>
 

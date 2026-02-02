@@ -6,7 +6,7 @@
 	import { onMount } from 'svelte'
 	import { page } from '$app/stores'
 
-	const { data } = $props()
+	const { data, children } = $props()
 
 	onMount(() => {
 		// Toggle hamburger menu visibility
@@ -41,15 +41,16 @@
 	</header>
 
 	<main>
-		<slot />
+		{@render children()}
 	</main>
 
 	<footer>
-		<a href="/journal">Journal</a> &middot;
-		<a href="/labs">Labs</a> &middot;
-		<a href="/privacy-policy">Privacy Policy</a>
-		<br>
-		Copyright © {new Date().getFullYear()} by MIKO MEOW™. All rights reserved.
+		<nav>
+			<a href="/journal">Journal</a>
+			<a href="/labs">Labs</a>
+			<a href="/privacy-policy">Privacy</a>
+		</nav>
+		<small>© {new Date().getFullYear()} Miko Meow™</small>
 	</footer>
 </ThemeProvider>
 
@@ -119,36 +120,51 @@
 						color: white;
 					}
 				}
-
-				img {
-					width: 40px;
-				}
 			}
 		}
 	}
 
 	footer {
-        background: var(--footer-bg) url('/media/hexabump.png');
-        border-top: 1px solid var(--border);
+		background: var(--footer-bg) url('/media/hexabump.png');
+		border-top: 1px solid var(--border);
 		color: white;
-		display: block;
-		font-style: italic;
-		font-weight: 100;
-		line-height: 3rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1rem;
 		letter-spacing: 0.05em;
 		margin-top: 3rem;
-		padding: 2rem 0;
-		text-align: center;
-		white-space: nowrap;
+		padding: 2.5rem 1rem;
 		width: 100vw;
+
+		nav {
+			display: flex;
+			gap: 2rem;
+		}
 
 		a {
 			color: white;
 			font-weight: 300;
+			text-decoration: none;
+			text-transform: uppercase;
+			font-size: 0.9rem;
+			border-bottom: 2px solid transparent;
+			padding-bottom: 2px;
+			transition: border-color 0.2s;
+
+			&:hover {
+				border-color: white;
+			}
 
 			&:visited {
 				color: white;
 			}
+		}
+
+		small {
+			color: rgba(255, 255, 255, 0.6);
+			font-size: 0.8rem;
+			font-weight: 300;
 		}
 	}
 
@@ -171,14 +187,12 @@
 					}
 
 					:global(&.open) {
-						a,
-						a[aria-current] {
+						a {
 							display: block;
 						}
 					}
 
-					a,
-					a[aria-current] {
+					a {
 						margin: 0;
 						border-bottom: none !important;
 						text-align: left;
@@ -191,7 +205,13 @@
 		}
 
 		footer {
-			font-size: max(1em, 2.5vw);
+			nav {
+				gap: 1.5rem;
+			}
+
+			a {
+				font-size: 0.85rem;
+			}
 		}
 	}
 

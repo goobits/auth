@@ -4,6 +4,17 @@ import { getJournalPosts } from '$lib/posts'
 export const prerender = true
 export const trailingSlash = 'always'
 
+export async function entries() {
+	const posts = await getJournalPosts()
+	const tags = new Set()
+	for (const post of posts) {
+		for (const tag of post.metadata.fm.tags || []) {
+			tags.add(tag)
+		}
+	}
+	return [...tags].map(slug => ({ slug }))
+}
+
 export async function load({ params }) {
 	const { slug } = params
 	if (!slug) throw error(404)
@@ -14,5 +25,5 @@ export async function load({ params }) {
 	)
 
 	if (!posts.length) throw error(404)
-	return { posts, category: slug }
+	return { posts, tag: slug }
 }

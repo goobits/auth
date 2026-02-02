@@ -2,8 +2,10 @@
 	import MetadataValues from '@components/Journal/MetadataValues.svelte'
 
 	const { data } = $props()
-	const rawImage = data.post.metadata.fm.coverImage || ''
-	const coverImage = rawImage.startsWith('http') || rawImage.startsWith('/') ? rawImage : `images/${ rawImage }`
+	const coverImage = $derived.by(() => {
+		const rawImage = data.post.metadata.fm.coverImage || ''
+		return rawImage.startsWith('http') || rawImage.startsWith('/') ? rawImage : `images/${rawImage}`
+	})
 </script>
 
 <svelte:head>

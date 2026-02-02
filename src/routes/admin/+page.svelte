@@ -1,6 +1,6 @@
 <script>
 	import { onMount } from 'svelte'
-	import { Clock, Calendar, Check, RefreshCw, Save, ChevronRight } from '@lucide/svelte'
+	import { Clock, Calendar, Check, RefreshCw, Save, ChevronRight, Loader } from '@lucide/svelte'
 
 	let tab = $state('dash')
 	let hours = $state({ from: '06:00', to: '22:00' })
@@ -8,6 +8,8 @@
 	let notice = $state(24)
 	let capacity = $state(4)
 	let saved = $state(false)
+	let saving = $state(false)
+	let canceling = $state(false)
 	let viewBooking = $state(null)
 	let hover = $state(null)
 	let connected = $state(false)
@@ -62,10 +64,55 @@
 		}
 	}
 
-	function save() {
-		// TODO: Save rules to API when endpoint is ready
-		saved = true
-		setTimeout(() => saved = false, 2200)
+	async function save() {
+		saving = true
+		try {
+			const res = await fetch(`/api/admin/rules?code=${adminCode}`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					hoursFrom: hours.from,
+					hoursTo: hours.to,
+					buffer,
+					notice,
+					capacity
+				})
+			})
+			const data = await res.json()
+			if (data.ok) {
+				saved = true
+				setTimeout(() => saved = false, 2200)
+			} else {
+				error = data.error?.message || 'Failed to save rules'
+			}
+		} catch (err) {
+			error = err.message || 'Failed to save rules'
+		} finally {
+			saving = false
+		}
+	}
+
+	async function cancelBooking(bookingId) {
+		if (!confirm('Are you sure you want to cancel this booking?')) return
+		canceling = true
+		try {
+			const res = await fetch(`/api/admin/cancel?code=${adminCode}`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ bookingId })
+			})
+			const data = await res.json()
+			if (data.ok) {
+				viewBooking = null
+				await loadBookings()
+			} else {
+				error = data.error?.message || 'Failed to cancel booking'
+			}
+		} catch (err) {
+			error = err.message || 'Failed to cancel booking'
+		} finally {
+			canceling = false
+		}
 	}
 
 	async function reconnect() {
@@ -166,41 +213,52 @@
 					<div class="fields-grid">
 						<div class="fields-row">
 							<div class="field">
-								<label class="field-label">Operating hours</label>
+								<span class="field-label">Operating hours</span>
 								<div class="time-row">
-									<input type="time" bind:value={hours.from} />
+									<input type="time" bind:value={hours.from} aria-label="Opening time" />
 									<span class="time-sep">to</span>
-									<input type="time" bind:value={hours.to} />
+									<input type="time" bind:value={hours.to} aria-label="Closing time" />
 								</div>
 							</div>
 						</div>
 						<div class="fields-row">
 							<div class="field">
-								<label class="field-label">Buffer between slots</label>
-								<div class="input-wrap">
-									<input type="number" min="0" bind:value={buffer} />
-									<span class="input-suffix">min</span>
-								</div>
+								<label class="field-label">
+									Buffer between slots
+									<div class="input-wrap">
+										<input type="number" min="0" bind:value={buffer} />
+										<span class="input-suffix">min</span>
+									</div>
+								</label>
 							</div>
 							<div class="field">
-								<label class="field-label">Minimum notice</label>
-								<div class="input-wrap">
-									<input type="number" min="1" bind:value={notice} />
-									<span class="input-suffix">hrs</span>
-								</div>
+								<label class="field-label">
+									Minimum notice
+									<div class="input-wrap">
+										<input type="number" min="1" bind:value={notice} />
+										<span class="input-suffix">hrs</span>
+									</div>
+								</label>
 							</div>
 							<div class="field">
-								<label class="field-label">Capacity per slot</label>
-								<div class="input-wrap">
-									<input type="number" min="1" bind:value={capacity} />
-									<span class="input-suffix">people</span>
-								</div>
+								<label class="field-label">
+									Capacity per slot
+									<div class="input-wrap">
+										<input type="number" min="1" bind:value={capacity} />
+										<span class="input-suffix">people</span>
+									</div>
+								</label>
 							</div>
 						</div>
 					</div>
-					<button class="btn-sec" onclick={save}>
-						<Save size={12} />
-						Save rules
+					<button class="btn-sec" onclick={save} disabled={saving}>
+						{#if saving}
+							<Loader size={12} class="spin" />
+							Saving...
+						{:else}
+							<Save size={12} />
+							Save rules
+						{/if}
 					</button>
 				</div>
 
@@ -274,7 +332,9 @@
 
 	<!-- Booking detail modal -->
 	{#if viewBooking}
-		<div class="modal-overlay" onclick={() => viewBooking = null}>
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<div class="modal-overlay" role="dialog" aria-modal="true" tabindex="-1" onclick={() => viewBooking = null} onkeydown={(e) => e.key === 'Escape' && (viewBooking = null)}>
+			<!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 			<div class="modal-card" onclick={(e) => e.stopPropagation()}>
 				<h3 class="modal-title">Booking details</h3>
 				<p class="modal-sub">Here's what we have on file.</p>
@@ -312,7 +372,14 @@
 				</div>
 				<div class="modal-actions">
 					<button class="btn-pri" onclick={() => viewBooking = null}>Done</button>
-					<button class="btn-sec danger">Cancel booking</button>
+					<button class="btn-sec danger" onclick={() => cancelBooking(viewBooking.id)} disabled={canceling}>
+						{#if canceling}
+							<Loader size={12} class="spin" />
+							Canceling...
+						{:else}
+							Cancel booking
+						{/if}
+					</button>
 				</div>
 			</div>
 		</div>
