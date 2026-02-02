@@ -440,10 +440,11 @@ main {
 }
 
 .admin-panel {
-	border: 1px solid var(--panel-border);
-	border-radius: 8px;
-	padding: 1rem;
-	background: var(--panel-bg);
+	border: none;
+	border-radius: 0;
+	padding: 0;
+	background: transparent;
+	overflow: visible;
 }
 
 .admin-grid {
