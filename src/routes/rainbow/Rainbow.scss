@@ -1,14 +1,5 @@
 // Rainbow - Dark sleek design shared across all rainbow pages
 
-// Force dark background for rainbow pages
-:global(body) {
-	background: #000 !important;
-}
-
-:global(main) {
-	background: #000 !important;
-}
-
 // Hide the default site header/footer on rainbow pages
 :global(header),
 :global(footer) {
@@ -381,4 +372,713 @@
 	color: rgba(245, 245, 247, 0.36);
 	font-size: 13px;
 	margin-top: 20px;
+}
+
+// Calendar Header
+.calendar-header {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 24px;
+	margin-bottom: 32px;
+	position: relative;
+}
+
+.today-btn {
+	position: absolute;
+	right: 0;
+	padding: 8px 16px;
+	border-radius: 20px;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	background: rgba(255, 255, 255, 0.04);
+	color: rgba(245, 245, 247, 0.7);
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+
+	&:hover {
+		background: rgba(255, 255, 255, 0.08);
+		border-color: rgba(255, 255, 255, 0.2);
+		color: #f5f5f7;
+	}
+}
+
+.month-btn {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	background: rgba(255, 255, 255, 0.03);
+	color: rgba(245, 245, 247, 0.7);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s ease;
+	padding: 0;
+
+	svg {
+		width: 20px;
+		height: 20px;
+	}
+
+	&:hover {
+		background: rgba(255, 255, 255, 0.08);
+		border-color: rgba(255, 255, 255, 0.2);
+		color: #f5f5f7;
+	}
+}
+
+.month-label {
+	font-size: 24px;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	color: #f5f5f7;
+	margin: 0;
+	min-width: 200px;
+	text-align: center;
+}
+
+// Calendar Grid
+.calendar {
+	background: rgba(255, 255, 255, 0.02);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	border-radius: 24px;
+	padding: 24px;
+	overflow: hidden;
+}
+
+.calendar-weekdays {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 8px;
+	margin-bottom: 12px;
+
+	span {
+		text-align: center;
+		font-size: 13px;
+		font-weight: 600;
+		color: rgba(245, 245, 247, 0.4);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		padding: 12px 0;
+	}
+}
+
+.calendar-grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 8px;
+}
+
+.calendar-day {
+	aspect-ratio: 1;
+	border-radius: 16px;
+	border: 1px solid transparent;
+	background: transparent;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 8px;
+	position: relative;
+	min-height: 70px;
+
+	&:hover:not(:disabled) {
+		background: rgba(255, 255, 255, 0.06);
+	}
+
+	&.other-month {
+		opacity: 0.2;
+		pointer-events: none;
+	}
+
+	&.past {
+		opacity: 0.3;
+		cursor: default;
+	}
+
+	&.today {
+		.day-num {
+			background: rgba(100, 80, 255, 0.3);
+			border-radius: 50%;
+			width: 40px;
+			height: 40px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+	}
+
+	&.selected {
+		background: rgba(100, 80, 255, 0.15);
+		border-color: rgba(100, 80, 255, 0.5);
+
+		.day-num {
+			color: #fff;
+		}
+	}
+
+	&.has-slots:not(.past) {
+		cursor: pointer;
+
+		.day-num {
+			color: #f5f5f7;
+		}
+	}
+
+	&:disabled:not(.other-month):not(.past) {
+		opacity: 0.4;
+	}
+}
+
+.day-num {
+	font-size: 18px;
+	font-weight: 500;
+	color: rgba(245, 245, 247, 0.5);
+	line-height: 1;
+}
+
+.day-dots {
+	display: flex;
+	gap: 4px;
+	height: 8px;
+
+	.dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: linear-gradient(135deg, #a78bfa, #60a5fa);
+	}
+}
+
+// Time Slots
+.slots-section {
+	margin-top: 32px;
+}
+
+.slots-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	margin-bottom: 16px;
+
+	h3 {
+		font-size: 18px;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+		color: #f5f5f7;
+		margin: 0;
+	}
+}
+
+.slots-count {
+	font-size: 13px;
+	color: rgba(245, 245, 247, 0.36);
+}
+
+.slots-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+	gap: 8px;
+}
+
+.slot-btn {
+	padding: 10px 8px;
+	border-radius: 10px;
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	background: rgba(255, 255, 255, 0.03);
+	cursor: pointer;
+	transition: all 0.25s ease;
+	text-align: center;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+
+	&:hover:not(.full):not(.active) {
+		background: rgba(255, 255, 255, 0.06);
+		border-color: rgba(255, 255, 255, 0.12);
+	}
+
+	&.active {
+		background: rgba(100, 80, 255, 0.15);
+		border-color: rgba(100, 80, 255, 0.5);
+	}
+
+	&.full {
+		opacity: 0.3;
+		cursor: default;
+		background: rgba(255, 255, 255, 0.015);
+	}
+}
+
+.slot-time {
+	font-size: 13px;
+	font-weight: 500;
+	color: #f5f5f7;
+	letter-spacing: -0.01em;
+}
+
+.slot-avail {
+	font-size: 10px;
+	color: rgba(100, 200, 130, 0.7);
+	font-weight: 500;
+}
+
+.slot-full {
+	display: inline-block;
+	font-size: 9px;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: rgba(245, 245, 247, 0.24);
+	background: rgba(255, 255, 255, 0.04);
+	border-radius: 4px;
+	padding: 2px 6px;
+}
+
+.check-icon {
+	position: absolute;
+	top: 4px;
+	right: 6px;
+	width: 14px;
+	height: 14px;
+	color: #a78bfa;
+}
+
+// Form Card
+.form-card {
+	background: rgba(255, 255, 255, 0.03);
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	border-radius: 20px;
+	padding: 36px 32px;
+	max-width: 480px;
+	margin: 0 auto;
+	position: relative;
+	overflow: hidden;
+
+	h2 {
+		font-size: 22px;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+		color: #f5f5f7;
+		margin: 0 0 4px;
+	}
+}
+
+.form-glow {
+	position: absolute;
+	top: -80px;
+	right: -80px;
+	width: 200px;
+	height: 200px;
+	border-radius: 50%;
+	background: radial-gradient(circle, rgba(100, 80, 255, 0.06), transparent 70%);
+	pointer-events: none;
+}
+
+.form-glow-circus {
+	background: radial-gradient(circle, rgba(255, 100, 150, 0.06), transparent 70%);
+}
+
+.form-glow-adventure {
+	background: radial-gradient(circle, rgba(80, 200, 120, 0.06), transparent 70%);
+}
+
+.form-glow-movie {
+	background: radial-gradient(circle, rgba(255, 180, 50, 0.06), transparent 70%);
+}
+
+.form-sub {
+	font-size: 14px;
+	color: rgba(245, 245, 247, 0.48);
+	margin: 0 0 24px;
+	font-weight: 400;
+}
+
+.selected-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	background: rgba(100, 80, 255, 0.1);
+	border: 1px solid rgba(100, 80, 255, 0.25);
+	border-radius: 10px;
+	padding: 8px 14px;
+	font-size: 13px;
+	color: rgba(167, 139, 250, 0.9);
+	font-weight: 500;
+	margin-bottom: 24px;
+
+	svg {
+		width: 16px;
+		height: 16px;
+	}
+}
+
+.form-fields {
+	display: grid;
+	gap: 14px;
+	margin-bottom: 20px;
+
+	label {
+		display: grid;
+		gap: 6px;
+
+		span {
+			font-size: 12px;
+			font-weight: 500;
+			color: rgba(245, 245, 247, 0.56);
+			letter-spacing: 0.01em;
+		}
+
+		&.has-error {
+			input,
+			textarea {
+				border-color: rgba(248, 113, 113, 0.5);
+			}
+
+			span:first-child {
+				color: #f87171;
+			}
+		}
+	}
+
+	input,
+	textarea {
+		width: 100%;
+		padding: 10px 14px;
+		border-radius: 10px;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: rgba(255, 255, 255, 0.04);
+		color: #f5f5f7;
+		font-size: 15px;
+		font-family: inherit;
+		outline: none;
+		transition: border-color 0.2s, background 0.2s;
+		box-sizing: border-box;
+		-webkit-appearance: none;
+		margin: 0;
+
+		&::placeholder {
+			color: rgba(245, 245, 247, 0.28);
+		}
+
+		&:focus {
+			border-color: rgba(100, 80, 255, 0.4);
+			background: rgba(255, 255, 255, 0.06);
+		}
+	}
+
+	textarea {
+		resize: vertical;
+		min-height: 64px;
+	}
+
+	.seats-input {
+		max-width: 80px;
+	}
+
+	.field-error {
+		font-size: 11px;
+		color: #f87171;
+		margin-top: -2px;
+	}
+}
+
+.rainbow-page .primary-btn {
+	width: 100%;
+	padding: 12px 20px;
+	border-radius: 12px;
+	border: none;
+	font-size: 15px;
+	font-weight: 600;
+	font-family: inherit;
+	cursor: default;
+	background: rgba(255, 255, 255, 0.06);
+	color: rgba(255, 255, 255, 0.24);
+	transition: all 0.3s ease;
+	letter-spacing: -0.01em;
+
+	&.enabled {
+		cursor: pointer;
+		background: linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #60a5fa 100%);
+		color: #fff;
+		box-shadow: 0 2px 20px rgba(100, 80, 255, 0.25);
+
+		&:hover {
+			transform: scale(1.01);
+		}
+	}
+}
+
+.form-error {
+	margin-top: 14px;
+	color: #f87171;
+	font-size: 13px;
+	text-align: center;
+}
+
+// Success Card
+.success-card {
+	text-align: center;
+	padding: 40px 24px;
+}
+
+.success-icon {
+	width: 52px;
+	height: 52px;
+	border-radius: 50%;
+	background: linear-gradient(135deg, rgba(100, 200, 130, 0.15), rgba(100, 200, 130, 0.05));
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: 0 auto 16px;
+	color: #6bc88a;
+
+	svg {
+		width: 22px;
+		height: 22px;
+	}
+}
+
+.success-time {
+	font-size: 14px;
+	color: rgba(245, 245, 247, 0.56);
+	margin: 8px 0;
+	line-height: 1.5;
+}
+
+.success-email {
+	font-size: 13px;
+	color: rgba(245, 245, 247, 0.36);
+	margin: 0 0 10px;
+}
+
+.success-link {
+	margin: 0 0 24px;
+
+	a {
+		color: #a78bfa;
+		font-size: 13px;
+
+		&:hover {
+			color: #c4b5fd;
+		}
+	}
+}
+
+.success-card .primary-btn {
+	max-width: 180px;
+	margin: 0 auto;
+	display: block;
+}
+
+// Cancel UI
+.cancel-card {
+	margin-top: 20px;
+}
+
+.cancel-box {
+	margin: 20px 0 10px;
+	padding: 16px;
+	border-radius: 14px;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.cancel-title {
+	font-weight: 600;
+	margin: 0 0 6px;
+}
+
+.cancel-sub {
+	margin: 0 0 12px;
+	color: rgba(245, 245, 247, 0.6);
+}
+
+.cancel-code {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+	font-size: 12px;
+	padding: 10px 12px;
+	border-radius: 10px;
+	background: rgba(0, 0, 0, 0.35);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	word-break: break-all;
+}
+
+.cancel-actions {
+	display: flex;
+	gap: 10px;
+	margin-top: 12px;
+	flex-wrap: wrap;
+}
+
+.cancel-status {
+	margin-top: 10px;
+	color: rgba(245, 245, 247, 0.7);
+}
+
+.cancel-inputs {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.cancel-input {
+	flex: 1 1 260px;
+	background: #0c0c0f;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 10px;
+	padding: 0.75rem 0.85rem;
+	color: #f5f5f7;
+	outline: none;
+}
+
+.ghost {
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	background: transparent;
+	padding: 10px 20px;
+	border-radius: 999px;
+	color: rgba(245, 245, 247, 0.56);
+	font-size: 14px;
+	cursor: pointer;
+	transition: all 0.2s;
+	font-family: inherit;
+
+	&:hover {
+		border-color: rgba(255, 255, 255, 0.24);
+		color: #f5f5f7;
+	}
+
+	&.danger {
+		border-color: rgba(248, 113, 113, 0.3);
+		color: rgba(248, 113, 113, 0.8);
+
+		&:hover {
+			border-color: rgba(248, 113, 113, 0.5);
+			color: #f87171;
+		}
+	}
+}
+
+.error {
+	color: #f87171;
+}
+
+.center-btn {
+	display: block;
+	margin: 16px auto 0;
+}
+
+// Modal
+.modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.6);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 50;
+	padding: 24px;
+}
+
+.modal-card {
+	width: min(420px, 100%);
+	background: #0f0f11;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 16px;
+	padding: 20px;
+	box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+.modal-title {
+	margin: 0 0 8px;
+	font-size: 20px;
+}
+
+.modal-sub {
+	margin: 0 0 16px;
+	color: rgba(245, 245, 247, 0.7);
+}
+
+.modal-actions {
+	display: flex;
+	gap: 12px;
+	justify-content: flex-end;
+	flex-wrap: wrap;
+}
+
+// Calendar responsive
+@media (max-width: 700px) {
+	.calendar-header {
+		gap: 12px;
+	}
+
+	.month-label {
+		font-size: 20px;
+		min-width: 160px;
+	}
+
+	.calendar {
+		padding: 16px;
+		border-radius: 16px;
+	}
+
+	.calendar-weekdays {
+		gap: 4px;
+
+		span {
+			font-size: 11px;
+			padding: 8px 0;
+		}
+	}
+
+	.calendar-grid {
+		gap: 4px;
+	}
+
+	.calendar-day {
+		border-radius: 10px;
+		min-height: 50px;
+		gap: 4px;
+		padding: 4px;
+	}
+
+	.day-num {
+		font-size: 14px;
+	}
+
+	.calendar-day.today .day-num {
+		width: 30px;
+		height: 30px;
+	}
+
+	.day-dots {
+		gap: 2px;
+
+		.dot {
+			width: 4px;
+			height: 4px;
+		}
+	}
+
+	.slots-grid {
+		grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+	}
+
+	.form-card {
+		padding: 28px 20px;
+	}
+
+	.cancel-inputs {
+		flex-direction: column;
+		align-items: stretch;
+	}
 }
