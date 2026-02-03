@@ -1,9 +1,14 @@
 import { json } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.js'
+import { requireAdminSession, unauthorized } from '../_helpers.js'
 
-export async function GET({ platform }) {
+export async function GET({ platform, request }) {
 	try {
 		const env = await buildEnv(platform)
+		const auth = await requireAdminSession({ env, request })
+		if (!auth.ok) {
+			return unauthorized()
+		}
 		const db = env.DB
 
 		// Check if Google connection exists
@@ -33,7 +38,7 @@ export async function GET({ platform }) {
 			capacity: parseInt(settings.capacity || env.BOOKING_CAPACITY || '4', 10)
 		}
 
-		return json({
+		const response = json({
 			ok: true,
 			google: {
 				connected,
@@ -41,7 +46,8 @@ export async function GET({ platform }) {
 				expiresAt
 			},
 			rules
-		})
+		}, auth.setCookie ? { headers: { 'Set-Cookie': auth.setCookie } } : undefined)
+		return response
 	} catch (err) {
 		console.error('Admin status error:', err)
 		return json({ ok: false, error: { message: err.message } }, { status: 500 })

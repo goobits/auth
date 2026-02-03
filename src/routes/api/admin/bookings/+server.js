@@ -1,9 +1,14 @@
 import { json } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.js'
+import { requireAdminSession, unauthorized } from '../_helpers.js'
 
-export async function GET({ url, platform }) {
+export async function GET({ url, platform, request }) {
 	try {
 		const env = await buildEnv(platform)
+		const auth = await requireAdminSession({ env, request })
+		if (!auth.ok) {
+			return unauthorized()
+		}
 		const db = env.DB
 
 		// Get upcoming bookings (next 30 days by default)
@@ -18,8 +23,9 @@ export async function GET({ url, platform }) {
 			 FROM bookings
 			 WHERE status IN ('confirmed', 'pending')
 			 AND start_at >= ?
+			 AND start_at <= ?
 			 ORDER BY start_at ASC`
-		).bind(start).all()
+		).bind(start, end).all()
 
 		const bookings = (res?.results ?? []).map(row => ({
 			id: row.id,
@@ -41,7 +47,7 @@ export async function GET({ url, platform }) {
 			seats: bookings.reduce((sum, b) => sum + (b.seats || 1), 0)
 		}
 
-		return json({ ok: true, bookings, stats })
+		return json({ ok: true, bookings, stats }, auth.setCookie ? { headers: { 'Set-Cookie': auth.setCookie } } : undefined)
 	} catch (err) {
 		console.error('Admin bookings error:', err)
 		return json({ ok: false, error: { message: err.message } }, { status: 500 })

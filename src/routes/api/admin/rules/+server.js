@@ -1,19 +1,15 @@
 import { json } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.js'
+import { requireAdminSession, unauthorized } from '../_helpers.js'
 
-export async function POST({ request, url, platform }) {
+export async function POST({ request, platform }) {
 	try {
 		const env = await buildEnv(platform)
-		const db = env.DB
-
-		// Check admin auth
-		const expectedCode = env.ADMIN_PASSCODE || ''
-		if (expectedCode) {
-			const code = url.searchParams.get('code') || ''
-			if (code !== expectedCode) {
-				return json({ ok: false, error: { message: 'Unauthorized' } }, { status: 401 })
-			}
+		const auth = await requireAdminSession({ env, request })
+		if (!auth.ok) {
+			return unauthorized()
 		}
+		const db = env.DB
 
 		const { hoursFrom, hoursTo, buffer, notice, capacity } = await request.json()
 		const now = Date.now()
@@ -34,7 +30,7 @@ export async function POST({ request, url, platform }) {
 			).bind(key, value, now).run()
 		}
 
-		return json({ ok: true })
+		return json({ ok: true }, auth.setCookie ? { headers: { 'Set-Cookie': auth.setCookie } } : undefined)
 	} catch (err) {
 		console.error('Admin rules save error:', err)
 		return json({ ok: false, error: { message: err.message } }, { status: 500 })

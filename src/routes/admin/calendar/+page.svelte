@@ -2,7 +2,8 @@
 	let authUrl = ''
 	let error = ''
 	let status = ''
-	let passcode = ''
+	let authed = false
+	let authChecking = true
 	let connected = false
 
 	if (typeof window !== 'undefined') {
@@ -14,11 +15,19 @@
 				window.location.href = '/rainbow-gym'
 			}, 1200)
 		}
-		const stored = window.localStorage.getItem('admin-passcode') || ''
-		passcode = stored
-		if (!stored && import.meta.env.DEV && import.meta.env.VITE_ADMIN_PASSCODE) {
-			passcode = import.meta.env.VITE_ADMIN_PASSCODE
-			window.localStorage.setItem('admin-passcode', passcode)
+		checkAuth()
+	}
+
+	async function checkAuth() {
+		authChecking = true
+		try {
+			const res = await fetch('/api/admin/me')
+			const data = await res.json()
+			authed = !!data.authenticated
+		} catch {
+			authed = false
+		} finally {
+			authChecking = false
 		}
 	}
 
@@ -26,12 +35,10 @@
 		status = ''
 		error = ''
 		try {
-			if (passcode && typeof window !== 'undefined') {
-				window.localStorage.setItem('admin-passcode', passcode)
+			if (!authed) {
+				throw new Error('Admin session required. Please log in at /admin.')
 			}
-			const res = await fetch('/api/calendar/oauth-start', {
-				headers: passcode ? { 'x-admin-code': passcode } : {}
-			})
+			const res = await fetch('/api/calendar/oauth-start')
 			const data = await res.json()
 			if (!res.ok) throw new Error(data.error?.message || 'Failed to start OAuth')
 			authUrl = data.authUrl
@@ -49,11 +56,13 @@
 <section>
 	<h2>Calendar Connection</h2>
 	<p class="muted">Connect Google Calendar to unlock booking availability.</p>
-	<label>
-		Passcode
-		<input type="password" bind:value={passcode} placeholder="Admin passcode" />
-	</label>
-	<button on:click={connect}>Connect Google Calendar</button>
+	{#if authChecking}
+		<p class="muted">Checking admin session...</p>
+	{:else if !authed}
+		<p class="error">Admin session required. Visit /admin to log in.</p>
+	{:else}
+		<button on:click={connect}>Connect Google Calendar</button>
+	{/if}
 	{#if status}
 		<p>{status}</p>
 	{/if}
