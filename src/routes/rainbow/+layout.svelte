@@ -6,12 +6,21 @@
 	const { data, children } = $props()
 
 	const navItems = [
-		{ href: '/rainbow', label: 'Home', exact: true },
 		{ href: '/rainbow/gym', label: 'Gym' },
 		{ href: '/rainbow/circus', label: 'Circus' },
 		{ href: '/rainbow/adventure', label: 'Adventure' },
 		{ href: '/rainbow/movie-night', label: 'Movies' }
 	]
+
+	// Client-side auth check - redirect to login if no user (except on login page)
+	$effect(() => {
+		const pathname = $page.url.pathname
+		const isLoginPage = pathname === '/rainbow/login' || pathname === '/rainbow/login/'
+		if (!data.user && !isLoginPage) {
+			const redirectTo = encodeURIComponent(pathname)
+			goto(`/rainbow/login?redirect=${redirectTo}`)
+		}
+	})
 
 	function isActive(href, exact = false) {
 		if (exact) return $page.url.pathname === href || $page.url.pathname === href + '/'
@@ -26,25 +35,27 @@
 
 <div class="rainbow-layout">
 	<nav class="rainbow-nav">
-		<a href="/rainbow" class="nav-brand">Rainbow</a>
-		<div class="nav-links">
-			{#each navItems as item}
-				<a
-					href={item.href}
-					class:active={isActive(item.href, item.exact)}
-				>
-					{item.label}
-				</a>
-			{/each}
-		</div>
-		<div class="nav-user">
-			{#if data.user}
-				{#if data.user.avatarUrl}
-					<img src={data.user.avatarUrl} alt="" class="avatar" />
+		<div class="nav-inner">
+			<a href="/rainbow" class="nav-brand">Rainbow</a>
+			<div class="nav-links">
+				{#each navItems as item}
+					<a
+						href={item.href}
+						class:active={isActive(item.href, item.exact)}
+					>
+						{item.label}
+					</a>
+				{/each}
+			</div>
+			<div class="nav-user">
+				{#if data.user}
+					{#if data.user.avatarUrl}
+						<img src={data.user.avatarUrl} alt="" class="avatar" />
+					{/if}
+					<span class="user-name">{data.user.name || data.user.email}</span>
+					<button onclick={logout} class="logout-btn">Logout</button>
 				{/if}
-				<span class="user-name">{data.user.name || data.user.email}</span>
-				<button onclick={logout} class="logout-btn">Logout</button>
-			{/if}
+			</div>
 		</div>
 	</nav>
 
@@ -58,22 +69,27 @@
 		min-height: 100vh;
 		display: flex;
 		flex-direction: column;
-		background: #000;
 	}
 
 	.rainbow-nav {
 		background: rgba(255, 255, 255, 0.02);
 		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-		padding: 0 24px;
-		height: 56px;
-		display: flex;
-		align-items: center;
-		gap: 32px;
+		width: 100%;
 		position: sticky;
 		top: 0;
 		z-index: 100;
 		backdrop-filter: blur(20px);
 		-webkit-backdrop-filter: blur(20px);
+	}
+
+	.nav-inner {
+		max-width: var(--max-width, 1060px);
+		margin: 0 auto;
+		padding: 0 24px;
+		height: 56px;
+		display: flex;
+		align-items: center;
+		gap: 32px;
 	}
 
 	.nav-brand {
@@ -152,18 +168,15 @@
 
 	.rainbow-main {
 		flex: 1;
-		background: #000;
 	}
 
 	@media (max-width: 700px) {
-		.rainbow-nav {
-			padding: 0 16px;
+		.nav-inner {
+			padding: 12px 16px;
 			gap: 16px;
 			height: auto;
 			min-height: 56px;
 			flex-wrap: wrap;
-			padding-top: 12px;
-			padding-bottom: 12px;
 		}
 
 		.nav-links {

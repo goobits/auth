@@ -1,6 +1,6 @@
 {
 	"name": "miko-art",
-	"version": "1.0.64",
+	"version": "1.0.71",
 	"private": true,
 	"workspaces": [
 		"packages/*"
