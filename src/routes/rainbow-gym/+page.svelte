@@ -25,6 +25,10 @@
 	let formEl = $state(null)
 	let fieldErrors = $state({})
 	let touched = $state({})
+	let cancelToken = $state('')
+	let cancelStatus = $state('')
+	let canceling = $state(false)
+	let showCancelModal = $state(false)
 
 	const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
 	const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -224,6 +228,7 @@
 		if (!validateForm() || !selectedSlot) return
 		status = ''
 		eventLink = ''
+		cancelStatus = ''
 
 		try {
 			const res = await fetch('/api/calendar/book', {
@@ -245,9 +250,55 @@
 
 			status = 'booked'
 			eventLink = data.eventLink || ''
+			cancelToken = data.cancelToken || ''
 			await loadAvailability()
 		} catch (err) {
 			status = err.message || 'Booking failed'
+		}
+	}
+
+	async function cancelBooking() {
+		if (!cancelToken) return
+		canceling = true
+		cancelStatus = ''
+		try {
+			const res = await fetch('/api/calendar/cancel', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ cancelToken })
+			})
+			const data = await res.json()
+			if (!res.ok) throw new Error(data.error?.message || 'Cancel failed')
+			cancelStatus = 'Booking canceled.'
+			status = ''
+			eventLink = ''
+			await loadAvailability()
+		} catch (err) {
+			cancelStatus = err.message || 'Cancel failed'
+		} finally {
+			canceling = false
+		}
+	}
+
+	function requestCancel() {
+		if (!cancelToken) return
+		showCancelModal = true
+	}
+
+	function confirmCancel() {
+		showCancelModal = false
+		cancelBooking()
+	}
+
+	async function copyCancelLink() {
+		if (typeof window === 'undefined' || !cancelToken) return
+		const url = new URL(window.location.href)
+		url.searchParams.set('cancel', cancelToken)
+		try {
+			await navigator.clipboard.writeText(url.toString())
+			cancelStatus = 'Cancel link copied.'
+		} catch {
+			cancelStatus = 'Copy failed. You can copy the code below.'
 		}
 	}
 
@@ -260,11 +311,22 @@
 		note = ''
 		status = ''
 		eventLink = ''
+		cancelToken = ''
+		cancelStatus = ''
 		fieldErrors = {}
 		touched = {}
 	}
 
-	onMount(loadAvailability)
+	onMount(() => {
+		if (typeof window !== 'undefined') {
+			const params = new URLSearchParams(window.location.search)
+			const token = params.get('cancel')
+			if (token) {
+				cancelToken = token
+			}
+		}
+		loadAvailability()
+	})
 </script>
 
 <svelte:head>
@@ -470,8 +532,59 @@
 				{#if eventLink}
 					<p class="success-link"><a href={eventLink} target="_blank" rel="noreferrer">View in Google Calendar</a></p>
 				{/if}
+				{#if cancelToken}
+					<div class="cancel-box">
+						<p class="cancel-title">Need to cancel later?</p>
+						<p class="cancel-sub">Save this cancel code or copy your private cancel link. If you don’t get the calendar email, use the link below.</p>
+						<div class="cancel-code">{cancelToken}</div>
+						<div class="cancel-actions">
+							<button class="ghost" onclick={copyCancelLink}>Copy cancel link</button>
+							<button class="ghost danger" onclick={requestCancel} disabled={canceling}>
+								{canceling ? 'Canceling…' : 'Cancel this booking'}
+							</button>
+						</div>
+						{#if cancelStatus}
+							<p class="cancel-status">{cancelStatus}</p>
+						{/if}
+					</div>
+				{/if}
 				<button class="primary-btn enabled" onclick={reset}>Book another</button>
 			</div>
 		</section>
+	{/if}
+
+	<!-- Cancel by code -->
+	<section class="section">
+		<div class="form-card cancel-card">
+			<h2>Cancel a booking</h2>
+			<p class="form-sub">Paste your cancel code if you need to cancel a reservation.</p>
+			<div class="cancel-inputs">
+				<input
+					class="cancel-input"
+					placeholder="Cancel code"
+					bind:value={cancelToken}
+				/>
+				<button class="ghost danger" onclick={requestCancel} disabled={!cancelToken || canceling}>
+					{canceling ? 'Canceling…' : 'Cancel booking'}
+				</button>
+			</div>
+			{#if cancelStatus}
+				<p class="cancel-status">{cancelStatus}</p>
+			{/if}
+		</div>
+	</section>
+	{#if showCancelModal}
+		<div class="modal-overlay" role="dialog" aria-modal="true" tabindex="-1" onclick={() => showCancelModal = false} onkeydown={(e) => e.key === 'Escape' && (showCancelModal = false)}>
+			<div class="modal-card" role="document" onkeydown={() => {}} onclick={(e) => e.stopPropagation()}>
+				<h3 class="modal-title">Cancel booking?</h3>
+				<p class="modal-sub">This will free up your spot immediately.</p>
+				<div class="modal-actions">
+					<button class="ghost" onclick={() => showCancelModal = false}>Keep booking</button>
+					<button class="ghost danger" onclick={confirmCancel} disabled={canceling}>
+						{canceling ? 'Canceling…' : 'Yes, cancel'}
+					</button>
+				</div>
+			</div>
+		</div>
 	{/if}
 </div>
