@@ -1,5 +1,5 @@
 <script>
-	const { data } = $props()
+	import BookingCalendar from '$lib/booking/BookingCalendar.svelte'
 </script>
 
 <svelte:head>
@@ -14,15 +14,5 @@
 		<p class="sub">Outdoor excursions and group adventures in the Pacific Northwest.</p>
 	</section>
 
-	<section class="section">
-		<div class="content-card">
-			<div class="card-glow"></div>
-			<h2>Coming Soon</h2>
-			<p>
-				Join us for hiking trips, camping weekends, kayaking adventures,
-				and more. Explore the beautiful outdoors with a friendly group
-				of adventurers.
-			</p>
-		</div>
-	</section>
+	<BookingCalendar activityName="Rainbow Adventure" glowClass="form-glow-adventure" />
 </div>

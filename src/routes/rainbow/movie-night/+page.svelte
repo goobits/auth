@@ -1,5 +1,5 @@
 <script>
-	const { data } = $props()
+	import BookingCalendar from '$lib/booking/BookingCalendar.svelte'
 </script>
 
 <svelte:head>
@@ -14,15 +14,5 @@
 		<p class="sub">Community movie screenings and cozy film nights.</p>
 	</section>
 
-	<section class="section">
-		<div class="content-card">
-			<div class="card-glow"></div>
-			<h2>Coming Soon</h2>
-			<p>
-				RSVP for upcoming screenings, vote on what to watch next,
-				and enjoy movies with friends. From cult classics to new releases,
-				there's always something good playing.
-			</p>
-		</div>
-	</section>
+	<BookingCalendar activityName="Movie Night" glowClass="form-glow-movie" />
 </div>

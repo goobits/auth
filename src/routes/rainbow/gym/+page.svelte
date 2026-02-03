@@ -1,5 +1,5 @@
 <script>
-	const { data } = $props()
+	import BookingCalendar from '$lib/booking/BookingCalendar.svelte'
 </script>
 
 <svelte:head>
@@ -14,24 +14,5 @@
 		<p class="sub">Grab a time slot and let's do something fun together.</p>
 	</section>
 
-	<section class="section">
-		<div class="content-card">
-			<div class="card-glow"></div>
-			<h2>Book a Session</h2>
-			<p>
-				The booking calendar is coming soon. You'll be able to reserve
-				equipment, book training sessions, and coordinate workout times
-				with friends.
-			</p>
-			<div class="card-actions">
-				<a href="/rainbow-gym" class="primary-btn">Use Classic Booking</a>
-			</div>
-		</div>
-	</section>
+	<BookingCalendar activityName="Rainbow Gym" />
 </div>
-
-<style>
-	.card-actions {
-		margin-top: 24px;
-	}
-</style>
