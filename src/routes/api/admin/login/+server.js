@@ -15,7 +15,15 @@ export async function POST({ request, platform }) {
 			return json({ ok: false, error: { message: 'Unauthorized' } }, { status: 401 })
 		}
 
-		const { token, expiresAt } = await createAdminSession({ db: env.DB })
+		let ttlSeconds = 60 * 24 * 60 * 60
+		if (env.ADMIN_SESSION_TTL_DAYS) {
+			const days = Number.parseInt(env.ADMIN_SESSION_TTL_DAYS, 10)
+			if (Number.isFinite(days)) ttlSeconds = days * 24 * 60 * 60
+		} else if (env.ADMIN_SESSION_TTL_SECONDS) {
+			const seconds = Number.parseInt(env.ADMIN_SESSION_TTL_SECONDS, 10)
+			if (Number.isFinite(seconds)) ttlSeconds = seconds
+		}
+		const { token, expiresAt } = await createAdminSession({ db: env.DB, ttlSeconds })
 		const secure = env.NODE_ENV !== 'development'
 		const cookie = getAdminSessionCookie(token, expiresAt, { secure })
 

@@ -4,13 +4,15 @@ import { getAdminSessionCookie, parseAdminSessionCookie, validateAdminSession } 
 const DEFAULT_ROTATE_DAYS = 14
 
 function getTtlSeconds(env) {
-	const raw = env.ADMIN_SESSION_TTL_DAYS || env.ADMIN_SESSION_TTL_SECONDS || '60'
-	const days = Number.parseInt(raw, 10)
-	if (Number.isFinite(days) && raw === String(days)) {
-		return days * 24 * 60 * 60
+	if (env.ADMIN_SESSION_TTL_DAYS) {
+		const days = Number.parseInt(env.ADMIN_SESSION_TTL_DAYS, 10)
+		return Number.isFinite(days) ? days * 24 * 60 * 60 : 60 * 24 * 60 * 60
 	}
-	const seconds = Number.parseInt(raw, 10)
-	return Number.isFinite(seconds) ? seconds : 60 * 24 * 60 * 60
+	if (env.ADMIN_SESSION_TTL_SECONDS) {
+		const seconds = Number.parseInt(env.ADMIN_SESSION_TTL_SECONDS, 10)
+		return Number.isFinite(seconds) ? seconds : 60 * 24 * 60 * 60
+	}
+	return 60 * 24 * 60 * 60
 }
 
 function getRotateSeconds(env) {

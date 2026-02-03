@@ -6,8 +6,14 @@ export async function GET({ request, platform }) {
 	try {
 		const env = await buildEnv(platform)
 		const token = parseAdminSessionCookie(request.headers.get('cookie'))
-		const ttlDays = Number.parseInt(env.ADMIN_SESSION_TTL_DAYS || '60', 10)
-		const ttlSeconds = Number.isFinite(ttlDays) ? ttlDays * 24 * 60 * 60 : 60 * 24 * 60 * 60
+		let ttlSeconds = 60 * 24 * 60 * 60
+		if (env.ADMIN_SESSION_TTL_DAYS) {
+			const days = Number.parseInt(env.ADMIN_SESSION_TTL_DAYS, 10)
+			if (Number.isFinite(days)) ttlSeconds = days * 24 * 60 * 60
+		} else if (env.ADMIN_SESSION_TTL_SECONDS) {
+			const seconds = Number.parseInt(env.ADMIN_SESSION_TTL_SECONDS, 10)
+			if (Number.isFinite(seconds)) ttlSeconds = seconds
+		}
 		const rotateDays = Number.parseInt(env.ADMIN_SESSION_ROTATE_DAYS || '14', 10)
 		const rotateAfterSeconds = Number.isFinite(rotateDays) ? rotateDays * 24 * 60 * 60 : 14 * 24 * 60 * 60
 		const result = await validateAdminSession({ db: env.DB, token, ttlSeconds, rotateAfterSeconds })
