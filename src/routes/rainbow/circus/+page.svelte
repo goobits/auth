@@ -2,56 +2,23 @@
 	const { data } = $props()
 </script>
 
-<div class="activity-page">
-	<h1>Circus</h1>
-	<p class="description">Aerial arts, acrobatics, and circus skills training.</p>
+<div class="rainbow-page">
+	<section class="hero">
+		<div class="glow glow-circus"></div>
+		<p class="eyebrow eyebrow-circus">Rainbow Circus</p>
+		<h1>Fly high. Spin fast.<br/>Be brave.</h1>
+		<p class="sub">Aerial arts and circus skills training for all levels.</p>
+	</section>
 
-	<div class="content-card">
-		<h2>Coming Soon</h2>
-		<p>
-			Circus class booking is being developed.
-			You'll be able to sign up for aerial silks, trapeze,
-			acrobatics, and other circus arts classes.
-		</p>
-	</div>
+	<section class="section">
+		<div class="content-card">
+			<div class="card-glow"></div>
+			<h2>Coming Soon</h2>
+			<p>
+				Sign up for aerial silks, trapeze, lyra, and acrobatics classes.
+				Whether you're a complete beginner or looking to advance your skills,
+				there's something here for you.
+			</p>
+		</div>
+	</section>
 </div>
-
-<style>
-	.activity-page {
-		max-width: 800px;
-		margin: 0 auto;
-	}
-
-	h1 {
-		font-size: 2rem;
-		margin-bottom: 0.5rem;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	h1::before {
-		content: '🎪';
-	}
-
-	.description {
-		color: var(--text-secondary, #666);
-		margin-bottom: 2rem;
-	}
-
-	.content-card {
-		background: var(--card-bg, white);
-		border: 1px solid var(--border, #e0e0e0);
-		border-radius: 12px;
-		padding: 2rem;
-	}
-
-	.content-card h2 {
-		font-size: 1.25rem;
-		margin-bottom: 1rem;
-	}
-
-	.content-card p {
-		color: var(--text-secondary, #666);
-	}
-</style>

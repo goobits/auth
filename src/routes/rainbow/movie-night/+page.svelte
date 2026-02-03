@@ -2,56 +2,23 @@
 	const { data } = $props()
 </script>
 
-<div class="activity-page">
-	<h1>Movie Night</h1>
-	<p class="description">Community movie nights and film screenings.</p>
+<div class="rainbow-page">
+	<section class="hero">
+		<div class="glow glow-movie"></div>
+		<p class="eyebrow eyebrow-movie">Movie Night</p>
+		<h1>Grab some snacks.<br/>Watch together.</h1>
+		<p class="sub">Community movie screenings and cozy film nights.</p>
+	</section>
 
-	<div class="content-card">
-		<h2>Coming Soon</h2>
-		<p>
-			Movie night scheduling is being developed.
-			You'll be able to RSVP for upcoming screenings,
-			suggest movies, and see what's playing next.
-		</p>
-	</div>
+	<section class="section">
+		<div class="content-card">
+			<div class="card-glow"></div>
+			<h2>Coming Soon</h2>
+			<p>
+				RSVP for upcoming screenings, vote on what to watch next,
+				and enjoy movies with friends. From cult classics to new releases,
+				there's always something good playing.
+			</p>
+		</div>
+	</section>
 </div>
-
-<style>
-	.activity-page {
-		max-width: 800px;
-		margin: 0 auto;
-	}
-
-	h1 {
-		font-size: 2rem;
-		margin-bottom: 0.5rem;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	h1::before {
-		content: '🎬';
-	}
-
-	.description {
-		color: var(--text-secondary, #666);
-		margin-bottom: 2rem;
-	}
-
-	.content-card {
-		background: var(--card-bg, white);
-		border: 1px solid var(--border, #e0e0e0);
-		border-radius: 12px;
-		padding: 2rem;
-	}
-
-	.content-card h2 {
-		font-size: 1.25rem;
-		margin-bottom: 1rem;
-	}
-
-	.content-card p {
-		color: var(--text-secondary, #666);
-	}
-</style>
