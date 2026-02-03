@@ -1,6 +1,6 @@
 <script>
 	import { onMount } from 'svelte'
-	import { Clock, Calendar, Check, RefreshCw, Save, ChevronRight, Loader } from '@lucide/svelte'
+	import { Clock, Calendar, Check, RefreshCw, Save, ChevronRight, Loader, Users } from '@lucide/svelte'
 
 	let tab = $state('dash')
 	let hours = $state({ from: '06:00', to: '22:00' })
@@ -18,17 +18,79 @@
 	let stats = $state({ upcoming: 0, seats: 0 })
 	let loading = $state(true)
 	let error = $state('')
+	let authed = $state(false)
+	let authChecking = $state(true)
+	let passcode = $state('')
+	let authError = $state('')
+
+	// Rainbow tab state
+	let rainbowInvites = $state([])
+	let rainbowUsers = $state([])
+	let rainbowLoading = $state(false)
+	let rainbowError = $state('')
+	let inviteEmail = $state('')
+	let inviteUses = $state(1)
+	let inviteExpires = $state(7)
+	let creatingInvite = $state(false)
 
 	const NAV = [
 		{ label: 'Dashboard', id: 'dash' },
-		{ label: 'Calendar', id: 'cal' }
+		{ label: 'Calendar', id: 'cal' },
+		{ label: 'Rainbow', id: 'rainbow' }
 	]
 
-	const adminCode = import.meta.env.VITE_ADMIN_PASSCODE || ''
+	async function checkAuth() {
+		authChecking = true
+		authError = ''
+		try {
+			const res = await fetch('/api/admin/me')
+			const data = await res.json()
+			authed = !!data.authenticated
+		} catch (err) {
+			authError = err.message || 'Failed to check session'
+			authed = false
+		} finally {
+			authChecking = false
+		}
+	}
+
+	async function login() {
+		authError = ''
+		try {
+			const res = await fetch('/api/admin/login', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ passcode })
+			})
+			const data = await res.json()
+			if (data.ok) {
+				authed = true
+				passcode = ''
+				await loadStatus()
+				await loadBookings()
+			} else {
+				authError = data.error?.message || 'Login failed'
+			}
+		} catch (err) {
+			authError = err.message || 'Login failed'
+		}
+	}
+
+	async function logout() {
+		try {
+			await fetch('/api/admin/logout', { method: 'POST' })
+		} finally {
+			authed = false
+		}
+	}
 
 	async function loadStatus() {
 		try {
-			const res = await fetch(`/api/admin/status?code=${adminCode}`)
+			const res = await fetch('/api/admin/status')
+			if (res.status === 401) {
+				authed = false
+				return
+			}
 			const data = await res.json()
 			if (data.ok) {
 				connected = data.google?.connected ?? false
@@ -49,7 +111,11 @@
 		loading = true
 		error = ''
 		try {
-			const res = await fetch(`/api/admin/bookings?code=${adminCode}`)
+			const res = await fetch('/api/admin/bookings')
+			if (res.status === 401) {
+				authed = false
+				return
+			}
 			const data = await res.json()
 			if (data.ok) {
 				bookings = data.bookings || []
@@ -67,7 +133,7 @@
 	async function save() {
 		saving = true
 		try {
-			const res = await fetch(`/api/admin/rules?code=${adminCode}`, {
+			const res = await fetch('/api/admin/rules', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -78,6 +144,10 @@
 					capacity
 				})
 			})
+			if (res.status === 401) {
+				authed = false
+				return
+			}
 			const data = await res.json()
 			if (data.ok) {
 				saved = true
@@ -96,11 +166,15 @@
 		if (!confirm('Are you sure you want to cancel this booking?')) return
 		canceling = true
 		try {
-			const res = await fetch(`/api/admin/cancel?code=${adminCode}`, {
+			const res = await fetch('/api/admin/cancel', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ bookingId })
 			})
+			if (res.status === 401) {
+				authed = false
+				return
+			}
 			const data = await res.json()
 			if (data.ok) {
 				viewBooking = null
@@ -116,7 +190,11 @@
 	}
 
 	async function reconnect() {
-		const res = await fetch(`/api/calendar/oauth-start?code=${adminCode}`)
+		const res = await fetch('/api/calendar/oauth-start')
+		if (res.status === 401) {
+			authed = false
+			return
+		}
 		const data = await res.json()
 		if (data.authUrl) {
 			window.location.href = data.authUrl
@@ -126,9 +204,98 @@
 		}
 	}
 
+	async function loadRainbowData() {
+		rainbowLoading = true
+		rainbowError = ''
+		try {
+			const [invitesRes, usersRes] = await Promise.all([
+				fetch(`/api/rainbow/admin/invites?code=${adminCode}`),
+				fetch(`/api/rainbow/admin/users?code=${adminCode}`)
+			])
+			const invitesData = await invitesRes.json()
+			const usersData = await usersRes.json()
+
+			if (invitesData.ok) rainbowInvites = invitesData.invites || []
+			else rainbowError = invitesData.error?.message || 'Failed to load invites'
+
+			if (usersData.ok) rainbowUsers = usersData.users || []
+			else rainbowError = usersData.error?.message || 'Failed to load users'
+		} catch (err) {
+			rainbowError = err.message || 'Failed to load Rainbow data'
+		} finally {
+			rainbowLoading = false
+		}
+	}
+
+	async function createInvite() {
+		creatingInvite = true
+		rainbowError = ''
+		try {
+			const res = await fetch(`/api/rainbow/admin/invites?code=${adminCode}`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					email: inviteEmail || null,
+					uses: inviteUses,
+					expiresInDays: inviteExpires
+				})
+			})
+			const data = await res.json()
+			if (data.ok) {
+				inviteEmail = ''
+				inviteUses = 1
+				inviteExpires = 7
+				await loadRainbowData()
+			} else {
+				rainbowError = data.error?.message || 'Failed to create invite'
+			}
+		} catch (err) {
+			rainbowError = err.message || 'Failed to create invite'
+		} finally {
+			creatingInvite = false
+		}
+	}
+
+	async function deleteInvite(id) {
+		if (!confirm('Delete this invite?')) return
+		try {
+			const res = await fetch(`/api/rainbow/admin/invites?code=${adminCode}&id=${id}`, {
+				method: 'DELETE'
+			})
+			const data = await res.json()
+			if (data.ok) {
+				await loadRainbowData()
+			} else {
+				rainbowError = data.error?.message || 'Failed to delete invite'
+			}
+		} catch (err) {
+			rainbowError = err.message || 'Failed to delete invite'
+		}
+	}
+
+	function copyInviteLink(code) {
+		const url = `${window.location.origin}/rainbow/login?invite=${code}`
+		navigator.clipboard.writeText(url)
+	}
+
+	function formatDate(timestamp) {
+		if (!timestamp) return 'Never'
+		return new Date(timestamp * 1000).toLocaleDateString()
+	}
+
 	onMount(() => {
-		loadStatus()
-		loadBookings()
+		checkAuth().then(() => {
+			if (authed) {
+				loadStatus()
+				loadBookings()
+			}
+		})
+	})
+
+	$effect(() => {
+		if (tab === 'rainbow') {
+			loadRainbowData()
+		}
 	})
 </script>
 
@@ -136,6 +303,28 @@
 	<title>Admin - Rainbow Gym</title>
 </svelte:head>
 
+{#if authChecking}
+	<div class="admin-login">
+		<div class="login-card">
+			<div class="login-title">Admin access</div>
+			<div class="login-sub">Checking session…</div>
+		</div>
+	</div>
+{:else if !authed}
+	<div class="admin-login">
+		<div class="login-card">
+			<div class="login-title">Admin access</div>
+			<div class="login-sub">Enter the admin passcode to continue.</div>
+			<div class="login-field">
+				<input type="password" placeholder="Passcode" bind:value={passcode} />
+			</div>
+			{#if authError}
+				<div class="login-error">{authError}</div>
+			{/if}
+			<button class="btn-sec" onclick={login}>Unlock</button>
+		</div>
+	</div>
+{:else}
 <div class="admin-shell">
 		<!-- Sidebar -->
 		<aside class="sidebar">
@@ -148,12 +337,15 @@
 				>
 					{#if n.id === 'dash'}
 						<Clock size={16} strokeWidth={1.8} />
-					{:else}
+					{:else if n.id === 'cal'}
 						<Calendar size={16} strokeWidth={1.8} />
+					{:else if n.id === 'rainbow'}
+						<Users size={16} strokeWidth={1.8} />
 					{/if}
 					{n.label}
 				</button>
 			{/each}
+			<button class="side-item logout" onclick={logout}>Logout</button>
 		</aside>
 
 		<!-- Content -->
@@ -327,6 +519,131 @@
 					</div>
 				</div>
 			{/if}
+
+			{#if tab === 'rainbow'}
+				<h1 class="page-title">Rainbow</h1>
+				<p class="page-sub">Manage invite codes and users for Rainbow activities.</p>
+
+				{#if rainbowError}
+					<div class="admin-section" style="background: #fee2e2; border-color: #fecaca;">
+						<p style="color: #dc2626; margin: 0;">{rainbowError}</p>
+					</div>
+				{/if}
+
+				<!-- Create Invite -->
+				<div class="admin-section">
+					<div class="section-head">
+						<h3 class="section-title">Create Invite</h3>
+					</div>
+					<p class="section-desc">Generate invite codes for new Rainbow users.</p>
+					<div class="fields-grid">
+						<div class="fields-row">
+							<div class="field">
+								<label class="field-label">
+									Email (optional)
+									<input type="email" bind:value={inviteEmail} placeholder="user@example.com" />
+								</label>
+							</div>
+							<div class="field">
+								<label class="field-label">
+									Uses
+									<div class="input-wrap">
+										<input type="number" min="1" bind:value={inviteUses} />
+									</div>
+								</label>
+							</div>
+							<div class="field">
+								<label class="field-label">
+									Expires in
+									<div class="input-wrap">
+										<input type="number" min="1" bind:value={inviteExpires} />
+										<span class="input-suffix">days</span>
+									</div>
+								</label>
+							</div>
+						</div>
+					</div>
+					<button class="btn-sec" onclick={createInvite} disabled={creatingInvite}>
+						{#if creatingInvite}
+							<Loader size={12} class="spin" />
+							Creating...
+						{:else}
+							Create Invite
+						{/if}
+					</button>
+				</div>
+
+				<!-- Invites List -->
+				<div class="admin-section">
+					<div class="section-head">
+						<h3 class="section-title">Invites</h3>
+						<span class="section-count">{rainbowInvites.length} total</span>
+					</div>
+					{#if rainbowLoading}
+						<p class="section-desc">Loading invites...</p>
+					{:else if rainbowInvites.length === 0}
+						<p class="section-desc">No invites created yet.</p>
+					{:else}
+						<div class="bookings-list">
+							{#each rainbowInvites as invite, i}
+								<div class="booking-row" style="cursor: default;">
+									<span class="booking-date">
+										<code style="background: var(--bg-muted); padding: 0.2em 0.5em; border-radius: 4px; font-size: 0.85em;">{invite.code}</code>
+									</span>
+									<span class="booking-meta">
+										{invite.uses_remaining ?? '∞'} uses left
+										{#if invite.email}· {invite.email}{/if}
+										{#if invite.expires_at}· expires {formatDate(invite.expires_at)}{/if}
+									</span>
+									<div class="btn-row" style="gap: 0.5rem;">
+										<button class="btn-sec" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick={() => copyInviteLink(invite.code)}>
+											Copy Link
+										</button>
+										<button class="btn-sec danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick={() => deleteInvite(invite.id)}>
+											Delete
+										</button>
+									</div>
+								</div>
+								{#if i < rainbowInvites.length - 1}
+									<div class="booking-divider"></div>
+								{/if}
+							{/each}
+						</div>
+					{/if}
+				</div>
+
+				<!-- Users List -->
+				<div class="admin-section">
+					<div class="section-head">
+						<h3 class="section-title">Users</h3>
+						<span class="section-count">{rainbowUsers.length} total</span>
+					</div>
+					{#if rainbowLoading}
+						<p class="section-desc">Loading users...</p>
+					{:else if rainbowUsers.length === 0}
+						<p class="section-desc">No users have signed up yet.</p>
+					{:else}
+						<div class="bookings-list">
+							{#each rainbowUsers as user, i}
+								<div class="booking-row" style="cursor: default;">
+									<span class="booking-date" style="display: flex; align-items: center; gap: 0.5rem;">
+										{#if user.avatar_url}
+											<img src={user.avatar_url} alt="" style="width: 24px; height: 24px; border-radius: 50%;" />
+										{/if}
+										{user.name || user.email}
+									</span>
+									<span class="booking-meta">
+										{user.provider} · last login {formatDate(user.last_login_at)}
+									</span>
+								</div>
+								{#if i < rainbowUsers.length - 1}
+									<div class="booking-divider"></div>
+								{/if}
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
 		</main>
 	</div>
 
@@ -391,3 +708,49 @@
 			Rules saved successfully.
 		</div>
 	{/if}
+{/if}
+
+<style>
+	.admin-login {
+		min-height: 70vh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 3rem 1.5rem;
+	}
+	.login-card {
+		width: min(420px, 100%);
+		background: #0f0f11;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		border-radius: 16px;
+		padding: 2rem;
+		box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+	}
+	.login-title {
+		font-size: 1.5rem;
+		font-weight: 600;
+		color: #f7f5f2;
+		margin-bottom: 0.35rem;
+	}
+	.login-sub {
+		color: rgba(247, 245, 242, 0.7);
+		margin-bottom: 1.5rem;
+	}
+	.login-field input {
+		width: 100%;
+		background: #141416;
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		border-radius: 10px;
+		padding: 0.75rem 0.85rem;
+		color: #f7f5f2;
+		outline: none;
+	}
+	.login-error {
+		margin: 0.75rem 0 1rem;
+		color: #ff8a8a;
+	}
+	.side-item.logout {
+		margin-top: auto;
+		color: rgba(255, 255, 255, 0.6);
+	}
+</style>
