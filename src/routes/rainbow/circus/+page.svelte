@@ -2,6 +2,10 @@
 	const { data } = $props()
 </script>
 
+<svelte:head>
+	<title>Circus - Rainbow</title>
+</svelte:head>
+
 <div class="rainbow-page">
 	<section class="hero">
 		<div class="glow glow-circus"></div>

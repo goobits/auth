@@ -39,6 +39,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Sign In - Rainbow</title>
+</svelte:head>
+
 <div class="rainbow-page">
 	<section class="hero" style="padding-bottom: 40px;">
 		<div class="glow"></div>

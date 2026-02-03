@@ -31,6 +31,10 @@
 	const firstName = $derived(data.user?.name?.split(' ')[0] || '')
 </script>
 
+<svelte:head>
+	<title>Rainbow</title>
+</svelte:head>
+
 <div class="rainbow-page">
 	<section class="hero">
 		<div class="glow"></div>
