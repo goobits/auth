@@ -125,6 +125,32 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 			.where(eq(this.sessionsTable.userId, userId));
 	}
 
+	async listSessions(userId) {
+		const selectFields = {
+			id: this.sessionsTable.id,
+			userId: this.sessionsTable.userId,
+			expiresAt: this.sessionsTable.expiresAt,
+		};
+
+		if (this.sessionsTable.createdAt) {
+			selectFields.createdAt = this.sessionsTable.createdAt;
+		}
+		if (this.sessionsTable.lastActiveAt) {
+			selectFields.lastActiveAt = this.sessionsTable.lastActiveAt;
+		}
+		if (this.sessionsTable.ip) {
+			selectFields.ip = this.sessionsTable.ip;
+		}
+		if (this.sessionsTable.userAgent) {
+			selectFields.userAgent = this.sessionsTable.userAgent;
+		}
+
+		return this.db
+			.select(selectFields)
+			.from(this.sessionsTable)
+			.where(eq(this.sessionsTable.userId, userId));
+	}
+
 	setSessionCookie(cookies, session) {
 		cookies.set(this.cookieName, session.id, {
 			httpOnly: true,

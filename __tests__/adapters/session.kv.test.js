@@ -11,6 +11,15 @@ function createNamespace() {
 		},
 		put: async (key, value) => { store.set(key, value) },
 		delete: async (key) => { store.delete(key) },
+		list: async ({ prefix }) => {
+			const keys = []
+			for (const key of store.keys()) {
+				if (!prefix || key.startsWith(prefix)) {
+					keys.push({ name: key })
+				}
+			}
+			return { keys }
+		},
 		_store: store
 	}
 }
@@ -41,5 +50,15 @@ describe('KVSessionAdapter', () => {
 		vi.spyOn(Date, 'now').mockReturnValue(20)
 		const result = await adapter.validateSession(session.id)
 		expect(result.session).toBeNull()
+	})
+
+	it('lists sessions for a user when list is available', async () => {
+		const namespace = createNamespace()
+		const adapter = new KVSessionAdapter(namespace)
+		const s1 = await adapter.createSession('u1')
+		await adapter.createSession('u2')
+		const sessions = await adapter.listSessions('u1')
+		expect(sessions).toHaveLength(1)
+		expect(sessions[0].id).toBe(s1.id)
 	})
 })

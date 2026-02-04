@@ -1,6 +1,20 @@
 import { createLoginHandler } from "./handlers/login.js";
 import { createCallbackHandler } from "./handlers/callback.js";
 import { createLogoutHandler } from "./handlers/logout.js";
+import {
+	createMagicLinkRequestHandler,
+	createMagicLinkVerifyHandler,
+} from "./handlers/magic-link.js";
+import {
+	createWebAuthnRegisterOptionsHandler,
+	createWebAuthnRegisterVerifyHandler,
+	createWebAuthnLoginOptionsHandler,
+	createWebAuthnLoginVerifyHandler,
+} from "./handlers/webauthn.js";
+import {
+	createSessionListHandler,
+	createSessionRevokeHandler,
+} from "./handlers/sessions.js";
 
 /**
  * Create a complete authentication system with all handlers and hooks
@@ -82,12 +96,15 @@ import { createLogoutHandler } from "./handlers/logout.js";
 export function createAuth(config) {
 	const {
 		adapters,
-		providers,
+		providers = {},
 		urls = {},
 		cookies = {},
 		hooks = {},
 		autoCreateSession = true,
 		isAuthenticated = (locals) => !!locals.user,
+		magicLink,
+		webauthn,
+		sessions,
 	} = config;
 
 	// Validate required configuration
@@ -95,9 +112,15 @@ export function createAuth(config) {
 		throw new Error("createAuth requires adapters.session");
 	}
 
-	if (!providers || Object.keys(providers).length === 0) {
-		throw new Error("createAuth requires at least one provider");
+	if (magicLink && !adapters.magicLink) {
+		throw new Error("createAuth magicLink requires adapters.magicLink");
 	}
+
+	if (webauthn && !adapters.webauthn) {
+		throw new Error("createAuth webauthn requires adapters.webauthn");
+	}
+
+	const hasProviders = providers && Object.keys(providers).length > 0;
 
 	// Set defaults
 	const urlConfig = {
@@ -111,80 +134,92 @@ export function createAuth(config) {
 	};
 
 	// Create handlers
-	const loginHandler = createLoginHandler({
-		providers,
-		redirectAfterLogin: urlConfig.afterLogin,
-		secureCookies: cookieConfig.secure,
-		isAuthenticated,
-	});
+	let loginHandler;
+	let callbackHandler;
 
-	const callbackHandler = createCallbackHandler({
-		providers: Object.fromEntries(
-			Object.entries(providers).map(([name, config]) => [name, config.provider]),
-		),
-		redirectAfterLogin: urlConfig.afterLogin,
-		isAuthenticated,
-		onAuthenticated: async (event, profile, tokens) => {
-			const providerName = event.params.provider;
-			let user = null;
+	if (hasProviders) {
+		loginHandler = createLoginHandler({
+			providers,
+			redirectAfterLogin: urlConfig.afterLogin,
+			secureCookies: cookieConfig.secure,
+			isAuthenticated,
+		});
 
-			if (adapters.database) {
-				try {
-					user = await adapters.database.getUserByProviderId(
-						providerName,
-						profile.id,
-					);
-				} catch {}
+		callbackHandler = createCallbackHandler({
+			providers: Object.fromEntries(
+				Object.entries(providers).map(([name, config]) => [
+					name,
+					config.provider,
+				]),
+			),
+			redirectAfterLogin: urlConfig.afterLogin,
+			isAuthenticated,
+			onAuthenticated: async (event, profile, tokens) => {
+				const providerName = event.params.provider;
+				let user = null;
 
-				if (!user && profile.email) {
-					user = await adapters.database.getUserByEmail(profile.email);
-				}
-
-				if (!user) {
-					user = await adapters.database.createUser(profile);
-				}
-
-				if (user && adapters.database.linkOAuthAccount) {
+				if (adapters.database) {
 					try {
-						await adapters.database.linkOAuthAccount(
-							user.id,
+						user = await adapters.database.getUserByProviderId(
 							providerName,
 							profile.id,
 						);
 					} catch {}
+
+					if (!user && profile.email) {
+						user = await adapters.database.getUserByEmail(profile.email);
+					}
+
+					if (!user) {
+						user = await adapters.database.createUser(profile);
+					}
+
+					if (user && adapters.database.linkOAuthAccount) {
+						try {
+							await adapters.database.linkOAuthAccount(
+								user.id,
+								providerName,
+								profile.id,
+							);
+						} catch {}
+					}
 				}
-			}
 
-			let userId = user?.id ?? null;
+				let userId = user?.id ?? null;
 
-			if (hooks.onLogin) {
-				const hookResult = await hooks.onLogin(event, profile, tokens, user);
-				if (hookResult?.userId) userId = hookResult.userId;
-				if (hookResult?.id) userId = hookResult.id;
-				if (hookResult?.user?.id) userId = hookResult.user.id;
-			} else if (userId && adapters.session && autoCreateSession) {
-				const session = await adapters.session.createSession(userId);
-				if (adapters.session.setSessionCookie) {
-					adapters.session.setSessionCookie(event.cookies, session);
+				if (hooks.onLogin) {
+					const hookResult = await hooks.onLogin(event, profile, tokens, user);
+					if (hookResult?.userId) userId = hookResult.userId;
+					if (hookResult?.id) userId = hookResult.id;
+					if (hookResult?.user?.id) userId = hookResult.user.id;
+				} else if (userId && adapters.session && autoCreateSession) {
+					const session = await adapters.session.createSession(userId);
+					if (adapters.session.setSessionCookie) {
+						adapters.session.setSessionCookie(event.cookies, session);
+					}
 				}
-			}
 
-			// Store tokens if adapter provided
-			if (adapters.token) {
-				if (!userId) {
-					console.warn(
-						"[auth] Token adapter enabled but no userId resolved. Falling back to provider profile id.",
+				// Store tokens if adapter provided
+				if (adapters.token) {
+					if (!userId) {
+						console.warn(
+							"[auth] Token adapter enabled but no userId resolved. Falling back to provider profile id.",
+						);
+					}
+					await adapters.token.storeTokens(
+						userId ?? profile.id,
+						providerName,
+						tokens,
 					);
 				}
-				await adapters.token.storeTokens(userId ?? profile.id, providerName, tokens);
-			}
-		},
-		onError: hooks.onError
-			? async (event, error) => {
-					await hooks.onError(event, error);
-			  }
-			: undefined,
-	});
+			},
+			onError: hooks.onError
+				? async (event, error) => {
+						await hooks.onError(event, error);
+				  }
+				: undefined,
+		});
+	}
 
 	const logoutHandler = createLogoutHandler({
 		sessionAdapter: adapters.session,
@@ -228,18 +263,135 @@ export function createAuth(config) {
 		return resolve(event);
 	};
 
+	const handlers = {
+		logout: logoutHandler,
+		hooks: handleHooks,
+	};
+
+	if (loginHandler) {
+		handlers.login = loginHandler;
+	}
+
+	if (callbackHandler) {
+		handlers.callback = callbackHandler;
+	}
+
+	if (magicLink) {
+		handlers.magicLink = {
+			request: createMagicLinkRequestHandler({
+				...magicLink,
+				magicLinkAdapter: adapters.magicLink,
+				databaseAdapter: adapters.database,
+			}),
+			verify: createMagicLinkVerifyHandler({
+				...magicLink,
+				magicLinkAdapter: adapters.magicLink,
+				databaseAdapter: adapters.database,
+				sessionAdapter: adapters.session,
+				redirectAfterLogin: urlConfig.afterLogin,
+				secureCookies: cookieConfig.secure,
+				onLogin: magicLink.onLogin || hooks.onLogin,
+				isAuthenticated,
+			}),
+		};
+	}
+
+	if (webauthn) {
+		handlers.webauthn = {
+			registerOptions: createWebAuthnRegisterOptionsHandler({
+				...webauthn,
+				webauthnAdapter: adapters.webauthn,
+			}),
+			registerVerify: createWebAuthnRegisterVerifyHandler({
+				...webauthn,
+				webauthnAdapter: adapters.webauthn,
+			}),
+			loginOptions: createWebAuthnLoginOptionsHandler({
+				...webauthn,
+				webauthnAdapter: adapters.webauthn,
+				databaseAdapter: adapters.database,
+			}),
+			loginVerify: createWebAuthnLoginVerifyHandler({
+				...webauthn,
+				webauthnAdapter: adapters.webauthn,
+				databaseAdapter: adapters.database,
+				sessionAdapter: adapters.session,
+				redirectAfterLogin: urlConfig.afterLogin,
+				onLogin: webauthn.onLogin || hooks.onLogin,
+			}),
+		};
+	}
+
+	if (sessions) {
+		handlers.sessions = {
+			list: createSessionListHandler({
+				...sessions,
+				sessionAdapter: adapters.session,
+				isAuthenticated,
+			}),
+			revoke: createSessionRevokeHandler({
+				...sessions,
+				sessionAdapter: adapters.session,
+				isAuthenticated,
+			}),
+		};
+	}
+
+	const routes = {
+		login: () => {
+			if (!handlers.login) throw new Error("OAuth login handler not configured");
+			return { GET: handlers.login };
+		},
+		callback: () => {
+			if (!handlers.callback)
+				throw new Error("OAuth callback handler not configured");
+			return { GET: handlers.callback };
+		},
+		magicLink: () => {
+			if (!handlers.magicLink)
+				throw new Error("Magic link handlers not configured");
+			return { POST: handlers.magicLink.request };
+		},
+		magicLinkVerify: () => {
+			if (!handlers.magicLink)
+				throw new Error("Magic link handlers not configured");
+			return { GET: handlers.magicLink.verify, POST: handlers.magicLink.verify };
+		},
+		passkeyRegisterOptions: () => {
+			if (!handlers.webauthn)
+				throw new Error("WebAuthn handlers not configured");
+			return { POST: handlers.webauthn.registerOptions };
+		},
+		passkeyRegisterVerify: () => {
+			if (!handlers.webauthn)
+				throw new Error("WebAuthn handlers not configured");
+			return { POST: handlers.webauthn.registerVerify };
+		},
+		passkeyLoginOptions: () => {
+			if (!handlers.webauthn)
+				throw new Error("WebAuthn handlers not configured");
+			return { POST: handlers.webauthn.loginOptions };
+		},
+		passkeyLoginVerify: () => {
+			if (!handlers.webauthn)
+				throw new Error("WebAuthn handlers not configured");
+			return { POST: handlers.webauthn.loginVerify };
+		},
+		sessions: () => {
+			if (!handlers.sessions)
+				throw new Error("Session handlers not configured");
+			return { GET: handlers.sessions.list, POST: handlers.sessions.revoke };
+		},
+	};
+
 	return {
 		adapters,
 		providers,
 		urls: urlConfig,
 		cookies: cookieConfig,
 		hooks,
-		handlers: {
-			login: loginHandler,
-			callback: callbackHandler,
-			logout: logoutHandler,
-			hooks: handleHooks,
-		},
+		handlers,
+		routes,
 		// Utility functions
 		utils: {
 			isAuthenticated: (locals) => isAuthenticated(locals),

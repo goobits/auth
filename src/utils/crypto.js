@@ -1,5 +1,6 @@
 const ALGORITHM = "AES-GCM";
 const TAG_LENGTH_BYTES = 16;
+const SHA_256 = "SHA-256";
 
 async function getWebCrypto() {
 	if (globalThis.crypto?.subtle) {
@@ -134,3 +135,11 @@ export async function generateRandomUUID() {
 }
 
 export { getRandomBytes };
+
+export async function sha256Hex(value) {
+	const cryptoImpl = await getWebCrypto();
+	const data =
+		typeof value === "string" ? new TextEncoder().encode(value) : value;
+	const digest = await cryptoImpl.subtle.digest(SHA_256, data);
+	return bytesToHex(new Uint8Array(digest));
+}

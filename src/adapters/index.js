@@ -23,3 +23,17 @@ export {
 	DrizzleVerificationTokenAdapter,
 	D1VerificationTokenAdapter,
 } from "./tokens/index.js";
+
+// Magic Link Adapters
+export {
+	MagicLinkAdapter,
+	DrizzleMagicLinkAdapter,
+	D1MagicLinkAdapter,
+} from "./magic-link/index.js";
+
+// WebAuthn Adapters
+export {
+	WebAuthnAdapter,
+	DrizzleWebAuthnAdapter,
+	D1WebAuthnAdapter,
+} from "./webauthn/index.js";

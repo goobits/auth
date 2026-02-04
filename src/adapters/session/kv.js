@@ -83,6 +83,25 @@ export class KVSessionAdapter extends SessionAdapter {
 		throw new Error("KVSessionAdapter does not support invalidateUserSessions");
 	}
 
+	async listSessions(userId) {
+		if (typeof this.namespace.list !== "function") {
+			throw new Error("KVSessionAdapter does not support listSessions");
+		}
+		const keys = await this.namespace.list({ prefix: `${this.keyPrefix}:` });
+		const sessions = [];
+		for (const key of keys.keys ?? []) {
+			const raw = await this.namespace.get(key.name, { type: "json" });
+			if (!raw) continue;
+			if (raw.userId !== userId) continue;
+			sessions.push({
+				id: key.name.replace(`${this.keyPrefix}:`, ""),
+				userId: raw.userId,
+				expiresAt: new Date(raw.expiresAt),
+			});
+		}
+		return sessions;
+	}
+
 	setSessionCookie(cookies, session) {
 		cookies.set(this.cookieName, session.id, {
 			httpOnly: true,

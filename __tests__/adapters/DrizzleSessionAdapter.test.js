@@ -259,4 +259,20 @@ describe('DrizzleSessionAdapter', () => {
 			);
 		});
 	});
+
+	describe('listSessions', () => {
+		it('should list sessions for a user', async () => {
+			const now = new Date();
+			mockDb.select = () => ({
+				from: () => ({
+					where: () =>
+						Promise.resolve([{ id: 's1', userId: 'u1', expiresAt: now }]),
+				}),
+			});
+
+			const sessions = await adapter.listSessions('u1');
+			expect(sessions).toHaveLength(1);
+			expect(sessions[0].userId).toBe('u1');
+		});
+	});
 });

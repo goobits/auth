@@ -18,12 +18,21 @@ Pluggable authentication system for SvelteKit applications with support for OAut
 - **Token Encryption**: AES-256-GCM encryption for OAuth tokens
 - **MFA Ready**: TOTP + backup codes utilities and handlers
 - **Rate Limiting**: Optional login rate limiting helper
+- **Magic Links + OTP**: Passwordless sign-in flow
+- **Passkeys (WebAuthn)**: Registration + login handlers
+- **Session Management UI**: List + revoke sessions
 
 ## Installation
 
 ```bash
 pnpm add @goobits/auth
 ```
+
+## Docs (Minimal)
+
+- `docs/quickstart.md` (all setup + routes + client SDK)
+- `docs/schema.md` (all SQL)
+- `docs/public-api.md` (entry points only)
 
 ## Quick Start
 
