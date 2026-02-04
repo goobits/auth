@@ -4,7 +4,7 @@ import { sequence } from '@sveltejs/kit/hooks'
 import { createThemeHooks } from '@goobits/themes/server'
 import { themeConfig } from '$lib/config/theme.js'
 import { dev } from '$app/environment'
-import { validateSession, parseSessionCookie } from '@packages/calendar/src/rainbow/session.js'
+import { validateSession, parseSessionCookie } from '@packages/calendar/src/calendar/session.js'
 
 /**
  * Processes redirects based on configured rules
@@ -49,9 +49,6 @@ const themeHandle = createThemeHooks(themeConfig, {
 let cachedDevDb = null
 
 async function getDb(platform) {
-	if (platform?.env?.DB) {
-		return platform.env.DB
-	}
 	if (dev) {
 		if (!cachedDevDb) {
 			const { createSqliteDb } = await import('$lib/dev/sqliteDb.js')
@@ -59,19 +56,26 @@ async function getDb(platform) {
 		}
 		return cachedDevDb
 	}
+	if (platform?.env?.DB) {
+		return platform.env.DB
+	}
 	return null
 }
 
-async function handleRainbowAuth({ event, resolve }) {
+async function handleCalendarAuth({ event, resolve }) {
 	const pathname = event.url.pathname
 
-	// Only protect /rainbow/* routes (except login page and API routes)
-	if (!pathname.startsWith('/rainbow')) {
+	// Only protect /calendar/* routes (except login page and API routes)
+	if (!pathname.startsWith('/calendar')) {
 		return resolve(event)
 	}
 
 	// Allow login page (with or without trailing slash) and API routes
-	if (pathname === '/rainbow/login' || pathname === '/rainbow/login/' || pathname.startsWith('/api/rainbow')) {
+	if (
+		pathname === '/calendar/login' ||
+		pathname === '/calendar/login/' ||
+		pathname.startsWith('/api/calendar')
+	) {
 		return resolve(event)
 	}
 
@@ -80,27 +84,27 @@ async function handleRainbowAuth({ event, resolve }) {
 
 	if (!sessionId) {
 		const redirectTo = encodeURIComponent(pathname)
-		throw redirect(302, `/rainbow/login?redirect=${redirectTo}`)
+		throw redirect(302, `/calendar/login?redirect=${redirectTo}`)
 	}
 
 	const db = await getDb(event.platform)
 	if (!db) {
-		throw redirect(302, '/rainbow/login?error=db_unavailable')
+		throw redirect(302, '/calendar/login?error=db_unavailable')
 	}
 
 	const user = await validateSession({ db, sessionId })
 
 	if (!user) {
 		const redirectTo = encodeURIComponent(pathname)
-		throw redirect(302, `/rainbow/login?redirect=${redirectTo}`)
+		throw redirect(302, `/calendar/login?redirect=${redirectTo}`)
 	}
 
-	event.locals.rainbowUser = user
+	event.locals.calendarUser = user
 	return resolve(event)
 }
 
 export const handle = sequence(
 	themeHandle,
 	handleRedirects,
-	handleRainbowAuth
+	handleCalendarAuth
 )

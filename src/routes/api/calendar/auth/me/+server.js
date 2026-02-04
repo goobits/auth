@@ -1,4 +1,4 @@
-import { onRequest } from '../../../../../../functions/api/rainbow/admin/users.js'
+import { onRequest } from '../../../../../../functions/api/calendar/calendar/auth/me.js'
 import { buildEnv } from '../../_bridge.js'
 
 export async function GET({ request, platform }) {

@@ -1,4 +1,4 @@
-import { onRequest } from '../../../../../../functions/api/rainbow/auth/login.js'
+import { onRequest } from '../../../../../../functions/api/calendar/calendar/auth/logout.js'
 import { buildEnv } from '../../_bridge.js'
 
 export async function POST({ request, platform }) {

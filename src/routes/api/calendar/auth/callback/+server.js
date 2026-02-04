@@ -1,4 +1,4 @@
-import { onRequest } from '../../../../../../functions/api/rainbow/admin/invites.js'
+import { onRequest } from '../../../../../../functions/api/calendar/calendar/auth/callback.js'
 import { buildEnv } from '../../_bridge.js'
 
 export async function GET({ request, platform }) {
@@ -7,11 +7,6 @@ export async function GET({ request, platform }) {
 }
 
 export async function POST({ request, platform }) {
-	const env = await buildEnv(platform)
-	return onRequest({ env, request })
-}
-
-export async function DELETE({ request, platform }) {
 	const env = await buildEnv(platform)
 	return onRequest({ env, request })
 }

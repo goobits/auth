@@ -9,17 +9,7 @@ let cachedDevDb = null
  * Development: Falls back to local SQLite with D1-compatible wrapper
  */
 export async function buildEnv(platform) {
-	// Cloudflare Pages provides bindings via platform.env
-	if (platform?.env?.DB) {
-		return {
-			...Object.fromEntries(
-				Object.entries(process.env).filter(([_, v]) => typeof v === 'string')
-			),
-			...platform.env
-		}
-	}
-
-	// Development fallback: use local SQLite
+	// Development: use local SQLite to avoid relying on external bindings
 	if (dev) {
 		if (!cachedDevDb) {
 			// Dynamic import - only executed in dev, tree-shaken in prod
@@ -29,6 +19,16 @@ export async function buildEnv(platform) {
 		return {
 			...process.env,
 			DB: cachedDevDb
+		}
+	}
+
+	// Cloudflare Pages provides bindings via platform.env
+	if (platform?.env?.DB) {
+		return {
+			...Object.fromEntries(
+				Object.entries(process.env).filter(([_, v]) => typeof v === 'string')
+			),
+			...platform.env
 		}
 	}
 
