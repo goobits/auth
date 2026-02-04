@@ -2,7 +2,7 @@ import { createAuth } from '@goobits/auth'
 import { D1SessionAdapter, D1UserAdapter } from '@goobits/auth/adapters'
 import { GoogleProvider, AppleProvider } from '@goobits/auth/providers'
 import { dev } from '$app/environment'
-import { hasUserRedeemedAnyInvite, validateInvite, consumeInvite } from '@packages/calendar/src/calendar/invites.js'
+import { hasUserRedeemedAnyInvite, validateInvite, consumeInvite } from '@packages/calendar/src/calendar/invites.ts'
 import { redirect } from '@sveltejs/kit'
 
 const INVITE_COOKIE = 'calendar_invite'
@@ -10,12 +10,12 @@ const REDIRECT_COOKIE = 'calendar_redirect'
 const INVITE_TTL_SECONDS = 600
 const SAFE_REDIRECT_PREFIXES = ['/calendar', '/calendar-gym', '/admin']
 
-let cachedDevDb = null
+let cachedDevDb: any = null
 
-async function getDb(platform) {
+async function getDb(platform: any) {
 	if (dev) {
 		if (!cachedDevDb) {
-			const { createSqliteDb } = await import('$lib/dev/sqliteDb.js')
+			const { createSqliteDb } = await import('$lib/dev/sqliteDb.ts')
 			cachedDevDb = createSqliteDb()
 		}
 		return cachedDevDb
@@ -23,11 +23,11 @@ async function getDb(platform) {
 	return platform?.env?.DB || null
 }
 
-function getBaseUrl({ env, url }) {
+function getBaseUrl({ env, url }: { env: Record<string, any>; url: URL }) {
 	return env.PUBLIC_BASE_URL || env.BASE_URL || url?.origin || ''
 }
 
-function normalizeRedirect(redirectTo) {
+function normalizeRedirect(redirectTo: unknown) {
 	if (!redirectTo || typeof redirectTo !== 'string') return null
 	const trimmed = redirectTo.trim()
 	if (!trimmed.startsWith('/')) return null
@@ -38,7 +38,7 @@ function normalizeRedirect(redirectTo) {
 	return trimmed
 }
 
-export async function getCalendarAuth({ event }) {
+export async function getCalendarAuth({ event }: { event: any }) {
 	const db = await getDb(event.platform)
 	if (!db) throw new Error('Database unavailable')
 
@@ -80,7 +80,7 @@ export async function getCalendarAuth({ event }) {
 		}
 	})
 
-	const providers = {}
+	const providers: Record<string, { provider: any; scopes?: string[] }> = {}
 	if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
 		providers.google = {
 			provider: new GoogleProvider({
@@ -116,7 +116,7 @@ export async function getCalendarAuth({ event }) {
 		},
 		sessions: {},
 		hooks: {
-			onLogin: async (evt, profile, _tokens, user) => {
+			onLogin: async (evt: any, profile: any, _tokens: any, user: any) => {
 				const invite = evt.cookies.get(INVITE_COOKIE)
 				const redirectTo = evt.cookies.get(REDIRECT_COOKIE)
 
@@ -168,7 +168,10 @@ export async function getCalendarAuth({ event }) {
 	return { auth, db, env, secureCookies }
 }
 
-export function setCalendarLoginContext(cookies, { invite, redirectTo, secure }) {
+export function setCalendarLoginContext(
+	cookies: any,
+	{ invite, redirectTo, secure }: { invite?: string; redirectTo?: string; secure: boolean }
+) {
 	if (invite) {
 		cookies.set(INVITE_COOKIE, invite, {
 			httpOnly: true,
@@ -190,7 +193,7 @@ export function setCalendarLoginContext(cookies, { invite, redirectTo, secure })
 	}
 }
 
-export function getCalendarRedirect(cookies) {
+export function getCalendarRedirect(cookies: any) {
 	const redirectTo = cookies.get(REDIRECT_COOKIE)
 	if (redirectTo) {
 		cookies.delete(REDIRECT_COOKIE, { path: '/' })

@@ -3,14 +3,14 @@
  * @returns {import('unified').Plugin}
  */
 export function remarkTableOfContents() {
-	return (tree) => {
-		const headings = []
+	return (tree: any) => {
+		const headings: Array<{ depth: number; text: string; id: string }> = []
 		let tocIndex = -1
 		let tocDepth = 2 // Default depth if not specified
 		let tocLevel = 2 // Level of the TOC heading itself
 
 		// First pass: find TOC marker
-		tree.children.forEach((node, index) => {
+		tree.children.forEach((node: any, index: number) => {
 			if (node.type === 'heading') {
 				const headingText = node.children[0]?.value || ''
 
@@ -105,7 +105,7 @@ export function remarkTableOfContents() {
  * @returns {string} The converted text as a lowercase, hyphen-separated string
  * @private
  */
-function toId(text) {
+function toId(text: string) {
 	return text
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, '-')

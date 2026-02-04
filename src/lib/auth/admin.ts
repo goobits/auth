@@ -1,12 +1,12 @@
 import { dev } from '$app/environment'
-import { createAdminAdapters, ensureAdminUser, ADMIN_EMAIL } from '@packages/calendar/src/admin/auth.js'
+import { createAdminAdapters, ensureAdminUser, ADMIN_EMAIL } from '@packages/calendar/src/admin/auth.ts'
 
-let cachedDevDb = null
+let cachedDevDb: any = null
 
-async function getDb(platform) {
+async function getDb(platform: any) {
 	if (dev) {
 		if (!cachedDevDb) {
-			const { createSqliteDb } = await import('$lib/dev/sqliteDb.js')
+			const { createSqliteDb } = await import('$lib/dev/sqliteDb.ts')
 			cachedDevDb = createSqliteDb()
 		}
 		return cachedDevDb
@@ -14,7 +14,7 @@ async function getDb(platform) {
 	return platform?.env?.DB || null
 }
 
-export async function getAdminAuth({ event }) {
+export async function getAdminAuth({ event }: { event: any }) {
 	const db = await getDb(event.platform)
 	if (!db) throw new Error('Database unavailable')
 	const env = event.platform?.env || {}
@@ -38,7 +38,13 @@ export async function getAdminAuth({ event }) {
 	return { db, env, secureCookies, ...adapters }
 }
 
-export async function ensureAdminAccount({ userAdapter, env }) {
+export async function ensureAdminAccount({
+	userAdapter,
+	env
+}: {
+	userAdapter: any
+	env: Record<string, any>
+}) {
 	const passcode = env.ADMIN_PASSCODE || ''
 	if (!passcode) {
 		throw new Error('Admin passcode not configured')
