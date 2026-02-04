@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createSigninHandler } from '../../src/handlers/signin.js'
+import { createSigninHandler } from '../../src/handlers/signin.ts'
 
 function createCookies() {
-	const store = new Map()
+	const store = new Map<string, { value: string; options: Record<string, unknown> }>()
 	return {
-		set: (name, value, options) => store.set(name, { value, options }),
-		get: (name) => store.get(name)?.value ?? null,
-		delete: (name) => store.delete(name),
+		set: (name: string, value: string, options: Record<string, unknown>) => store.set(name, { value, options }),
+		get: (name: string) => store.get(name)?.value ?? null,
+		delete: (name: string) => store.delete(name),
 		_store: store
 	}
 }
@@ -23,7 +23,7 @@ function createEvent({ email = 'a@b.com', password = 'pw' } = {}) {
 	}
 }
 
-function getRedirectLocation(err) {
+function getRedirectLocation(err: { location?: string; headers?: Headers } | null) {
 	return err?.location || err?.headers?.get?.('location')
 }
 
@@ -57,8 +57,9 @@ describe('createSigninHandler', () => {
 		try {
 			await handler(createEvent())
 		} catch (err) {
-			expect(err.status).toBe(303)
-			expect(getRedirectLocation(err)).toBe('/dashboard')
+			const error = err as { status?: number; headers?: Headers; location?: string }
+			expect(error.status).toBe(303)
+			expect(getRedirectLocation(error)).toBe('/dashboard')
 		}
 
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1')

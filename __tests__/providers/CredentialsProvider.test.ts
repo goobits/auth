@@ -5,16 +5,16 @@
  *
  * To run these tests:
  * cd packages/@goobits/auth
- * npx vitest run __tests__/providers/CredentialsProvider.test.js
+ * npx vitest run __tests__/providers/CredentialsProvider.test.ts
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { CredentialsProvider } from '../../src/providers/credentials.js';
-import { hashPassword } from '../../src/utils/password.js';
+import { CredentialsProvider } from '../../src/providers/credentials.ts';
+import { hashPassword } from '../../src/utils/password.ts';
 
 describe('CredentialsProvider', () => {
-	let provider;
-	let mockUserAdapter;
+	let provider: CredentialsProvider;
+	let mockUserAdapter: any;
 
 	beforeEach(() => {
 		// Create mock user adapter
@@ -73,6 +73,7 @@ describe('CredentialsProvider', () => {
 
 			expect(result.valid).toBe(true);
 			expect(result.user).toBeDefined();
+			if (!result.user) throw new Error('Expected user');
 			expect(result.user.id).toBe('user-123');
 			expect(result.user.password).toBeUndefined(); // Should be sanitized
 			expect(mockUserAdapter._getUserWithPassword).toHaveBeenCalledWith(email);
@@ -441,6 +442,7 @@ describe('CredentialsProvider', () => {
 
 			expect(result.valid).toBe(true);
 			expect(result.user).toBeDefined();
+			if (!result.user) throw new Error('Expected user');
 			expect(result.user.id).toBe('user-123');
 			expect(mockUserAdapter.updateUser).toHaveBeenCalledWith(
 				'user-123',
@@ -533,6 +535,7 @@ describe('CredentialsProvider', () => {
 			});
 
 			expect(authResult.valid).toBe(true);
+			if (!authResult.user) throw new Error('Expected user');
 			expect(authResult.user.id).toBe('user-int');
 		});
 

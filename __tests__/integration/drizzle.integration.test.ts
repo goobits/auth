@@ -14,14 +14,15 @@
  * 3. Run migrations: `drizzle-kit push`
  * 4. Run tests: `npx vitest run --testPathPattern=integration`
  */
+// @ts-nocheck
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import { pgTable, uuid, timestamp, text, serial } from 'drizzle-orm/pg-core';
-import { DrizzleSessionAdapter } from '../../src/adapters/session/drizzle.js';
-import { DrizzleUserAdapter } from '../../src/adapters/database/drizzle.js';
-import { DrizzleTokenAdapter } from '../../src/adapters/token/drizzle.js';
+import { DrizzleSessionAdapter } from '../../src/adapters/session/drizzle.ts';
+import { DrizzleUserAdapter } from '../../src/adapters/database/drizzle.ts';
+import { DrizzleTokenAdapter } from '../../src/adapters/token/drizzle.ts';
 
 // Define test tables (should match your actual schema)
 const users = pgTable('users', {

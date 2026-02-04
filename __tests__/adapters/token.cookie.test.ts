@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
-import { CookieTokenAdapter } from '../../src/adapters/token/cookie.js'
+import { CookieTokenAdapter } from '../../src/adapters/token/cookie.ts'
 
 function createCookies() {
-	const store = new Map()
+	const store = new Map<string, { value: string; options: Record<string, unknown> }>()
 	return {
-		set: (name, value, options) => store.set(name, { value, options }),
-		get: (name) => store.get(name)?.value ?? null,
-		delete: (name) => store.delete(name),
+		set: (name: string, value: string, options: Record<string, unknown>) => store.set(name, { value, options }),
+		get: (name: string) => store.get(name)?.value ?? null,
+		delete: (name: string) => store.delete(name),
 		_store: store
 	}
 }
@@ -24,9 +24,14 @@ describe('CookieTokenAdapter', () => {
 		const cookies = createCookies()
 		adapter._setCookies(cookies)
 
-		await adapter.storeTokens('u1', 'google', { access_token: 'tok' })
+		await adapter.storeTokens('u1', 'google', {
+			accessToken: 'tok',
+			refreshToken: null,
+			scope: null,
+			accessTokenExpiresAt: new Date().toISOString()
+		})
 		const tokens = await adapter.getTokens('u1', 'google')
-		expect(tokens.access_token).toBe('tok')
+		expect(tokens?.accessToken).toBe('tok')
 	})
 
 	it('throws if cookies not set', async () => {

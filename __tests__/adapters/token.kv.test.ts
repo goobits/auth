@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { KVTokenAdapter } from '../../src/adapters/token/kv.js'
+import { KVTokenAdapter } from '../../src/adapters/token/kv.ts'
 
 function createNamespace() {
-	const store = new Map()
+	const store = new Map<string, string>()
 	return {
-		get: async (key) => store.get(key) ?? null,
-		put: async (key, value) => { store.set(key, value) },
-		delete: async (key) => { store.delete(key) },
+		get: async (key: string) => store.get(key) ?? null,
+		put: async (key: string, value: string) => { store.set(key, value) },
+		delete: async (key: string) => { store.delete(key) },
 		_store: store
 	}
 }
@@ -21,6 +21,6 @@ describe('KVTokenAdapter', () => {
 		const adapter = new KVTokenAdapter(namespace, { encrypt: false })
 		await adapter.storeTokens('u1', 'google', { access_token: 'tok' })
 		const tokens = await adapter.getTokens('u1', 'google')
-		expect(tokens.access_token).toBe('tok')
+		expect(tokens?.access_token).toBe('tok')
 	})
 })

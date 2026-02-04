@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
-import { CookieSessionAdapter } from '../../src/adapters/session/cookie.js'
+import { CookieSessionAdapter } from '../../src/adapters/session/cookie.ts'
 
 function createCookies() {
-	const store = new Map()
+	const store = new Map<string, { value: string; options: Record<string, unknown> }>()
 	return {
-		set: (name, value, options) => store.set(name, { value, options }),
-		get: (name) => store.get(name)?.value ?? null,
-		delete: (name) => store.delete(name),
+		set: (name: string, value: string, options: Record<string, unknown>) => store.set(name, { value, options }),
+		get: (name: string) => store.get(name)?.value ?? null,
+		delete: (name: string) => store.delete(name),
 		_store: store
 	}
 }
@@ -19,7 +19,7 @@ describe('CookieSessionAdapter', () => {
 
 		const result = await adapter.validateSession(session.id)
 		expect(result.session).toBeNull()
-		expect(adapter._sessions.has(session.id)).toBe(false)
+		expect((adapter as any)._sessions.has(session.id)).toBe(false)
 	})
 
 	it('sets session cookie with expected attributes', async () => {
@@ -30,9 +30,9 @@ describe('CookieSessionAdapter', () => {
 
 		const entry = cookies._store.get('auth')
 		expect(entry).toBeTruthy()
-		expect(entry.options.httpOnly).toBe(true)
-		expect(entry.options.secure).toBe(false)
-		expect(entry.options.sameSite).toBe('lax')
+		expect(entry?.options.httpOnly).toBe(true)
+		expect(entry?.options.secure).toBe(false)
+		expect(entry?.options.sameSite).toBe('lax')
 	})
 
 	it('lists sessions for a user', async () => {
@@ -41,6 +41,7 @@ describe('CookieSessionAdapter', () => {
 		await adapter.createSession('u2')
 		const sessions = await adapter.listSessions('u1')
 		expect(sessions).toHaveLength(1)
+		if (!sessions[0]) throw new Error('Missing session')
 		expect(sessions[0].userId).toBe('u1')
 	})
 })

@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { D1UserAdapter } from '../../src/adapters/database/d1.js'
-import { D1SessionAdapter } from '../../src/adapters/session/d1.js'
-import { D1TokenAdapter } from '../../src/adapters/token/d1.js'
-import { D1VerificationTokenAdapter } from '../../src/adapters/tokens/d1.js'
+import { D1UserAdapter } from '../../src/adapters/database/d1.ts'
+import { D1SessionAdapter } from '../../src/adapters/session/d1.ts'
+import { D1TokenAdapter } from '../../src/adapters/token/d1.ts'
+import { D1VerificationTokenAdapter } from '../../src/adapters/tokens/d1.ts'
 
 function createMockDb() {
-	const tables = {
+	const tables: Record<string, any[]> = {
 		users: [],
 		sessions: [],
 		oauth_accounts: [],
@@ -14,7 +14,8 @@ function createMockDb() {
 	};
 	let lastRowId = 0;
 
-	function insert(table, row) {
+	function insert(table: string, row: Record<string, any>) {
+		if (!tables[table]) tables[table] = [];
 		const id = ++lastRowId;
 		const data = { ...row };
 		if (!('id' in data)) data.id = id;
@@ -22,29 +23,37 @@ function createMockDb() {
 		return { last_row_id: data.id };
 	}
 
-	function deleteWhere(table, fn) {
+	function deleteWhere(table: string, fn: (row: any) => boolean) {
+		if (!tables[table]) tables[table] = [];
 		tables[table] = tables[table].filter((row) => !fn(row));
 	}
 
-	function updateWhere(table, fn, updates) {
+	function updateWhere(
+		table: string,
+		fn: (row: any) => boolean,
+		updates: Record<string, any>,
+	) {
+		if (!tables[table]) tables[table] = [];
 		for (const row of tables[table]) {
 			if (fn(row)) Object.assign(row, updates);
 		}
 	}
 
-	function findWhere(table, fn) {
+	function findWhere(table: string, fn: (row: any) => boolean) {
+		if (!tables[table]) tables[table] = [];
 		return tables[table].find(fn) || null;
 	}
 
-	function findAll(table, fn) {
+	function findAll(table: string, fn: (row: any) => boolean) {
+		if (!tables[table]) tables[table] = [];
 		return tables[table].filter(fn);
 	}
 
 	return {
-		prepare(sql) {
-			let bound = [];
+		prepare(sql: string) {
+			let bound: any[] = [];
 			return {
-				bind(...args) { bound = args; return this; },
+				bind(...args: any[]) { bound = args; return this; },
 				run() {
 					if (sql.startsWith('INSERT INTO users')) {
 						const [email, name, avatar, emailVerified] = bound;
@@ -153,16 +162,21 @@ describe('D1 adapters', () => {
 		const user = await userAdapter.createUser({ email: 'a@b.com', name: 'A', verified_email: true });
 		const session = await sessionAdapter.createSession(user.id);
 		const result = await sessionAdapter.validateSession(session.id);
-		expect(result.user.email).toBe('a@b.com');
-		expect(result.session.id).toBe(session.id);
+		expect(result.user?.email).toBe('a@b.com');
+		expect(result.session?.id).toBe(session.id);
 	});
 
 	it('stores and retrieves oauth tokens', async () => {
 		const db = createMockDb();
 		const tokenAdapter = new D1TokenAdapter(db, { encryptionKey: 'a'.repeat(64) });
-		await tokenAdapter.storeTokens(1, 'google', { accessToken: 'x' });
-		const tokens = await tokenAdapter.getTokens(1, 'google');
-		expect(tokens.accessToken).toBe('x');
+		await tokenAdapter.storeTokens('1', 'google', {
+			accessToken: 'x',
+			refreshToken: null,
+			scope: null,
+			accessTokenExpiresAt: new Date().toISOString()
+		});
+		const tokens = await tokenAdapter.getTokens('1', 'google');
+		expect(tokens?.accessToken).toBe('x');
 	});
 
 	it('creates and finds verification tokens', async () => {
@@ -172,6 +186,6 @@ describe('D1 adapters', () => {
 		const tokens = new D1VerificationTokenAdapter(db);
 		await tokens.create({ userId: user.id, type: 'email_verification', token: 't', expiresAt: new Date(Date.now() + 1000) });
 		const record = await tokens.findByToken({ token: 't', type: 'email_verification' });
-		expect(record.user.email).toBe('c@d.com');
+		expect(record?.user?.email).toBe('c@d.com');
 	});
 });
