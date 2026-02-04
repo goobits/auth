@@ -1,7 +1,7 @@
 <script>
 	import { onMount } from 'svelte'
 	import { z } from 'zod'
-	import './RainbowGym.scss'
+	import './CalendarGym.scss'
 
 	const bookingSchema = z.object({
 		name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
@@ -333,7 +333,7 @@
 	<title>Rainbow Gym - MIKO.ART</title>
 </svelte:head>
 
-<div class="rainbow-gym">
+<div class="calendar-gym">
 	<!-- Hero -->
 	<section class="hero">
 		<div class="glow"></div>

@@ -6,7 +6,7 @@
 	<title>Movie Night - Rainbow</title>
 </svelte:head>
 
-<div class="rainbow-page">
+<div class="calendar-page">
 	<section class="hero">
 		<div class="glow glow-movie"></div>
 		<p class="eyebrow eyebrow-movie">Movie Night</p>

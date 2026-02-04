@@ -1,19 +1,19 @@
 <script>
 	import { page } from '$app/stores'
-	import '../Rainbow.scss'
+	import '../Calendar.scss'
 
 	let loading = $state(false)
 	let error = $state($page.url.searchParams.get('error') || '')
 
 	const inviteCode = $page.url.searchParams.get('invite') || ''
-	const redirectTo = $page.url.searchParams.get('redirect') || '/rainbow'
+	const redirectTo = $page.url.searchParams.get('redirect') || '/calendar'
 
 	async function loginWith(provider) {
 		loading = true
 		error = ''
 
 		try {
-			const res = await fetch('/api/rainbow/auth/login', {
+			const res = await fetch('/api/calendar/auth/login', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -43,7 +43,7 @@
 	<title>Sign In - Rainbow</title>
 </svelte:head>
 
-<div class="rainbow-page">
+<div class="calendar-page">
 	<section class="hero" style="padding-bottom: 40px;">
 		<div class="glow"></div>
 		<p class="eyebrow">Rainbow</p>

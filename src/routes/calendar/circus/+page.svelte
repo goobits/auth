@@ -6,7 +6,7 @@
 	<title>Circus - Rainbow</title>
 </svelte:head>
 
-<div class="rainbow-page">
+<div class="calendar-page">
 	<section class="hero">
 		<div class="glow glow-circus"></div>
 		<p class="eyebrow eyebrow-circus">Rainbow Circus</p>

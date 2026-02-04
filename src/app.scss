@@ -75,25 +75,25 @@
 	--lab-icon: #63b3ed;
 	--lab-icon-hover: #4299e1;
 
-	/* Rainbow Gym page */
-	--rainbow-body-bg: radial-gradient(circle at top left, #f8f7f4 0%, #f2f4f8 45%, #eef0f6 100%);
-	--rainbow-text: #1f2937;
-	--rainbow-muted: #64748b;
-	--rainbow-subhead: #475569;
-	--rainbow-tz: #94a3b8;
-	--rainbow-panel-bg: rgba(255, 255, 255, 0.7);
-	--rainbow-panel-shadow: rgba(15, 23, 42, 0.08);
-	--rainbow-slot-bg: #f1f5f9;
-	--rainbow-slot-text: #0f172a;
-	--rainbow-slot-selected-bg: #0f172a;
-	--rainbow-slot-selected-text: #ffffff;
-	--rainbow-slot-selected-muted: rgba(255, 255, 255, 0.7);
-	--rainbow-slot-disabled-bg: #e2e8f0;
-	--rainbow-slot-disabled-text: #94a3b8;
-	--rainbow-input-border: #e2e8f0;
-	--rainbow-input-bg: #ffffff;
-	--rainbow-btn-ghost-border: #cbd5e1;
-	--rainbow-success: #047857;
+	/* Calendar Gym page */
+	--calendar-body-bg: radial-gradient(circle at top left, #f8f7f4 0%, #f2f4f8 45%, #eef0f6 100%);
+	--calendar-text: #1f2937;
+	--calendar-muted: #64748b;
+	--calendar-subhead: #475569;
+	--calendar-tz: #94a3b8;
+	--calendar-panel-bg: rgba(255, 255, 255, 0.7);
+	--calendar-panel-shadow: rgba(15, 23, 42, 0.08);
+	--calendar-slot-bg: #f1f5f9;
+	--calendar-slot-text: #0f172a;
+	--calendar-slot-selected-bg: #0f172a;
+	--calendar-slot-selected-text: #ffffff;
+	--calendar-slot-selected-muted: rgba(255, 255, 255, 0.7);
+	--calendar-slot-disabled-bg: #e2e8f0;
+	--calendar-slot-disabled-text: #94a3b8;
+	--calendar-input-border: #e2e8f0;
+	--calendar-input-bg: #ffffff;
+	--calendar-btn-ghost-border: #cbd5e1;
+	--calendar-success: #047857;
 }
 
 /* Dark theme - combined selectors for @goobits/themes compatibility */
@@ -160,23 +160,23 @@ html.theme-system-dark,
 	--lab-icon: #7db8ff;
 	--lab-icon-hover: #5fa8ff;
 
-	/* Rainbow Gym page */
-	--rainbow-body-bg: radial-gradient(circle at top left, #0f1115 0%, #151821 45%, #1a1f2a 100%);
-	--rainbow-text: var(--text);
-	--rainbow-muted: #8a8a9a;
-	--rainbow-subhead: #b0b0c0;
-	--rainbow-tz: #6a6a7a;
-	--rainbow-panel-bg: rgba(30, 35, 45, 0.85);
-	--rainbow-panel-shadow: rgba(0, 0, 0, 0.35);
-	--rainbow-slot-bg: #252a36;
-	--rainbow-slot-text: var(--text);
-	--rainbow-slot-selected-bg: #5f38b6;
-	--rainbow-slot-disabled-bg: var(--card-bg);
-	--rainbow-slot-disabled-text: #6a6a7a;
-	--rainbow-input-border: #3a4050;
-	--rainbow-input-bg: var(--card-bg);
-	--rainbow-btn-ghost-border: #4a5060;
-	--rainbow-success: #62d391;
+	/* Calendar Gym page */
+	--calendar-body-bg: radial-gradient(circle at top left, #0f1115 0%, #151821 45%, #1a1f2a 100%);
+	--calendar-text: var(--text);
+	--calendar-muted: #8a8a9a;
+	--calendar-subhead: #b0b0c0;
+	--calendar-tz: #6a6a7a;
+	--calendar-panel-bg: rgba(30, 35, 45, 0.85);
+	--calendar-panel-shadow: rgba(0, 0, 0, 0.35);
+	--calendar-slot-bg: #252a36;
+	--calendar-slot-text: var(--text);
+	--calendar-slot-selected-bg: #5f38b6;
+	--calendar-slot-disabled-bg: var(--card-bg);
+	--calendar-slot-disabled-text: #6a6a7a;
+	--calendar-input-border: #3a4050;
+	--calendar-input-bg: var(--card-bg);
+	--calendar-btn-ghost-border: #4a5060;
+	--calendar-success: #62d391;
 
 	/* Override @goobits/themes bundle variables */
 	--bg-primary: var(--bg);

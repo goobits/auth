@@ -1,24 +1,24 @@
 <script>
 	import { page } from '$app/stores'
 	import { goto } from '$app/navigation'
-	import './Rainbow.scss'
+	import './Calendar.scss'
 
 	const { data, children } = $props()
 
 	const navItems = [
-		{ href: '/rainbow/gym', label: 'Gym' },
-		{ href: '/rainbow/circus', label: 'Circus' },
-		{ href: '/rainbow/adventure', label: 'Adventure' },
-		{ href: '/rainbow/movie-night', label: 'Movies' }
+		{ href: '/calendar/gym', label: 'Gym' },
+		{ href: '/calendar/circus', label: 'Circus' },
+		{ href: '/calendar/adventure', label: 'Adventure' },
+		{ href: '/calendar/movie-night', label: 'Movies' }
 	]
 
 	// Client-side auth check - redirect to login if no user (except on login page)
 	$effect(() => {
 		const pathname = $page.url.pathname
-		const isLoginPage = pathname === '/rainbow/login' || pathname === '/rainbow/login/'
+		const isLoginPage = pathname === '/calendar/login' || pathname === '/calendar/login/'
 		if (!data.user && !isLoginPage) {
 			const redirectTo = encodeURIComponent(pathname)
-			goto(`/rainbow/login?redirect=${redirectTo}`)
+			goto(`/calendar/login?redirect=${redirectTo}`)
 		}
 	})
 
@@ -28,15 +28,15 @@
 	}
 
 	async function logout() {
-		await fetch('/api/rainbow/auth/logout', { method: 'POST' })
-		goto('/rainbow/login')
+		await fetch('/api/calendar/auth/logout', { method: 'POST' })
+		goto('/calendar/login')
 	}
 </script>
 
-<div class="rainbow-layout">
-	<nav class="rainbow-nav">
+<div class="calendar-shell">
+	<nav class="calendar-nav">
 		<div class="nav-inner">
-			<a href="/rainbow" class="nav-brand">Rainbow</a>
+			<a href="/calendar" class="nav-brand">Rainbow</a>
 			<div class="nav-links">
 				{#each navItems as item}
 					<a
@@ -59,19 +59,21 @@
 		</div>
 	</nav>
 
-	<main class="rainbow-main">
-		{@render children()}
-	</main>
+	<div class="calendar-layout">
+		<main class="calendar-main">
+			{@render children()}
+		</main>
+	</div>
 </div>
 
 <style>
-	.rainbow-layout {
-		min-height: 100vh;
+	.calendar-layout {
+		flex: 1;
 		display: flex;
 		flex-direction: column;
 	}
 
-	.rainbow-nav {
+	.calendar-nav {
 		background: rgba(255, 255, 255, 0.02);
 		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 		width: 100%;
@@ -85,7 +87,8 @@
 	.nav-inner {
 		max-width: var(--max-width, 1060px);
 		margin: 0 auto;
-		padding: 0 24px;
+		width: calc(100% - 2em);
+		padding: 0;
 		height: 56px;
 		display: flex;
 		align-items: center;
@@ -166,7 +169,7 @@
 		color: rgba(245, 245, 247, 0.8);
 	}
 
-	.rainbow-main {
+	.calendar-main {
 		flex: 1;
 	}
 

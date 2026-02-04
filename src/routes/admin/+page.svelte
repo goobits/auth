@@ -23,11 +23,11 @@
 	let passcode = $state('')
 	let authError = $state('')
 
-	// Rainbow tab state
-	let rainbowInvites = $state([])
-	let rainbowUsers = $state([])
-	let rainbowLoading = $state(false)
-	let rainbowError = $state('')
+	// Calendar auth tab state
+	let calendarInvites = $state([])
+	let calendarUsers = $state([])
+	let calendarLoading = $state(false)
+	let calendarError = $state('')
 	let inviteEmail = $state('')
 	let inviteUses = $state(1)
 	let inviteExpires = $state(7)
@@ -36,7 +36,7 @@
 	const NAV = [
 		{ label: 'Dashboard', id: 'dash' },
 		{ label: 'Calendar', id: 'cal' },
-		{ label: 'Rainbow', id: 'rainbow' }
+		{ label: 'Rainbow', id: 'calendar-auth' }
 	]
 
 	async function checkAuth() {
@@ -204,34 +204,34 @@
 		}
 	}
 
-	async function loadRainbowData() {
-		rainbowLoading = true
-		rainbowError = ''
+	async function loadCalendarData() {
+		calendarLoading = true
+		calendarError = ''
 		try {
 			const [invitesRes, usersRes] = await Promise.all([
-				fetch(`/api/rainbow/admin/invites?code=${adminCode}`),
-				fetch(`/api/rainbow/admin/users?code=${adminCode}`)
+				fetch(`/api/calendar/admin/invites?code=${adminCode}`),
+				fetch(`/api/calendar/admin/users?code=${adminCode}`)
 			])
 			const invitesData = await invitesRes.json()
 			const usersData = await usersRes.json()
 
-			if (invitesData.ok) rainbowInvites = invitesData.invites || []
-			else rainbowError = invitesData.error?.message || 'Failed to load invites'
+			if (invitesData.ok) calendarInvites = invitesData.invites || []
+			else calendarError = invitesData.error?.message || 'Failed to load invites'
 
-			if (usersData.ok) rainbowUsers = usersData.users || []
-			else rainbowError = usersData.error?.message || 'Failed to load users'
+			if (usersData.ok) calendarUsers = usersData.users || []
+			else calendarError = usersData.error?.message || 'Failed to load users'
 		} catch (err) {
-			rainbowError = err.message || 'Failed to load Rainbow data'
+			calendarError = err.message || 'Failed to load Rainbow data'
 		} finally {
-			rainbowLoading = false
+			calendarLoading = false
 		}
 	}
 
 	async function createInvite() {
 		creatingInvite = true
-		rainbowError = ''
+		calendarError = ''
 		try {
-			const res = await fetch(`/api/rainbow/admin/invites?code=${adminCode}`, {
+			const res = await fetch(`/api/calendar/admin/invites?code=${adminCode}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -245,12 +245,12 @@
 				inviteEmail = ''
 				inviteUses = 1
 				inviteExpires = 7
-				await loadRainbowData()
+				await loadCalendarData()
 			} else {
-				rainbowError = data.error?.message || 'Failed to create invite'
+				calendarError = data.error?.message || 'Failed to create invite'
 			}
 		} catch (err) {
-			rainbowError = err.message || 'Failed to create invite'
+			calendarError = err.message || 'Failed to create invite'
 		} finally {
 			creatingInvite = false
 		}
@@ -259,22 +259,22 @@
 	async function deleteInvite(id) {
 		if (!confirm('Delete this invite?')) return
 		try {
-			const res = await fetch(`/api/rainbow/admin/invites?code=${adminCode}&id=${id}`, {
+			const res = await fetch(`/api/calendar/admin/invites?code=${adminCode}&id=${id}`, {
 				method: 'DELETE'
 			})
 			const data = await res.json()
 			if (data.ok) {
-				await loadRainbowData()
+				await loadCalendarData()
 			} else {
-				rainbowError = data.error?.message || 'Failed to delete invite'
+				calendarError = data.error?.message || 'Failed to delete invite'
 			}
 		} catch (err) {
-			rainbowError = err.message || 'Failed to delete invite'
+			calendarError = err.message || 'Failed to delete invite'
 		}
 	}
 
 	function copyInviteLink(code) {
-		const url = `${window.location.origin}/rainbow/login?invite=${code}`
+		const url = `${window.location.origin}/calendar/login?invite=${code}`
 		navigator.clipboard.writeText(url)
 	}
 
@@ -293,8 +293,8 @@
 	})
 
 	$effect(() => {
-		if (tab === 'rainbow') {
-			loadRainbowData()
+		if (tab === 'calendar-auth') {
+			loadCalendarData()
 		}
 	})
 </script>
@@ -339,7 +339,7 @@
 						<Clock size={16} strokeWidth={1.8} />
 					{:else if n.id === 'cal'}
 						<Calendar size={16} strokeWidth={1.8} />
-					{:else if n.id === 'rainbow'}
+					{:else if n.id === 'calendar-auth'}
 						<Users size={16} strokeWidth={1.8} />
 					{/if}
 					{n.label}
@@ -520,13 +520,13 @@
 				</div>
 			{/if}
 
-			{#if tab === 'rainbow'}
+			{#if tab === 'calendar-auth'}
 				<h1 class="page-title">Rainbow</h1>
 				<p class="page-sub">Manage invite codes and users for Rainbow activities.</p>
 
-				{#if rainbowError}
+				{#if calendarError}
 					<div class="admin-section" style="background: #fee2e2; border-color: #fecaca;">
-						<p style="color: #dc2626; margin: 0;">{rainbowError}</p>
+						<p style="color: #dc2626; margin: 0;">{calendarError}</p>
 					</div>
 				{/if}
 
@@ -577,15 +577,15 @@
 				<div class="admin-section">
 					<div class="section-head">
 						<h3 class="section-title">Invites</h3>
-						<span class="section-count">{rainbowInvites.length} total</span>
+						<span class="section-count">{calendarInvites.length} total</span>
 					</div>
-					{#if rainbowLoading}
+					{#if calendarLoading}
 						<p class="section-desc">Loading invites...</p>
-					{:else if rainbowInvites.length === 0}
+					{:else if calendarInvites.length === 0}
 						<p class="section-desc">No invites created yet.</p>
 					{:else}
 						<div class="bookings-list">
-							{#each rainbowInvites as invite, i}
+							{#each calendarInvites as invite, i}
 								<div class="booking-row" style="cursor: default;">
 									<span class="booking-date">
 										<code style="background: var(--bg-muted); padding: 0.2em 0.5em; border-radius: 4px; font-size: 0.85em;">{invite.code}</code>
@@ -604,7 +604,7 @@
 										</button>
 									</div>
 								</div>
-								{#if i < rainbowInvites.length - 1}
+								{#if i < calendarInvites.length - 1}
 									<div class="booking-divider"></div>
 								{/if}
 							{/each}
@@ -616,15 +616,15 @@
 				<div class="admin-section">
 					<div class="section-head">
 						<h3 class="section-title">Users</h3>
-						<span class="section-count">{rainbowUsers.length} total</span>
+						<span class="section-count">{calendarUsers.length} total</span>
 					</div>
-					{#if rainbowLoading}
+					{#if calendarLoading}
 						<p class="section-desc">Loading users...</p>
-					{:else if rainbowUsers.length === 0}
+					{:else if calendarUsers.length === 0}
 						<p class="section-desc">No users have signed up yet.</p>
 					{:else}
 						<div class="bookings-list">
-							{#each rainbowUsers as user, i}
+							{#each calendarUsers as user, i}
 								<div class="booking-row" style="cursor: default;">
 									<span class="booking-date" style="display: flex; align-items: center; gap: 0.5rem;">
 										{#if user.avatar_url}
@@ -636,7 +636,7 @@
 										{user.provider} · last login {formatDate(user.last_login_at)}
 									</span>
 								</div>
-								{#if i < rainbowUsers.length - 1}
+								{#if i < calendarUsers.length - 1}
 									<div class="booking-divider"></div>
 								{/if}
 							{/each}

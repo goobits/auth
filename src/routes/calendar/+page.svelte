@@ -3,25 +3,25 @@
 
 	const activities = [
 		{
-			href: '/rainbow/gym',
+			href: '/calendar/gym',
 			title: 'Gym',
 			description: 'Book sessions and work out together',
 			icon: '💪'
 		},
 		{
-			href: '/rainbow/circus',
+			href: '/calendar/circus',
 			title: 'Circus',
 			description: 'Aerial arts and circus skills',
 			icon: '🎪'
 		},
 		{
-			href: '/rainbow/adventure',
+			href: '/calendar/adventure',
 			title: 'Adventure',
 			description: 'Outdoor excursions and trips',
 			icon: '🏔️'
 		},
 		{
-			href: '/rainbow/movie-night',
+			href: '/calendar/movie-night',
 			title: 'Movies',
 			description: 'Community film screenings',
 			icon: '🎬'
@@ -35,7 +35,7 @@
 	<title>Rainbow</title>
 </svelte:head>
 
-<div class="rainbow-page">
+<div class="calendar-page">
 	<section class="hero">
 		<div class="glow"></div>
 		<p class="eyebrow">Rainbow</p>

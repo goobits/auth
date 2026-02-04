@@ -6,7 +6,7 @@
 	<title>Adventure - Rainbow</title>
 </svelte:head>
 
-<div class="rainbow-page">
+<div class="calendar-page">
 	<section class="hero">
 		<div class="glow glow-adventure"></div>
 		<p class="eyebrow eyebrow-adventure">Rainbow Adventure</p>

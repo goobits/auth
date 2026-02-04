@@ -1,5 +1,5 @@
 export function load({ locals }) {
 	return {
-		user: locals.rainbowUser || null
+		user: locals.calendarUser || null
 	}
 }

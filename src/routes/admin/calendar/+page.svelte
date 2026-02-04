@@ -12,7 +12,7 @@
 			status = 'Connected! Redirecting you to Rainbow Gym...'
 			connected = true
 			setTimeout(() => {
-				window.location.href = '/rainbow-gym'
+				window.location.href = '/calendar-gym'
 			}, 1200)
 		}
 		checkAuth()
