@@ -6,22 +6,23 @@ export const trailingSlash = 'always'
 
 export async function entries() {
 	const posts = await getJournalPosts()
-	const categories = new Set()
-	for (const post of posts) {
-		for (const cat of post.metadata.fm.categories || []) {
+	const categories = new Set<string>()
+	for (const post of posts as any[]) {
+		const fm = (post as any).metadata?.fm || {}
+		for (const cat of (fm.categories || [])) {
 			categories.add(cat)
 		}
 	}
 	return [...categories].map(slug => ({ slug }))
 }
 
-export async function load({ params }) {
+export async function load({ params }: { params: any }) {
 	const { slug } = params
 	if (!slug) throw error(404)
 
 	const allPosts = await getJournalPosts()
-	const posts = allPosts.filter(post =>
-		post.metadata.fm.categories?.includes(slug)
+	const posts = (allPosts as any[]).filter(post =>
+		(post as any).metadata?.fm?.categories?.includes(slug)
 	)
 
 	if (!posts.length) throw error(404)
