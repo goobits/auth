@@ -7,6 +7,12 @@ import { redirect } from "@sveltejs/kit";
  * @param {import('../adapters/database/base.js').DatabaseAdapter} config.userAdapter - User adapter
  * @param {import('../adapters/session/base.js').SessionAdapter} config.sessionAdapter - Session adapter
  * @param {Function} [config.onSignin] - Callback after successful signin (user) => Promise<void>
+ * @param {Object} [config.csrf] - CSRF validation config
+ * @param {Function} [config.csrf.validate] - Async function (event) => boolean
+ * @param {string} [config.csrf.errorMessage] - Error message for invalid CSRF
+ * @param {Object} [config.rateLimit] - Rate limit config
+ * @param {Function} [config.rateLimit.check] - Async function (key) => { allowed }
+ * @param {Function} [config.rateLimit.key] - Function (event) => string for rate limit key
  * @param {string} [config.redirectTo] - Redirect URL after signin (default: '/')
  * @returns {Function} SvelteKit request handler
  */
@@ -16,10 +22,37 @@ export function createSigninHandler(config) {
 		userAdapter,
 		sessionAdapter,
 		onSignin,
+		csrf,
+		rateLimit,
 		redirectTo = "/",
 	} = config;
 
 	return async (event) => {
+		if (csrf?.validate) {
+			const valid = await csrf.validate(event);
+			if (!valid) {
+				return {
+					error: csrf.errorMessage || "Invalid CSRF token",
+					success: false,
+				};
+			}
+		}
+
+		if (rateLimit?.check) {
+			const key = rateLimit.key
+				? rateLimit.key(event)
+				: event.getClientAddress
+					? event.getClientAddress()
+					: event.request.headers.get("x-forwarded-for") || "unknown";
+			const result = await rateLimit.check(key);
+			if (!result?.allowed) {
+				return {
+					error: "Too many attempts. Try again later.",
+					success: false,
+				};
+			}
+		}
+
 		const formData = await event.request.formData();
 		const email = formData.get("email")?.toString();
 		const password = formData.get("password")?.toString();

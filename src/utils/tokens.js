@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import { generateRandomUUID } from "./crypto.js";
 
 const DEFAULT_TOKEN_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -75,7 +75,7 @@ export async function createVerificationToken({
 	type,
 	expiresInMs = DEFAULT_TOKEN_EXPIRATION_MS,
 }) {
-	const tokenValue = crypto.randomUUID();
+	const tokenValue = await generateRandomUUID();
 	const expiresAt = new Date(Date.now() + expiresInMs);
 
 	// Remove existing tokens of the same type

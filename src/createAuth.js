@@ -86,6 +86,7 @@ export function createAuth(config) {
 		urls = {},
 		cookies = {},
 		hooks = {},
+		autoCreateSession = true,
 		isAuthenticated = (locals) => !!locals.user,
 	} = config;
 
@@ -124,15 +125,58 @@ export function createAuth(config) {
 		redirectAfterLogin: urlConfig.afterLogin,
 		isAuthenticated,
 		onAuthenticated: async (event, profile, tokens) => {
-			// Store tokens if adapter provided
-			if (adapters.token) {
-				const providerName = event.params.provider;
-				await adapters.token.storeTokens(profile.id, providerName, tokens);
+			const providerName = event.params.provider;
+			let user = null;
+
+			if (adapters.database) {
+				try {
+					user = await adapters.database.getUserByProviderId(
+						providerName,
+						profile.id,
+					);
+				} catch {}
+
+				if (!user && profile.email) {
+					user = await adapters.database.getUserByEmail(profile.email);
+				}
+
+				if (!user) {
+					user = await adapters.database.createUser(profile);
+				}
+
+				if (user && adapters.database.linkOAuthAccount) {
+					try {
+						await adapters.database.linkOAuthAccount(
+							user.id,
+							providerName,
+							profile.id,
+						);
+					} catch {}
+				}
 			}
 
-			// Call user hook
+			let userId = user?.id ?? null;
+
 			if (hooks.onLogin) {
-				await hooks.onLogin(event, profile, tokens);
+				const hookResult = await hooks.onLogin(event, profile, tokens, user);
+				if (hookResult?.userId) userId = hookResult.userId;
+				if (hookResult?.id) userId = hookResult.id;
+				if (hookResult?.user?.id) userId = hookResult.user.id;
+			} else if (userId && adapters.session && autoCreateSession) {
+				const session = await adapters.session.createSession(userId);
+				if (adapters.session.setSessionCookie) {
+					adapters.session.setSessionCookie(event.cookies, session);
+				}
+			}
+
+			// Store tokens if adapter provided
+			if (adapters.token) {
+				if (!userId) {
+					console.warn(
+						"[auth] Token adapter enabled but no userId resolved. Falling back to provider profile id.",
+					);
+				}
+				await adapters.token.storeTokens(userId ?? profile.id, providerName, tokens);
 			}
 		},
 		onError: hooks.onError
@@ -157,25 +201,29 @@ export function createAuth(config) {
 	const handleHooks = async ({ event, resolve }) => {
 		const sessionId = event.cookies.get(adapters.session.cookieName ?? "session");
 
-		if (sessionId) {
-			const { session, user } = await adapters.session.validateSession(sessionId);
+			if (sessionId) {
+				const { session, user } = await adapters.session.validateSession(sessionId);
 
-			event.locals.session = session;
-			event.locals.user = user;
+				event.locals.session = session;
+				event.locals.user = user;
 
-			// Call user hook
-			if (hooks.onSessionValidated && session && user) {
-				await hooks.onSessionValidated(event, session, user);
+				if (session && user) {
+					// Call user hook
+					if (hooks.onSessionValidated) {
+						await hooks.onSessionValidated(event, session, user);
+					}
+
+					// Refresh session cookie if needed
+					if (session.fresh && adapters.session.setSessionCookie) {
+						adapters.session.setSessionCookie(event.cookies, session);
+					}
+				} else if (adapters.session.deleteSessionCookie) {
+					adapters.session.deleteSessionCookie(event.cookies);
+				}
+			} else {
+				event.locals.session = null;
+				event.locals.user = null;
 			}
-
-			// Refresh session cookie if needed
-			if (session && adapters.session.setSessionCookie) {
-				adapters.session.setSessionCookie(event.cookies, session);
-			}
-		} else {
-			event.locals.session = null;
-			event.locals.user = null;
-		}
 
 		return resolve(event);
 	};

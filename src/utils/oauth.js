@@ -10,7 +10,7 @@ import { generateState, generateCodeVerifier } from "arctic";
  * @returns {{state: string, codeVerifier: string}}
  */
 export function createOAuthCookies(cookies, provider, options = {}) {
-	const { secure = true, maxAge = 30 * 60 } = options;
+	const { secure = true, maxAge = 30 * 60, sameSite = "lax" } = options;
 
 	const state = generateState();
 	const codeVerifier = generateCodeVerifier();
@@ -19,7 +19,7 @@ export function createOAuthCookies(cookies, provider, options = {}) {
 		httpOnly: true,
 		path: "/",
 		secure,
-		sameSite: "strict",
+		sameSite,
 		maxAge,
 	};
 
@@ -29,7 +29,7 @@ export function createOAuthCookies(cookies, provider, options = {}) {
 	// Store code verifier cookie
 	cookies.set(`${provider}_oauth_code_verifier`, codeVerifier, {
 		...cookieOptions,
-		secure: true, // Always secure for code verifier
+		secure,
 	});
 
 	return { state, codeVerifier };
@@ -72,9 +72,9 @@ export function validateOAuthCallback(params) {
  * @param {string} provider - Provider name
  * @returns {{code: string | null, state: string | null, storedState: string | null, storedCodeVerifier: string | null}}
  */
-export function getOAuthCallbackParams(cookies, url, provider) {
-	const code = url.searchParams.get("code");
-	const state = url.searchParams.get("state");
+export function getOAuthCallbackParams(cookies, url, provider, overrides = {}) {
+	const code = overrides.code ?? url.searchParams.get("code");
+	const state = overrides.state ?? url.searchParams.get("state");
 	const storedState = cookies.get(`${provider}_oauth_state`) ?? null;
 	const storedCodeVerifier =
 		cookies.get(`${provider}_oauth_code_verifier`) ?? null;
@@ -102,12 +102,25 @@ export async function handleOAuthCallback({
 	providerInstance,
 	callbacks,
 	appleUserData = null,
+	overrideParams = null,
 }) {
 	const { cookies, url } = event;
+	let override = overrideParams || {};
+	if (!overrideParams) {
+		try {
+			if (event.request.method === "POST") {
+				const formData = await event.request.formData();
+				override = {
+					code: formData.get("code")?.toString() ?? null,
+					state: formData.get("state")?.toString() ?? null,
+				};
+			}
+		} catch {}
+	}
 
 	try {
 		// Extract and validate callback parameters
-		const params = getOAuthCallbackParams(cookies, url, provider);
+		const params = getOAuthCallbackParams(cookies, url, provider, override);
 
 		if (!validateOAuthCallback(params)) {
 			throw new Error("Invalid OAuth callback parameters");
@@ -145,6 +158,8 @@ export async function handleOAuthCallback({
 		if (callbacks.onError) {
 			await callbacks.onError(error);
 		}
+		// Cleanup OAuth cookies on error
+		cleanupOAuthCookies(cookies, provider);
 		throw error;
 	}
 }
