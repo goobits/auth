@@ -1,19 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('../../src/mfa/totp.js', () => ({
+vi.mock('../../src/mfa/totp.ts', () => ({
 	generateSecret: vi.fn(() => 'SECRET'),
 	createOtpAuthURL: vi.fn(() => 'otpauth://totp/test'),
 	verifyTOTP: vi.fn()
 }))
-vi.mock('../../src/mfa/backup-codes.js', () => ({
+vi.mock('../../src/mfa/backup-codes.ts', () => ({
 	generateBackupCodes: vi.fn(() => ['code1', 'code2']),
 	hashBackupCodes: vi.fn(async () => ['hash1', 'hash2']),
 	verifyBackupCode: vi.fn()
 }))
 
-import * as totp from '../../src/mfa/totp.js'
-import * as backup from '../../src/mfa/backup-codes.js'
-import { createMfaEnrollHandler, createMfaVerifyHandler, createMfaBackupCodeHandler } from '../../src/handlers/mfa.js'
+import * as totp from '../../src/mfa/totp.ts'
+import * as backup from '../../src/mfa/backup-codes.ts'
+import { createMfaEnrollHandler, createMfaVerifyHandler, createMfaBackupCodeHandler } from '../../src/handlers/mfa.ts'
 
 function createEvent({ locals = {}, form = {} } = {}) {
 	return {

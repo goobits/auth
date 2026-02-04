@@ -9,13 +9,13 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DrizzleSessionAdapter } from '../../src/adapters/session/drizzle.js';
+import { DrizzleSessionAdapter } from '../../src/adapters/session/drizzle.ts';
 
 describe('DrizzleSessionAdapter', () => {
-	let adapter;
-	let mockDb;
-	let mockSessionsTable;
-	let mockUsersTable;
+	let adapter: DrizzleSessionAdapter;
+	let mockDb: any;
+	let mockSessionsTable: any;
+	let mockUsersTable: any;
 
 	beforeEach(() => {
 		// Mock database and tables
@@ -56,16 +56,16 @@ describe('DrizzleSessionAdapter', () => {
 			sessionsTable: mockSessionsTable,
 			usersTable: mockUsersTable,
 			sessionLifetime: 30 * 24 * 60 * 60 * 1000, // 30 days
-			refreshThreshold: 15 * 24 * 60 * 60 * 1000, // 15 days
+			sessionRefreshThreshold: 15 * 24 * 60 * 60 * 1000, // 15 days
 		});
 	});
 
 	describe('constructor', () => {
 		it('should create adapter with required options', () => {
 			expect(adapter).toBeDefined();
-			expect(adapter.db).toBe(mockDb);
-			expect(adapter.sessionsTable).toBe(mockSessionsTable);
-			expect(adapter.usersTable).toBe(mockUsersTable);
+			expect((adapter as any).db).toBe(mockDb);
+			expect((adapter as any).sessionsTable).toBe(mockSessionsTable);
+			expect((adapter as any).usersTable).toBe(mockUsersTable);
 		});
 
 		it('should throw error if sessionsTable is missing', () => {
@@ -85,7 +85,7 @@ describe('DrizzleSessionAdapter', () => {
 				sessionsTable: mockSessionsTable,
 				usersTable: mockUsersTable,
 			});
-			expect(defaultAdapter.sessionLifetime).toBe(30 * 24 * 60 * 60 * 1000);
+			expect((defaultAdapter as any).sessionLifetime).toBe(30 * 24 * 60 * 60 * 1000);
 		});
 
 		it('should use custom session lifetime', () => {
@@ -95,7 +95,7 @@ describe('DrizzleSessionAdapter', () => {
 				usersTable: mockUsersTable,
 				sessionLifetime: customLifetime,
 			});
-			expect(customAdapter.sessionLifetime).toBe(customLifetime);
+			expect((customAdapter as any).sessionLifetime).toBe(customLifetime);
 		});
 	});
 
@@ -116,7 +116,7 @@ describe('DrizzleSessionAdapter', () => {
 			const expiresAt = session.expiresAt.getTime();
 
 			// Should expire in ~30 days (within 1 minute tolerance)
-			const expectedExpiry = now + adapter.sessionLifetime;
+			const expectedExpiry = now + (adapter as any).sessionLifetime;
 			expect(Math.abs(expiresAt - expectedExpiry)).toBeLessThan(60 * 1000);
 		});
 	});

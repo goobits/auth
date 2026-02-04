@@ -2,9 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import {
 	createSessionListHandler,
 	createSessionRevokeHandler,
-} from "../../src/handlers/sessions.js";
+} from "../../src/handlers/sessions.ts";
 
-function createEvent(body = null) {
+function createEvent(body: Record<string, unknown> | string | null = null) {
 	const headers = new Headers();
 	let requestBody = body;
 	if (body && typeof body !== "string") {
@@ -12,7 +12,11 @@ function createEvent(body = null) {
 		requestBody = JSON.stringify(body);
 	}
 	return {
-		request: new Request("http://localhost", { method: "POST", body: requestBody, headers }),
+		request: new Request("http://localhost", {
+			method: "POST",
+			body: (requestBody ?? null) as BodyInit | null,
+			headers,
+		}),
 		cookies: {
 			delete: vi.fn(),
 		},
@@ -38,7 +42,7 @@ describe("session handlers", () => {
 		const payload = await response.json();
 
 		expect(payload.ok).toBe(true);
-		expect(payload.sessions.find((s) => s.id === "s1").current).toBe(true);
+		expect(payload.sessions.find((s: any) => s.id === "s1")?.current).toBe(true);
 	});
 
 	it("revokes other sessions", async () => {

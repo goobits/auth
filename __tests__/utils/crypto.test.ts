@@ -5,7 +5,7 @@ import {
 	generateEncryptionKey,
 	generateRandomUUID,
 	sha256Hex,
-} from "../../src/utils/crypto.js";
+} from "../../src/utils/crypto.ts";
 
 describe("crypto utils", () => {
 	it("generates a 32-byte encryption key", async () => {

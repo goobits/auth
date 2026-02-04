@@ -5,11 +5,11 @@
  *
  * To run these tests:
  * cd packages/@goobits/auth
- * npx vitest run __tests__/utils/password.test.js
+ * npx vitest run __tests__/utils/password.test.ts
  */
 
 import { describe, it, expect } from 'vitest';
-import { hashPassword, verifyPassword, validatePasswordStrength } from '../../src/utils/password.js';
+import { hashPassword, verifyPassword, validatePasswordStrength } from '../../src/utils/password.ts';
 
 describe('Password Utilities', () => {
 	describe('hashPassword', () => {
@@ -35,15 +35,15 @@ describe('Password Utilities', () => {
 		});
 
 		it('should throw error for null password', async () => {
-			await expect(hashPassword(null)).rejects.toThrow('Password must be a non-empty string');
+			await expect(hashPassword(null as any)).rejects.toThrow('Password must be a non-empty string');
 		});
 
 		it('should throw error for undefined password', async () => {
-			await expect(hashPassword(undefined)).rejects.toThrow('Password must be a non-empty string');
+			await expect(hashPassword(undefined as any)).rejects.toThrow('Password must be a non-empty string');
 		});
 
 		it('should throw error for non-string password', async () => {
-			await expect(hashPassword(12345)).rejects.toThrow('Password must be a non-empty string');
+			await expect(hashPassword(12345 as any)).rejects.toThrow('Password must be a non-empty string');
 		});
 
 		it('should handle very long passwords', async () => {
@@ -99,7 +99,7 @@ describe('Password Utilities', () => {
 		});
 
 		it('should return false for null hash', async () => {
-			const isValid = await verifyPassword(null, 'password');
+			const isValid = await verifyPassword(null as any, 'password');
 			expect(isValid).toBe(false);
 		});
 
@@ -111,7 +111,7 @@ describe('Password Utilities', () => {
 
 		it('should return false for null password', async () => {
 			const hash = await hashPassword('ValidPassword123!');
-			const isValid = await verifyPassword(hash, null);
+			const isValid = await verifyPassword(hash, null as any);
 			expect(isValid).toBe(false);
 		});
 
@@ -184,13 +184,13 @@ describe('Password Utilities', () => {
 			});
 
 			it('should reject null password', () => {
-				const result = validatePasswordStrength(null);
+			const result = validatePasswordStrength(null as any);
 				expect(result.valid).toBe(false);
 				expect(result.errors).toContain('Password is required');
 			});
 
 			it('should reject undefined password', () => {
-				const result = validatePasswordStrength(undefined);
+			const result = validatePasswordStrength(undefined as any);
 				expect(result.valid).toBe(false);
 				expect(result.errors).toContain('Password is required');
 			});

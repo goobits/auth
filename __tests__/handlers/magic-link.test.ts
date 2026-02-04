@@ -2,9 +2,17 @@ import { describe, it, expect, vi } from "vitest";
 import {
 	createMagicLinkRequestHandler,
 	createMagicLinkVerifyHandler,
-} from "../../src/handlers/magic-link.js";
+} from "../../src/handlers/magic-link.ts";
 
-function createEvent({ method = "POST", body, url = "http://localhost/auth" } = {}) {
+function createEvent({
+	method = "POST",
+	body,
+	url = "http://localhost/auth",
+}: {
+	method?: string;
+	body?: unknown;
+	url?: string;
+} = {}) {
 	const headers = new Headers();
 	let requestBody = body;
 	if (body && typeof body !== "string") {
@@ -12,7 +20,11 @@ function createEvent({ method = "POST", body, url = "http://localhost/auth" } = 
 		requestBody = JSON.stringify(body);
 	}
 	return {
-		request: new Request(url, { method, body: requestBody, headers }),
+		request: new Request(url, {
+			method,
+			body: (requestBody ?? null) as BodyInit | null,
+			headers,
+		}),
 		cookies: {
 			set: vi.fn(),
 			delete: vi.fn(),
@@ -23,33 +35,39 @@ function createEvent({ method = "POST", body, url = "http://localhost/auth" } = 
 }
 
 function createMagicLinkAdapter() {
-	const tokens = new Map();
+	const tokens = new Map<string, any>();
 	let counter = 0;
 	return {
-		createToken: async (token) => {
+		createToken: async (token: any) => {
 			const id = `t${++counter}`;
 			tokens.set(id, { id, ...token });
 			return tokens.get(id);
 		},
-		findByTokenHash: async (tokenHash) => {
+		findByTokenHash: async (tokenHash: string) => {
 			for (const token of tokens.values()) {
 				if (token.tokenHash === tokenHash) return token;
 			}
 			return null;
 		},
-		findByEmailAndOtpHash: async ({ email, otpHash }) => {
+		findByEmailAndOtpHash: async ({
+			email,
+			otpHash,
+		}: {
+			email: string;
+			otpHash: string;
+		}) => {
 			for (const token of tokens.values()) {
 				if (token.email === email && token.otpHash === otpHash) return token;
 			}
 			return null;
 		},
-		deleteById: async (id) => tokens.delete(id),
-		deleteByEmail: async (email) => {
+		deleteById: async (id: string) => tokens.delete(id),
+		deleteByEmail: async (email: string) => {
 			for (const [id, token] of tokens.entries()) {
 				if (token.email === email) tokens.delete(id);
 			}
 		},
-		deleteByUserId: async (userId) => {
+		deleteByUserId: async (userId: string) => {
 			for (const [id, token] of tokens.entries()) {
 				if (token.userId === userId) tokens.delete(id);
 			}
@@ -69,7 +87,7 @@ describe("magic link handlers", () => {
 		});
 
 		const event = createEvent({ body: { email: "missing@example.com" } });
-		const response = await handler(event);
+		const response = await handler(event as any);
 		const payload = await response.json();
 
 		expect(payload.ok).toBe(true);
@@ -98,7 +116,7 @@ describe("magic link handlers", () => {
 		});
 
 		const requestEvent = createEvent({ body: { email: "u1@example.com" } });
-		const requestResponse = await requestHandler(requestEvent);
+		const requestResponse = await requestHandler(requestEvent as any);
 		const { token } = await requestResponse.json();
 
 		const verifyHandler = createMagicLinkVerifyHandler({
@@ -108,7 +126,7 @@ describe("magic link handlers", () => {
 		});
 
 		const verifyEvent = createEvent({ body: { token } });
-		const verifyResponse = await verifyHandler(verifyEvent);
+		const verifyResponse = await verifyHandler(verifyEvent as any);
 		const payload = await verifyResponse.json();
 
 		expect(payload.ok).toBe(true);

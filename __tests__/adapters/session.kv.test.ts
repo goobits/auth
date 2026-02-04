@@ -1,18 +1,18 @@
 import { describe, it, expect, vi } from 'vitest'
-import { KVSessionAdapter } from '../../src/adapters/session/kv.js'
+import { KVSessionAdapter } from '../../src/adapters/session/kv.ts'
 
 function createNamespace() {
-	const store = new Map()
+	const store = new Map<string, string>()
 	return {
-		get: async (key, opts) => {
+		get: async (key: string, opts?: { type?: string }) => {
 			const raw = store.get(key)
 			if (!raw) return null
 			return opts?.type === 'json' ? JSON.parse(raw) : raw
 		},
-		put: async (key, value) => { store.set(key, value) },
-		delete: async (key) => { store.delete(key) },
-		list: async ({ prefix }) => {
-			const keys = []
+		put: async (key: string, value: string) => { store.set(key, value) },
+		delete: async (key: string) => { store.delete(key) },
+		list: async ({ prefix }: { prefix?: string }) => {
+			const keys: { name: string }[] = []
 			for (const key of store.keys()) {
 				if (!prefix || key.startsWith(prefix)) {
 					keys.push({ name: key })
@@ -37,8 +37,9 @@ describe('KVSessionAdapter', () => {
 
 		vi.spyOn(Date, 'now').mockReturnValue(700)
 		const { session: validated } = await adapter.validateSession(session.id)
-		expect(validated.fresh).toBe(true)
-		expect(validated.expiresAt.getTime()).toBeGreaterThan(700)
+		expect(validated).toBeTruthy()
+		expect(validated!.fresh).toBe(true)
+		expect(validated!.expiresAt.getTime()).toBeGreaterThan(700)
 	})
 
 	it('deletes expired sessions', async () => {
@@ -59,6 +60,6 @@ describe('KVSessionAdapter', () => {
 		await adapter.createSession('u2')
 		const sessions = await adapter.listSessions('u1')
 		expect(sessions).toHaveLength(1)
-		expect(sessions[0].id).toBe(s1.id)
+		expect(sessions[0]!.id).toBe(s1.id)
 	})
 })

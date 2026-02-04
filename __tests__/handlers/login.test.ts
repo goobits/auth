@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createLoginHandler } from '../../src/handlers/login.js'
+import { createLoginHandler } from '../../src/handlers/login.ts'
 
 function createCookies() {
-	const store = new Map()
+	const store = new Map<string, { value: string; options: Record<string, unknown> }>()
 	return {
-		set: (name, value, options) => store.set(name, { value, options }),
-		get: (name) => store.get(name)?.value ?? null,
-		delete: (name) => store.delete(name),
+		set: (name: string, value: string, options: Record<string, unknown>) => store.set(name, { value, options }),
+		get: (name: string) => store.get(name)?.value ?? null,
+		delete: (name: string) => store.delete(name),
 		_store: store
 	}
 }
@@ -20,20 +20,20 @@ function createEvent({ provider = 'google', locals = {}, url = 'http://localhost
 	}
 }
 
-function getRedirectLocation(err) {
+function getRedirectLocation(err: { location?: string; headers?: Headers } | null) {
 	return err?.location || err?.headers?.get?.('location')
 }
 
 describe('createLoginHandler', () => {
 	it('rejects unknown provider', async () => {
-		const handler = createLoginHandler({ providers: {} })
+		const handler = createLoginHandler({ providers: {} as any })
 		const response = await handler(createEvent({ provider: 'unknown' }))
 		expect(response.status).toBe(400)
 	})
 
 	it('redirects if already authenticated', async () => {
 		const handler = createLoginHandler({
-			providers: { google: { provider: { createAuthorizationURL: () => new URL('https://example.com') } } },
+			providers: { google: { provider: { createAuthorizationURL: () => new URL('https://example.com') } as any } } as any,
 			redirectAfterLogin: '/home',
 			isAuthenticated: () => true
 		})
@@ -47,14 +47,16 @@ describe('createLoginHandler', () => {
 			providers: {
 				apple: { provider: { createAuthorizationURL }, scopes: ['email'] }
 			}
-		})
+		} as any)
 
 		try {
 			await handler(createEvent({ provider: 'apple' }))
-		} catch (err) {
-			const location = getRedirectLocation(err)
-			expect(err.status).toBe(302)
+		} catch (err: any) {
+			const error = err as { status?: number; headers?: Headers; location?: string }
+			const location = getRedirectLocation(error)
+			expect(error.status).toBe(302)
 			expect(location).toBeTruthy()
+			if (!location) throw new Error('Missing redirect location')
 			expect(new URL(location).searchParams.get('response_mode')).toBe('form_post')
 		}
 		expect(createAuthorizationURL).toHaveBeenCalled()
