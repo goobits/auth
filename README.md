@@ -898,7 +898,7 @@ APP_URL=https://your-app.com
 
 ## Testing
 
-Unit tests and integration tests are included in the `tests/` directory.
+Unit tests and integration tests are included in the `__tests__/` directory.
 
 ### Running Tests
 

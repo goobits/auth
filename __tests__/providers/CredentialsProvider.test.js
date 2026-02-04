@@ -5,7 +5,7 @@
  *
  * To run these tests:
  * cd packages/@goobits/auth
- * npx vitest run tests/providers/CredentialsProvider.test.js
+ * npx vitest run __tests__/providers/CredentialsProvider.test.js
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
