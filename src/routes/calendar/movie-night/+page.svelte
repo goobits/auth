@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-	<title>Movie Night - Rainbow</title>
+	<title>Movie Night | Rainbow Gym | MIKO.ART</title>
 </svelte:head>
 
 <div class="calendar-page">

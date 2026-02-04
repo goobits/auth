@@ -2,10 +2,10 @@ import { json } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.js'
 import { requireAdminSession, unauthorized } from '../_helpers.js'
 
-export async function GET({ url, platform, request }) {
+export async function GET(event) {
 	try {
-		const env = await buildEnv(platform)
-		const auth = await requireAdminSession({ env, request })
+		const env = await buildEnv(event.platform)
+		const auth = await requireAdminSession({ event })
 		if (!auth.ok) {
 			return unauthorized()
 		}
@@ -13,10 +13,10 @@ export async function GET({ url, platform, request }) {
 
 		// Get upcoming bookings (next 30 days by default)
 		const now = new Date()
-		const start = url.searchParams.get('start') || now.toISOString()
+		const start = event.url.searchParams.get('start') || now.toISOString()
 		const endDate = new Date(now)
 		endDate.setDate(endDate.getDate() + 30)
-		const end = url.searchParams.get('end') || endDate.toISOString()
+		const end = event.url.searchParams.get('end') || endDate.toISOString()
 
 		const res = await db.prepare(
 			`SELECT id, start_at as start, end_at as end, timezone, seats, name, email, note, status, created_at
@@ -47,7 +47,7 @@ export async function GET({ url, platform, request }) {
 			seats: bookings.reduce((sum, b) => sum + (b.seats || 1), 0)
 		}
 
-		return json({ ok: true, bookings, stats }, auth.setCookie ? { headers: { 'Set-Cookie': auth.setCookie } } : undefined)
+		return json({ ok: true, bookings, stats })
 	} catch (err) {
 		console.error('Admin bookings error:', err)
 		return json({ ok: false, error: { message: err.message } }, { status: 500 })

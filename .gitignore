@@ -12,6 +12,10 @@
 /build
 node_modules/
 
+# External repos
+/repos/*
+!/repos/*.revision
+
 # Local dev artifacts
 .DS_Store
 .dev/

@@ -50,7 +50,7 @@
 </script>
 
 <svelte:head>
-	<title>Admin Calendar - MIKO.ART</title>
+	<title>Calendar | Rainbow Gym | MIKO.ART</title>
 </svelte:head>
 
 <section>

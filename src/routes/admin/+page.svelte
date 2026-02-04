@@ -1,6 +1,6 @@
 <script>
 	import { onMount } from 'svelte'
-	import { Clock, Calendar, Check, RefreshCw, Save, ChevronRight, Loader, Users } from '@lucide/svelte'
+	import { Clock, Calendar, Check, RefreshCw, Save, ChevronRight, Loader, Users, LogOut } from '@lucide/svelte'
 
 	let tab = $state('dash')
 	let hours = $state({ from: '06:00', to: '22:00' })
@@ -35,8 +35,8 @@
 
 	const NAV = [
 		{ label: 'Dashboard', id: 'dash' },
-		{ label: 'Calendar', id: 'cal' },
-		{ label: 'Rainbow', id: 'calendar-auth' }
+		{ label: 'Settings', id: 'cal' },
+		{ label: 'Members', id: 'calendar-auth' }
 	]
 
 	async function checkAuth() {
@@ -209,8 +209,8 @@
 		calendarError = ''
 		try {
 			const [invitesRes, usersRes] = await Promise.all([
-				fetch(`/api/calendar/admin/invites?code=${adminCode}`),
-				fetch(`/api/calendar/admin/users?code=${adminCode}`)
+				fetch('/api/calendar/admin/invites'),
+				fetch('/api/calendar/admin/users')
 			])
 			const invitesData = await invitesRes.json()
 			const usersData = await usersRes.json()
@@ -221,7 +221,7 @@
 			if (usersData.ok) calendarUsers = usersData.users || []
 			else calendarError = usersData.error?.message || 'Failed to load users'
 		} catch (err) {
-			calendarError = err.message || 'Failed to load Rainbow data'
+			calendarError = err.message || 'Failed to load members data'
 		} finally {
 			calendarLoading = false
 		}
@@ -231,7 +231,7 @@
 		creatingInvite = true
 		calendarError = ''
 		try {
-			const res = await fetch(`/api/calendar/admin/invites?code=${adminCode}`, {
+			const res = await fetch('/api/calendar/admin/invites', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -259,7 +259,7 @@
 	async function deleteInvite(id) {
 		if (!confirm('Delete this invite?')) return
 		try {
-			const res = await fetch(`/api/calendar/admin/invites?code=${adminCode}&id=${id}`, {
+			const res = await fetch(`/api/calendar/admin/invites?id=${id}`, {
 				method: 'DELETE'
 			})
 			const data = await res.json()
@@ -300,7 +300,7 @@
 </script>
 
 <svelte:head>
-	<title>Admin - Rainbow Gym</title>
+	<title>Admin | Rainbow Gym | MIKO.ART</title>
 </svelte:head>
 
 {#if authChecking}
@@ -345,7 +345,7 @@
 					{n.label}
 				</button>
 			{/each}
-			<button class="side-item logout" onclick={logout}>Logout</button>
+			<button class="side-item logout" onclick={logout}><LogOut size={16} strokeWidth={1.8} /> Logout</button>
 		</aside>
 
 		<!-- Content -->
@@ -521,8 +521,8 @@
 			{/if}
 
 			{#if tab === 'calendar-auth'}
-				<h1 class="page-title">Rainbow</h1>
-				<p class="page-sub">Manage invite codes and users for Rainbow activities.</p>
+				<h1 class="page-title">Members</h1>
+				<p class="page-sub">Manage invite codes and users.</p>
 
 				{#if calendarError}
 					<div class="admin-section" style="background: #fee2e2; border-color: #fecaca;">
@@ -535,7 +535,7 @@
 					<div class="section-head">
 						<h3 class="section-title">Create Invite</h3>
 					</div>
-					<p class="section-desc">Generate invite codes for new Rainbow users.</p>
+					<p class="section-desc">Generate invite codes for new members.</p>
 					<div class="fields-grid">
 						<div class="fields-row">
 							<div class="field">
@@ -633,7 +633,7 @@
 										{user.name || user.email}
 									</span>
 									<span class="booking-meta">
-										{user.provider} · last login {formatDate(user.last_login_at)}
+										{user.provider || 'member'} · last login {formatDate(user.last_login_at)}
 									</span>
 								</div>
 								{#if i < calendarUsers.length - 1}

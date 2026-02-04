@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-	<title>Adventure - Rainbow</title>
+	<title>Adventure | Rainbow Gym | MIKO.ART</title>
 </svelte:head>
 
 <div class="calendar-page">

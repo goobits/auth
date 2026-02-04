@@ -28,7 +28,7 @@
 	}
 
 	async function logout() {
-		await fetch('/api/calendar/auth/logout', { method: 'POST' })
+		await fetch('/auth/logout', { method: 'POST' })
 		goto('/calendar/login')
 	}
 </script>
@@ -36,7 +36,7 @@
 <div class="calendar-shell">
 	<nav class="calendar-nav">
 		<div class="nav-inner">
-			<a href="/calendar" class="nav-brand">Rainbow</a>
+			<a href="/calendar" class="nav-brand">Members</a>
 			<div class="nav-links">
 				{#each navItems as item}
 					<a

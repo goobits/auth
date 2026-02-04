@@ -13,25 +13,11 @@
 		error = ''
 
 		try {
-			const res = await fetch('/api/calendar/auth/login', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					provider,
-					invite: inviteCode,
-					redirectTo
-				})
-			})
-
-			const data = await res.json()
-
-			if (!data.ok) {
-				error = data.error?.message || 'Login failed'
-				loading = false
-				return
-			}
-
-			window.location.href = data.authUrl
+			const params = new URLSearchParams()
+			if (inviteCode) params.set('invite', inviteCode)
+			if (redirectTo) params.set('redirect', redirectTo)
+			const qs = params.toString()
+			window.location.href = `/auth/${provider}${qs ? `?${qs}` : ''}`
 		} catch (e) {
 			error = 'Something went wrong. Please try again.'
 			loading = false
@@ -40,13 +26,13 @@
 </script>
 
 <svelte:head>
-	<title>Sign In - Rainbow</title>
+	<title>Sign In | Rainbow Gym | MIKO.ART</title>
 </svelte:head>
 
 <div class="calendar-page">
 	<section class="hero" style="padding-bottom: 40px;">
 		<div class="glow"></div>
-		<p class="eyebrow">Rainbow</p>
+		<p class="eyebrow">Members</p>
 		<h1>Welcome.</h1>
 		<p class="sub">Sign in to access activities and events.</p>
 	</section>

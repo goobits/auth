@@ -3,8 +3,7 @@ import { redirects } from '@src/redirects.js'
 import { sequence } from '@sveltejs/kit/hooks'
 import { createThemeHooks } from '@goobits/themes/server'
 import { themeConfig } from '$lib/config/theme.js'
-import { dev } from '$app/environment'
-import { validateSession, parseSessionCookie } from '@packages/calendar/src/calendar/session.js'
+import { getCalendarAuth } from '$lib/auth/calendar.js'
 
 /**
  * Processes redirects based on configured rules
@@ -46,26 +45,21 @@ const themeHandle = createThemeHooks(themeConfig, {
 	blockingScript: true
 }).transform
 
-let cachedDevDb = null
-
-async function getDb(platform) {
-	if (dev) {
-		if (!cachedDevDb) {
-			const { createSqliteDb } = await import('$lib/dev/sqliteDb.js')
-			cachedDevDb = createSqliteDb()
-		}
-		return cachedDevDb
-	}
-	if (platform?.env?.DB) {
-		return platform.env.DB
-	}
-	return null
-}
-
 async function handleCalendarAuth({ event, resolve }) {
 	const pathname = event.url.pathname
 
-	// Only protect /calendar/* routes (except login page and API routes)
+	// Attach auth locals for calendar + auth routes
+	if (!pathname.startsWith('/calendar') && !pathname.startsWith('/auth')) {
+		return resolve(event)
+	}
+
+	const { auth } = await getCalendarAuth({ event })
+	return auth.handlers.hooks({ event, resolve })
+}
+
+async function requireCalendarUser({ event, resolve }) {
+	const pathname = event.url.pathname
+
 	if (!pathname.startsWith('/calendar')) {
 		return resolve(event)
 	}
@@ -74,37 +68,24 @@ async function handleCalendarAuth({ event, resolve }) {
 	if (
 		pathname === '/calendar/login' ||
 		pathname === '/calendar/login/' ||
+		pathname === '/calendar/login/redirect' ||
+		pathname === '/calendar/login/redirect/' ||
 		pathname.startsWith('/api/calendar')
 	) {
 		return resolve(event)
 	}
 
-	const cookieHeader = event.request.headers.get('Cookie')
-	const sessionId = parseSessionCookie(cookieHeader)
-
-	if (!sessionId) {
+	if (!event.locals.user) {
 		const redirectTo = encodeURIComponent(pathname)
 		throw redirect(302, `/calendar/login?redirect=${redirectTo}`)
 	}
 
-	const db = await getDb(event.platform)
-	if (!db) {
-		throw redirect(302, '/calendar/login?error=db_unavailable')
-	}
-
-	const user = await validateSession({ db, sessionId })
-
-	if (!user) {
-		const redirectTo = encodeURIComponent(pathname)
-		throw redirect(302, `/calendar/login?redirect=${redirectTo}`)
-	}
-
-	event.locals.calendarUser = user
 	return resolve(event)
 }
 
 export const handle = sequence(
 	themeHandle,
 	handleRedirects,
-	handleCalendarAuth
+	handleCalendarAuth,
+	requireCalendarUser
 )

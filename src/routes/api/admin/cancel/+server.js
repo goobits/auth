@@ -4,16 +4,16 @@ import { requireAdminSession, unauthorized } from '../_helpers.js'
 import { ensureValidGoogleToken, getConnection, cancelBookingAndEvents, saveConnection } from '../../../../../packages/calendar/src/index.js'
 import { getTokenKey } from '../../../../../functions/api/calendar/_helpers.js'
 
-export async function POST({ request, platform }) {
+export async function POST(event) {
 	try {
-		const env = await buildEnv(platform)
-		const auth = await requireAdminSession({ env, request })
+		const env = await buildEnv(event.platform)
+		const auth = await requireAdminSession({ event })
 		if (!auth.ok) {
 			return unauthorized()
 		}
 		const db = env.DB
 
-		const { bookingId } = await request.json()
+		const { bookingId } = await event.request.json()
 		if (!bookingId) {
 			return json({ ok: false, error: { message: 'Missing bookingId' } }, { status: 400 })
 		}
@@ -29,7 +29,7 @@ export async function POST({ request, platform }) {
 
 		await cancelBookingAndEvents({ db: env.DB, accessToken: token.accessToken, bookingId })
 
-		return json({ ok: true }, auth.setCookie ? { headers: { 'Set-Cookie': auth.setCookie } } : undefined)
+		return json({ ok: true })
 	} catch (err) {
 		console.error('Admin cancel error:', err)
 		return json({ ok: false, error: { message: err.message } }, { status: 500 })

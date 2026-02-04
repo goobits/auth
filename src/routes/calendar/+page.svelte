@@ -32,13 +32,13 @@
 </script>
 
 <svelte:head>
-	<title>Rainbow</title>
+	<title>Rainbow Gym | MIKO.ART</title>
 </svelte:head>
 
 <div class="calendar-page">
 	<section class="hero">
 		<div class="glow"></div>
-		<p class="eyebrow">Rainbow</p>
+		<p class="eyebrow">Members</p>
 		<h1>Hey{firstName ? `, ${firstName}` : ''}.<br/>What's the move?</h1>
 		<p class="sub">Pick an activity and let's make something happen.</p>
 	</section>

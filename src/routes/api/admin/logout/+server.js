@@ -1,23 +1,15 @@
 import { json } from '@sveltejs/kit'
-import { buildEnv } from '../../calendar/_bridge.js'
-import { clearAdminSessionCookie, deleteAdminSession, parseAdminSessionCookie } from '../../../../../packages/calendar/src/admin/session.js'
+import { getAdminAuth } from '$lib/auth/admin.js'
 
-export async function POST({ request, platform }) {
+export async function POST({ platform, cookies }) {
 	try {
-		const env = await buildEnv(platform)
-		const token = parseAdminSessionCookie(request.headers.get('cookie'))
+		const { sessionAdapter } = await getAdminAuth({ event: { platform } })
+		const token = cookies.get(sessionAdapter.cookieName)
 		if (token) {
-			await deleteAdminSession({ db: env.DB, token })
+			await sessionAdapter.invalidateSession(token)
 		}
-		const secure = env.NODE_ENV !== 'development'
-		const cookie = clearAdminSessionCookie({ secure })
-		return new Response(JSON.stringify({ ok: true }), {
-			status: 200,
-			headers: {
-				'Content-Type': 'application/json',
-				'Set-Cookie': cookie
-			}
-		})
+		sessionAdapter.deleteSessionCookie(cookies)
+		return json({ ok: true })
 	} catch (err) {
 		console.error('Admin logout error:', err)
 		return json({ ok: false, error: { message: err.message } }, { status: 500 })

@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-	<title>Circus - Rainbow</title>
+	<title>Circus | Rainbow Gym | MIKO.ART</title>
 </svelte:head>
 
 <div class="calendar-page">

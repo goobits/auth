@@ -330,7 +330,7 @@
 </script>
 
 <svelte:head>
-	<title>Rainbow Gym - MIKO.ART</title>
+	<title>Rainbow Gym | MIKO.ART</title>
 </svelte:head>
 
 <div class="calendar-gym">
