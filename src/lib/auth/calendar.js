@@ -8,6 +8,7 @@ import { redirect } from '@sveltejs/kit'
 const INVITE_COOKIE = 'calendar_invite'
 const REDIRECT_COOKIE = 'calendar_redirect'
 const INVITE_TTL_SECONDS = 600
+const SAFE_REDIRECT_PREFIXES = ['/calendar', '/calendar-gym', '/admin']
 
 let cachedDevDb = null
 
@@ -26,11 +27,22 @@ function getBaseUrl({ env, url }) {
 	return env.PUBLIC_BASE_URL || env.BASE_URL || url?.origin || ''
 }
 
+function normalizeRedirect(redirectTo) {
+	if (!redirectTo || typeof redirectTo !== 'string') return null
+	const trimmed = redirectTo.trim()
+	if (!trimmed.startsWith('/')) return null
+	if (trimmed.startsWith('//')) return null
+	if (trimmed.includes('\\')) return null
+	if (/[\r\n]/.test(trimmed)) return null
+	if (!SAFE_REDIRECT_PREFIXES.some(prefix => trimmed.startsWith(prefix))) return null
+	return trimmed
+}
+
 export async function getCalendarAuth({ event }) {
 	const db = await getDb(event.platform)
 	if (!db) throw new Error('Database unavailable')
 
-	const env = event.platform?.env || {}
+	const env = event.platform?.env || process.env || {}
 	const baseUrl = getBaseUrl({ env, url: event.url })
 	const secureCookies = env.NODE_ENV !== 'development'
 
@@ -68,30 +80,36 @@ export async function getCalendarAuth({ event }) {
 		}
 	})
 
+	const providers = {}
+	if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
+		providers.google = {
+			provider: new GoogleProvider({
+				clientId: env.GOOGLE_CLIENT_ID,
+				clientSecret: env.GOOGLE_CLIENT_SECRET,
+				callbackUrl: env.GOOGLE_REDIRECT_URI || `${baseUrl}/api/calendar/oauth-callback`
+			}),
+			scopes: ['openid', 'profile', 'email']
+		}
+	}
+
+	if (env.APPLE_CLIENT_ID && env.APPLE_TEAM_ID && env.APPLE_KEY_ID && env.APPLE_PRIVATE_KEY) {
+		providers.apple = {
+			provider: new AppleProvider({
+				clientId: env.APPLE_CLIENT_ID,
+				teamId: env.APPLE_TEAM_ID,
+				keyId: env.APPLE_KEY_ID,
+				privateKey: env.APPLE_PRIVATE_KEY,
+				callbackUrl: env.APPLE_REDIRECT_URI || `${baseUrl}/api/calendar/oauth-callback`
+			})
+		}
+	}
+
 	const auth = createAuth({
 		adapters: {
 			session: sessionAdapter,
 			database: databaseAdapter
 		},
-		providers: {
-			google: {
-				provider: new GoogleProvider({
-					clientId: env.GOOGLE_CLIENT_ID,
-					clientSecret: env.GOOGLE_CLIENT_SECRET,
-					callbackUrl: `${baseUrl}/auth/google/callback`
-				}),
-				scopes: ['openid', 'profile', 'email']
-			},
-			apple: {
-				provider: new AppleProvider({
-					clientId: env.APPLE_CLIENT_ID,
-					teamId: env.APPLE_TEAM_ID,
-					keyId: env.APPLE_KEY_ID,
-					privateKey: env.APPLE_PRIVATE_KEY,
-					callbackUrl: `${baseUrl}/auth/apple/callback`
-				})
-			}
-		},
+		providers,
 		urls: {
 			afterLogin: '/calendar/login/redirect',
 			afterLogout: '/calendar/login'
@@ -160,8 +178,9 @@ export function setCalendarLoginContext(cookies, { invite, redirectTo, secure })
 			maxAge: INVITE_TTL_SECONDS
 		})
 	}
-	if (redirectTo) {
-		cookies.set(REDIRECT_COOKIE, redirectTo, {
+	const safeRedirect = normalizeRedirect(redirectTo)
+	if (safeRedirect) {
+		cookies.set(REDIRECT_COOKIE, safeRedirect, {
 			httpOnly: true,
 			secure,
 			sameSite: 'lax',
@@ -175,7 +194,7 @@ export function getCalendarRedirect(cookies) {
 	const redirectTo = cookies.get(REDIRECT_COOKIE)
 	if (redirectTo) {
 		cookies.delete(REDIRECT_COOKIE, { path: '/' })
-		return redirectTo
+		return normalizeRedirect(redirectTo)
 	}
 	return null
 }
