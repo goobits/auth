@@ -10,8 +10,8 @@ const ROUTES_DIR = 'src/routes'
 // Categories to hide in production
 const DEV_ONLY_CATEGORIES = ['Admin Pages', 'API Routes', 'Utility Pages']
 
-function scanRoutes(dir, basePath = '') {
-	const routes = []
+function scanRoutes(dir: string, basePath = '') {
+	const routes: any[] = []
 	const entries = fs.readdirSync(dir, { withFileTypes: true })
 
 	for (const entry of entries) {
@@ -72,7 +72,7 @@ function scanRoutes(dir, basePath = '') {
 				const content = fs.readFileSync(fullPath, 'utf-8')
 
 				// Extract HTTP methods
-				const methods = []
+				const methods: string[] = []
 				if (content.includes('export async function GET') || content.includes('export function GET')) methods.push('GET')
 				if (content.includes('export async function POST') || content.includes('export function POST')) methods.push('POST')
 				if (content.includes('export async function PUT') || content.includes('export function PUT')) methods.push('PUT')
@@ -95,7 +95,7 @@ function scanRoutes(dir, basePath = '') {
 	return routes
 }
 
-function getRouteName(routePath) {
+function getRouteName(routePath: string) {
 	if (routePath === '/') return 'Home'
 
 	const parts = routePath.split('/').filter(Boolean)
@@ -114,7 +114,7 @@ function getRouteName(routePath) {
 		.join(' ')
 }
 
-function categorizeRoute(routePath) {
+function categorizeRoute(routePath: string) {
 	if (routePath === '/') return 'Main Pages'
 	if (routePath.startsWith('/admin')) return 'Admin Pages'
 	if (routePath.startsWith('/api')) return 'API Routes'
@@ -132,7 +132,7 @@ export async function load() {
 	const posts = await getJournalPosts()
 
 	// Add dynamic journal post routes
-	const postRoutes = posts.map(p => ({
+	const postRoutes = (posts as any[]).map(p => ({
 		path: `/${p.urlPath}`,
 		name: p.metadata?.fm?.title || p.slug,
 		type: 'page',
@@ -164,16 +164,16 @@ export async function load() {
 	}
 
 	// Group by category
-	const grouped = {}
-	for (const route of allRoutes) {
-		const cat = route.category
+	const grouped: Record<string, any[]> = {}
+	for (const route of allRoutes as any[]) {
+		const cat = (route as any).category
 		if (!grouped[cat]) grouped[cat] = []
 		grouped[cat].push(route)
 	}
 
 	// Sort routes within each category by path
 	for (const cat of Object.keys(grouped)) {
-		grouped[cat].sort((a, b) => a.path.localeCompare(b.path))
+		grouped[cat].sort((a: any, b: any) => a.path.localeCompare(b.path))
 	}
 
 	return {

@@ -1,9 +1,10 @@
 import { redirect } from '@sveltejs/kit'
-import { redirects } from '@src/redirects.js'
+import { redirects } from '@src/redirects.ts'
 import { sequence } from '@sveltejs/kit/hooks'
 import { createThemeHooks } from '@goobits/themes/server'
-import { themeConfig } from '$lib/config/theme.js'
-import { getCalendarAuth } from '$lib/auth/calendar.js'
+import { themeConfig } from '$lib/config/theme.ts'
+import { getCalendarAuth } from '$lib/auth/calendar.ts'
+import type { Handle } from '@sveltejs/kit'
 
 /**
  * Processes redirects based on configured rules
@@ -13,7 +14,7 @@ import { getCalendarAuth } from '$lib/auth/calendar.js'
  * @returns {Promise<Response>} Passed to next handler if no redirect matches
  * @throws {Redirect} Redirects to target URL if a match is found
  */
-async function handleRedirects({ event, resolve }) {
+async function handleRedirects({ event, resolve }: Parameters<Handle>[0]) {
 	const pathname = event.url.pathname.toLowerCase()
 	const matchingRedirect = redirects.find(redirect => {
 		if (redirect.from.includes('(.*)')) {
@@ -45,7 +46,7 @@ const themeHandle = createThemeHooks(themeConfig, {
 	blockingScript: true
 }).transform
 
-async function handleCalendarAuth({ event, resolve }) {
+async function handleCalendarAuth({ event, resolve }: Parameters<Handle>[0]) {
 	const pathname = event.url.pathname
 
 	// Attach auth locals for calendar + auth routes
@@ -57,7 +58,7 @@ async function handleCalendarAuth({ event, resolve }) {
 	return auth.handlers.hooks({ event, resolve })
 }
 
-async function requireCalendarUser({ event, resolve }) {
+async function requireCalendarUser({ event, resolve }: Parameters<Handle>[0]) {
 	const pathname = event.url.pathname
 
 	if (!pathname.startsWith('/calendar')) {
@@ -75,7 +76,8 @@ async function requireCalendarUser({ event, resolve }) {
 		return resolve(event)
 	}
 
-	if (!event.locals.user) {
+	const locals = event.locals as { user?: unknown }
+	if (!locals.user) {
 		const redirectTo = encodeURIComponent(pathname)
 		throw redirect(302, `/calendar/login?redirect=${redirectTo}`)
 	}
