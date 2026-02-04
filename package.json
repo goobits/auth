@@ -52,5 +52,12 @@
     "pg-server": "^0.1.8",
     "postgres": "^3.4.8",
     "vitest": "^4.0.6"
+  },
+  "vitest": {
+    "test": {
+      "setupFiles": [
+        "./vitest.setup.js"
+      ]
+    }
   }
 }
