@@ -1,6 +1,6 @@
 import { dev } from '$app/environment'
 
-let cachedDevDb = null
+let cachedDevDb: any = null
 
 /**
  * Builds the environment object for API handlers.
@@ -8,12 +8,12 @@ let cachedDevDb = null
  * Production: Uses Cloudflare D1 from platform.env.DB
  * Development: Falls back to local SQLite with D1-compatible wrapper
  */
-export async function buildEnv(platform) {
+export async function buildEnv(platform: any) {
 	// Development: use local SQLite to avoid relying on external bindings
 	if (dev) {
 		if (!cachedDevDb) {
 			// Dynamic import - only executed in dev, tree-shaken in prod
-			const { createSqliteDb } = await import('$lib/dev/sqliteDb.js')
+			const { createSqliteDb } = await import('$lib/dev/sqliteDb.ts')
 			cachedDevDb = createSqliteDb()
 		}
 		return {

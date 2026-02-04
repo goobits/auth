@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit'
-import { buildEnv } from '../../calendar/_bridge.js'
-import { requireAdminSession, unauthorized } from '../_helpers.js'
+import { buildEnv } from '../../calendar/_bridge.ts'
+import { requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
 
-export async function GET(event) {
+export async function GET(event: any) {
 	try {
 		const env = await buildEnv(event.platform)
 		const auth = await requireAdminSession({ event })
@@ -27,7 +27,7 @@ export async function GET(event) {
 			 ORDER BY start_at ASC`
 		).bind(start, end).all()
 
-		const bookings = (res?.results ?? []).map(row => ({
+		const bookings = (res?.results ?? []).map((row: any) => ({
 			id: row.id,
 			date: formatDate(row.start),
 			time: `${formatTime(row.start)} – ${formatTime(row.end)}`,
@@ -44,22 +44,22 @@ export async function GET(event) {
 
 		const stats = {
 			upcoming: bookings.length,
-			seats: bookings.reduce((sum, b) => sum + (b.seats || 1), 0)
+			seats: bookings.reduce((sum: number, b: any) => sum + (b.seats || 1), 0)
 		}
 
-		return json({ ok: true, bookings, stats })
+		return json({ ok: true, bookings, stats }, { headers: noStoreHeaders })
 	} catch (err) {
 		console.error('Admin bookings error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
+		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
 	}
 }
 
-function formatDate(isoString) {
+function formatDate(isoString: string) {
 	const date = new Date(isoString)
 	return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-function formatTime(isoString) {
+function formatTime(isoString: string) {
 	const date = new Date(isoString)
 	return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }

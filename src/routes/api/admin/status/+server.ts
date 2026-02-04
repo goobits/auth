@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit'
-import { buildEnv } from '../../calendar/_bridge.js'
-import { requireAdminSession, unauthorized } from '../_helpers.js'
+import { buildEnv } from '../../calendar/_bridge.ts'
+import { requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
 
-export async function GET(event) {
+export async function GET(event: any) {
 	try {
 		const env = await buildEnv(event.platform)
 		const auth = await requireAdminSession({ event })
@@ -25,9 +25,9 @@ export async function GET(event) {
 			`SELECT key, value FROM settings WHERE key IN ('hoursFrom', 'hoursTo', 'buffer', 'notice', 'capacity')`
 		).all()
 
-		const settings = {}
+		const settings: Record<string, string> = {}
 		for (const row of settingsRes?.results || []) {
-			settings[row.key] = row.value
+			settings[(row as any).key] = (row as any).value
 		}
 
 		const rules = {
@@ -46,9 +46,9 @@ export async function GET(event) {
 				expiresAt
 			},
 			rules
-		})
+		}, { headers: noStoreHeaders })
 	} catch (err) {
 		console.error('Admin status error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
+		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
 	}
 }

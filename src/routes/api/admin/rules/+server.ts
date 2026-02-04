@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit'
-import { buildEnv } from '../../calendar/_bridge.js'
-import { requireAdminSession, unauthorized } from '../_helpers.js'
+import { buildEnv } from '../../calendar/_bridge.ts'
+import { requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
 
-export async function POST(event) {
+export async function POST(event: any) {
 	try {
 		const env = await buildEnv(event.platform)
 		const auth = await requireAdminSession({ event })
@@ -13,27 +13,27 @@ export async function POST(event) {
 
 		const body = await event.request.json().catch(() => null)
 		if (!body) {
-			return json({ ok: false, error: { message: 'Invalid JSON' } }, { status: 400 })
+			return json({ ok: false, error: { message: 'Invalid JSON' } }, { status: 400, headers: noStoreHeaders })
 		}
 		const { hoursFrom, hoursTo, buffer, notice, capacity } = body
 		const now = Date.now()
 
 		const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/
 		if (!timePattern.test(String(hoursFrom)) || !timePattern.test(String(hoursTo))) {
-			return json({ ok: false, error: { message: 'Invalid hours format' } }, { status: 400 })
+			return json({ ok: false, error: { message: 'Invalid hours format' } }, { status: 400, headers: noStoreHeaders })
 		}
 
 		const bufferValue = Number.parseInt(buffer, 10)
 		const noticeValue = Number.parseInt(notice, 10)
 		const capacityValue = Number.parseInt(capacity, 10)
 		if (!Number.isFinite(bufferValue) || bufferValue < 0 || bufferValue > 180) {
-			return json({ ok: false, error: { message: 'Invalid buffer' } }, { status: 400 })
+			return json({ ok: false, error: { message: 'Invalid buffer' } }, { status: 400, headers: noStoreHeaders })
 		}
 		if (!Number.isFinite(noticeValue) || noticeValue < 0 || noticeValue > 720) {
-			return json({ ok: false, error: { message: 'Invalid notice' } }, { status: 400 })
+			return json({ ok: false, error: { message: 'Invalid notice' } }, { status: 400, headers: noStoreHeaders })
 		}
 		if (!Number.isFinite(capacityValue) || capacityValue < 1 || capacityValue > 50) {
-			return json({ ok: false, error: { message: 'Invalid capacity' } }, { status: 400 })
+			return json({ ok: false, error: { message: 'Invalid capacity' } }, { status: 400, headers: noStoreHeaders })
 		}
 
 		// Save each setting
@@ -52,9 +52,9 @@ export async function POST(event) {
 			).bind(key, value, now).run()
 		}
 
-		return json({ ok: true })
+		return json({ ok: true }, { headers: noStoreHeaders })
 	} catch (err) {
 		console.error('Admin rules save error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
+		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
 	}
 }
