@@ -52,3 +52,39 @@ export const VERIFICATION_TOKEN_TYPES = {
 	PASSWORD_RESET: "password_reset",
 	EMAIL_UPDATE: "email_update",
 };
+
+/**
+ * @typedef {Object} MagicLinkToken
+ * @property {string} id - Token ID
+ * @property {string|null} userId - User ID (optional for pre-signup)
+ * @property {string} email - Email address
+ * @property {string} tokenHash - Hashed token
+ * @property {string|null} otpHash - Hashed OTP (optional)
+ * @property {Date} expiresAt - Expiration timestamp
+ * @property {Date} createdAt - Creation timestamp
+ */
+
+/**
+ * @typedef {Object} WebAuthnCredential
+ * @property {string} id - Internal ID
+ * @property {string} userId - User ID
+ * @property {string} credentialId - WebAuthn credential ID (base64url)
+ * @property {string} publicKey - Public key (base64url)
+ * @property {number} counter - Signature counter
+ * @property {string[]|null} transports - Transports
+ * @property {string|null} name - Friendly name
+ * @property {Date} createdAt - Creation timestamp
+ * @property {Date} updatedAt - Updated timestamp
+ */
+
+/**
+ * @typedef {Object} SessionSummary
+ * @property {string} id - Session ID
+ * @property {string} userId - User ID
+ * @property {Date} expiresAt - Expiration timestamp
+ * @property {Date|null} [createdAt] - Creation timestamp
+ * @property {Date|null} [lastActiveAt] - Last active timestamp
+ * @property {string|null} [ip] - IP address
+ * @property {string|null} [userAgent] - User agent
+ * @property {boolean} [current] - Whether this is the current session
+ */

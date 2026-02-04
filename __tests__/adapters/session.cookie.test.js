@@ -34,4 +34,13 @@ describe('CookieSessionAdapter', () => {
 		expect(entry.options.secure).toBe(false)
 		expect(entry.options.sameSite).toBe('lax')
 	})
+
+	it('lists sessions for a user', async () => {
+		const adapter = new CookieSessionAdapter()
+		await adapter.createSession('u1')
+		await adapter.createSession('u2')
+		const sessions = await adapter.listSessions('u1')
+		expect(sessions).toHaveLength(1)
+		expect(sessions[0].userId).toBe('u1')
+	})
 })

@@ -18,3 +18,20 @@ export {
 	createMfaDisableHandler,
 	createMfaBackupCodeHandler,
 } from "./mfa.js";
+
+// Magic link handlers
+export {
+	createMagicLinkRequestHandler,
+	createMagicLinkVerifyHandler,
+} from "./magic-link.js";
+
+// WebAuthn handlers
+export {
+	createWebAuthnRegisterOptionsHandler,
+	createWebAuthnRegisterVerifyHandler,
+	createWebAuthnLoginOptionsHandler,
+	createWebAuthnLoginVerifyHandler,
+} from "./webauthn.js";
+
+// Session management handlers
+export { createSessionListHandler, createSessionRevokeHandler } from "./sessions.js";

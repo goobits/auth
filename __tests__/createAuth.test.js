@@ -33,8 +33,12 @@ describe('createAuth', () => {
 	it('throws when required config is missing', () => {
 		expect(() => createAuth({ adapters: {}, providers: { google: { provider: {} } } }))
 			.toThrow('createAuth requires adapters.session')
-		expect(() => createAuth({ adapters: { session: {} }, providers: {} }))
-			.toThrow('createAuth requires at least one provider')
+	})
+
+	it('allows auth without OAuth providers', () => {
+		const auth = createAuth({ adapters: { session: {} } })
+		expect(auth.handlers.login).toBeUndefined()
+		expect(auth.handlers.callback).toBeUndefined()
 	})
 
 	it('clears cookie when session is invalid', async () => {

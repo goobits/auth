@@ -83,6 +83,16 @@ export class CookieSessionAdapter extends SessionAdapter {
 		}
 	}
 
+	async listSessions(userId) {
+		const sessions = [];
+		for (const session of this._sessions.values()) {
+			if (session.userId === userId) {
+				sessions.push(session);
+			}
+		}
+		return sessions;
+	}
+
 	setSessionCookie(cookies, session) {
 		cookies.set(this.cookieName, session.id, {
 			httpOnly: true,

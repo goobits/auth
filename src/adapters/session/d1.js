@@ -17,6 +17,10 @@ export class D1SessionAdapter extends SessionAdapter {
 			sessionId: options.columns?.sessionId || "id",
 			userId: options.columns?.userId || "user_id",
 			expiresAt: options.columns?.expiresAt || "expires_at",
+			createdAt: options.columns?.createdAt || null,
+			lastActiveAt: options.columns?.lastActiveAt || null,
+			ip: options.columns?.ip || null,
+			userAgent: options.columns?.userAgent || null,
 		};
 		this.userColumns = {
 			id: options.userColumns?.id || "id",
@@ -111,6 +115,38 @@ export class D1SessionAdapter extends SessionAdapter {
 			.prepare(`DELETE FROM ${this.sessionsTable} WHERE ${this.columns.userId} = ?`)
 			.bind(userId)
 			.run();
+	}
+
+	async listSessions(userId) {
+		const columns = [
+			this.columns.sessionId,
+			this.columns.userId,
+			this.columns.expiresAt,
+			this.columns.createdAt,
+			this.columns.lastActiveAt,
+			this.columns.ip,
+			this.columns.userAgent,
+		];
+		const unique = [...new Set(columns.filter(Boolean))];
+		const sql = `SELECT ${unique.join(", ")} FROM ${this.sessionsTable} WHERE ${this.columns.userId} = ?`;
+		const result = await this.db.prepare(sql).bind(userId).all();
+		return (result?.results ?? []).map((row) => ({
+			id: row[this.columns.sessionId] ?? row.id,
+			userId: row[this.columns.userId] ?? row.user_id,
+			expiresAt: new Date(
+				row[this.columns.expiresAt] ?? row.expires_at ?? row.expiresAt,
+			),
+			createdAt: this.columns.createdAt
+				? row[this.columns.createdAt] ?? null
+				: null,
+			lastActiveAt: this.columns.lastActiveAt
+				? row[this.columns.lastActiveAt] ?? null
+				: null,
+			ip: this.columns.ip ? row[this.columns.ip] ?? null : null,
+			userAgent: this.columns.userAgent
+				? row[this.columns.userAgent] ?? null
+				: null,
+		}));
 	}
 
 	setSessionCookie(cookies, session) {

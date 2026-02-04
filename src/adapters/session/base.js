@@ -41,6 +41,15 @@ export class SessionAdapter {
 	}
 
 	/**
+	 * List sessions for a user
+	 * @param {string} userId - User ID
+	 * @returns {Promise<Array<import('../../types').Session>>}
+	 */
+	async listSessions(userId) {
+		throw new Error("listSessions must be implemented");
+	}
+
+	/**
 	 * Set session cookie
 	 * @param {import('@sveltejs/kit').Cookies} cookies - SvelteKit cookies object
 	 * @param {import('../../types').Session} session - Session to set
