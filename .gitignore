@@ -23,4 +23,5 @@ node_modules/
 .wrangler/
 tasks/
 temp/
+test-results/
 vm.yaml
