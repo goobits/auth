@@ -14,7 +14,11 @@
     "./providers": "./src/providers/index.js",
     "./handlers": "./src/handlers/index.js",
     "./utils": "./src/utils/index.js",
-    "./types": "./src/types/index.js"
+    "./types": "./src/types/index.js",
+    "./mfa": "./src/mfa/index.js",
+    "./ui": "./src/ui/index.js",
+    "./ui/theme.css": "./src/ui/theme.css",
+    "./security": "./src/security/index.js"
   },
   "scripts": {
     "test": "vitest run",

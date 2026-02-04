@@ -10,3 +10,11 @@ export {
 	createPasswordResetRequestHandler,
 	createPasswordResetConfirmHandler,
 } from "./password-reset.js";
+
+// MFA handlers
+export {
+	createMfaEnrollHandler,
+	createMfaVerifyHandler,
+	createMfaDisableHandler,
+	createMfaBackupCodeHandler,
+} from "./mfa.js";

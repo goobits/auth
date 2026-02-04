@@ -4,13 +4,49 @@
  * @param {import('../adapters/database/base.js').DatabaseAdapter} config.userAdapter - User adapter
  * @param {import('../utils/tokens.js').VerificationTokenAdapter} config.verificationTokenAdapter - Verification token adapter
  * @param {Function} config.sendPasswordResetEmail - Function to send reset email (email, token) => Promise<void>
+ * @param {Object} [config.csrf] - CSRF validation config
+ * @param {Function} [config.csrf.validate] - Async function (event) => boolean
+ * @param {string} [config.csrf.errorMessage] - Error message for invalid CSRF
+ * @param {Object} [config.rateLimit] - Rate limit config
+ * @param {Function} [config.rateLimit.check] - Async function (key) => { allowed }
+ * @param {Function} [config.rateLimit.key] - Function (event) => string for rate limit key
  * @returns {Function} SvelteKit request handler
  */
 export function createPasswordResetRequestHandler(config) {
-	const { userAdapter, verificationTokenAdapter, sendPasswordResetEmail } =
-		config;
+	const {
+		userAdapter,
+		verificationTokenAdapter,
+		sendPasswordResetEmail,
+		csrf,
+		rateLimit,
+	} = config;
 
 	return async (event) => {
+		if (csrf?.validate) {
+			const valid = await csrf.validate(event);
+			if (!valid) {
+				return {
+					error: csrf.errorMessage || "Invalid CSRF token",
+					success: false,
+				};
+			}
+		}
+
+		if (rateLimit?.check) {
+			const key = rateLimit.key
+				? rateLimit.key(event)
+				: event.getClientAddress
+					? event.getClientAddress()
+					: event.request.headers.get("x-forwarded-for") || "unknown";
+			const result = await rateLimit.check(key);
+			if (!result?.allowed) {
+				return {
+					error: "Too many attempts. Try again later.",
+					success: false,
+				};
+			}
+		}
+
 		const formData = await event.request.formData();
 		const email = formData.get("email")?.toString();
 

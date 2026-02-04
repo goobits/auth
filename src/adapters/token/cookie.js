@@ -41,7 +41,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 			throw new Error("Cookies not set. Call _setCookies() first.");
 		}
 
-		const encryptedTokens = encryptTokens(tokens, this.encryptionKey);
+		const encryptedTokens = await encryptTokens(tokens, this.encryptionKey);
 		const cookieName = `${this.cookieName}_${provider}`;
 
 		this._cookies.set(cookieName, encryptedTokens, {
@@ -63,7 +63,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 
 		if (!encryptedTokens) return null;
 
-		return decryptTokens(encryptedTokens, this.encryptionKey);
+		return await decryptTokens(encryptedTokens, this.encryptionKey);
 	}
 
 	async refreshTokens(userId, provider) {

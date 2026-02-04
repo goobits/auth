@@ -34,7 +34,7 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 
 	async storeTokens(userId, provider, tokens) {
 		const tokenData = this.encrypt
-			? encryptTokens(tokens, this.encryptionKey)
+			? await encryptTokens(tokens, this.encryptionKey)
 			: JSON.stringify(tokens);
 
 		// Delete existing tokens for this user/provider
@@ -69,7 +69,7 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 		if (!result) return null;
 
 		return this.encrypt
-			? decryptTokens(result.tokens, this.encryptionKey)
+			? await decryptTokens(result.tokens, this.encryptionKey)
 			: JSON.parse(result.tokens);
 	}
 

@@ -57,7 +57,7 @@ export function createLoginHandler(config) {
 		const { state, codeVerifier } = createOAuthCookies(
 			cookies,
 			providerName,
-			{ secure: secureCookies },
+			{ secure: secureCookies, sameSite: "lax" },
 		);
 
 		// Create authorization URL

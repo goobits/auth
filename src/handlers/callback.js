@@ -56,11 +56,16 @@ export function createCallbackHandler(config) {
 				throw error(400, "Invalid OAuth provider");
 			}
 
-			// Extract Apple user data if present (POST form data)
+			// Extract Apple user data and callback params if present (POST form data)
 			let appleUserData = null;
+			let overrideParams = null;
 			if (providerName === "apple" && event.request.method === "POST") {
 				const formData = await event.request.formData();
 				appleUserData = formData.get("user");
+				overrideParams = {
+					code: formData.get("code")?.toString() ?? null,
+					state: formData.get("state")?.toString() ?? null,
+				};
 			}
 
 			// Handle OAuth callback
@@ -69,6 +74,7 @@ export function createCallbackHandler(config) {
 				provider: providerName,
 				providerInstance,
 				appleUserData,
+				overrideParams,
 				callbacks: {
 					onAuthenticated: async (userProfile, tokens) => {
 						await onAuthenticated(event, userProfile, tokens);
