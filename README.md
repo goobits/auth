@@ -6,6 +6,7 @@ Pluggable authentication system for SvelteKit applications with support for OAut
 
 - **Pluggable Adapters**: Database, session, and token storage adapters
 - **Multiple Backends**: Drizzle ORM, cookie-based, or bring your own
+- **Cloudflare D1 Support**: D1 adapters for sessions, users, tokens, and verification tokens
 - **OAuth Support**: Google, Apple, and extensible provider system
 - **Local Authentication**: Email/password signup, signin, and password management
 - **Password Security**: Argon2id hashing with configurable validation
@@ -15,6 +16,8 @@ Pluggable authentication system for SvelteKit applications with support for OAut
 - **SvelteKit Native**: Built specifically for SvelteKit with hooks integration
 - **Session Management**: Rolling sessions with configurable lifetime and refresh
 - **Token Encryption**: AES-256-GCM encryption for OAuth tokens
+- **MFA Ready**: TOTP + backup codes utilities and handlers
+- **Rate Limiting**: Optional login rate limiting helper
 
 ## Installation
 
@@ -58,6 +61,43 @@ export const googleProvider = new GoogleProvider({
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   callbackUrl: `${process.env.APP_URL}/sign-in/google/callback`,
 });
+```
+
+### Cloudflare D1 Quick Start
+
+```javascript
+import { D1SessionAdapter, D1UserAdapter, D1TokenAdapter } from '@goobits/auth/adapters';
+
+export const sessionAdapter = new D1SessionAdapter(env.DB, {
+  sessionsTable: 'sessions',
+  usersTable: 'users',
+});
+
+export const userAdapter = new D1UserAdapter(env.DB, {
+  usersTable: 'users',
+  oauthAccountsTable: 'oauth_accounts',
+});
+
+export const tokenAdapter = new D1TokenAdapter(env.DB, {
+  tokensTable: 'oauth_tokens',
+  encryptionKey: process.env.TOKEN_ENCRYPTION_KEY,
+});
+```
+
+### MFA Utilities
+
+```javascript
+import { generateSecret, createOtpAuthURL, verifyTOTP } from '@goobits/auth/mfa';
+import { generateBackupCodes, hashBackupCodes } from '@goobits/auth/mfa';
+```
+
+### UI Components
+
+```svelte
+<script>
+  import { BackupCodesModal, AuthNotification } from '@goobits/auth/ui';
+  import '@goobits/auth/ui/theme.css';
+</script>
 ```
 
 ### 2. Add Session Validation to Hooks
@@ -627,13 +667,13 @@ cleanupOAuthCookies(cookies, 'google');
 import { encryptTokens, decryptTokens } from '@goobits/auth/utils';
 
 // Encrypt tokens
-const encrypted = encryptTokens(
+const encrypted = await encryptTokens(
   { accessToken: 'token', refreshToken: 'refresh' },
   'your-32-byte-encryption-key'
 );
 
 // Decrypt tokens
-const decrypted = decryptTokens(encrypted, 'your-32-byte-encryption-key');
+const decrypted = await decryptTokens(encrypted, 'your-32-byte-encryption-key');
 ```
 
 #### User Sanitization
@@ -644,6 +684,26 @@ import { sanitizeUser } from '@goobits/auth/utils';
 // Remove sensitive fields from user object
 const safeUser = sanitizeUser(userFromDb);
 // Removes: passwordHash, token, any field starting with 'password'
+```
+
+#### Security Utilities (Cloudflare-ready)
+
+```javascript
+import {
+  issueCsrfToken,
+  validateCsrfRequest,
+  createRateLimiter,
+  MemoryRateLimitStore,
+} from '@goobits/auth/security';
+
+const rateLimit = createRateLimiter({
+  store: new MemoryRateLimitStore(),
+  windowMs: 60_000,
+  max: 5,
+});
+
+const csrfToken = await issueCsrfToken({ cookies });
+const ok = await validateCsrfRequest({ request, cookies });
 ```
 
 ### Handlers
