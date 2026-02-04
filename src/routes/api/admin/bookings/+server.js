@@ -50,7 +50,7 @@ export async function GET(event) {
 		return json({ ok: true, bookings, stats })
 	} catch (err) {
 		console.error('Admin bookings error:', err)
-		return json({ ok: false, error: { message: err.message } }, { status: 500 })
+		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
 	}
 }
 

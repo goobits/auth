@@ -10,9 +10,18 @@ export async function GET(event) {
 
 		const { db } = await getAdminAuth({ event })
 		const users = await listCalendarUsers({ db })
-		return json({ ok: true, users })
+		const sanitized = users.map(user => ({
+			id: user.id,
+			email: user.email,
+			name: user.name,
+			avatar_url: user.avatar_url,
+			email_verified: user.email_verified,
+			last_login_at: user.last_login_at,
+			provider: user.provider
+		}))
+		return json({ ok: true, users: sanitized })
 	} catch (err) {
 		console.error('Admin users error:', err)
-		return json({ ok: false, error: { message: err.message } }, { status: 500 })
+		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
 	}
 }

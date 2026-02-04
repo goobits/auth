@@ -1,12 +1,25 @@
 import { json } from '@sveltejs/kit'
 import { getAdminAuth, ensureAdminAccount, getAdminEmail } from '$lib/auth/admin.js'
+import { checkRateLimit } from '@packages/calendar/src/index.js'
 
-export async function POST({ request, platform, cookies }) {
+export async function POST(event) {
 	try {
-		const { userAdapter, sessionAdapter, credentialsProvider, env } = await getAdminAuth({ event: { platform } })
+		const { request, platform, cookies } = event
+		const { userAdapter, sessionAdapter, credentialsProvider, env, db } = await getAdminAuth({ event: { platform } })
 		await ensureAdminAccount({ userAdapter, env })
 
-		const { passcode } = await request.json()
+		const ip = event.getClientAddress?.() || request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+		try {
+			const rate = await checkRateLimit({ db, key: `rate:admin_login:${ip}`, limit: 10, windowSeconds: 60 })
+			if (!rate.allowed) {
+				return json({ ok: false, error: { message: 'Too many requests' } }, { status: 429 })
+			}
+		} catch (rateErr) {
+			console.warn('Admin login rate limit unavailable:', rateErr)
+		}
+
+		const body = await request.json().catch(() => null)
+		const passcode = body?.passcode
 		if (!passcode) {
 			return json({ ok: false, error: { message: 'Unauthorized' } }, { status: 401 })
 		}
@@ -27,6 +40,6 @@ export async function POST({ request, platform, cookies }) {
 		return json({ ok: true })
 	} catch (err) {
 		console.error('Admin login error:', err)
-		return json({ ok: false, error: { message: err.message } }, { status: 500 })
+		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
 	}
 }

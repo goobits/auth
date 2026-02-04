@@ -12,6 +12,6 @@ export async function POST({ platform, cookies }) {
 		return json({ ok: true })
 	} catch (err) {
 		console.error('Admin logout error:', err)
-		return json({ ok: false, error: { message: err.message } }, { status: 500 })
+		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
 	}
 }

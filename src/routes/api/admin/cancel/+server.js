@@ -13,7 +13,11 @@ export async function POST(event) {
 		}
 		const db = env.DB
 
-		const { bookingId } = await event.request.json()
+		const body = await event.request.json().catch(() => null)
+		if (!body) {
+			return json({ ok: false, error: { message: 'Invalid JSON' } }, { status: 400 })
+		}
+		const { bookingId } = body
 		if (!bookingId) {
 			return json({ ok: false, error: { message: 'Missing bookingId' } }, { status: 400 })
 		}
@@ -32,6 +36,6 @@ export async function POST(event) {
 		return json({ ok: true })
 	} catch (err) {
 		console.error('Admin cancel error:', err)
-		return json({ ok: false, error: { message: err.message } }, { status: 500 })
+		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
 	}
 }

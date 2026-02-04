@@ -13,7 +13,7 @@ export async function GET(event) {
 		return json({ ok: true, invites })
 	} catch (err) {
 		console.error('Admin invites error:', err)
-		return json({ ok: false, error: { message: err.message } }, { status: 500 })
+		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
 	}
 }
 
@@ -38,7 +38,7 @@ export async function POST(event) {
 		return json({ ok: true, invite })
 	} catch (err) {
 		console.error('Admin invite create error:', err)
-		return json({ ok: false, error: { message: err.message } }, { status: 500 })
+		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
 	}
 }
 
@@ -57,6 +57,6 @@ export async function DELETE(event) {
 		return json({ ok: true })
 	} catch (err) {
 		console.error('Admin invite delete error:', err)
-		return json({ ok: false, error: { message: err.message } }, { status: 500 })
+		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
 	}
 }

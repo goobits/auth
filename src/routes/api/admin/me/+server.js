@@ -14,6 +14,6 @@ export async function GET({ platform, cookies }) {
 		return json({ ok: true, authenticated: true })
 	} catch (err) {
 		console.error('Admin me error:', err)
-		return json({ ok: false, error: { message: err.message } }, { status: 500 })
+		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
 	}
 }

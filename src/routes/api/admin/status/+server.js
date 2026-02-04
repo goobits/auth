@@ -49,6 +49,6 @@ export async function GET(event) {
 		})
 	} catch (err) {
 		console.error('Admin status error:', err)
-		return json({ ok: false, error: { message: err.message } }, { status: 500 })
+		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
 	}
 }
