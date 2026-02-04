@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateSecret, generateTOTP, verifyTOTP } from '../../src/mfa/totp.js'
+import { generateSecret, generateTOTP, verifyTOTP } from '../../src/mfa/totp.ts'
 
 describe('totp', () => {
 	it('generates and verifies token', async () => {

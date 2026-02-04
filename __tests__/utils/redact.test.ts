@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { redactObject } from '../../src/utils/redact.js'
+import { redactObject } from '../../src/utils/redact.ts'
 
 
 describe('redactObject', () => {
@@ -12,7 +12,7 @@ describe('redactObject', () => {
 			},
 			ok: true
 		}
-		const output = redactObject(input)
+		const output = redactObject(input) as any
 		expect(output.password).toBe('[redacted]')
 		expect(output.profile.token).toBe('[redacted]')
 		expect(output.profile.nested[0].Access_Token).toBe('[redacted]')

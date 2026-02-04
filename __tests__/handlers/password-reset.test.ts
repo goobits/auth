@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createPasswordResetRequestHandler, createPasswordResetConfirmHandler } from '../../src/handlers/password-reset.js'
+import { createPasswordResetRequestHandler, createPasswordResetConfirmHandler } from '../../src/handlers/password-reset.ts'
 
-function createEventWithForm(data) {
+function createEventWithForm(data: Record<string, string>) {
 	return {
 		request: new Request('http://localhost/reset', {
 			method: 'POST',

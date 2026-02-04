@@ -1,23 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { OAuth2RequestError } from 'arctic'
 
-const handleOAuthCallback = vi.fn(async ({ callbacks }) => {
+const handleOAuthCallback = vi.fn(async ({ callbacks }: { callbacks?: any }) => {
 	if (callbacks?.onAuthenticated) {
 		await callbacks.onAuthenticated({ id: 'p1' }, { accessToken: 't1' })
 	}
 	return { id: 'p1' }
 })
-vi.mock('../../src/utils/oauth.js', () => ({
-	handleOAuthCallback: (...args) => handleOAuthCallback(...args)
+vi.mock('../../src/utils/oauth.ts', () => ({
+	handleOAuthCallback: (...args: any[]) => handleOAuthCallback(...(args as [any]))
 }))
 
-import { createCallbackHandler } from '../../src/handlers/callback.js'
+import { createCallbackHandler } from '../../src/handlers/callback.ts'
 
 function createEvent({ provider = 'google', method = 'GET', form = {} } = {}) {
+	const headers = new Headers()
+	if (method === 'POST') {
+		headers.set('Content-Type', 'application/x-www-form-urlencoded')
+	}
 	const request = new Request('http://localhost/callback', {
 		method,
-		headers: method === 'POST' ? { 'Content-Type': 'application/x-www-form-urlencoded' } : undefined,
-		body: method === 'POST' ? new URLSearchParams(form) : undefined
+		headers,
+		body: method === 'POST' ? new URLSearchParams(form as Record<string, string>) : null
 	})
 	return {
 		params: { provider },
@@ -27,7 +31,7 @@ function createEvent({ provider = 'google', method = 'GET', form = {} } = {}) {
 	}
 }
 
-function getRedirectLocation(err) {
+function getRedirectLocation(err: { location?: string; headers?: Headers } | null) {
 	return err?.location || err?.headers?.get?.('location')
 }
 
@@ -38,7 +42,7 @@ beforeEach(() => {
 describe('createCallbackHandler', () => {
 	it('rejects unknown provider', async () => {
 		const handler = createCallbackHandler({
-			providers: {},
+			providers: {} as any,
 			onAuthenticated: vi.fn()
 		})
 
@@ -48,11 +52,11 @@ describe('createCallbackHandler', () => {
 
 	it('handles OAuth2RequestError as 400', async () => {
 		handleOAuthCallback.mockImplementation(() => {
-			throw new OAuth2RequestError('bad', 'invalid_grant')
+			throw new OAuth2RequestError('bad', 'invalid_grant', null as any, null as any)
 		})
 
 		const handler = createCallbackHandler({
-			providers: { google: {} },
+			providers: { google: {} as any },
 			onAuthenticated: vi.fn()
 		})
 
@@ -64,7 +68,7 @@ describe('createCallbackHandler', () => {
 		const onAuthenticated = vi.fn()
 
 		const handler = createCallbackHandler({
-			providers: { apple: {} },
+			providers: { apple: {} as any },
 			onAuthenticated
 		})
 
@@ -75,8 +79,9 @@ describe('createCallbackHandler', () => {
 				form: { code: 'code123', state: 'state123', user: JSON.stringify({}) }
 			}))
 		} catch (err) {
-			expect(err.status).toBe(302)
-			expect(getRedirectLocation(err)).toBe('/')
+			const error = err as { status?: number; headers?: Headers; location?: string }
+			expect(error.status).toBe(302)
+			expect(getRedirectLocation(error)).toBe('/')
 		}
 
 		expect(handleOAuthCallback).toHaveBeenCalledWith(expect.objectContaining({

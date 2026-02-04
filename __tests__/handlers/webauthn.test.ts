@@ -4,7 +4,7 @@ import {
 	createWebAuthnRegisterVerifyHandler,
 	createWebAuthnLoginOptionsHandler,
 	createWebAuthnLoginVerifyHandler,
-} from "../../src/handlers/webauthn.js";
+} from "../../src/handlers/webauthn.ts";
 
 vi.mock("@simplewebauthn/server", () => ({
 	generateRegistrationOptions: vi.fn(() => ({
@@ -32,7 +32,10 @@ vi.mock("@simplewebauthn/server", () => ({
 	})),
 }));
 
-function createEvent({ method = "POST", body } = {}) {
+function createEvent({
+	method = "POST",
+	body,
+}: { method?: string; body?: unknown } = {}) {
 	const headers = new Headers();
 	let requestBody = body;
 	if (body && typeof body !== "string") {
@@ -40,7 +43,11 @@ function createEvent({ method = "POST", body } = {}) {
 		requestBody = JSON.stringify(body);
 	}
 	return {
-		request: new Request("http://localhost", { method, body: requestBody, headers }),
+		request: new Request("http://localhost", {
+			method,
+			body: (requestBody ?? null) as BodyInit | null,
+			headers,
+		}),
 		cookies: {
 			set: vi.fn(),
 		},
@@ -50,24 +57,24 @@ function createEvent({ method = "POST", body } = {}) {
 }
 
 function createWebAuthnAdapter() {
-	const challenges = new Map();
-	const credentials = new Map();
+	const challenges = new Map<string, any>();
+	const credentials = new Map<string, any>();
 	return {
-		createChallenge: async (challenge) => {
+		createChallenge: async (challenge: any) => {
 			challenges.set(challenge.challengeId, challenge);
 		},
-		getChallenge: async (id) => challenges.get(id) || null,
-		deleteChallenge: async (id) => challenges.delete(id),
-		createCredential: async (credential) => {
+		getChallenge: async (id: string) => challenges.get(id) || null,
+		deleteChallenge: async (id: string) => challenges.delete(id),
+		createCredential: async (credential: any) => {
 			credentials.set(credential.credentialId, credential);
 		},
-		getCredential: async (id) => credentials.get(id) || null,
+		getCredential: async (id: string) => credentials.get(id) || null,
 		listCredentials: async () => Array.from(credentials.values()),
-		updateCredential: async (id, updates) => {
+		updateCredential: async (id: string, updates: any) => {
 			const current = credentials.get(id);
 			credentials.set(id, { ...current, ...updates });
 		},
-		deleteCredential: async (id) => credentials.delete(id),
+		deleteCredential: async (id: string) => credentials.delete(id),
 		deleteUserCredentials: async () => {},
 		_challenges: challenges,
 		_credentials: credentials,
@@ -83,7 +90,7 @@ describe("webauthn handlers", () => {
 			rpID: "example.com",
 		});
 
-		const response = await handler(createEvent());
+		const response = await handler(createEvent() as any);
 		const payload = await response.json();
 
 		expect(payload.options.challenge).toBe("reg-challenge");
@@ -108,7 +115,7 @@ describe("webauthn handlers", () => {
 		});
 
 		const response = await handler(
-			createEvent({ body: { challengeId, credential: { id: "cred" } } }),
+			createEvent({ body: { challengeId, credential: { id: "cred" } } }) as any,
 		);
 		const payload = await response.json();
 
@@ -152,7 +159,7 @@ describe("webauthn handlers", () => {
 		const response = await handler(
 			createEvent({
 				body: { challengeId: "c2", credential: { id: "AQIDBAcI" } },
-			}),
+			}) as any,
 		);
 		const payload = await response.json();
 
