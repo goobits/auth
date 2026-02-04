@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { OAuth2RequestError } from 'arctic'
 
-const handleOAuthCallback = vi.fn()
+const handleOAuthCallback = vi.fn(async ({ callbacks }) => {
+	if (callbacks?.onAuthenticated) {
+		await callbacks.onAuthenticated({ id: 'p1' }, { accessToken: 't1' })
+	}
+	return { id: 'p1' }
+})
 vi.mock('../../src/utils/oauth.js', () => ({
 	handleOAuthCallback: (...args) => handleOAuthCallback(...args)
 }))
@@ -57,7 +62,6 @@ describe('createCallbackHandler', () => {
 
 	it('accepts apple POST form and calls onAuthenticated', async () => {
 		const onAuthenticated = vi.fn()
-		handleOAuthCallback.mockResolvedValue({ id: 'p1' })
 
 		const handler = createCallbackHandler({
 			providers: { apple: {} },

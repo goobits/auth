@@ -1,19 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const totp = {
+vi.mock('../../src/mfa/totp.js', () => ({
 	generateSecret: vi.fn(() => 'SECRET'),
 	createOtpAuthURL: vi.fn(() => 'otpauth://totp/test'),
 	verifyTOTP: vi.fn()
-}
-const backup = {
+}))
+vi.mock('../../src/mfa/backup-codes.js', () => ({
 	generateBackupCodes: vi.fn(() => ['code1', 'code2']),
 	hashBackupCodes: vi.fn(async () => ['hash1', 'hash2']),
 	verifyBackupCode: vi.fn()
-}
+}))
 
-vi.mock('../../src/mfa/totp.js', () => totp)
-vi.mock('../../src/mfa/backup-codes.js', () => backup)
-
+import * as totp from '../../src/mfa/totp.js'
+import * as backup from '../../src/mfa/backup-codes.js'
 import { createMfaEnrollHandler, createMfaVerifyHandler, createMfaBackupCodeHandler } from '../../src/handlers/mfa.js'
 
 function createEvent({ locals = {}, form = {} } = {}) {
@@ -28,8 +27,8 @@ function createEvent({ locals = {}, form = {} } = {}) {
 }
 
 beforeEach(() => {
-	totp.verifyTOTP.mockReset()
-	backup.verifyBackupCode.mockReset()
+	vi.mocked(totp.verifyTOTP).mockReset()
+	vi.mocked(backup.verifyBackupCode).mockReset()
 })
 
 describe('MFA handlers', () => {
@@ -61,7 +60,7 @@ describe('MFA handlers', () => {
 
 	it('verify rejects invalid token', async () => {
 		const store = { getSecret: vi.fn(async () => 'SECRET'), enableMfa: vi.fn() }
-		totp.verifyTOTP.mockResolvedValue(false)
+		vi.mocked(totp.verifyTOTP).mockResolvedValue(false)
 		const handler = createMfaVerifyHandler({ getUserId: () => 'u1', store })
 		const result = await handler(createEvent({ locals: { userId: 'u1' }, form: { token: '000000' } }))
 		expect(result.success).toBe(false)
@@ -69,7 +68,7 @@ describe('MFA handlers', () => {
 	})
 
 	it('backup code consumes valid code', async () => {
-		backup.verifyBackupCode.mockResolvedValue({ valid: true, hash: 'h1' })
+		vi.mocked(backup.verifyBackupCode).mockResolvedValue({ valid: true, hash: 'h1' })
 		const store = {
 			getBackupCodes: vi.fn(async () => ['h1']),
 			consumeBackupCode: vi.fn()
