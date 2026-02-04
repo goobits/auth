@@ -16,8 +16,8 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+let drizzle;
+let postgres;
 import { pgTable, uuid, timestamp, text } from 'drizzle-orm/pg-core';
 import { DrizzleSessionAdapter } from '../../src/adapters/session/drizzle.js';
 import { DrizzleUserAdapter } from '../../src/adapters/database/drizzle.js';
@@ -48,7 +48,11 @@ const oauthTokens = pgTable('oauth_tokens', {
 	updatedAt: timestamp('updated_at').defaultNow(),
 });
 
-describe('Drizzle Adapters Integration', () => {
+const runIntegration = process.env.RUN_INTEGRATION === 'true';
+
+const describeIntegration = runIntegration ? describe : describe.skip;
+
+describeIntegration('Drizzle Adapters Integration', () => {
 	let db;
 	let client;
 	let sessionAdapter;
@@ -57,6 +61,10 @@ describe('Drizzle Adapters Integration', () => {
 	let testUserId;
 
 	beforeAll(async () => {
+		const drizzleMod = await import('drizzle-orm/postgres-js');
+		const postgresMod = await import('postgres');
+		drizzle = drizzleMod.drizzle;
+		postgres = postgresMod.default;
 		// Connect to test database
 		const connectionString = process.env.DATABASE_URL || 'postgresql://localhost/auth_test';
 		client = postgres(connectionString);

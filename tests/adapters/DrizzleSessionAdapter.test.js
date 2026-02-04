@@ -8,7 +8,7 @@
  * 2. Run: `npx vitest run` or `npx vitest watch`
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DrizzleSessionAdapter } from '../../src/adapters/session/drizzle.js';
 
 describe('DrizzleSessionAdapter', () => {
@@ -32,8 +32,8 @@ describe('DrizzleSessionAdapter', () => {
 		mockDb = {
 			select: () => ({
 				from: () => ({
-					where: () => ({
-						leftJoin: () => Promise.resolve([]),
+					innerJoin: () => ({
+						where: () => Promise.resolve([]),
 					}),
 				}),
 			}),
@@ -71,13 +71,13 @@ describe('DrizzleSessionAdapter', () => {
 		it('should throw error if sessionsTable is missing', () => {
 			expect(() => {
 				new DrizzleSessionAdapter(mockDb, { usersTable: mockUsersTable });
-			}).toThrow('DrizzleSessionAdapter requires sessionsTable option');
+			}).toThrow('DrizzleSessionAdapter requires sessionsTable and usersTable options');
 		});
 
 		it('should throw error if usersTable is missing', () => {
 			expect(() => {
 				new DrizzleSessionAdapter(mockDb, { sessionsTable: mockSessionsTable });
-			}).toThrow('DrizzleSessionAdapter requires usersTable option');
+			}).toThrow('DrizzleSessionAdapter requires sessionsTable and usersTable options');
 		});
 
 		it('should use default session lifetime', () => {
@@ -126,12 +126,14 @@ describe('DrizzleSessionAdapter', () => {
 			// Mock a valid session
 			mockDb.select = () => ({
 				from: () => ({
-					where: () => ({
-						leftJoin: () => Promise.resolve([{
-							id: 'session-123',
-							userId: 'user-123',
-							expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // expires tomorrow
-							fresh: false,
+					innerJoin: () => ({
+						where: () => Promise.resolve([{
+							session: {
+								id: 'session-123',
+								userId: 'user-123',
+								expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+								fresh: false,
+							},
 							user: { id: 'user-123', email: 'test@example.com' },
 						}]),
 					}),
@@ -148,11 +150,14 @@ describe('DrizzleSessionAdapter', () => {
 			// Mock an expired session
 			mockDb.select = () => ({
 				from: () => ({
-					where: () => ({
-						leftJoin: () => Promise.resolve([{
-							id: 'session-123',
-							userId: 'user-123',
-							expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // expired yesterday
+					innerJoin: () => ({
+						where: () => Promise.resolve([{
+							session: {
+								id: 'session-123',
+								userId: 'user-123',
+								expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+							},
+							user: { id: 'user-123', email: 'test@example.com' },
 						}]),
 					}),
 				}),
@@ -166,8 +171,8 @@ describe('DrizzleSessionAdapter', () => {
 		it('should return null for non-existent session', async () => {
 			mockDb.select = () => ({
 				from: () => ({
-					where: () => ({
-						leftJoin: () => Promise.resolve([]),
+					innerJoin: () => ({
+						where: () => Promise.resolve([]),
 					}),
 				}),
 			});
@@ -182,12 +187,14 @@ describe('DrizzleSessionAdapter', () => {
 			const expiresAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
 			mockDb.select = () => ({
 				from: () => ({
-					where: () => ({
-						leftJoin: () => Promise.resolve([{
-							id: 'session-123',
-							userId: 'user-123',
-							expiresAt,
-							fresh: false,
+					innerJoin: () => ({
+						where: () => Promise.resolve([{
+							session: {
+								id: 'session-123',
+								userId: 'user-123',
+								expiresAt,
+								fresh: false,
+							},
 							user: { id: 'user-123', email: 'test@example.com' },
 						}]),
 					}),
