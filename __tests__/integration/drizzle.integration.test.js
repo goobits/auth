@@ -16,9 +16,9 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-let drizzle;
-let postgres;
-import { pgTable, uuid, timestamp, text } from 'drizzle-orm/pg-core';
+import { eq } from 'drizzle-orm';
+import { randomUUID } from 'crypto';
+import { pgTable, uuid, timestamp, text, serial } from 'drizzle-orm/pg-core';
 import { DrizzleSessionAdapter } from '../../src/adapters/session/drizzle.js';
 import { DrizzleUserAdapter } from '../../src/adapters/database/drizzle.js';
 import { DrizzleTokenAdapter } from '../../src/adapters/token/drizzle.js';
@@ -33,14 +33,14 @@ const users = pgTable('users', {
 });
 
 const sessions = pgTable('sessions', {
-	id: uuid('id').primaryKey().defaultRandom(),
+	id: text('id').primaryKey(),
 	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
 	expiresAt: timestamp('expires_at').notNull(),
 	createdAt: timestamp('created_at').defaultNow(),
 });
 
 const oauthTokens = pgTable('oauth_tokens', {
-	id: uuid('id').primaryKey().defaultRandom(),
+	id: serial('id').primaryKey(),
 	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
 	provider: text('provider').notNull(),
 	tokens: text('tokens').notNull(),
@@ -48,27 +48,120 @@ const oauthTokens = pgTable('oauth_tokens', {
 	updatedAt: timestamp('updated_at').defaultNow(),
 });
 
-const runIntegration = process.env.RUN_INTEGRATION === 'true';
-
-const describeIntegration = runIntegration ? describe : describe.skip;
-
-describeIntegration('Drizzle Adapters Integration', () => {
+describe('Drizzle Adapters Integration', () => {
 	let db;
 	let client;
+	let dispose;
 	let sessionAdapter;
 	let userAdapter;
 	let tokenAdapter;
 	let testUserId;
 
 	beforeAll(async () => {
-		const drizzleMod = await import('drizzle-orm/postgres-js');
-		const postgresMod = await import('postgres');
-		drizzle = drizzleMod.drizzle;
-		postgres = postgresMod.default;
-		// Connect to test database
-		const connectionString = process.env.DATABASE_URL || 'postgresql://localhost/auth_test';
-		client = postgres(connectionString);
-		db = drizzle(client);
+		const connectionString = process.env.DATABASE_URL;
+
+		if (connectionString) {
+			const { drizzle } = await import('drizzle-orm/postgres-js');
+			const postgres = (await import('postgres')).default;
+			client = postgres(connectionString, { max: 1 });
+			db = drizzle(client);
+
+			await client`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
+			await client`CREATE TABLE IF NOT EXISTS users (
+				id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+				email TEXT NOT NULL UNIQUE,
+				name TEXT,
+				password_hash TEXT,
+				created_at TIMESTAMP DEFAULT now()
+			)`;
+			await client`CREATE TABLE IF NOT EXISTS sessions (
+				id TEXT PRIMARY KEY,
+				user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+				expires_at TIMESTAMP NOT NULL,
+				created_at TIMESTAMP DEFAULT now()
+			)`;
+			await client`CREATE TABLE IF NOT EXISTS oauth_tokens (
+				id SERIAL PRIMARY KEY,
+				user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+				provider TEXT NOT NULL,
+				tokens TEXT NOT NULL,
+				created_at TIMESTAMP DEFAULT now(),
+				updated_at TIMESTAMP DEFAULT now()
+			)`;
+			dispose = async () => {
+				await client.end({ timeout: 5 });
+			};
+		} else {
+			const { drizzle } = await import('drizzle-orm/pg-proxy');
+			const { newDb } = await import('pg-mem');
+			const dbMem = newDb();
+			dbMem.public.registerFunction({
+				name: 'gen_random_uuid',
+				returns: 'uuid',
+				implementation: () => randomUUID()
+			});
+			dbMem.public.none(`
+				CREATE TABLE users (
+					id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+					email TEXT NOT NULL UNIQUE,
+					name TEXT,
+					password_hash TEXT,
+					created_at TIMESTAMP DEFAULT now()
+				);
+				CREATE TABLE sessions (
+					id TEXT PRIMARY KEY,
+					user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+					expires_at TIMESTAMP NOT NULL,
+					created_at TIMESTAMP DEFAULT now()
+				);
+				CREATE TABLE oauth_tokens (
+					id SERIAL PRIMARY KEY,
+					user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+					provider TEXT NOT NULL,
+					tokens TEXT NOT NULL,
+					created_at TIMESTAMP DEFAULT now(),
+					updated_at TIMESTAMP DEFAULT now()
+				);
+			`);
+			const toLiteral = (value) => {
+				if (value === null || value === undefined) return 'null';
+				if (value instanceof Date) return `'${value.toISOString()}'`;
+				if (typeof value === 'number') return Number.isFinite(value) ? String(value) : 'null';
+				if (typeof value === 'boolean') return value ? 'true' : 'false';
+				if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
+				if (Array.isArray(value)) {
+					return `ARRAY[${value.map((item) => toLiteral(item)).join(', ')}]`;
+				}
+				return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
+			};
+
+			const formatSql = (sql, params) => {
+				let formatted = sql;
+				params.forEach((value, index) => {
+					const literal = toLiteral(value);
+					const pattern = new RegExp(`\\$${index + 1}(?!\\d)`, 'g');
+					formatted = formatted.replace(pattern, literal);
+				});
+				return formatted;
+			};
+
+			db = drizzle(async (sql, params = []) => {
+				const formatted = formatSql(sql, params);
+				const result = dbMem.public.query(formatted);
+				const rows = result.rows.map((row) => {
+					const nameCounts = {};
+					return result.fields.map((field) => {
+						const baseName = field.name;
+						const index = nameCounts[baseName] ?? 0;
+						nameCounts[baseName] = index + 1;
+						const key = index === 0 ? baseName : `${baseName}${index}`;
+						return row[key];
+					});
+				});
+				return { rows };
+			});
+			dispose = async () => {};
+		}
 
 		// Create adapters
 		sessionAdapter = new DrizzleSessionAdapter(db, {
@@ -83,7 +176,9 @@ describeIntegration('Drizzle Adapters Integration', () => {
 
 		tokenAdapter = new DrizzleTokenAdapter(db, {
 			tokensTable: oauthTokens,
-			encryptionKey: process.env.TOKEN_ENCRYPTION_KEY || 'test-key-32-chars-long-please!',
+			encryptionKey:
+				process.env.TOKEN_ENCRYPTION_KEY ||
+				'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
 		});
 	});
 
@@ -94,16 +189,18 @@ describeIntegration('Drizzle Adapters Integration', () => {
 			await db.delete(oauthTokens).where(eq(oauthTokens.userId, testUserId));
 			await db.delete(users).where(eq(users.id, testUserId));
 		}
-		await client.end();
+		if (dispose) await dispose();
 	});
 
 	beforeEach(async () => {
 		// Create a test user
-		const [user] = await db.insert(users).values({
+		const userId = randomUUID();
+		await db.insert(users).values({
+			id: userId,
 			email: `test-${Date.now()}@example.com`,
 			name: 'Test User',
-		}).returning();
-		testUserId = user.id;
+		});
+		testUserId = userId;
 	});
 
 	describe('Session Adapter Integration', () => {
@@ -150,14 +247,16 @@ describeIntegration('Drizzle Adapters Integration', () => {
 
 	describe('User Adapter Integration', () => {
 		it('should get user by email', async () => {
-			const [createdUser] = await db.insert(users).values({
+			const userId = randomUUID();
+			await db.insert(users).values({
+				id: userId,
 				email: 'findme@example.com',
 				name: 'Find Me',
-			}).returning();
+			});
 
 			const foundUser = await userAdapter.getUserByEmail('findme@example.com');
 			expect(foundUser).toBeDefined();
-			expect(foundUser.id).toBe(createdUser.id);
+			expect(foundUser.id).toBe(userId);
 			expect(foundUser.email).toBe('findme@example.com');
 		});
 
