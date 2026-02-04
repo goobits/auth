@@ -1,5 +1,5 @@
 <script>
-	import { apps, art } from './_projects.js'
+	import { apps, art } from './_projects.ts'
 </script>
 
 <svelte:head>
