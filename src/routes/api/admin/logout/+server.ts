@@ -1,16 +1,20 @@
 import { json } from '@sveltejs/kit'
 import { getAdminAuth } from '$lib/auth/admin.ts'
 import { ADMIN_COOKIE_NAME } from '@packages/calendar/src/admin/auth.ts'
-import { noStoreHeaders } from '../_helpers.ts'
+import { enforceSameOrigin, logAdminEvent, noStoreHeaders } from '../_helpers.ts'
 
-export async function POST({ platform, cookies }: { platform: any; cookies: any }) {
+export async function POST(event: any) {
 	try {
-		const { sessionAdapter } = await getAdminAuth({ event: { platform } })
-		const token = cookies.get(ADMIN_COOKIE_NAME)
+		const csrf = enforceSameOrigin(event)
+		if (csrf) return csrf
+
+		const { sessionAdapter } = await getAdminAuth({ event: { platform: event.platform } })
+		const token = event.cookies.get(ADMIN_COOKIE_NAME)
 		if (token) {
 			await sessionAdapter.invalidateSession(token)
 		}
-		sessionAdapter.deleteSessionCookie(cookies)
+		sessionAdapter.deleteSessionCookie(event.cookies)
+		logAdminEvent(event, 'logout')
 		return json({ ok: true }, { headers: noStoreHeaders })
 	} catch (err) {
 		console.error('Admin logout error:', err)
