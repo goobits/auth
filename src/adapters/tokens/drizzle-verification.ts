@@ -28,12 +28,12 @@ type TokenUserRecord = {
 
 function toToken(row: DrizzleRow | null): VerificationToken | null {
 	if (!row) return null;
-	const id = row.id;
-	const userId = row.userId ?? row.user_id;
-	const type = row.type;
-	const token = row.token;
-	const expiresAt = row.expiresAt ?? row.expires_at;
-	const createdAt = row.createdAt ?? row.created_at;
+	const id = row["id"];
+	const userId = row["userId"] ?? row["user_id"];
+	const type = row["type"];
+	const token = row["token"];
+	const expiresAt = row["expiresAt"] ?? row["expires_at"];
+	const createdAt = row["createdAt"] ?? row["created_at"];
 	if (typeof id !== "string" && typeof id !== "number") return null;
 	if (typeof userId !== "string" && typeof userId !== "number") return null;
 	if (typeof type !== "string") return null;
@@ -59,11 +59,11 @@ function toToken(row: DrizzleRow | null): VerificationToken | null {
 
 function toUser(row: DrizzleRow | null): User | null {
 	if (!row) return null;
-	const id = row.id;
-	const email = row.email;
-	const name = row.name;
-	const avatar = row.avatar ?? null;
-	const emailVerified = row.emailVerified ?? row.email_verified ?? false;
+	const id = row["id"];
+	const email = row["email"];
+	const name = row["name"];
+	const avatar = row["avatar"] ?? null;
+	const emailVerified = row["emailVerified"] ?? row["email_verified"] ?? false;
 	if (typeof id !== "string" && typeof id !== "number") return null;
 	if (typeof email !== "string") return null;
 	if (typeof name !== "string") return null;
@@ -142,8 +142,8 @@ export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
 				requireCondition(and(eq(this.tokensTable.token, token), eq(this.tokensTable.type, type))),
 			);
 		if (!record) return null;
-		const tokenRecord = toToken(record.token ?? null);
-		const user = toUser(record.user ?? null);
+		const tokenRecord = toToken(record["token"] ?? null);
+		const user = toUser(record["user"] ?? null);
 		if (!tokenRecord || !user) return null;
 		return { token: tokenRecord, user };
 	}

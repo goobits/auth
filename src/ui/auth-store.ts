@@ -71,11 +71,11 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 	};
 
 	const applyAuthSuccess = (result: Record<string, unknown>) => {
-		const user = (result.customer || result.user || null) as AuthUser;
+		const user = (result["customer"] || result["user"] || null) as AuthUser;
 		update((state) => ({
 			...state,
 			user,
-			session: (result.session || null) as AuthSession,
+			session: (result["session"] || null) as AuthSession,
 			isAuthenticated: true,
 			loading: false,
 		}));
@@ -132,7 +132,7 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 
 			try {
 				let registrationData: Record<string, unknown>;
-				if (typeof data === 'object' && !data.name) {
+				if (typeof data === 'object' && !data["name"]) {
 					const { first_name, last_name, email, password, phone } = data as Record<string, unknown>;
 					registrationData = { email, password, first_name, last_name, phone };
 				} else if (typeof data === 'object') {
@@ -200,11 +200,11 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 
 				const result = (await response.json()) as Record<string, unknown>;
 
-				if (result.success && result.user) {
+				if (result["success"] && result["user"]) {
 					update((state) => ({
 						...state,
-						user: result.user as AuthUser,
-						session: (result.session || null) as AuthSession,
+						user: result["user"] as AuthUser,
+						session: (result["session"] || null) as AuthSession,
 						isAuthenticated: true,
 						loading: false,
 					}));
@@ -229,22 +229,22 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 
 				const result = (await response.json()) as Record<string, unknown>;
 
-				if (!result.success) {
+				if (!result["success"]) {
 					update((state) => ({
 						...state,
 						loading: false,
-						error: (result.error as string) || 'Profile update failed',
+						error: (result["error"] as string) || 'Profile update failed',
 					}));
-					return { success: false, error: (result.error as string) || 'Profile update failed' };
+					return { success: false, error: (result["error"] as string) || 'Profile update failed' };
 				}
 
 				update((state) => ({
 					...state,
-					user: { ...(state.user ?? {}), ...(result.user as Record<string, unknown>) },
+					user: { ...(state["user"] ?? {}), ...(result["user"] as Record<string, unknown>) },
 					loading: false,
 				}));
 
-				return { success: true, user: result.user };
+				return { success: true, user: result["user"] };
 			} catch (error) {
 				const message = (error as Error)?.message || 'Profile update failed';
 				update((state) => ({ ...state, loading: false, error: message }));

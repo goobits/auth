@@ -55,19 +55,19 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 		this.credentialsTable = options.credentialsTable || "webauthn_credentials";
 		this.challengesTable = options.challengesTable || "webauthn_challenges";
 		this.columns = {
-			credentialId: options.columns?.credentialId || "credential_id",
-			userId: options.columns?.userId || "user_id",
-			publicKey: options.columns?.publicKey || "public_key",
-			counter: options.columns?.counter || "counter",
-			transports: options.columns?.transports || "transports",
-			name: options.columns?.name || "name",
-			createdAt: options.columns?.createdAt || "created_at",
-			updatedAt: options.columns?.updatedAt || "updated_at",
-			challengeId: options.columns?.challengeId || "id",
-			challenge: options.columns?.challenge || "challenge",
-			challengeType: options.columns?.challengeType || "type",
-			challengeUserId: options.columns?.challengeUserId || "user_id",
-			challengeExpiresAt: options.columns?.challengeExpiresAt || "expires_at",
+			credentialId: options.columns?.["credentialId"] || "credential_id",
+			userId: options.columns?.["userId"] || "user_id",
+			publicKey: options.columns?.["publicKey"] || "public_key",
+			counter: options.columns?.["counter"] || "counter",
+			transports: options.columns?.["transports"] || "transports",
+			name: options.columns?.["name"] || "name",
+			createdAt: options.columns?.["createdAt"] || "created_at",
+			updatedAt: options.columns?.["updatedAt"] || "updated_at",
+			challengeId: options.columns?.["challengeId"] || "id",
+			challenge: options.columns?.["challenge"] || "challenge",
+			challengeType: options.columns?.["challengeType"] || "type",
+			challengeUserId: options.columns?.["challengeUserId"] || "user_id",
+			challengeExpiresAt: options.columns?.["challengeExpiresAt"] || "expires_at",
 		};
 	}
 

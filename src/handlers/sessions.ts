@@ -74,15 +74,15 @@ export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 		const current = getSession(event.locals);
 
 		const sessionId =
-			typeof data.sessionId === "string"
-				? data.sessionId
-				: typeof data.id === "string"
-					? data.id
+			typeof data["sessionId"] === "string"
+				? data["sessionId"]
+				: typeof data["id"] === "string"
+					? data["id"]
 					: "";
 		const revokeAll =
-			data.all === true || data.all === "true" || data.all === 1;
+			data["all"] === true || data["all"] === "true" || data["all"] === 1;
 		const revokeOthers =
-			data.others === true || data.others === "true" || data.others === 1;
+			data["others"] === true || data["others"] === "true" || data["others"] === 1;
 
 		if (sessionId) {
 			if (typeof sessionAdapter.listSessions !== "function") {

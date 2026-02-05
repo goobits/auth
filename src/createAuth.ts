@@ -173,7 +173,7 @@ export function createAuth(config: AuthConfig) {
 			redirectAfterLogin: urlConfig.afterLogin,
 			isAuthenticated,
 			onAuthenticated: async (event, profile, tokens) => {
-				const providerName = String(event.params.provider ?? "");
+				const providerName = String(event.params["provider"] ?? "");
 				let user = null;
 
 				if (adapters.database) {

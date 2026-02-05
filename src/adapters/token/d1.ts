@@ -23,17 +23,17 @@ function parseOAuthTokens(raw: string): OAuthTokens | null {
 		const data: unknown = JSON.parse(raw);
 		if (!isObjectRecord(data)) return null;
 		const record = data;
-		if (typeof record.accessToken !== "string") return null;
-		if (record.refreshToken !== null && typeof record.refreshToken !== "string") {
+		if (typeof record["accessToken"] !== "string") return null;
+		if (record["refreshToken"] !== null && typeof record["refreshToken"] !== "string") {
 			return null;
 		}
-		if (record.scope !== null && typeof record.scope !== "string") return null;
-		if (typeof record.accessTokenExpiresAt !== "string") return null;
+		if (record["scope"] !== null && typeof record["scope"] !== "string") return null;
+		if (typeof record["accessTokenExpiresAt"] !== "string") return null;
 		return {
-			accessToken: record.accessToken,
-			refreshToken: record.refreshToken,
-			scope: record.scope,
-			accessTokenExpiresAt: record.accessTokenExpiresAt,
+			accessToken: record["accessToken"],
+			refreshToken: record["refreshToken"],
+			scope: record["scope"],
+			accessTokenExpiresAt: record["accessTokenExpiresAt"],
 		};
 	} catch {
 		return null;
@@ -62,9 +62,9 @@ export class D1TokenAdapter extends TokenAdapter {
 		this.encrypt = options.encrypt !== false;
 		this.encryptionKey = options.encryptionKey || null;
 		this.columns = {
-			userId: options.columns?.userId || "user_id",
-			provider: options.columns?.provider || "provider",
-			tokens: options.columns?.tokens || "tokens",
+			userId: options.columns?.["userId"] || "user_id",
+			provider: options.columns?.["provider"] || "provider",
+			tokens: options.columns?.["tokens"] || "tokens",
 		};
 
 		if (this.encrypt && !this.encryptionKey) {
@@ -105,7 +105,7 @@ export class D1TokenAdapter extends TokenAdapter {
 
 		if (!row) return null;
 		const key = this.encryptionKey ?? "";
-		const tokenValue = row.tokens;
+		const tokenValue = row["tokens"];
 		if (typeof tokenValue !== "string") return null;
 		return this.encrypt
 			? await decryptTokens<OAuthTokens>(tokenValue, key)

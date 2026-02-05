@@ -25,11 +25,11 @@ type UsersTable = DrizzleTable & {
 
 function toUser(row: DrizzleRow | null): User | null {
 	if (!row) return null;
-	const id = row.id;
-	const email = row.email;
-	const name = row.name;
-	const avatar = row.avatar ?? null;
-	const emailVerified = row.emailVerified ?? row.email_verified ?? false;
+	const id = row["id"];
+	const email = row["email"];
+	const name = row["name"];
+	const avatar = row["avatar"] ?? null;
+	const emailVerified = row["emailVerified"] ?? row["email_verified"] ?? false;
 	if (typeof id !== "string" && typeof id !== "number") return null;
 	if (typeof email !== "string") return null;
 	if (typeof name !== "string") return null;
@@ -52,9 +52,9 @@ function toUser(row: DrizzleRow | null): User | null {
 
 function toSession(row: DrizzleRow | null): Session | null {
 	if (!row) return null;
-	const id = row.id;
-	const userId = row.userId ?? row.user_id;
-	const expiresAt = row.expiresAt ?? row.expires_at;
+	const id = row["id"];
+	const userId = row["userId"] ?? row["user_id"];
+	const expiresAt = row["expiresAt"] ?? row["expires_at"];
 	if (typeof id !== "string") return null;
 	if (typeof userId !== "string" && typeof userId !== "number") return null;
 	if (!(expiresAt instanceof Date) && typeof expiresAt !== "string") return null;
@@ -150,7 +150,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 			.where(eq(this.sessionsTable.id, sessionId));
 
 		if (!result) return { session: null, user: null };
-		const session = toSession(result.session ?? null);
+		const session = toSession(result["session"] ?? null);
 		if (!session) return { session: null, user: null };
 		if (Date.now() >= session.expiresAt.getTime()) {
 			await this.db
@@ -170,7 +170,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		}
 		return {
 			session,
-			user: this.sanitizeUser(toUser(result.user ?? null)),
+			user: this.sanitizeUser(toUser(result["user"] ?? null)),
 		};
 	}
 

@@ -22,9 +22,9 @@ function isKVSessionRecord(value: Record<string, unknown> | string | null): valu
 	if (!value || typeof value !== "object") return false;
 	return (
 		"userId" in value &&
-		typeof value.userId === "string" &&
+		typeof value["userId"] === "string" &&
 		"expiresAt" in value &&
-		typeof value.expiresAt === "string"
+		typeof value["expiresAt"] === "string"
 	);
 }
 

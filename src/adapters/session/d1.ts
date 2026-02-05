@@ -133,7 +133,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		const row = await this.db.prepare(sql).bind(sessionId).first();
 		if (!row) return { session: null, user: null };
 
-		const expiresAtRaw = row.expires_at;
+		const expiresAtRaw = row["expires_at"];
 		if (typeof expiresAtRaw !== "string") return { session: null, user: null };
 		const expiresAt = new Date(expiresAtRaw);
 		if (Number.isNaN(expiresAt.getTime())) return { session: null, user: null };
@@ -162,7 +162,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		}
 
 		const user = this.sanitizeUser(this._mapUserRow(row));
-		const userIdRaw = row.user_id;
+		const userIdRaw = row["user_id"];
 		if (typeof userIdRaw !== "string" && typeof userIdRaw !== "number") {
 			return { session: null, user: null };
 		}
@@ -178,12 +178,12 @@ export class D1SessionAdapter extends SessionAdapter {
 	}
 
 	_mapUserRow(row: D1Row): User | null {
-		const id = row[this.userColumns.id] ?? row.id;
-		const email = row[this.userColumns.email] ?? row.email;
-		const name = row[this.userColumns.name] ?? row.name;
-		const avatar = row[this.userColumns.avatar] ?? row.avatar;
+		const id = row[this.userColumns["id"]] ?? row["id"];
+		const email = row[this.userColumns["email"]] ?? row["email"];
+		const name = row[this.userColumns["name"]] ?? row["name"];
+		const avatar = row[this.userColumns["avatar"]] ?? row["avatar"];
 		const emailVerified =
-			row[this.userColumns.emailVerified] ?? row.email_verified;
+			row[this.userColumns.emailVerified] ?? row["email_verified"];
 		if (typeof id !== "string" && typeof id !== "number") return null;
 		if (typeof email !== "string") return null;
 		if (typeof name !== "string") return null;
@@ -233,10 +233,10 @@ export class D1SessionAdapter extends SessionAdapter {
 		const result = await this.db.prepare(sql).bind(this._coerceDbId(userId)).all();
 		const sessions: Session[] = [];
 		for (const row of result?.results ?? []) {
-			const id = row[this.columns.sessionId] ?? row.id;
-			const uid = row[this.columns.userId] ?? row.user_id;
+			const id = row[this.columns.sessionId] ?? row["id"];
+			const uid = row[this.columns.userId] ?? row["user_id"];
 			const expiresRaw =
-				row[this.columns.expiresAt] ?? row.expires_at ?? row.expiresAt;
+				row[this.columns["expiresAt"]] ?? row["expires_at"] ?? row["expiresAt"];
 			if (
 				(typeof id !== "string" && typeof id !== "number") ||
 				(typeof uid !== "string" && typeof uid !== "number") ||

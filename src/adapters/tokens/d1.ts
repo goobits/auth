@@ -50,17 +50,17 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		this.tokensTable = options.tokensTable || "verification_tokens";
 		this.usersTable = options.usersTable || "users";
 		this.columns = {
-			id: options.columns?.id || "id",
-			userId: options.columns?.userId || "user_id",
-			type: options.columns?.type || "type",
-			token: options.columns?.token || "token",
-			expiresAt: options.columns?.expiresAt || "expires_at",
+			id: options.columns?.["id"] || "id",
+			userId: options.columns?.["userId"] || "user_id",
+			type: options.columns?.["type"] || "type",
+			token: options.columns?.["token"] || "token",
+			expiresAt: options.columns?.["expiresAt"] || "expires_at",
 		};
 		this.userColumns = {
-			id: options.userColumns?.id || "id",
-			email: options.userColumns?.email || "email",
-			name: options.userColumns?.name || "name",
-			avatar: options.userColumns?.avatar || "avatar",
+			id: options.userColumns?.["id"] || "id",
+			email: options.userColumns?.["email"] || "email",
+			name: options.userColumns?.["name"] || "name",
+			avatar: options.userColumns?.["avatar"] || "avatar",
 		};
 	}
 
