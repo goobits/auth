@@ -44,6 +44,8 @@
 		"@goobits/auth": "file:./repos/auth",
 		"@goobits/themes": "^1.3.2",
 		"@lucide/svelte": "^0.563.1",
+		"argon2-wasm-edge": "^1.0.23",
+		"bcryptjs": "^3.0.2",
 		"dotenv": "^17.2.3",
 		"formsnap": "^2.0.1",
 		"rehype-slug": "^6.0.0",
