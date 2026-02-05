@@ -319,6 +319,13 @@
 		touched = {}
 	}
 
+	function handleCancelKeydown(event) {
+		if (!showCancelModal) return
+		if (event.key === 'Escape') {
+			showCancelModal = false
+		}
+	}
+
 	onMount(() => {
 		if (typeof window !== 'undefined') {
 			const params = new URLSearchParams(window.location.search)
@@ -330,6 +337,8 @@
 		loadAvailability()
 	})
 </script>
+
+<svelte:window on:keydown={handleCancelKeydown} />
 
 <p class="tz">{timeZone}</p>
 
@@ -565,8 +574,23 @@
 </section>
 
 {#if showCancelModal}
-	<div class="modal-overlay" role="dialog" aria-modal="true" tabindex="-1" onclick={() => showCancelModal = false} onkeydown={(e) => e.key === 'Escape' && (showCancelModal = false)}>
-		<div class="modal-card" role="document" onkeydown={() => {}} onclick={(e) => e.stopPropagation()}>
+  <div
+    class="modal-overlay"
+    role="button"
+    tabindex="0"
+    aria-label="Close dialog"
+    onclick={(event) => {
+      if (event.target !== event.currentTarget) return
+      showCancelModal = false
+    }}
+    onkeydown={(event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        showCancelModal = false
+      }
+    }}
+  >
+    <div class="modal-card" role="dialog" aria-modal="true">
 			<h3 class="modal-title">Cancel booking?</h3>
 			<p class="modal-sub">This will free up your spot immediately.</p>
 			<div class="modal-actions">
