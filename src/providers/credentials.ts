@@ -18,7 +18,9 @@ export class CredentialsProvider {
 	 */
 	constructor(options: { validatePassword?: ValidatePasswordFn } = {}) {
 		this.name = "credentials";
-		this.validatePassword = options.validatePassword;
+		if (options.validatePassword) {
+			this.validatePassword = options.validatePassword;
+		}
 	}
 
 	/**
@@ -100,12 +102,22 @@ export class CredentialsProvider {
 		const passwordHash = await hashPassword(password);
 
 		// Create user profile
-		const profile = {
+		const profile: {
+			id: string;
+			email: string;
+			name?: string;
+			verified_email: boolean;
+		} = {
 			id: email.toLowerCase(),
 			email: email.toLowerCase(),
-			name: name || email.split("@")[0],
 			verified_email: false,
 		};
+		const fallbackName = email.split("@")[0] ?? "";
+		if (name) {
+			profile.name = name;
+		} else if (fallbackName) {
+			profile.name = fallbackName;
+		}
 
 		// Create user with hashed password
 		const user = await userAdapter.createUser(profile, {

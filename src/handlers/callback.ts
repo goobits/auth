@@ -57,6 +57,12 @@ export function createCallbackHandler(config: CallbackConfig) {
 	} = config;
 	const log = getLogger();
 
+	const isStatusError = (value: unknown): value is { status: number } =>
+		typeof value === "object" &&
+		value !== null &&
+		"status" in value &&
+		typeof (value as { status?: unknown }).status === "number";
+
 	return async (event: RequestEventLike) => {
 		const { params, locals, url } = event;
 
@@ -86,20 +92,21 @@ export function createCallbackHandler(config: CallbackConfig) {
 			}
 
 			// Handle OAuth callback
-			const profile = await handleOAuthCallback({
+			const callbacks: Parameters<typeof handleOAuthCallback>[0]["callbacks"] = {
+				onAuthenticated: async (userProfile: OAuthProfile, tokens: OAuthTokens) => {
+					await onAuthenticated(event, userProfile, tokens);
+				},
+				...(onError
+					? { onError: async (err: unknown) => onError(event, err) }
+					: {}),
+			};
+			await handleOAuthCallback({
 				event,
 				provider: providerName,
 				providerInstance,
 				appleUserData,
 				overrideParams,
-				callbacks: {
-					onAuthenticated: async (userProfile, tokens) => {
-						await onAuthenticated(event, userProfile, tokens);
-					},
-					onError: onError
-						? async (err) => await onError(event, err)
-						: undefined,
-				},
+				callbacks,
 			});
 
 			throw redirect(302, redirectAfterLogin);
@@ -110,8 +117,8 @@ export function createCallbackHandler(config: CallbackConfig) {
 			}
 
 			// Re-throw redirects and errors
-			if (err && typeof err === "object" && "status" in err) {
-				throw err as { status: number };
+			if (isStatusError(err)) {
+				throw err;
 			}
 
 			// Log and throw generic error

@@ -10,6 +10,10 @@ import {
 	createWebAuthnRegisterVerifyHandler,
 	createWebAuthnLoginOptionsHandler,
 	createWebAuthnLoginVerifyHandler,
+	type WebAuthnLoginOptionsHandlerConfig,
+	type WebAuthnLoginVerifyHandlerConfig,
+	type WebAuthnRegisterOptionsHandlerConfig,
+	type WebAuthnRegisterVerifyHandlerConfig,
 } from "./handlers/webauthn.ts";
 import {
 	createSessionListHandler,
@@ -160,7 +164,7 @@ export function createAuth(config: AuthConfig) {
 			isAuthenticated,
 		});
 
-		callbackHandler = createCallbackHandler({
+		const callbackConfig: Parameters<typeof createCallbackHandler>[0] = {
 			providers: Object.fromEntries(
 				Object.entries(providers as Record<string, OAuthProviderConfig>).map(
 					([name, providerConfig]) => [name, providerConfig.provider],
@@ -233,24 +237,30 @@ export function createAuth(config: AuthConfig) {
 						);
 				}
 			},
-			onError: hooks.onError
-				? async (event, error) => {
-						await hooks.onError?.(event, error);
-				  }
-				: undefined,
-		});
+			...(hooks.onError
+				? {
+						onError: async (event: RequestEventLike, error: unknown) => {
+				await hooks.onError?.(event, error);
+						},
+					}
+				: {}),
+		};
+		callbackHandler = createCallbackHandler(callbackConfig);
 	}
 
-	const logoutHandler = createLogoutHandler({
+	const logoutConfig: Parameters<typeof createLogoutHandler>[0] = {
 		sessionAdapter: adapters.session,
 		redirectAfterLogout: urlConfig.afterLogout,
 		getSession: (locals: AuthLocals) => locals.session ?? null,
-		onLogout: hooks.onLogout
-			? async (event) => {
-					await hooks.onLogout?.(event);
-			  }
-			: undefined,
-	});
+		...(hooks.onLogout
+			? {
+					onLogout: async (event: RequestEventLike) => {
+						await hooks.onLogout?.(event);
+					},
+				}
+			: {}),
+	};
+	const logoutHandler = createLogoutHandler(logoutConfig);
 
 	// Create hooks server handler
 	const handleHooks = async ({
@@ -305,48 +315,74 @@ export function createAuth(config: AuthConfig) {
 	}
 
 	if (magicLink) {
+		const magicLinkOnLogin = magicLink.onLogin || hooks.onLogin;
+		const requestConfig: Parameters<typeof createMagicLinkRequestHandler>[0] = {
+			...magicLink,
+			magicLinkAdapter: adapters.magicLink!,
+			...(adapters.database ? { databaseAdapter: adapters.database } : {}),
+		};
+		const verifyConfig: Parameters<typeof createMagicLinkVerifyHandler>[0] = {
+			...magicLink,
+			magicLinkAdapter: adapters.magicLink!,
+			sessionAdapter: adapters.session,
+			redirectAfterLogin: urlConfig.afterLogin,
+			secureCookies: cookieConfig.secure,
+			onLogin: magicLinkOnLogin,
+			isAuthenticated,
+			...(adapters.database ? { databaseAdapter: adapters.database } : {}),
+		};
 		handlers.magicLink = {
-				request: createMagicLinkRequestHandler({
-					...magicLink,
-					magicLinkAdapter: adapters.magicLink!,
-					databaseAdapter: adapters.database,
-				}),
-				verify: createMagicLinkVerifyHandler({
-					...magicLink,
-					magicLinkAdapter: adapters.magicLink!,
-					databaseAdapter: adapters.database,
-					sessionAdapter: adapters.session as any,
-					redirectAfterLogin: urlConfig.afterLogin,
-					secureCookies: cookieConfig.secure,
-					onLogin: magicLink.onLogin || hooks.onLogin,
-					isAuthenticated,
-				}),
+				request: createMagicLinkRequestHandler(requestConfig),
+				verify: createMagicLinkVerifyHandler(verifyConfig),
 		};
 	}
 
 	if (webauthn) {
+		const attestationType =
+			webauthn.attestation === "indirect" ? "none" : webauthn.attestation;
+		const registerOptionsConfig: WebAuthnRegisterOptionsHandlerConfig = {
+			webauthnAdapter: adapters.webauthn!,
+			rpID: webauthn.rpID ?? "",
+			rpName: webauthn.rpName ?? "Passkey",
+			attestationType,
+			...(webauthn.timeoutMs ? { timeout: webauthn.timeoutMs } : {}),
+			...(webauthn.userVerification
+				? { userVerification: webauthn.userVerification }
+				: {}),
+		};
+		const registerVerifyConfig: WebAuthnRegisterVerifyHandlerConfig = {
+			webauthnAdapter: adapters.webauthn!,
+			rpID: webauthn.rpID ?? "",
+			origin: webauthn.origin ?? "",
+			requireUserVerification: webauthn.userVerification === "required",
+		};
+		const loginOptionsConfig: WebAuthnLoginOptionsHandlerConfig = {
+			webauthnAdapter: adapters.webauthn!,
+			rpID: webauthn.rpID ?? "",
+			...(webauthn.timeoutMs ? { timeout: webauthn.timeoutMs } : {}),
+			...(webauthn.userVerification
+				? { userVerification: webauthn.userVerification }
+				: {}),
+			...(adapters.database ? { databaseAdapter: adapters.database } : {}),
+		};
+		const loginVerifyConfig: WebAuthnLoginVerifyHandlerConfig = {
+			webauthnAdapter: adapters.webauthn!,
+			sessionAdapter: adapters.session,
+			rpID: webauthn.rpID ?? "",
+			origin: webauthn.origin ?? "",
+			redirectAfterLogin: urlConfig.afterLogin,
+			requireUserVerification: webauthn.userVerification === "required",
+			...(adapters.database ? { databaseAdapter: adapters.database } : {}),
+		};
+		const webauthnOnLogin = webauthn.onLogin || hooks.onLogin;
+		if (webauthnOnLogin) {
+			loginVerifyConfig.onLogin = webauthnOnLogin;
+		}
 		handlers.webauthn = {
-				registerOptions: createWebAuthnRegisterOptionsHandler({
-					...webauthn,
-					webauthnAdapter: adapters.webauthn!,
-				} as any),
-				registerVerify: createWebAuthnRegisterVerifyHandler({
-					...webauthn,
-					webauthnAdapter: adapters.webauthn!,
-				} as any),
-				loginOptions: createWebAuthnLoginOptionsHandler({
-					...webauthn,
-					webauthnAdapter: adapters.webauthn!,
-					databaseAdapter: adapters.database,
-				} as any),
-				loginVerify: createWebAuthnLoginVerifyHandler({
-					...webauthn,
-					webauthnAdapter: adapters.webauthn!,
-					databaseAdapter: adapters.database,
-					sessionAdapter: adapters.session as any,
-					redirectAfterLogin: urlConfig.afterLogin,
-					onLogin: (webauthn.onLogin || hooks.onLogin) as any,
-				} as any),
+				registerOptions: createWebAuthnRegisterOptionsHandler(registerOptionsConfig),
+				registerVerify: createWebAuthnRegisterVerifyHandler(registerVerifyConfig),
+				loginOptions: createWebAuthnLoginOptionsHandler(loginOptionsConfig),
+				loginVerify: createWebAuthnLoginVerifyHandler(loginVerifyConfig),
 			};
 		}
 

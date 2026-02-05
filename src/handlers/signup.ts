@@ -126,12 +126,18 @@ export function createSignupHandler(config: {
 			}
 
 			// Create user
-			const user = await credentialsProvider.signUp({
+			const signUpInput: {
+				email: string;
+				password: string;
+				name?: string;
+				userAdapter: typeof userAdapter;
+			} = {
 				email,
 				password,
-				name,
 				userAdapter,
-			});
+			};
+			if (name) signUpInput.name = name;
+			const user = await credentialsProvider.signUp(signUpInput);
 
 			const safeUser = sanitizeUser(user) as User | null;
 

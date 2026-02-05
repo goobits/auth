@@ -109,14 +109,23 @@ export class GoogleProvider extends OAuthProvider {
 				throw new Error("Google email not verified");
 			}
 
+			const profile: {
+				id: string;
+				email: string;
+				name: string;
+				picture?: string;
+				verified_email: true;
+			} = {
+				id: googleUser.id,
+				email: googleUser.email,
+				name: googleUser.name,
+				verified_email: googleUser.verified_email,
+			};
+			if (googleUser.picture) {
+				profile.picture = googleUser.picture;
+			}
 			return {
-				profile: {
-					id: googleUser.id,
-					email: googleUser.email,
-					name: googleUser.name,
-					picture: googleUser.picture,
-					verified_email: googleUser.verified_email,
-					},
+				profile,
 					tokens: {
 						accessToken:
 							tokens.data?.access_token ??
