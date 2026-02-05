@@ -35,7 +35,12 @@ export function createMfaEnrollHandler(config: MfaConfig) {
 
 		const secret = generateSecret();
 		const otpLabel = label ? label(userId, event.locals) : String(userId);
-		const otpauthUrl = createOtpAuthURL({ secret, label: otpLabel, issuer });
+		const otpInput: { secret: string; label: string; issuer?: string } = {
+			secret,
+			label: otpLabel,
+		};
+		if (issuer) otpInput.issuer = issuer;
+		const otpauthUrl = createOtpAuthURL(otpInput);
 		const backupCodes = generateBackupCodes();
 		const hashedCodes = await hashBackupCodes(backupCodes);
 
@@ -57,7 +62,9 @@ export function createMfaVerifyHandler(config: MfaConfig) {
 		const formData = await event.request.formData();
 		const token = formData.get("token")?.toString();
 		const secret = await store.getSecret(userId);
-		const valid = await verifyTOTP({ secret, token });
+		const verifyInput: { secret: string; token?: string } = { secret };
+		if (token) verifyInput.token = token;
+		const valid = await verifyTOTP(verifyInput);
 		if (!valid) return { success: false, error: "Invalid code" };
 		await store.enableMfa(userId);
 		return { success: true };

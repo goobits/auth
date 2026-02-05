@@ -14,6 +14,7 @@ import type {
 	RequestEventLike,
 } from "../types/auth.ts";
 import type { User } from "../types/index.ts";
+import type { Session } from "../types/index.ts";
 
 type MagicLinkAdapterLike = {
 	createToken: (params: {
@@ -46,11 +47,10 @@ type MagicLinkDatabaseAdapterLike = {
 };
 
 type MagicLinkSessionAdapterLike = {
-	createSession: (userId: string) => Promise<{ id: string; expiresAt: Date } | Record<string, unknown>>;
+	createSession: (userId: string) => Promise<Session>;
 	setSessionCookie?: (
 		cookies: RequestEventLike["cookies"],
-		session: unknown,
-		options?: { secure?: boolean },
+		session: Session,
 	) => void;
 };
 
@@ -311,9 +311,7 @@ export function createMagicLinkVerifyHandler(
 		} else if (userId) {
 			const session = await sessionAdapter.createSession(userId);
 			if (sessionAdapter.setSessionCookie) {
-				sessionAdapter.setSessionCookie(event.cookies, session, {
-					secure: secureCookies,
-				});
+				sessionAdapter.setSessionCookie(event.cookies, session);
 			}
 		} else {
 			return jsonResponse({ ok: false, error: "User not found" }, 400);
