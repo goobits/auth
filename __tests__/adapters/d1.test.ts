@@ -4,8 +4,12 @@ import { D1SessionAdapter } from '../../src/adapters/session/d1.ts'
 import { D1TokenAdapter } from '../../src/adapters/oauth-token/d1.ts'
 import { D1VerificationTokenAdapter } from '../../src/adapters/verification-token/d1.ts'
 
+type TableRow = Record<string, unknown>
+type Tables = Record<string, TableRow[]>
+type RowPredicate = (row: TableRow) => boolean
+
 function createMockDb() {
-	const tables: Record<string, any[]> = {
+	const tables: Tables = {
 		users: [],
 		sessions: [],
 		oauth_accounts: [],
@@ -14,7 +18,7 @@ function createMockDb() {
 	};
 	let lastRowId = 0;
 
-	function insert(table: string, row: Record<string, any>) {
+	function insert(table: string, row: TableRow) {
 		if (!tables[table]) tables[table] = [];
 		const id = ++lastRowId;
 		const data = { ...row };
@@ -23,15 +27,15 @@ function createMockDb() {
 		return { last_row_id: data.id };
 	}
 
-	function deleteWhere(table: string, fn: (row: any) => boolean) {
+	function deleteWhere(table: string, fn: RowPredicate) {
 		if (!tables[table]) tables[table] = [];
 		tables[table] = tables[table].filter((row) => !fn(row));
 	}
 
 	function updateWhere(
 		table: string,
-		fn: (row: any) => boolean,
-		updates: Record<string, any>,
+		fn: RowPredicate,
+		updates: TableRow,
 	) {
 		if (!tables[table]) tables[table] = [];
 		for (const row of tables[table]) {
@@ -39,21 +43,21 @@ function createMockDb() {
 		}
 	}
 
-	function findWhere(table: string, fn: (row: any) => boolean) {
+	function findWhere(table: string, fn: RowPredicate) {
 		if (!tables[table]) tables[table] = [];
 		return tables[table].find(fn) || null;
 	}
 
-	function findAll(table: string, fn: (row: any) => boolean) {
+	function findAll(table: string, fn: RowPredicate) {
 		if (!tables[table]) tables[table] = [];
 		return tables[table].filter(fn);
 	}
 
 	return {
 		prepare(sql: string) {
-			let bound: any[] = [];
+			let bound: unknown[] = [];
 			return {
-				bind(...args: any[]) { bound = args; return this; },
+				bind(...args: unknown[]) { bound = args; return this; },
 				run() {
 					if (sql.startsWith('INSERT INTO users')) {
 						const [email, name, avatar, emailVerified] = bound;

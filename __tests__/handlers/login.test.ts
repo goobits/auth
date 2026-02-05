@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createLoginHandler } from '../../src/handlers/login.ts'
+import type { OAuthProvider } from '../../src/providers/base.ts'
 
 function createCookies() {
 	const store = new Map<string, { value: string; options: Record<string, unknown> }>()
@@ -24,16 +25,26 @@ function getRedirectLocation(err: { location?: string; headers?: Headers } | nul
 	return err?.location || err?.headers?.get?.('location')
 }
 
+function createProvider(createAuthorizationURL?: () => URL): OAuthProvider {
+	return {
+		createAuthorizationURL: createAuthorizationURL ?? (() => new URL('https://example.com/auth')),
+		getUserProfile: vi.fn(async () => ({
+			profile: { id: 'u1', email: 'u1@example.com' },
+			tokens: { accessToken: 'token' }
+		}))
+	}
+}
+
 describe('createLoginHandler', () => {
 	it('rejects unknown provider', async () => {
-		const handler = createLoginHandler({ providers: {} as any })
+		const handler = createLoginHandler({ providers: {} })
 		const response = await handler(createEvent({ provider: 'unknown' }))
 		expect(response.status).toBe(400)
 	})
 
 	it('redirects if already authenticated', async () => {
 		const handler = createLoginHandler({
-			providers: { google: { provider: { createAuthorizationURL: () => new URL('https://example.com') } as any } } as any,
+			providers: { google: { provider: createProvider(() => new URL('https://example.com')) } },
 			redirectAfterLogin: '/home',
 			isAuthenticated: () => true
 		})
@@ -45,13 +56,13 @@ describe('createLoginHandler', () => {
 		const createAuthorizationURL = vi.fn(() => new URL('https://apple.example.com/authorize'))
 		const handler = createLoginHandler({
 			providers: {
-				apple: { provider: { createAuthorizationURL }, scopes: ['email'] }
+				apple: { provider: createProvider(createAuthorizationURL), scopes: ['email'] }
 			}
-		} as any)
+		})
 
 		try {
 			await handler(createEvent({ provider: 'apple' }))
-		} catch (err: any) {
+		} catch (err: unknown) {
 			const error = err as { status?: number; headers?: Headers; location?: string }
 			const location = getRedirectLocation(error)
 			expect(error.status).toBe(302)

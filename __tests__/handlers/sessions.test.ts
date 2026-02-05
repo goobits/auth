@@ -3,6 +3,7 @@ import {
 	createSessionListHandler,
 	createSessionRevokeHandler,
 } from "../../src/handlers/sessions.ts";
+import type { SessionSummary } from "../../src/types/index.ts";
 
 function createEvent(body: Record<string, unknown> | string | null = null) {
 	const headers = new Headers();
@@ -40,9 +41,10 @@ describe("session handlers", () => {
 		const handler = createSessionListHandler({ sessionAdapter });
 		const response = await handler(createEvent());
 		const payload = await response.json();
+		const sessions = payload.sessions as Array<SessionSummary & { current: boolean }>;
 
 		expect(payload.ok).toBe(true);
-		expect(payload.sessions.find((s: any) => s.id === "s1")?.current).toBe(true);
+		expect(sessions.find((s) => s.id === "s1")?.current).toBe(true);
 	});
 
 	it("revokes other sessions", async () => {

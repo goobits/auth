@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createAuth } from '../src/createAuth.ts'
+import type { Session } from '../src/types/index.ts'
+import type { SessionAdapter } from '../src/adapters/session/base.ts'
+import type { OAuthProvider } from '../src/providers/base.ts'
+import type { RequestEventLike } from '../src/types/auth.ts'
 
 function createCookies() {
 	const store = new Map<string, { value: string; options: Record<string, unknown> }>()
@@ -20,12 +24,32 @@ function createEvent() {
 	}
 }
 
-function createSessionAdapter({ cookieName = 'session', validateResult }: { cookieName?: string; validateResult?: any } = {}) {
+function createSessionAdapter({
+	cookieName = 'session',
+	validateResult = { session: null, user: null }
+}: {
+	cookieName?: string;
+	validateResult?: { session: Session | null; user: { id: string } | null };
+} = {}): SessionAdapter {
 	return {
 		cookieName,
 		validateSession: vi.fn(async () => validateResult),
 		setSessionCookie: vi.fn(),
-		deleteSessionCookie: vi.fn()
+		deleteSessionCookie: vi.fn(),
+		createSession: vi.fn(async (userId: string) => ({ id: `s:${userId}`, userId })),
+		invalidateSession: vi.fn(async () => {}),
+		invalidateUserSessions: vi.fn(async () => {}),
+		listSessions: vi.fn(async () => [])
+	}
+}
+
+function createProvider(): OAuthProvider {
+	return {
+		createAuthorizationURL: () => new URL('https://example.com/auth'),
+		getUserProfile: vi.fn(async () => ({
+			profile: { id: 'p1', email: 'p1@example.com' },
+			tokens: { accessToken: 'token' }
+		}))
 	}
 }
 
@@ -36,7 +60,7 @@ describe('createAuth', () => {
 	})
 
 	it('allows auth without OAuth providers', () => {
-		const auth = createAuth({ adapters: { session: {} as any } }) as any
+		const auth = createAuth({ adapters: { session: createSessionAdapter() } })
 		expect(auth.handlers.login).toBeUndefined()
 		expect(auth.handlers.callback).toBeUndefined()
 	})
@@ -48,15 +72,15 @@ describe('createAuth', () => {
 		})
 		const auth = createAuth({
 			adapters: { session: sessionAdapter },
-			providers: { google: { provider: {} as any } }
-		}) as any
+			providers: { google: { provider: createProvider() } }
+		})
 
 		const event = createEvent()
 		event.cookies.set('auth_session', 'deadbeef')
 
 		await auth.handlers.hooks({
-			event,
-			resolve: (_e: any) => new Response('ok')
+			event: event as RequestEventLike,
+			resolve: (_e: RequestEventLike) => new Response('ok')
 		})
 
 		expect(sessionAdapter.validateSession).toHaveBeenCalledWith('deadbeef')
@@ -72,15 +96,15 @@ describe('createAuth', () => {
 
 		const auth = createAuth({
 			adapters: { session: sessionAdapter },
-			providers: { google: { provider: {} as any } }
-		}) as any
+			providers: { google: { provider: createProvider() } }
+		})
 
 		const event = createEvent()
 		event.cookies.set('session', 's1')
 
 		await auth.handlers.hooks({
-			event,
-			resolve: (_e: any) => new Response('ok')
+			event: event as RequestEventLike,
+			resolve: (_e: RequestEventLike) => new Response('ok')
 		})
 
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalledWith(event.cookies, session)

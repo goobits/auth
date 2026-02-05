@@ -14,8 +14,6 @@
  * 3. Run migrations: `drizzle-kit push`
  * 4. Run tests: `npx vitest run --testPathPattern=integration`
  */
-// @ts-nocheck
-
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';

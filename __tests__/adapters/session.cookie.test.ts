@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 import { CookieSessionAdapter } from '../../src/adapters/session/cookie.ts'
 
+type CookieSessionAdapterInternals = {
+	_sessions: Map<string, unknown>;
+}
+
 function createCookies() {
 	const store = new Map<string, { value: string; options: Record<string, unknown> }>()
 	return {
@@ -19,7 +23,8 @@ describe('CookieSessionAdapter', () => {
 
 		const result = await adapter.validateSession(session.id)
 		expect(result.session).toBeNull()
-		expect((adapter as any)._sessions.has(session.id)).toBe(false)
+		const internals = adapter as unknown as CookieSessionAdapterInternals
+		expect(internals._sessions.has(session.id)).toBe(false)
 	})
 
 	it('sets session cookie with expected attributes', async () => {
