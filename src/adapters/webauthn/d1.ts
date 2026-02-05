@@ -1,14 +1,25 @@
-// @ts-nocheck
 import { WebAuthnAdapter } from "./base.ts";
+import type { WebAuthnCredential } from "../../types/index.ts";
+
+type D1Value = string | number | boolean | null;
+type D1Row = Record<string, D1Value>;
 
 type D1DatabaseLike = {
 	prepare: (sql: string) => {
-		bind: (...args: unknown[]) => {
+		bind: (...args: D1Value[]) => {
 			run: () => Promise<unknown>;
-			first: () => Promise<Record<string, unknown> | null>;
-			all: () => Promise<{ results?: Record<string, unknown>[] }>;
+			first: () => Promise<D1Row | null>;
+			all: () => Promise<{ results?: D1Row[] }>;
 		};
 	};
+};
+
+type WebAuthnChallengeRecord = {
+	id: string;
+	userId: string | null;
+	challenge: string;
+	type: string;
+	expiresAt: Date;
 };
 
 export class D1WebAuthnAdapter extends WebAuthnAdapter {
@@ -86,17 +97,83 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 			.run();
 	}
 
-	async getChallenge(challengeId: string) {
+	private mapChallenge(row: D1Row | null): WebAuthnChallengeRecord | null {
+		if (!row) return null;
+		const id = row[this.columns.challengeId];
+		const userId = row[this.columns.challengeUserId];
+		const challenge = row[this.columns.challenge];
+		const type = row[this.columns.challengeType];
+		const expiresAt = row[this.columns.challengeExpiresAt];
+		if (typeof id !== "string") return null;
+		if (userId !== null && typeof userId !== "string" && typeof userId !== "number") {
+			return null;
+		}
+		if (typeof challenge !== "string") return null;
+		if (typeof type !== "string") return null;
+		if (typeof expiresAt !== "string") return null;
+		const expiresAtDate = new Date(expiresAt);
+		if (Number.isNaN(expiresAtDate.getTime())) return null;
+		return {
+			id,
+			userId: userId === null ? null : String(userId),
+			challenge,
+			type,
+			expiresAt: expiresAtDate,
+		};
+	}
+
+	private mapCredential(row: D1Row): WebAuthnCredential | null {
+		const credentialId = row[this.columns.credentialId];
+		const userId = row[this.columns.userId];
+		const publicKey = row[this.columns.publicKey];
+		const counter = row[this.columns.counter];
+		const transportsRaw = row[this.columns.transports];
+		const name = row[this.columns.name] ?? null;
+		const createdAtRaw = row[this.columns.createdAt];
+		const updatedAtRaw = row[this.columns.updatedAt];
+		if (typeof credentialId !== "string") return null;
+		if (typeof userId !== "string" && typeof userId !== "number") return null;
+		if (typeof publicKey !== "string") return null;
+		if (typeof counter !== "number") return null;
+		if (transportsRaw !== null && typeof transportsRaw !== "string") return null;
+		if (name !== null && typeof name !== "string") return null;
+		let transports: string[] | null = null;
+		if (typeof transportsRaw === "string") {
+			try {
+				const parsed = JSON.parse(transportsRaw);
+				if (!Array.isArray(parsed) || parsed.some((v) => typeof v !== "string")) {
+					return null;
+				}
+				transports = parsed;
+			} catch {
+				return null;
+			}
+		}
+		const createdAt =
+			typeof createdAtRaw === "string" && !Number.isNaN(new Date(createdAtRaw).getTime())
+				? new Date(createdAtRaw)
+				: new Date();
+		const updatedAt =
+			typeof updatedAtRaw === "string" && !Number.isNaN(new Date(updatedAtRaw).getTime())
+				? new Date(updatedAtRaw)
+				: new Date();
+		return {
+			id: credentialId,
+			userId: String(userId),
+			credentialId,
+			publicKey,
+			counter,
+			transports,
+			name,
+			createdAt,
+			updatedAt,
+		};
+	}
+
+	async getChallenge(challengeId: string): Promise<WebAuthnChallengeRecord | null> {
 		const sql = `SELECT * FROM ${this.challengesTable} WHERE ${this.columns.challengeId} = ? LIMIT 1`;
 		const row = await this.db.prepare(sql).bind(challengeId).first();
-		if (!row) return null;
-		return {
-			id: row[this.columns.challengeId],
-			userId: row[this.columns.challengeUserId],
-			challenge: row[this.columns.challenge],
-			type: row[this.columns.challengeType],
-			expiresAt: row[this.columns.challengeExpiresAt],
-		};
+		return this.mapChallenge(row);
 	}
 
 	async deleteChallenge(challengeId: string) {
@@ -137,58 +214,44 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 			.run();
 	}
 
-	async getCredential(credentialId: string) {
+	async getCredential(credentialId: string): Promise<WebAuthnCredential | null> {
 		const sql = `SELECT * FROM ${this.credentialsTable} WHERE ${this.columns.credentialId} = ? LIMIT 1`;
 		const row = await this.db.prepare(sql).bind(credentialId).first();
 		if (!row) return null;
-		return {
-			credentialId: row[this.columns.credentialId],
-			userId: row[this.columns.userId],
-			publicKey: row[this.columns.publicKey],
-			counter: row[this.columns.counter],
-			transports: row[this.columns.transports]
-				? JSON.parse(row[this.columns.transports])
-				: null,
-			name: row[this.columns.name] ?? null,
-			createdAt: row[this.columns.createdAt] ?? null,
-			updatedAt: row[this.columns.updatedAt] ?? null,
-		};
+		return this.mapCredential(row);
 	}
 
-	async listCredentials(userId: string) {
+	async listCredentials(userId: string): Promise<WebAuthnCredential[]> {
 		const sql = `SELECT * FROM ${this.credentialsTable} WHERE ${this.columns.userId} = ?`;
 		const result = await this.db.prepare(sql).bind(userId).all();
 		const rows = result?.results ?? [];
-		return rows.map((row) => ({
-			credentialId: row[this.columns.credentialId],
-			userId: row[this.columns.userId],
-			publicKey: row[this.columns.publicKey],
-			counter: row[this.columns.counter],
-			transports: row[this.columns.transports]
-				? JSON.parse(row[this.columns.transports])
-				: null,
-			name: row[this.columns.name] ?? null,
-			createdAt: row[this.columns.createdAt] ?? null,
-			updatedAt: row[this.columns.updatedAt] ?? null,
-		}));
+		const credentials: WebAuthnCredential[] = [];
+		for (const row of rows) {
+			const credential = this.mapCredential(row);
+			if (credential) credentials.push(credential);
+		}
+		return credentials;
 	}
 
 	async updateCredential(credentialId: string, updates: Record<string, unknown>) {
-		const payload: Record<string, unknown> = {};
+		const payload = new Map<string, D1Value>();
 		for (const [key, value] of Object.entries(updates)) {
-			const column = (this.columns as Record<string, string>)[key] || key;
-			payload[column] = value;
+			const column = this.columns[key as keyof typeof this.columns] || key;
+			if (column === this.columns.transports && Array.isArray(value)) {
+				if (value.every((entry) => typeof entry === "string")) {
+					payload.set(column, JSON.stringify(value));
+				}
+				continue;
+			}
+			if (value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+				payload.set(column, value);
+			}
 		}
-		if (payload[this.columns.transports]) {
-			payload[this.columns.transports] = JSON.stringify(
-				payload[this.columns.transports],
-			);
-		}
-		const fields = Object.keys(payload);
+		const fields = Array.from(payload.keys());
 		if (fields.length === 0) return;
 		const setSql = fields.map((field) => `${field} = ?`).join(", ");
 		const sql = `UPDATE ${this.credentialsTable} SET ${setSql} WHERE ${this.columns.credentialId} = ?`;
-		const values = fields.map((field) => payload[field]);
+		const values = fields.map((field) => payload.get(field) ?? null);
 		await this.db.prepare(sql).bind(...values, credentialId).run();
 	}
 
