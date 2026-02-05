@@ -1,14 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { OAuth2RequestError } from 'arctic'
+import type { OAuthProvider } from '../../src/providers/base.ts'
+import type { OAuthProfile, OAuthTokens } from '../../src/types/index.ts'
 
-const handleOAuthCallback = vi.fn(async ({ callbacks }: { callbacks?: any }) => {
+type OAuthCallbackHandlers = {
+	onAuthenticated?: (profile: OAuthProfile, tokens: OAuthTokens) => Promise<void> | void;
+	onError?: (error: unknown) => Promise<void> | void;
+}
+
+type OAuthCallbackInput = {
+	callbacks?: OAuthCallbackHandlers;
+}
+
+const handleOAuthCallback = vi.fn(async ({ callbacks }: OAuthCallbackInput) => {
 	if (callbacks?.onAuthenticated) {
-		await callbacks.onAuthenticated({ id: 'p1' }, { accessToken: 't1' })
+		await callbacks.onAuthenticated({ id: 'p1', email: 'p1@example.com' }, { accessToken: 't1' })
 	}
 	return { id: 'p1' }
 })
 vi.mock('../../src/utils/oauth.ts', () => ({
-	handleOAuthCallback: (...args: any[]) => handleOAuthCallback(...(args as [any]))
+	handleOAuthCallback: (...args: [OAuthCallbackInput]) => handleOAuthCallback(...args)
 }))
 
 import { createCallbackHandler } from '../../src/handlers/callback.ts'
@@ -35,6 +46,16 @@ function getRedirectLocation(err: { location?: string; headers?: Headers } | nul
 	return err?.location || err?.headers?.get?.('location')
 }
 
+function createProvider(): OAuthProvider {
+	return {
+		createAuthorizationURL: () => new URL('https://example.com/auth'),
+		getUserProfile: vi.fn(async () => ({
+			profile: { id: 'p1', email: 'p1@example.com' },
+			tokens: { accessToken: 't1' }
+		}))
+	}
+}
+
 beforeEach(() => {
 	handleOAuthCallback.mockReset()
 })
@@ -42,7 +63,7 @@ beforeEach(() => {
 describe('createCallbackHandler', () => {
 	it('rejects unknown provider', async () => {
 		const handler = createCallbackHandler({
-			providers: {} as any,
+			providers: {},
 			onAuthenticated: vi.fn()
 		})
 
@@ -52,11 +73,11 @@ describe('createCallbackHandler', () => {
 
 	it('handles OAuth2RequestError as 400', async () => {
 		handleOAuthCallback.mockImplementation(() => {
-			throw new OAuth2RequestError('bad', 'invalid_grant', null as any, null as any)
+			throw new OAuth2RequestError('bad', 'invalid_grant', undefined, undefined)
 		})
 
 		const handler = createCallbackHandler({
-			providers: { google: {} as any },
+			providers: { google: createProvider() },
 			onAuthenticated: vi.fn()
 		})
 
@@ -68,7 +89,7 @@ describe('createCallbackHandler', () => {
 		const onAuthenticated = vi.fn()
 
 		const handler = createCallbackHandler({
-			providers: { apple: {} as any },
+			providers: { apple: createProvider() },
 			onAuthenticated
 		})
 

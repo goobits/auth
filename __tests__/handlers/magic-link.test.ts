@@ -3,6 +3,17 @@ import {
 	createMagicLinkRequestHandler,
 	createMagicLinkVerifyHandler,
 } from "../../src/handlers/magic-link.ts";
+import type { RequestEventLike } from "../../src/types/auth.ts";
+
+type MagicLinkTokenRecord = {
+	id?: string;
+	userId: string | null;
+	email: string;
+	tokenHash: string;
+	otpHash?: string | null;
+	expiresAt: Date;
+	metadata?: Record<string, unknown>;
+};
 
 function createEvent({
 	method = "POST",
@@ -35,10 +46,10 @@ function createEvent({
 }
 
 function createMagicLinkAdapter() {
-	const tokens = new Map<string, any>();
+	const tokens = new Map<string, MagicLinkTokenRecord>();
 	let counter = 0;
 	return {
-		createToken: async (token: any) => {
+		createToken: async (token: Omit<MagicLinkTokenRecord, "id">) => {
 			const id = `t${++counter}`;
 			tokens.set(id, { id, ...token });
 			return tokens.get(id);
@@ -87,7 +98,7 @@ describe("magic link handlers", () => {
 		});
 
 		const event = createEvent({ body: { email: "missing@example.com" } });
-		const response = await handler(event as any);
+		const response = await handler(event as RequestEventLike);
 		const payload = await response.json();
 
 		expect(payload.ok).toBe(true);
@@ -116,7 +127,7 @@ describe("magic link handlers", () => {
 		});
 
 		const requestEvent = createEvent({ body: { email: "u1@example.com" } });
-		const requestResponse = await requestHandler(requestEvent as any);
+		const requestResponse = await requestHandler(requestEvent as RequestEventLike);
 		const { token } = await requestResponse.json();
 
 		const verifyHandler = createMagicLinkVerifyHandler({
@@ -126,7 +137,7 @@ describe("magic link handlers", () => {
 		});
 
 		const verifyEvent = createEvent({ body: { token } });
-		const verifyResponse = await verifyHandler(verifyEvent as any);
+		const verifyResponse = await verifyHandler(verifyEvent as RequestEventLike);
 		const payload = await verifyResponse.json();
 
 		expect(payload.ok).toBe(true);

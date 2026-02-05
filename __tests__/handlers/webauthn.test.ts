@@ -5,6 +5,24 @@ import {
 	createWebAuthnLoginOptionsHandler,
 	createWebAuthnLoginVerifyHandler,
 } from "../../src/handlers/webauthn.ts";
+import type { RequestEventLike } from "../../src/types/auth.ts";
+
+type StoredChallenge = {
+	challengeId: string;
+	userId?: string | null;
+	challenge: string;
+	type: string;
+	expiresAt: Date;
+};
+
+type StoredCredential = {
+	userId: string;
+	credentialId: string;
+	publicKey: string;
+	counter: number;
+	transports?: string[] | null;
+	name?: string | null;
+};
 
 vi.mock("@simplewebauthn/server", () => ({
 	generateRegistrationOptions: vi.fn(() => ({
@@ -57,20 +75,20 @@ function createEvent({
 }
 
 function createWebAuthnAdapter() {
-	const challenges = new Map<string, any>();
-	const credentials = new Map<string, any>();
+	const challenges = new Map<string, StoredChallenge>();
+	const credentials = new Map<string, StoredCredential>();
 	return {
-		createChallenge: async (challenge: any) => {
+		createChallenge: async (challenge: StoredChallenge) => {
 			challenges.set(challenge.challengeId, challenge);
 		},
 		getChallenge: async (id: string) => challenges.get(id) || null,
 		deleteChallenge: async (id: string) => challenges.delete(id),
-		createCredential: async (credential: any) => {
+		createCredential: async (credential: StoredCredential) => {
 			credentials.set(credential.credentialId, credential);
 		},
 		getCredential: async (id: string) => credentials.get(id) || null,
 		listCredentials: async () => Array.from(credentials.values()),
-		updateCredential: async (id: string, updates: any) => {
+		updateCredential: async (id: string, updates: Record<string, unknown>) => {
 			const current = credentials.get(id);
 			credentials.set(id, { ...current, ...updates });
 		},
@@ -90,7 +108,7 @@ describe("webauthn handlers", () => {
 			rpID: "example.com",
 		});
 
-		const response = await handler(createEvent() as any);
+		const response = await handler(createEvent() as RequestEventLike);
 		const payload = await response.json();
 
 		expect(payload.options.challenge).toBe("reg-challenge");
@@ -115,7 +133,9 @@ describe("webauthn handlers", () => {
 		});
 
 		const response = await handler(
-			createEvent({ body: { challengeId, credential: { id: "cred" } } }) as any,
+			createEvent({
+				body: { challengeId, credential: { id: "cred" } },
+			}) as RequestEventLike,
 		);
 		const payload = await response.json();
 
@@ -159,7 +179,7 @@ describe("webauthn handlers", () => {
 		const response = await handler(
 			createEvent({
 				body: { challengeId: "c2", credential: { id: "AQIDBAcI" } },
-			}) as any,
+			}) as RequestEventLike,
 		);
 		const payload = await response.json();
 
