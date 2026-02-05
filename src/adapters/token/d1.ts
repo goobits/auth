@@ -1,15 +1,44 @@
-// @ts-nocheck
 import { TokenAdapter } from "./base.ts";
 import { encryptTokens, decryptTokens } from "../../utils/crypto.ts";
+import type { OAuthTokens } from "../../types/index.ts";
+
+type D1Value = string | number | boolean | null;
+type D1Row = Record<string, D1Value>;
 
 type D1DatabaseLike = {
 	prepare: (sql: string) => {
-		bind: (...args: unknown[]) => {
-			run: () => Promise<unknown>;
-			first: () => Promise<Record<string, unknown> | null>;
+		bind: (...args: D1Value[]) => {
+			run: () => Promise<void>;
+			first: () => Promise<D1Row | null>;
 		};
 	};
 };
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+	return !!value && typeof value === "object";
+}
+
+function parseOAuthTokens(raw: string): OAuthTokens | null {
+	try {
+		const data: unknown = JSON.parse(raw);
+		if (!isObjectRecord(data)) return null;
+		const record = data;
+		if (typeof record.accessToken !== "string") return null;
+		if (record.refreshToken !== null && typeof record.refreshToken !== "string") {
+			return null;
+		}
+		if (record.scope !== null && typeof record.scope !== "string") return null;
+		if (typeof record.accessTokenExpiresAt !== "string") return null;
+		return {
+			accessToken: record.accessToken,
+			refreshToken: record.refreshToken,
+			scope: record.scope,
+			accessTokenExpiresAt: record.accessTokenExpiresAt,
+		};
+	} catch {
+		return null;
+	}
+}
 
 export class D1TokenAdapter extends TokenAdapter {
 	private db: D1DatabaseLike;
@@ -46,7 +75,7 @@ export class D1TokenAdapter extends TokenAdapter {
 	}
 
 	async storeTokens(userId: string, provider: string, tokens: Record<string, unknown>) {
-		const key = this.encryptionKey as string;
+		const key = this.encryptionKey ?? "";
 		const tokenData = this.encrypt
 			? await encryptTokens(tokens, key)
 			: JSON.stringify(tokens);
@@ -75,10 +104,12 @@ export class D1TokenAdapter extends TokenAdapter {
 			.first();
 
 		if (!row) return null;
-		const key = this.encryptionKey as string;
+		const key = this.encryptionKey ?? "";
+		const tokenValue = row.tokens;
+		if (typeof tokenValue !== "string") return null;
 		return this.encrypt
-			? await decryptTokens(row.tokens, key)
-			: JSON.parse(row.tokens);
+			? await decryptTokens<OAuthTokens>(tokenValue, key)
+			: parseOAuthTokens(tokenValue);
 	}
 
 	async refreshTokens(userId: string, provider: string) {
