@@ -1,6 +1,6 @@
 {
 	"name": "miko-art",
-	"version": "1.0.82",
+	"version": "1.1.0",
 	"private": true,
 	"workspaces": [
 		"packages/*"
@@ -8,6 +8,7 @@
 	"scripts": {
 		"build": "pnpm run version:patch && NODE_ENV=production vite build",
 		"dev": "bash tasks/dev-server.sh start",
+		"dev:wrangler": "NODE_OPTIONS='--dns-result-order=ipv4first' wrangler dev --local",
 		"stop": "bash tasks/dev-server.sh stop",
 		"restart": "bash tasks/dev-server.sh restart",
 		"preview": "vite preview --port 3000",
@@ -34,7 +35,7 @@
 		"stylus": "^0.64.0",
 		"svelte": "^5.49.1",
 		"typescript": "^5.9.3",
-		"wrangler": "^4.61.1"
+		"wrangler": "^4.62.0"
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.981.0",
