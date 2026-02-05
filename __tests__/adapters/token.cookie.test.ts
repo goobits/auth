@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { CookieTokenAdapter } from '../../src/adapters/token/cookie.ts'
+import { CookieTokenAdapter } from '../../src/adapters/oauth-token/cookie.ts'
 
 function createCookies() {
 	const store = new Map<string, { value: string; options: Record<string, unknown> }>()

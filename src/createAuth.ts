@@ -23,136 +23,119 @@ import type {
 	AuthConfig,
 	AuthHandlers,
 	AuthLocals,
+	AuthLoginResult,
 	AuthRoutes,
+	MagicLinkConfig,
 	OAuthProviderConfig,
 	RequestEventLike,
 } from "./types/auth.ts";
 import { getLogger, setLogger } from "./utils/logger.ts";
 
-/**
- * Create a complete authentication system with all handlers and hooks
- *
- * @param {Object} config - Authentication configuration
- * @param {Object} config.adapters - Adapter instances
- * @param {import('./adapters/session/base.ts').SessionAdapter} config.adapters.session - Session adapter
- * @param {import('./adapters/database/base.ts').DatabaseAdapter} [config.adapters.database] - Database adapter (optional)
- * @param {import('./adapters/token/base.ts').TokenAdapter} [config.adapters.token] - OAuth token adapter (optional)
- * @param {import('./utils/tokens.ts').VerificationTokenAdapter} [config.adapters.verificationTokens] - Verification token adapter (optional)
- * @param {Object.<string, {provider: import('./providers/base.ts').OAuthProvider, scopes?: string[]}>} config.providers - OAuth providers
- * @param {Object} [config.urls] - URL configuration
- * @param {string} [config.urls.login='/auth'] - Login page URL
- * @param {string} [config.urls.afterLogin='/'] - Redirect after successful login
- * @param {string} [config.urls.afterLogout='/'] - Redirect after logout
- * @param {Object} [config.cookies] - Cookie configuration
- * @param {boolean} [config.cookies.secure=true] - Use secure cookies
- * @param {Object} [config.hooks] - Lifecycle hooks
- * @param {Function} [config.hooks.onSessionValidated] - Called after session is validated (event, session, user)
- * @param {Function} [config.hooks.onLogin] - Called after successful login (event, profile, tokens)
- * @param {Function} [config.hooks.onLogout] - Called after logout (event)
- * @param {Function} [config.hooks.onError] - Called on authentication errors (event, error)
- * @param {boolean} [config.requireVerifiedEmailForLinking=true] - Only link by email when provider marks it verified
- * @param {Function} [config.isAuthenticated] - Custom authentication check (receives event.locals)
- * @returns {Object} Authentication system
- *
- * @example
- * // In src/lib/auth/index.ts
- * import { createAuth } from '@goobits/auth';
- * import { DrizzleSessionAdapter, DrizzleUserAdapter } from '@goobits/auth/adapters';
- * import { GoogleProvider, AppleProvider } from '@goobits/auth/providers';
- * import { db } from '$lib/db';
- * import { sessions, users } from '$lib/db/schema';
- *
- * export const auth = createAuth({
- *   adapters: {
- *     session: new DrizzleSessionAdapter(db, {
- *       sessionsTable: sessions,
- *       usersTable: users
- *     }),
- *     database: new DrizzleUserAdapter(db, { usersTable: users })
- *   },
- *   providers: {
- *     google: {
- *       provider: new GoogleProvider({
- *         clientId: env.GOOGLE_CLIENT_ID,
- *         clientSecret: env.GOOGLE_CLIENT_SECRET,
- *         callbackUrl: `${APP_URL}/auth/google/callback`
- *       }),
- *       scopes: ['openid', 'profile', 'email']
- *     }
- *   },
- *   urls: {
- *     afterLogin: '/dashboard',
- *     afterLogout: '/sign-in'
- *   },
- *   hooks: {
- *     onLogin: async (event, profile, tokens) => {
- *       // Find or create user
- *       let user = await db.getUserByEmail(profile.email);
- *       if (!user) {
- *         user = await db.createUser({ email: profile.email, ... });
- *       }
- *       // Create session
- *       await auth.adapters.session.createSession(user.id);
- *     }
- *   }
- * });
- *
- * // Use in routes:
- * // src/routes/auth/[provider]/+server.ts
- * export const GET = auth.handlers.login;
- *
- * // src/routes/auth/[provider]/callback/+server.ts
- * export const GET = auth.handlers.callback;
- *
- * // src/routes/logout/+page.server.ts
- * export const actions = auth.handlers.logout;
- */
-export function createAuth(config: AuthConfig) {
+type ResolvedDefaults = {
+	urlConfig: {
+		login: string;
+		afterLogin: string;
+		afterLogout: string;
+	};
+	cookieConfig: {
+		secure: boolean;
+	};
+	autoCreateSession: boolean;
+	requireVerifiedEmailForLinking: boolean;
+	isAuthenticated: (locals: AuthLocals) => boolean;
+};
+
+function validateConfig(config: AuthConfig): void {
+	if (!config.adapters.session) {
+		throw new Error("createAuth requires adapters.session");
+	}
+	if (config.magicLink && !config.adapters.magicLink) {
+		throw new Error("createAuth magicLink requires adapters.magicLink");
+	}
+	if (config.webauthn && !config.adapters.webauthn) {
+		throw new Error("createAuth webauthn requires adapters.webauthn");
+	}
+}
+
+function resolveDefaults(config: AuthConfig): ResolvedDefaults {
+	return {
+		urlConfig: {
+			login: config.urls?.login ?? "/auth",
+			afterLogin: config.urls?.afterLogin ?? "/",
+			afterLogout: config.urls?.afterLogout ?? "/",
+		},
+		cookieConfig: {
+			secure: config.cookies?.secure ?? true,
+		},
+		autoCreateSession: config.autoCreateSession ?? true,
+		requireVerifiedEmailForLinking: config.requireVerifiedEmailForLinking ?? true,
+		isAuthenticated: config.isAuthenticated ?? ((locals: AuthLocals) => !!locals.user),
+	};
+}
+
+function resolveOnLoginUserId(
+	hookResult: AuthLoginResult,
+	fallbackUserId: string | null,
+): string | null {
+	if (hookResult && typeof hookResult === "object" && hookResult["userId"]) {
+		return String(hookResult["userId"]);
+	}
+	return fallbackUserId;
+}
+
+function normalizeMagicLinkConfig(
+	magicLink: MagicLinkConfig,
+	globalHooks: AuthConfig["hooks"],
+	defaultSecureCookies: boolean,
+) {
+	const settings = magicLink.settings ?? {};
+	const limits = magicLink.limits ?? {};
+	const hooks = magicLink.hooks ?? {};
+	const normalized = {
+		sendEmail: magicLink.send.email,
+		secureCookies: settings.secureCookies ?? defaultSecureCookies,
+		...(settings.allowSignup !== undefined ? { allowSignup: settings.allowSignup } : {}),
+		...(settings.expiresInMs !== undefined ? { expiresInMs: settings.expiresInMs } : {}),
+		...(settings.magicLinkPath !== undefined ? { magicLinkPath: settings.magicLinkPath } : {}),
+		...(settings.includeOtp !== undefined ? { includeOtp: settings.includeOtp } : {}),
+		...(settings.otpDigits !== undefined ? { otpDigits: settings.otpDigits } : {}),
+		...(settings.singleUsePerEmail !== undefined
+			? { singleUsePerEmail: settings.singleUsePerEmail }
+			: {}),
+		...(settings.normalizeEmail !== undefined ? { normalizeEmail: settings.normalizeEmail } : {}),
+		...(settings.exposeToken !== undefined ? { exposeToken: settings.exposeToken } : {}),
+		...(settings.baseUrl !== undefined ? { baseUrl: settings.baseUrl } : {}),
+		...(limits.request !== undefined ? { rateLimit: limits.request } : {}),
+		...(limits.verify !== undefined ? { verifyRateLimit: limits.verify } : {}),
+		...(limits.verifyMax !== undefined ? { verifyRateLimitMax: limits.verifyMax } : {}),
+		...(limits.verifyWindowMs !== undefined
+			? { verifyRateLimitWindowMs: limits.verifyWindowMs }
+			: {}),
+		...(hooks.getMetadata !== undefined ? { getMetadata: hooks.getMetadata } : {}),
+		...(hooks.createUser !== undefined ? { createUser: hooks.createUser } : {}),
+		...(hooks.sanitizeUser !== undefined ? { sanitizeUser: hooks.sanitizeUser } : {}),
+		...(settings.trustProxyHeader !== undefined
+			? { trustProxyHeader: settings.trustProxyHeader }
+			: {}),
+		...(settings.key !== undefined ? { key: settings.key } : {}),
+	};
+	const onLogin = hooks.onLogin ?? globalHooks?.onLogin;
+	return onLogin ? { ...normalized, onLogin } : normalized;
+}
+
+function createHandlers(config: AuthConfig, defaults: ResolvedDefaults): AuthHandlers {
 	const {
 		adapters,
 		providers = {},
-		urls = {},
-		cookies = {},
 		hooks = {},
-		autoCreateSession = true,
-		requireVerifiedEmailForLinking = true,
-		isAuthenticated = (locals: AuthLocals) => !!locals.user,
 		magicLink,
 		webauthn,
 		sessions,
-		logger,
 	} = config;
-
-	setLogger(logger);
+	const { urlConfig, cookieConfig, autoCreateSession, requireVerifiedEmailForLinking, isAuthenticated } =
+		defaults;
 	const log = getLogger();
-
-	// Validate required configuration
-	if (!adapters.session) {
-		throw new Error("createAuth requires adapters.session");
-	}
-
-	if (magicLink && !adapters.magicLink) {
-		throw new Error("createAuth magicLink requires adapters.magicLink");
-	}
-
-	if (webauthn && !adapters.webauthn) {
-		throw new Error("createAuth webauthn requires adapters.webauthn");
-	}
-
-	const hasProviders = providers && Object.keys(providers).length > 0;
-
-	// Set defaults
-	const urlConfig = {
-		login: urls.login ?? "/auth",
-		afterLogin: urls.afterLogin ?? "/",
-		afterLogout: urls.afterLogout ?? "/",
-	};
-
-	const cookieConfig = {
-		secure: cookies.secure ?? true,
-	};
-
-	// Create handlers
+	const hasProviders = Object.keys(providers).length > 0;
 	let loginHandler: AuthHandlers["login"];
 	let callbackHandler: AuthHandlers["callback"];
 
@@ -178,69 +161,53 @@ export function createAuth(config: AuthConfig) {
 
 				if (adapters.database) {
 					try {
-						user = await adapters.database.getUserByProviderId(
-							providerName,
-							profile.id,
-						);
-					} catch {}
+						user = await adapters.database.getUserByProviderId(providerName, profile.id);
+					} catch {
+						user = null;
+					}
 
 					const canLinkByEmail = profile.email
 						? requireVerifiedEmailForLinking
 							? profile.verified_email === true
 							: true
 						: false;
-
 					if (!user && canLinkByEmail) {
 						user = await adapters.database.getUserByEmail(profile.email);
 					}
-
 					if (!user) {
 						user = await adapters.database.createUser(profile);
 					}
-
 					if (user && adapters.database.linkOAuthAccount) {
 						try {
-								await adapters.database.linkOAuthAccount(
-									user.id,
-									providerName,
-									profile.id,
-								);
-						} catch {}
+							await adapters.database.linkOAuthAccount(user.id, providerName, profile.id);
+						} catch {
+							// ignore duplicate link failures
+						}
 					}
 				}
 
 				let userId = user?.id ? String(user.id) : null;
-
 				if (hooks.onLogin) {
 					const hookResult = await hooks.onLogin(event, profile, tokens, user);
-					if (hookResult?.userId) userId = String(hookResult.userId);
-					if (hookResult?.id) userId = String(hookResult.id);
-					if (hookResult?.user?.id) userId = String(hookResult.user.id);
-				} else if (userId && adapters.session && autoCreateSession) {
+					userId = resolveOnLoginUserId(hookResult, userId);
+				} else if (userId && autoCreateSession) {
 					const session = await adapters.session.createSession(userId);
-					if (adapters.session.setSessionCookie) {
-						adapters.session.setSessionCookie(event.cookies, session);
-					}
+					adapters.session.setSessionCookie?.(event.cookies, session);
 				}
 
-				// Store tokens if adapter provided
-				if (adapters.token) {
+				if (adapters.oauthToken) {
 					if (!userId) {
 						log.warn?.(
-							"[auth] Token adapter enabled but no userId resolved. Falling back to provider profile id.",
+							"[auth] OAuth token adapter enabled but no userId resolved. Falling back to provider profile id.",
 						);
 					}
-						await adapters.token.storeTokens(
-							userId ?? profile.id,
-							providerName,
-							tokens,
-						);
+					await adapters.oauthToken.storeTokens(userId ?? profile.id, providerName, tokens);
 				}
 			},
 			...(hooks.onError
 				? {
 						onError: async (event: RequestEventLike, error: unknown) => {
-				await hooks.onError?.(event, error);
+							await hooks.onError?.(event, error);
 						},
 					}
 				: {}),
@@ -248,7 +215,7 @@ export function createAuth(config: AuthConfig) {
 		callbackHandler = createCallbackHandler(callbackConfig);
 	}
 
-	const logoutConfig: Parameters<typeof createLogoutHandler>[0] = {
+	const logoutHandler = createLogoutHandler({
 		sessionAdapter: adapters.session,
 		redirectAfterLogout: urlConfig.afterLogout,
 		getSession: (locals: AuthLocals) => locals.session ?? null,
@@ -259,45 +226,30 @@ export function createAuth(config: AuthConfig) {
 					},
 				}
 			: {}),
-	};
-	const logoutHandler = createLogoutHandler(logoutConfig);
+	});
 
-	// Create hooks server handler
-	const handleHooks = async ({
-		event,
-		resolve,
-	}: {
-		event: RequestEventLike;
-		resolve: (e: RequestEventLike) => Promise<Response>;
-	}) => {
+	const handleHooks: AuthHandlers["hooks"] = async ({ event, resolve }) => {
 		const sessionCookieName =
-			(adapters.session as { cookieName?: string }).cookieName ?? "session";
+			(adapters.session as { cookieName?: string })["cookieName"] ?? "session";
 		const sessionId = event.cookies.get(sessionCookieName);
-
-			if (sessionId) {
-				const { session, user } = await adapters.session.validateSession(sessionId);
-
-				event.locals.session = session;
-				event.locals.user = user;
-
-				if (session && user) {
-					// Call user hook
-					if (hooks.onSessionValidated) {
-						await hooks.onSessionValidated(event, session, user);
-					}
-
-					// Refresh session cookie if needed
-					if (session.fresh && adapters.session.setSessionCookie) {
-						adapters.session.setSessionCookie(event.cookies, session);
-					}
-				} else if (adapters.session.deleteSessionCookie) {
-					adapters.session.deleteSessionCookie(event.cookies);
-				}
-			} else {
-				event.locals.session = null;
-				event.locals.user = null;
+		if (!sessionId) {
+			event.locals.session = null;
+			event.locals.user = null;
+			return resolve(event);
+		}
+		const { session, user } = await adapters.session.validateSession(sessionId);
+		event.locals.session = session;
+		event.locals.user = user;
+		if (session && user) {
+			if (hooks.onSessionValidated) {
+				await hooks.onSessionValidated(event, session, user);
 			}
-
+			if (session.fresh) {
+				adapters.session.setSessionCookie?.(event.cookies, session);
+			}
+		} else {
+			adapters.session.deleteSessionCookie?.(event.cookies);
+		}
 		return resolve(event);
 	};
 
@@ -305,50 +257,43 @@ export function createAuth(config: AuthConfig) {
 		logout: logoutHandler,
 		hooks: handleHooks,
 	};
-
-	if (loginHandler) {
-		handlers.login = loginHandler;
-	}
-
-	if (callbackHandler) {
-		handlers.callback = callbackHandler;
-	}
+	if (loginHandler) handlers.login = loginHandler;
+	if (callbackHandler) handlers.callback = callbackHandler;
 
 	if (magicLink) {
-		const magicLinkOnLogin = magicLink.onLogin || hooks.onLogin;
+		const normalizedMagicLink = normalizeMagicLinkConfig(
+			magicLink,
+			hooks,
+			cookieConfig.secure,
+		);
 		const requestConfig: Parameters<typeof createMagicLinkRequestHandler>[0] = {
-			...magicLink,
+			...normalizedMagicLink,
 			magicLinkAdapter: adapters.magicLink!,
 			...(adapters.database ? { databaseAdapter: adapters.database } : {}),
 		};
 		const verifyConfig: Parameters<typeof createMagicLinkVerifyHandler>[0] = {
-			...magicLink,
+			...normalizedMagicLink,
 			magicLinkAdapter: adapters.magicLink!,
 			sessionAdapter: adapters.session,
 			redirectAfterLogin: urlConfig.afterLogin,
-			secureCookies: cookieConfig.secure,
-			onLogin: magicLinkOnLogin,
 			isAuthenticated,
 			...(adapters.database ? { databaseAdapter: adapters.database } : {}),
 		};
 		handlers.magicLink = {
-				request: createMagicLinkRequestHandler(requestConfig),
-				verify: createMagicLinkVerifyHandler(verifyConfig),
+			request: createMagicLinkRequestHandler(requestConfig),
+			verify: createMagicLinkVerifyHandler(verifyConfig),
 		};
 	}
 
 	if (webauthn) {
-		const attestationType =
-			webauthn.attestation === "indirect" ? "none" : webauthn.attestation;
+		const attestationType = webauthn.attestation === "indirect" ? "none" : webauthn.attestation;
 		const registerOptionsConfig: WebAuthnRegisterOptionsHandlerConfig = {
 			webauthnAdapter: adapters.webauthn!,
 			rpID: webauthn.rpID ?? "",
 			rpName: webauthn.rpName ?? "Passkey",
 			attestationType,
 			...(webauthn.timeoutMs ? { timeout: webauthn.timeoutMs } : {}),
-			...(webauthn.userVerification
-				? { userVerification: webauthn.userVerification }
-				: {}),
+			...(webauthn.userVerification ? { userVerification: webauthn.userVerification } : {}),
 		};
 		const registerVerifyConfig: WebAuthnRegisterVerifyHandlerConfig = {
 			webauthnAdapter: adapters.webauthn!,
@@ -360,9 +305,7 @@ export function createAuth(config: AuthConfig) {
 			webauthnAdapter: adapters.webauthn!,
 			rpID: webauthn.rpID ?? "",
 			...(webauthn.timeoutMs ? { timeout: webauthn.timeoutMs } : {}),
-			...(webauthn.userVerification
-				? { userVerification: webauthn.userVerification }
-				: {}),
+			...(webauthn.userVerification ? { userVerification: webauthn.userVerification } : {}),
 			...(adapters.database ? { databaseAdapter: adapters.database } : {}),
 		};
 		const loginVerifyConfig: WebAuthnLoginVerifyHandlerConfig = {
@@ -374,17 +317,17 @@ export function createAuth(config: AuthConfig) {
 			requireUserVerification: webauthn.userVerification === "required",
 			...(adapters.database ? { databaseAdapter: adapters.database } : {}),
 		};
-		const webauthnOnLogin = webauthn.onLogin || hooks.onLogin;
+		const webauthnOnLogin = webauthn.hooks?.onLogin ?? hooks.onLogin;
 		if (webauthnOnLogin) {
 			loginVerifyConfig.onLogin = webauthnOnLogin;
 		}
 		handlers.webauthn = {
-				registerOptions: createWebAuthnRegisterOptionsHandler(registerOptionsConfig),
-				registerVerify: createWebAuthnRegisterVerifyHandler(registerVerifyConfig),
-				loginOptions: createWebAuthnLoginOptionsHandler(loginOptionsConfig),
-				loginVerify: createWebAuthnLoginVerifyHandler(loginVerifyConfig),
-			};
-		}
+			registerOptions: createWebAuthnRegisterOptionsHandler(registerOptionsConfig),
+			registerVerify: createWebAuthnRegisterVerifyHandler(registerVerifyConfig),
+			loginOptions: createWebAuthnLoginOptionsHandler(loginOptionsConfig),
+			loginVerify: createWebAuthnLoginVerifyHandler(loginVerifyConfig),
+		};
+	}
 
 	if (sessions) {
 		handlers.sessions = {
@@ -401,66 +344,72 @@ export function createAuth(config: AuthConfig) {
 		};
 	}
 
-	const routes = {
+	return handlers;
+}
+
+function buildRoutes(handlers: AuthHandlers): AuthRoutes {
+	return {
 		login: () => {
 			if (!handlers.login) throw new Error("OAuth login handler not configured");
 			return { GET: handlers.login };
 		},
 		callback: () => {
-			if (!handlers.callback)
-				throw new Error("OAuth callback handler not configured");
+			if (!handlers.callback) throw new Error("OAuth callback handler not configured");
 			return { GET: handlers.callback };
 		},
 		magicLink: () => {
-			if (!handlers.magicLink)
-				throw new Error("Magic link handlers not configured");
+			if (!handlers.magicLink) throw new Error("Magic link handlers not configured");
 			return { POST: handlers.magicLink.request };
 		},
 		magicLinkVerify: () => {
-			if (!handlers.magicLink)
-				throw new Error("Magic link handlers not configured");
+			if (!handlers.magicLink) throw new Error("Magic link handlers not configured");
 			return { GET: handlers.magicLink.verify, POST: handlers.magicLink.verify };
 		},
 		passkeyRegisterOptions: () => {
-			if (!handlers.webauthn)
-				throw new Error("WebAuthn handlers not configured");
+			if (!handlers.webauthn) throw new Error("WebAuthn handlers not configured");
 			return { POST: handlers.webauthn.registerOptions };
 		},
 		passkeyRegisterVerify: () => {
-			if (!handlers.webauthn)
-				throw new Error("WebAuthn handlers not configured");
+			if (!handlers.webauthn) throw new Error("WebAuthn handlers not configured");
 			return { POST: handlers.webauthn.registerVerify };
 		},
 		passkeyLoginOptions: () => {
-			if (!handlers.webauthn)
-				throw new Error("WebAuthn handlers not configured");
+			if (!handlers.webauthn) throw new Error("WebAuthn handlers not configured");
 			return { POST: handlers.webauthn.loginOptions };
 		},
 		passkeyLoginVerify: () => {
-			if (!handlers.webauthn)
-				throw new Error("WebAuthn handlers not configured");
+			if (!handlers.webauthn) throw new Error("WebAuthn handlers not configured");
 			return { POST: handlers.webauthn.loginVerify };
 		},
 		sessions: () => {
-			if (!handlers.sessions)
-				throw new Error("Session handlers not configured");
+			if (!handlers.sessions) throw new Error("Session handlers not configured");
 			return { GET: handlers.sessions.list, POST: handlers.sessions.revoke };
 		},
 	};
+}
 
+function createUtils(isAuthenticated: (locals: AuthLocals) => boolean) {
 	return {
-		adapters,
-		providers,
-		urls: urlConfig,
-		cookies: cookieConfig,
-		hooks,
+		isAuthenticated: (locals: AuthLocals) => isAuthenticated(locals),
+		getUser: (locals: AuthLocals) => locals.user,
+		getSession: (locals: AuthLocals) => locals.session,
+	};
+}
+
+export function createAuth(config: AuthConfig) {
+	setLogger(config.logger);
+	validateConfig(config);
+	const defaults = resolveDefaults(config);
+	const handlers = createHandlers(config, defaults);
+	const routes = buildRoutes(handlers);
+	return {
+		adapters: config.adapters,
+		providers: config.providers ?? {},
+		urls: defaults.urlConfig,
+		cookies: defaults.cookieConfig,
+		hooks: config.hooks ?? {},
 		handlers,
-		routes: routes as AuthRoutes,
-		// Utility functions
-		utils: {
-			isAuthenticated: (locals: AuthLocals) => isAuthenticated(locals),
-			getUser: (locals: AuthLocals) => locals.user,
-			getSession: (locals: AuthLocals) => locals.session,
-		},
+		routes,
+		utils: createUtils(defaults.isAuthenticated),
 	};
 }

@@ -1,16 +1,17 @@
 import { generateState, generateCodeVerifier } from "arctic";
 import type { RequestEvent } from "@sveltejs/kit";
+import type { Cookies } from "@sveltejs/kit";
 import type { OAuthProvider } from "../providers/base.ts";
 import type { OAuthProfile, OAuthTokens } from "../types/index.ts";
 import type { RequestEventLike } from "../types/auth.ts";
 
-type CookiesLike = {
-	set: (...args: any[]) => void;
-	get: (name: string) => string | null | undefined;
-	delete: (...args: any[]) => void;
-};
+type CookiesLike = Pick<Cookies, "set" | "get" | "delete">;
 
-type CookieOptions = Record<string, unknown>;
+type CookieOptions = {
+	secure?: boolean;
+	maxAge?: number;
+	sameSite?: "lax" | "strict" | "none";
+};
 
 type OAuthCallbackParams = {
 	code: string | null;

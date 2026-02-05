@@ -1,4 +1,4 @@
-import { VerificationTokenAdapter } from "../../utils/tokens.ts";
+import { VerificationTokenAdapter } from "./base.ts";
 import type { User, VerificationToken } from "../../types/index.ts";
 
 type D1Value = string | number | boolean | null;

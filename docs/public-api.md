@@ -9,8 +9,8 @@ This package exposes a small set of entrypoints. Everything else is internal.
 - `@goobits/auth/adapters`
 - `@goobits/auth/adapters/database`
 - `@goobits/auth/adapters/session`
-- `@goobits/auth/adapters/token`
-- `@goobits/auth/adapters/tokens`
+- `@goobits/auth/adapters/oauth-token`
+- `@goobits/auth/adapters/verification-token`
 - `@goobits/auth/adapters/magic-link`
 - `@goobits/auth/adapters/webauthn`
 - `@goobits/auth/providers`
