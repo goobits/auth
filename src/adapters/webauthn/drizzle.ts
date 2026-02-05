@@ -1,11 +1,122 @@
-// @ts-nocheck
-import { WebAuthnAdapter } from "./base.ts";
 import { eq } from "drizzle-orm";
+import { WebAuthnAdapter } from "./base.ts";
+import type { WebAuthnCredential } from "../../types/index.ts";
+import {
+	requireColumn,
+	type DrizzleDbLike,
+	type DrizzleJson,
+	type DrizzleRow,
+	type DrizzleTable,
+} from "../drizzle-types.ts";
+
+type CredentialsTable = DrizzleTable;
+type ChallengesTable = DrizzleTable;
+
+type ChallengeRecord = {
+	id: string;
+	userId: string | null;
+	challenge: string;
+	type: string;
+	expiresAt: Date;
+};
+
+function mapChallengeRow(
+	row: DrizzleRow | null,
+	columns: {
+		challengeId: string;
+		challengeUserId: string;
+		challenge: string;
+		challengeType: string;
+		challengeExpiresAt: string;
+	},
+): ChallengeRecord | null {
+	if (!row) return null;
+	const id = row[columns.challengeId];
+	const userId = row[columns.challengeUserId] ?? null;
+	const challenge = row[columns.challenge];
+	const type = row[columns.challengeType];
+	const expiresAt = row[columns.challengeExpiresAt];
+	if (typeof id !== "string") return null;
+	if (userId !== null && typeof userId !== "string" && typeof userId !== "number") return null;
+	if (typeof challenge !== "string") return null;
+	if (typeof type !== "string") return null;
+	if (!(expiresAt instanceof Date) && typeof expiresAt !== "string") return null;
+	const expiresAtDate = expiresAt instanceof Date ? expiresAt : new Date(expiresAt);
+	if (Number.isNaN(expiresAtDate.getTime())) return null;
+	return {
+		id,
+		userId: userId === null ? null : String(userId),
+		challenge,
+		type,
+		expiresAt: expiresAtDate,
+	};
+}
+
+function mapCredentialRow(
+	row: DrizzleRow | null,
+	columns: {
+		credentialId: string;
+		userId: string;
+		publicKey: string;
+		counter: string;
+		transports: string;
+		name: string;
+		createdAt: string;
+		updatedAt: string;
+	},
+): WebAuthnCredential | null {
+	if (!row) return null;
+	const credentialId = row[columns.credentialId];
+	const userId = row[columns.userId];
+	const publicKey = row[columns.publicKey];
+	const counter = row[columns.counter];
+	const transportsRaw = row[columns.transports] ?? null;
+	const name = row[columns.name] ?? null;
+	const createdAt = row[columns.createdAt];
+	const updatedAt = row[columns.updatedAt];
+	if (typeof credentialId !== "string") return null;
+	if (typeof userId !== "string" && typeof userId !== "number") return null;
+	if (typeof publicKey !== "string") return null;
+	if (typeof counter !== "number") return null;
+	if (transportsRaw !== null && typeof transportsRaw !== "string") return null;
+	if (name !== null && typeof name !== "string") return null;
+	let transports: string[] | null = null;
+	if (typeof transportsRaw === "string") {
+		const parsed = JSON.parse(transportsRaw);
+		if (!Array.isArray(parsed) || parsed.some((entry) => typeof entry !== "string")) {
+			return null;
+		}
+		transports = parsed;
+	}
+	const createdAtDate =
+		createdAt instanceof Date
+			? createdAt
+			: typeof createdAt === "string"
+				? new Date(createdAt)
+				: new Date();
+	const updatedAtDate =
+		updatedAt instanceof Date
+			? updatedAt
+			: typeof updatedAt === "string"
+				? new Date(updatedAt)
+				: new Date();
+	return {
+		id: credentialId,
+		userId: String(userId),
+		credentialId,
+		publicKey,
+		counter,
+		transports,
+		name,
+		createdAt: Number.isNaN(createdAtDate.getTime()) ? new Date() : createdAtDate,
+		updatedAt: Number.isNaN(updatedAtDate.getTime()) ? new Date() : updatedAtDate,
+	};
+}
 
 export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
-	private db: any;
-	private credentialsTable: any;
-	private challengesTable: any;
+	private db: DrizzleDbLike;
+	private credentialsTable: CredentialsTable;
+	private challengesTable: ChallengesTable;
 	private columns: {
 		credentialId: string;
 		userId: string;
@@ -21,25 +132,24 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		challengeUserId: string;
 		challengeExpiresAt: string;
 	};
-	/**
-	 * @param {Object} db - Drizzle instance
-	 * @param {Object} options
-	 * @param {Object} options.credentialsTable
-	 * @param {Object} options.challengesTable
-	 * @param {Object} [options.columns]
-	 */
+
 	constructor(
-		db: any,
+		db: DrizzleDbLike,
 		options: {
-			credentialsTable?: any;
-			challengesTable?: any;
+			credentialsTable?: CredentialsTable;
+			challengesTable?: ChallengesTable;
 			columns?: Partial<Record<string, string>>;
 		} = {},
 	) {
 		super();
+		if (!options.credentialsTable || !options.challengesTable) {
+			throw new Error(
+				"DrizzleWebAuthnAdapter requires credentialsTable and challengesTable options",
+			);
+		}
 		this.db = db;
-		this.credentialsTable = options.credentialsTable ?? {};
-		this.challengesTable = options.challengesTable ?? {};
+		this.credentialsTable = options.credentialsTable;
+		this.challengesTable = options.challengesTable;
 		this.columns = {
 			credentialId: options.columns?.credentialId || "credentialId",
 			userId: options.columns?.userId || "userId",
@@ -55,12 +165,6 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 			challengeUserId: options.columns?.challengeUserId || "userId",
 			challengeExpiresAt: options.columns?.challengeExpiresAt || "expiresAt",
 		};
-
-		if (!options.credentialsTable || !options.challengesTable) {
-			throw new Error(
-				"DrizzleWebAuthnAdapter requires credentialsTable and challengesTable options",
-			);
-		}
 	}
 
 	async createChallenge({
@@ -75,36 +179,28 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		challenge: string;
 		type: string;
 		expiresAt: Date;
-	}) {
-		const columns: Record<string, string> = this.columns;
+	}): Promise<void> {
 		await this.db.insert(this.challengesTable).values({
-			[columns.challengeId]: challengeId,
-			[columns.challengeUserId]: userId,
-			[columns.challenge]: challenge,
-			[columns.challengeType]: type,
-			[columns.challengeExpiresAt]: expiresAt,
+			[this.columns.challengeId]: challengeId,
+			[this.columns.challengeUserId]: userId,
+			[this.columns.challenge]: challenge,
+			[this.columns.challengeType]: type,
+			[this.columns.challengeExpiresAt]: expiresAt,
 		});
 	}
 
-	async getChallenge(challengeId: string) {
-		const [record] = await this.db
+	async getChallenge(challengeId: string): Promise<ChallengeRecord | null> {
+		const [row] = await this.db
 			.select()
 			.from(this.challengesTable)
-			.where(eq(this.challengesTable[this.columns.challengeId], challengeId));
-		if (!record) return null;
-		return {
-			id: record[this.columns.challengeId],
-			userId: record[this.columns.challengeUserId],
-			challenge: record[this.columns.challenge],
-			type: record[this.columns.challengeType],
-			expiresAt: record[this.columns.challengeExpiresAt],
-		};
+			.where(eq(requireColumn(this.challengesTable, this.columns.challengeId), challengeId));
+		return mapChallengeRow(row ?? null, this.columns);
 	}
 
-	async deleteChallenge(challengeId: string) {
+	async deleteChallenge(challengeId: string): Promise<void> {
 		await this.db
 			.delete(this.challengesTable)
-			.where(eq(this.challengesTable[this.columns.challengeId], challengeId));
+			.where(eq(requireColumn(this.challengesTable, this.columns.challengeId), challengeId));
 	}
 
 	async createCredential({
@@ -121,87 +217,70 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		counter: number;
 		transports?: string[] | null;
 		name?: string | null;
-	}) {
-		const columns: Record<string, string> = this.columns;
+	}): Promise<void> {
 		await this.db.insert(this.credentialsTable).values({
-			[columns.userId]: userId,
-			[columns.credentialId]: credentialId,
-			[columns.publicKey]: publicKey,
-			[columns.counter]: counter,
-			[columns.transports]: transports ? JSON.stringify(transports) : null,
-			[columns.name]: name ?? null,
+			[this.columns.userId]: userId,
+			[this.columns.credentialId]: credentialId,
+			[this.columns.publicKey]: publicKey,
+			[this.columns.counter]: counter,
+			[this.columns.transports]: transports ? JSON.stringify(transports) : null,
+			[this.columns.name]: name ?? null,
 		});
 	}
 
-	async getCredential(credentialId: string) {
-		const [record] = await this.db
+	async getCredential(credentialId: string): Promise<WebAuthnCredential | null> {
+		const [row] = await this.db
 			.select()
 			.from(this.credentialsTable)
-			.where(eq(this.credentialsTable[this.columns.credentialId], credentialId));
-		if (!record) return null;
-		return {
-			credentialId: record[this.columns.credentialId],
-			userId: record[this.columns.userId],
-			publicKey: record[this.columns.publicKey],
-			counter: record[this.columns.counter],
-			transports: record[this.columns.transports]
-				? JSON.parse(record[this.columns.transports])
-				: null,
-			name: record[this.columns.name] ?? null,
-			createdAt: record[this.columns.createdAt] ?? null,
-			updatedAt: record[this.columns.updatedAt] ?? null,
-		};
+			.where(eq(requireColumn(this.credentialsTable, this.columns.credentialId), credentialId));
+		return mapCredentialRow(row ?? null, this.columns);
 	}
 
-	async listCredentials(userId: string) {
-		const records = await this.db
+	async listCredentials(userId: string): Promise<WebAuthnCredential[]> {
+		const rows = await this.db
 			.select()
 			.from(this.credentialsTable)
-			.where(eq(this.credentialsTable[this.columns.userId], userId));
-		return records.map((record: Record<string, unknown>) => ({
-			credentialId: record[this.columns.credentialId],
-			userId: record[this.columns.userId],
-			publicKey: record[this.columns.publicKey],
-			counter: record[this.columns.counter],
-			transports: record[this.columns.transports]
-				? JSON.parse(record[this.columns.transports])
-				: null,
-			name: record[this.columns.name] ?? null,
-			createdAt: record[this.columns.createdAt] ?? null,
-			updatedAt: record[this.columns.updatedAt] ?? null,
-		}));
+			.where(eq(requireColumn(this.credentialsTable, this.columns.userId), userId));
+		const credentials: WebAuthnCredential[] = [];
+		for (const row of rows) {
+			const credential = mapCredentialRow(row, this.columns);
+			if (credential) credentials.push(credential);
+		}
+		return credentials;
 	}
 
 	async updateCredential(
 		credentialId: string,
-		updates: Record<string, unknown>,
-	) {
-		const payload: Record<string, unknown> = {};
-		const columns = this.columns as Record<string, string>;
+		updates: Record<string, DrizzleJson>,
+	): Promise<void> {
+		const payload: DrizzleRow = {};
+		const columnLookup: Record<string, string> = this.columns;
 		for (const [key, value] of Object.entries(updates)) {
-			const column = columns[key] || key;
-			payload[column] = value;
+			const mappedColumn = columnLookup[key] || key;
+			if (mappedColumn === this.columns.transports && Array.isArray(value)) {
+				if (value.every((entry) => typeof entry === "string")) {
+					payload[mappedColumn] = JSON.stringify(value);
+				}
+				continue;
+			}
+			payload[mappedColumn] = value;
 		}
-		if (payload[this.columns.transports]) {
-			payload[this.columns.transports] = JSON.stringify(
-				payload[this.columns.transports],
-			);
-		}
+		if (Object.keys(payload).length === 0) return;
 		await this.db
 			.update(this.credentialsTable)
 			.set(payload)
-			.where(eq(this.credentialsTable[this.columns.credentialId], credentialId));
+			.where(eq(requireColumn(this.credentialsTable, this.columns.credentialId), credentialId));
 	}
 
-	async deleteCredential(credentialId: string) {
+	async deleteCredential(credentialId: string): Promise<void> {
 		await this.db
 			.delete(this.credentialsTable)
-			.where(eq(this.credentialsTable[this.columns.credentialId], credentialId));
+			.where(eq(requireColumn(this.credentialsTable, this.columns.credentialId), credentialId));
 	}
 
-	async deleteUserCredentials(userId: string) {
+	async deleteUserCredentials(userId: string): Promise<void> {
 		await this.db
 			.delete(this.credentialsTable)
-			.where(eq(this.credentialsTable[this.columns.userId], userId));
+			.where(eq(requireColumn(this.credentialsTable, this.columns.userId), userId));
 	}
 }
