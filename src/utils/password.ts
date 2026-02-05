@@ -1,4 +1,4 @@
-import { Argon2id } from "oslo/password";
+import { hash, verify } from "@node-rs/argon2";
 
 /**
  * Hash a password using Argon2id
@@ -10,25 +10,25 @@ export async function hashPassword(password: string): Promise<string> {
 		throw new Error("Password must be a non-empty string");
 	}
 
-	return await new Argon2id().hash(password);
+	return await hash(password);
 }
 
 /**
  * Verify a password against its hash
- * @param {string} hash - Hashed password from database
+ * @param {string} storedHash - Hashed password from database
  * @param {string} password - Plain text password to verify
  * @returns {Promise<boolean>} True if password matches
  */
 export async function verifyPassword(
-	hash: string,
+	storedHash: string,
 	password: string,
 ): Promise<boolean> {
-	if (!hash || !password) {
+	if (!storedHash || !password) {
 		return false;
 	}
 
 	try {
-		return await new Argon2id().verify(hash, password);
+		return await verify(storedHash, password);
 	} catch (error) {
 		console.error("Password verification error:", error);
 		return false;

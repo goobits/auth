@@ -77,8 +77,8 @@ export function createWebAuthnRegisterOptionsHandler(config: any): RequestHandle
 
 		const credentials = await webauthnAdapter.listCredentials(user.id);
 		const excludeCredentials = credentials.map((cred: any) => ({
-			id: toUint8Array(cred.credentialId || cred.credential_id),
-			type: "public-key",
+			id: cred.credentialId || cred.credential_id,
+			type: "public-key" as const,
 			transports: cred.transports || undefined,
 		}));
 
@@ -161,10 +161,10 @@ export function createWebAuthnRegisterVerifyHandler(config: Record<string, any>)
 			return jsonResponse({ ok: false, error: "Registration failed" }, 400);
 		}
 
-		const { registrationInfo } = verification as any;
-		const credentialId = encodeCredential(registrationInfo?.credentialID);
-		const publicKey = encodeCredential(registrationInfo?.credentialPublicKey);
-		const counter = registrationInfo?.counter ?? 0;
+		const { credential: regCredential } = verification.registrationInfo as any;
+		const credentialId = regCredential?.id || encodeCredential(regCredential?.credentialID);
+		const publicKey = encodeCredential(regCredential?.publicKey || regCredential?.credentialPublicKey);
+		const counter = regCredential?.counter ?? 0;
 
 		await webauthnAdapter.createCredential({
 			userId: challenge.userId,
@@ -218,8 +218,8 @@ export function createWebAuthnLoginOptionsHandler(config: any): RequestHandler {
 		if (user) {
 			const credentials = await webauthnAdapter.listCredentials(user.id);
 			allowCredentials = credentials.map((cred: any) => ({
-				id: toUint8Array(cred.credentialId || cred.credential_id),
-				type: "public-key",
+				id: cred.credentialId || cred.credential_id,
+				type: "public-key" as const,
 				transports: cred.transports || undefined,
 			}));
 		}
@@ -295,9 +295,9 @@ export function createWebAuthnLoginVerifyHandler(config: any): RequestHandler {
 			expectedChallenge: challenge.challenge,
 			expectedOrigin: origin,
 			expectedRPID: rpID,
-			authenticator: {
-				credentialID: toUint8Array(storedCredential.credentialId),
-				credentialPublicKey: toUint8Array(storedCredential.publicKey),
+			credential: {
+				id: storedCredential.credentialId,
+				publicKey: toUint8Array(storedCredential.publicKey),
 				counter: storedCredential.counter,
 				transports: storedCredential.transports || undefined,
 			},
