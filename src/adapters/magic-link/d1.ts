@@ -1,11 +1,14 @@
-// @ts-nocheck
 import { MagicLinkAdapter } from "./base.ts";
+import type { MagicLinkToken } from "../../types/index.ts";
+
+type D1Value = string | number | boolean | null;
+type D1Row = Record<string, D1Value>;
 
 type D1DatabaseLike = {
 	prepare: (sql: string) => {
-		bind: (...args: unknown[]) => {
-			run: () => Promise<unknown>;
-			first: () => Promise<Record<string, unknown> | null>;
+		bind: (...args: D1Value[]) => {
+			run: () => Promise<void>;
+			first: () => Promise<D1Row | null>;
 		};
 	};
 };
@@ -64,30 +67,22 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 			.prepare(sql)
 			.bind(userId, email, tokenHash, otpHash ?? null, expiresAt.toISOString())
 			.run();
-		return { userId, email, tokenHash, otpHash, expiresAt, ...metadata };
+		return {
+			id: crypto.randomUUID(),
+			userId,
+			email,
+			tokenHash,
+			otpHash: otpHash ?? null,
+			expiresAt,
+			createdAt: new Date(),
+			...metadata,
+		};
 	}
 
-	async findByTokenHash(tokenHash: string) {
+	async findByTokenHash(tokenHash: string): Promise<MagicLinkToken | null> {
 		const sql = `SELECT * FROM ${this.tokensTable} WHERE ${this.columns.tokenHash} = ? LIMIT 1`;
 		const row = await this.db.prepare(sql).bind(tokenHash).first();
-		if (!row) return null;
-		return {
-			id: row[this.columns.id] ?? (row as Record<string, unknown>).id,
-			userId:
-				row[this.columns.userId] ?? (row as Record<string, unknown>).user_id,
-			email: row[this.columns.email] ?? (row as Record<string, unknown>).email,
-			tokenHash:
-				row[this.columns.tokenHash] ??
-				(row as Record<string, unknown>).token_hash,
-			otpHash:
-				row[this.columns.otpHash] ?? (row as Record<string, unknown>).otp_hash,
-			expiresAt:
-				row[this.columns.expiresAt] ?? (row as Record<string, unknown>).expires_at,
-			createdAt:
-				row[this.columns.createdAt] ??
-				(row as Record<string, unknown>).created_at ??
-				null,
-		};
+		return this.mapRow(row);
 	}
 
 	async findByEmailAndOtpHash({
@@ -96,27 +91,10 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 	}: {
 		email: string;
 		otpHash: string;
-	}) {
+	}): Promise<MagicLinkToken | null> {
 		const sql = `SELECT * FROM ${this.tokensTable} WHERE ${this.columns.email} = ? AND ${this.columns.otpHash} = ? LIMIT 1`;
 		const row = await this.db.prepare(sql).bind(email, otpHash).first();
-		if (!row) return null;
-		return {
-			id: row[this.columns.id] ?? (row as Record<string, unknown>).id,
-			userId:
-				row[this.columns.userId] ?? (row as Record<string, unknown>).user_id,
-			email: row[this.columns.email] ?? (row as Record<string, unknown>).email,
-			tokenHash:
-				row[this.columns.tokenHash] ??
-				(row as Record<string, unknown>).token_hash,
-			otpHash:
-				row[this.columns.otpHash] ?? (row as Record<string, unknown>).otp_hash,
-			expiresAt:
-				row[this.columns.expiresAt] ?? (row as Record<string, unknown>).expires_at,
-			createdAt:
-				row[this.columns.createdAt] ??
-				(row as Record<string, unknown>).created_at ??
-				null,
-		};
+		return this.mapRow(row);
 	}
 
 	async deleteById(tokenId: string) {
@@ -138,5 +116,37 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 			.prepare(`DELETE FROM ${this.tokensTable} WHERE ${this.columns.email} = ?`)
 			.bind(email)
 			.run();
+	}
+
+	private mapRow(row: D1Row | null): MagicLinkToken | null {
+		if (!row) return null;
+		const id = row[this.columns.id] ?? row.id;
+		const userId = row[this.columns.userId] ?? row.user_id;
+		const email = row[this.columns.email] ?? row.email;
+		const tokenHash = row[this.columns.tokenHash] ?? row.token_hash;
+		const otpHash = row[this.columns.otpHash] ?? row.otp_hash;
+		const expiresAt = row[this.columns.expiresAt] ?? row.expires_at;
+		const createdAt = row[this.columns.createdAt] ?? row.created_at;
+		if (typeof id !== "string") return null;
+		if (userId !== null && typeof userId !== "string") return null;
+		if (typeof email !== "string") return null;
+		if (typeof tokenHash !== "string") return null;
+		if (otpHash !== null && typeof otpHash !== "string") return null;
+		if (typeof expiresAt !== "string") return null;
+		const expiresAtDate = new Date(expiresAt);
+		if (Number.isNaN(expiresAtDate.getTime())) return null;
+		const createdAtDate =
+			typeof createdAt === "string" && !Number.isNaN(new Date(createdAt).getTime())
+				? new Date(createdAt)
+				: new Date();
+		return {
+			id,
+			userId,
+			email,
+			tokenHash,
+			otpHash,
+			expiresAt: expiresAtDate,
+			createdAt: createdAtDate,
+		};
 	}
 }

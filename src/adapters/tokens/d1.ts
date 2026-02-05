@@ -1,13 +1,21 @@
-// @ts-nocheck
 import { VerificationTokenAdapter } from "../../utils/tokens.ts";
+import type { User, VerificationToken } from "../../types/index.ts";
+
+type D1Value = string | number | boolean | null;
+type D1Row = Record<string, D1Value>;
 
 type D1DatabaseLike = {
 	prepare: (sql: string) => {
-		bind: (...args: unknown[]) => {
-			run: () => Promise<unknown>;
-			first: () => Promise<Record<string, unknown> | null>;
+		bind: (...args: D1Value[]) => {
+			run: () => Promise<void>;
+			first: () => Promise<D1Row | null>;
 		};
 	};
+};
+
+type TokenUserRecord = {
+	token: VerificationToken;
+	user: User;
 };
 
 export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
@@ -26,7 +34,6 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		email: string;
 		name: string;
 		avatar: string;
-		password: string;
 	};
 
 	constructor(
@@ -54,11 +61,53 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 			email: options.userColumns?.email || "email",
 			name: options.userColumns?.name || "name",
 			avatar: options.userColumns?.avatar || "avatar",
-			password: options.userColumns?.password || "password",
 		};
-		if (!this.db) {
-			throw new Error("D1VerificationTokenAdapter requires a database instance");
+	}
+
+	private coerceDbId(id: string): string | number {
+		return /^\d+$/.test(id) ? Number(id) : id;
+	}
+
+	private mapTokenAndUser(row: D1Row | null): TokenUserRecord | null {
+		if (!row) return null;
+		const tokenId = row[this.columns.id];
+		const userId = row[this.columns.userId];
+		const type = row[this.columns.type];
+		const token = row[this.columns.token];
+		const expiresAt = row[this.columns.expiresAt];
+		const email = row[this.userColumns.email];
+		const name = row[this.userColumns.name];
+		const avatar = row[this.userColumns.avatar];
+		if (
+			(typeof tokenId !== "string" && typeof tokenId !== "number") ||
+			(typeof userId !== "string" && typeof userId !== "number") ||
+			typeof type !== "string" ||
+			typeof token !== "string" ||
+			typeof expiresAt !== "string" ||
+			typeof email !== "string" ||
+			typeof name !== "string" ||
+			(avatar !== null && typeof avatar !== "string")
+		) {
+			return null;
 		}
+		const expiresAtDate = new Date(expiresAt);
+		if (Number.isNaN(expiresAtDate.getTime())) return null;
+		const tokenRecord: VerificationToken = {
+			id: String(tokenId),
+			userId: String(userId),
+			type,
+			token,
+			expiresAt: expiresAtDate,
+			createdAt: new Date(),
+		};
+		const user: User = {
+			id: String(userId),
+			email,
+			name,
+			avatar,
+			emailVerified: true,
+		};
+		return { token: tokenRecord, user };
 	}
 
 	async create({
@@ -76,11 +125,17 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 			.prepare(
 				`INSERT INTO ${this.tokensTable} (${this.columns.id}, ${this.columns.userId}, ${this.columns.type}, ${this.columns.token}, ${this.columns.expiresAt}) VALUES (?, ?, ?, ?, ?)`,
 			)
-			.bind(crypto.randomUUID(), userId, type, token, expiresAt.toISOString())
+			.bind(
+				crypto.randomUUID(),
+				this.coerceDbId(userId),
+				type,
+				token,
+				expiresAt.toISOString(),
+			)
 			.run();
 	}
 
-	async findByToken({ token, type }: { token: string; type: string }) {
+	async findByToken({ token, type }: { token: string; type: string }): Promise<TokenUserRecord | null> {
 		const row = await this.db
 			.prepare(
 				`SELECT t.*, u.* FROM ${this.tokensTable} t JOIN ${this.usersTable} u ON t.${this.columns.userId} = u.${this.userColumns.id} WHERE t.${this.columns.token} = ? AND t.${this.columns.type} = ? LIMIT 1`,
@@ -88,25 +143,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 			.bind(token, type)
 			.first();
 
-		if (!row) return null;
-
-		const tokenRecord = {
-			id: row[this.columns.id],
-			userId: row[this.columns.userId],
-			type: row[this.columns.type],
-			token: row[this.columns.token],
-			expiresAt: new Date(row[this.columns.expiresAt] as string),
-		};
-
-		const user = {
-			id: row[this.userColumns.id],
-			email: row[this.userColumns.email],
-			name: row[this.userColumns.name],
-			avatar: row[this.userColumns.avatar],
-			password: row[this.userColumns.password],
-		};
-
-		return { token: tokenRecord, user };
+		return this.mapTokenAndUser(row);
 	}
 
 	async deleteById(tokenId: string) {
@@ -121,7 +158,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 			.prepare(
 				`DELETE FROM ${this.tokensTable} WHERE ${this.columns.userId} = ? AND ${this.columns.type} = ?`,
 			)
-			.bind(userId, type)
+			.bind(this.coerceDbId(userId), type)
 			.run();
 	}
 }

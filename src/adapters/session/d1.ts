@@ -1,14 +1,17 @@
-// @ts-nocheck
 import { SessionAdapter } from "./base.ts";
 import { encodeBase64url } from "@oslojs/encoding";
 import type { Cookies } from "@sveltejs/kit";
+import type { Session, User } from "../../types/index.ts";
+
+type D1Value = string | number | boolean | null;
+type D1Row = Record<string, D1Value>;
 
 type D1DatabaseLike = {
 	prepare: (sql: string) => {
-		bind: (...args: unknown[]) => {
+		bind: (...args: D1Value[]) => {
 			run: () => Promise<unknown>;
-			first: () => Promise<Record<string, unknown> | null>;
-			all: () => Promise<{ results?: Record<string, unknown>[] }>;
+			first: () => Promise<D1Row | null>;
+			all: () => Promise<{ results?: D1Row[] }>;
 		};
 	};
 };
@@ -20,7 +23,7 @@ type D1SessionOptions = {
 	sessionRefreshThreshold?: number;
 	cookieName?: string;
 	secureCookies?: boolean;
-	sanitizeUser?: (user: Record<string, unknown> | null) => Record<string, unknown> | null;
+	sanitizeUser?: (user: User | null) => User | null;
 	columns?: Partial<{
 		sessionId: string;
 		userId: string;
@@ -48,7 +51,7 @@ export class D1SessionAdapter extends SessionAdapter {
 	private sessionRefreshThreshold: number;
 	private cookieName: string;
 	private secureCookies: boolean;
-	private sanitizeUser: (user: Record<string, unknown> | null) => Record<string, unknown> | null;
+	private sanitizeUser: (user: User | null) => User | null;
 	private columns: {
 		sessionId: string;
 		userId: string;
@@ -97,10 +100,8 @@ export class D1SessionAdapter extends SessionAdapter {
 		};
 	}
 
-	_defaultSanitizeUser(user: Record<string, unknown> | null) {
-		if (!user) return null;
-		const { password, token, ...safeUser } = user;
-		return safeUser;
+	_defaultSanitizeUser(user: User | null): User | null {
+		return user;
 	}
 
 	_generateSessionId(): string {
@@ -109,11 +110,18 @@ export class D1SessionAdapter extends SessionAdapter {
 		return encodeBase64url(bytes);
 	}
 
+	private _coerceDbId(id: string): string | number {
+		return /^\d+$/.test(id) ? Number(id) : id;
+	}
+
 	async createSession(userId: string, metadata: Record<string, unknown> = {}) {
 		const sessionId = this._generateSessionId();
 		const expiresAt = new Date(Date.now() + this.sessionLifetime);
 		const sql = `INSERT INTO ${this.sessionsTable} (${this.columns.sessionId}, ${this.columns.userId}, ${this.columns.expiresAt}) VALUES (?, ?, ?)`;
-		await this.db.prepare(sql).bind(sessionId, userId, expiresAt.toISOString()).run();
+		await this.db
+			.prepare(sql)
+			.bind(sessionId, this._coerceDbId(userId), expiresAt.toISOString())
+			.run();
 		return { id: sessionId, userId, expiresAt, ...metadata };
 	}
 
@@ -125,7 +133,10 @@ export class D1SessionAdapter extends SessionAdapter {
 		const row = await this.db.prepare(sql).bind(sessionId).first();
 		if (!row) return { session: null, user: null };
 
-		const expiresAt = new Date(row.expires_at);
+		const expiresAtRaw = row.expires_at;
+		if (typeof expiresAtRaw !== "string") return { session: null, user: null };
+		const expiresAt = new Date(expiresAtRaw);
+		if (Number.isNaN(expiresAt.getTime())) return { session: null, user: null };
 		if (Date.now() >= expiresAt.getTime()) {
 			await this.db
 				.prepare(`DELETE FROM ${this.sessionsTable} WHERE ${this.columns.sessionId} = ?`)
@@ -151,22 +162,45 @@ export class D1SessionAdapter extends SessionAdapter {
 		}
 
 		const user = this.sanitizeUser(this._mapUserRow(row));
+		const userIdRaw = row.user_id;
+		if (typeof userIdRaw !== "string" && typeof userIdRaw !== "number") {
+			return { session: null, user: null };
+		}
 		return {
-			session: { id: sessionId, userId: row.user_id, expiresAt: newExpiresAt, fresh },
+			session: {
+				id: sessionId,
+				userId: String(userIdRaw),
+				expiresAt: newExpiresAt,
+				fresh,
+			},
 			user,
 		};
 	}
 
-	_mapUserRow(row: Record<string, unknown>) {
+	_mapUserRow(row: D1Row): User | null {
+		const id = row[this.userColumns.id] ?? row.id;
+		const email = row[this.userColumns.email] ?? row.email;
+		const name = row[this.userColumns.name] ?? row.name;
+		const avatar = row[this.userColumns.avatar] ?? row.avatar;
+		const emailVerified =
+			row[this.userColumns.emailVerified] ?? row.email_verified;
+		if (typeof id !== "string" && typeof id !== "number") return null;
+		if (typeof email !== "string") return null;
+		if (typeof name !== "string") return null;
+		if (avatar !== null && typeof avatar !== "string") return null;
+		if (
+			typeof emailVerified !== "boolean" &&
+			emailVerified !== 0 &&
+			emailVerified !== 1
+		) {
+			return null;
+		}
 		return {
-			id: (row as Record<string, unknown>)[this.userColumns.id] ?? (row as Record<string, unknown>).id,
-			email: (row as Record<string, unknown>)[this.userColumns.email] ?? (row as Record<string, unknown>).email,
-			name: (row as Record<string, unknown>)[this.userColumns.name] ?? (row as Record<string, unknown>).name,
-			avatar: (row as Record<string, unknown>)[this.userColumns.avatar] ?? (row as Record<string, unknown>).avatar,
-			password: (row as Record<string, unknown>)[this.userColumns.password] ?? (row as Record<string, unknown>).password,
-			emailVerified:
-				(row as Record<string, unknown>)[this.userColumns.emailVerified] ??
-				(row as Record<string, unknown>).email_verified,
+			id: String(id),
+			email,
+			name,
+			avatar,
+			emailVerified: Boolean(emailVerified),
 		};
 	}
 
@@ -180,11 +214,11 @@ export class D1SessionAdapter extends SessionAdapter {
 	async invalidateUserSessions(userId: string) {
 		await this.db
 			.prepare(`DELETE FROM ${this.sessionsTable} WHERE ${this.columns.userId} = ?`)
-			.bind(userId)
+			.bind(this._coerceDbId(userId))
 			.run();
 	}
 
-	async listSessions(userId: string) {
+	async listSessions(userId: string): Promise<Session[]> {
 		const columns = [
 			this.columns.sessionId,
 			this.columns.userId,
@@ -196,24 +230,29 @@ export class D1SessionAdapter extends SessionAdapter {
 		];
 		const unique = [...new Set(columns.filter(Boolean))];
 		const sql = `SELECT ${unique.join(", ")} FROM ${this.sessionsTable} WHERE ${this.columns.userId} = ?`;
-		const result = await this.db.prepare(sql).bind(userId).all();
-		return (result?.results ?? []).map((row: Record<string, unknown>) => ({
-			id: row[this.columns.sessionId] ?? row.id,
-			userId: row[this.columns.userId] ?? row.user_id,
-			expiresAt: new Date(
-				row[this.columns.expiresAt] ?? row.expires_at ?? row.expiresAt,
-			),
-			createdAt: this.columns.createdAt
-				? row[this.columns.createdAt] ?? null
-				: null,
-			lastActiveAt: this.columns.lastActiveAt
-				? row[this.columns.lastActiveAt] ?? null
-				: null,
-			ip: this.columns.ip ? row[this.columns.ip] ?? null : null,
-			userAgent: this.columns.userAgent
-				? row[this.columns.userAgent] ?? null
-				: null,
-		}));
+		const result = await this.db.prepare(sql).bind(this._coerceDbId(userId)).all();
+		const sessions: Session[] = [];
+		for (const row of result?.results ?? []) {
+			const id = row[this.columns.sessionId] ?? row.id;
+			const uid = row[this.columns.userId] ?? row.user_id;
+			const expiresRaw =
+				row[this.columns.expiresAt] ?? row.expires_at ?? row.expiresAt;
+			if (
+				(typeof id !== "string" && typeof id !== "number") ||
+				(typeof uid !== "string" && typeof uid !== "number") ||
+				typeof expiresRaw !== "string"
+			) {
+				continue;
+			}
+			const expiresAt = new Date(expiresRaw);
+			if (Number.isNaN(expiresAt.getTime())) continue;
+			sessions.push({
+				id: String(id),
+				userId: String(uid),
+				expiresAt,
+			});
+		}
+		return sessions;
 	}
 
 	setSessionCookie(cookies: Cookies, session: { id: string; expiresAt: Date }) {
