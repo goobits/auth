@@ -1,6 +1,7 @@
 import { dev } from '$app/environment'
+import { getDevDb, type D1DatabaseLike } from '$lib/dev/devDb.ts'
 
-let cachedDevDb: any = null
+type PlatformLike = { env?: { DB?: D1DatabaseLike } } | null | undefined
 
 /**
  * Builds the environment object for API handlers.
@@ -8,14 +9,10 @@ let cachedDevDb: any = null
  * Production: Uses Cloudflare D1 from platform.env.DB
  * Development: Falls back to local SQLite with D1-compatible wrapper
  */
-export async function buildEnv(platform: any) {
+export async function buildEnv(platform: PlatformLike) {
 	// Development: use local SQLite to avoid relying on external bindings
 	if (dev) {
-		if (!cachedDevDb) {
-			// Dynamic import - only executed in dev, tree-shaken in prod
-			const { createSqliteDb } = await import('$lib/dev/sqliteDb.ts')
-			cachedDevDb = createSqliteDb()
-		}
+		const cachedDevDb = await getDevDb()
 		return {
 			...process.env,
 			DB: cachedDevDb

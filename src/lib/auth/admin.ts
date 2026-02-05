@@ -1,15 +1,12 @@
 import { dev } from '$app/environment'
 import { createAdminAdapters, ensureAdminUser, ADMIN_EMAIL } from '@packages/calendar/src/admin/auth.ts'
+import { getDevDb, type D1DatabaseLike } from '$lib/dev/devDb.ts'
 
-let cachedDevDb: any = null
+type PlatformLike = { env?: { DB?: D1DatabaseLike } } | null | undefined
 
-async function getDb(platform: any) {
+async function getDb(platform: PlatformLike) {
 	if (dev) {
-		if (!cachedDevDb) {
-			const { createSqliteDb } = await import('$lib/dev/sqliteDb.ts')
-			cachedDevDb = createSqliteDb()
-		}
-		return cachedDevDb
+		return await getDevDb()
 	}
 	return platform?.env?.DB || null
 }

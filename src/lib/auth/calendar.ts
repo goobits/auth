@@ -4,21 +4,18 @@ import { GoogleProvider, AppleProvider } from '@goobits/auth/providers'
 import { dev } from '$app/environment'
 import { hasUserRedeemedAnyInvite, validateInvite, consumeInvite } from '@packages/calendar/src/calendar/invites.ts'
 import { redirect } from '@sveltejs/kit'
+import { getDevDb, type D1DatabaseLike } from '$lib/dev/devDb.ts'
 
 const INVITE_COOKIE = 'calendar_invite'
 const REDIRECT_COOKIE = 'calendar_redirect'
 const INVITE_TTL_SECONDS = 600
 const SAFE_REDIRECT_PREFIXES = ['/calendar', '/calendar-gym', '/admin']
 
-let cachedDevDb: any = null
+type PlatformLike = { env?: { DB?: D1DatabaseLike } } | null | undefined
 
-async function getDb(platform: any) {
+async function getDb(platform: PlatformLike) {
 	if (dev) {
-		if (!cachedDevDb) {
-			const { createSqliteDb } = await import('$lib/dev/sqliteDb.ts')
-			cachedDevDb = createSqliteDb()
-		}
-		return cachedDevDb
+		return await getDevDb()
 	}
 	return platform?.env?.DB || null
 }
