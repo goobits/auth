@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { D1UserAdapter } from '../../src/adapters/database/d1.ts'
 import { D1SessionAdapter } from '../../src/adapters/session/d1.ts'
-import { D1TokenAdapter } from '../../src/adapters/token/d1.ts'
-import { D1VerificationTokenAdapter } from '../../src/adapters/tokens/d1.ts'
+import { D1TokenAdapter } from '../../src/adapters/oauth-token/d1.ts'
+import { D1VerificationTokenAdapter } from '../../src/adapters/verification-token/d1.ts'
 
 function createMockDb() {
 	const tables: Record<string, any[]> = {

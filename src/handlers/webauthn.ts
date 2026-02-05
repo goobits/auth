@@ -534,8 +534,6 @@ export function createWebAuthnLoginVerifyHandler(
 			};
 			const hookResult = await onLogin(event, profile, null, user);
 			if (hookResult?.userId) userId = String(hookResult.userId);
-			if (hookResult?.id) userId = String(hookResult.id);
-			if (hookResult?.user?.id) userId = String(hookResult.user.id);
 		} else {
 			const session = await sessionAdapter.createSession(userId);
 			sessionAdapter.setSessionCookie?.(event.cookies, session);

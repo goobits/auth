@@ -3,7 +3,7 @@ import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.ts";
 import type { RequestEventLike } from "../types/auth.ts";
 import { getLogger } from "../utils/logger.ts";
 import type { User } from "../types/index.ts";
-import type { VerificationTokenAdapter } from "../utils/tokens.ts";
+import type { VerificationTokenAdapter } from "../adapters/verification-token/base.ts";
 
 type RateLimitConfig = {
 	check?: (key: string) => Promise<{ allowed: boolean }>;
@@ -26,7 +26,7 @@ function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
  * @param {import('../providers/credentials.ts').CredentialsProvider} config.credentialsProvider - Credentials provider
  * @param {import('../adapters/database/base.ts').DatabaseAdapter} config.userAdapter - User adapter
  * @param {import('../adapters/session/base.ts').SessionAdapter} config.sessionAdapter - Session adapter
- * @param {import('../utils/tokens.ts').VerificationTokenAdapter} [config.verificationTokenAdapter] - Verification token adapter (optional)
+ * @param {import('../adapters/verification-token/base.ts').VerificationTokenAdapter} [config.verificationTokenAdapter] - Verification token adapter (optional)
  * @param {Function} [config.onSignup] - Callback after user creation (user) => Promise<void>
  * @param {Function} [config.sendVerificationEmail] - Function to send verification email (email, token) => Promise<void>
  * @param {Object} [config.csrf] - CSRF validation config
