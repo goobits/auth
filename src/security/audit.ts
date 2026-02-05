@@ -43,16 +43,16 @@ export function withAuditLogging({
 				timestamp: new Date().toISOString(),
 				method: request.method,
 				url: request.url,
-				clientIP: (locals.clientIP as string) || "unknown",
+				clientIP: (locals["clientIP"] as string) || "unknown",
 				userAgent: request.headers.get("user-agent") || "unknown",
-				sessionId: (locals.sessionId as string) || null,
+				sessionId: (locals["sessionId"] as string) || null,
 			};
 
 			if (includeRequestBody && request.method !== "GET") {
 				try {
-					auditContext.requestBody = await request.clone().json();
+					auditContext["requestBody"] = await request.clone().json();
 				} catch (error) {
-					auditContext.requestBodyError =
+					auditContext["requestBodyError"] =
 						error instanceof Error ? error.message : String(error);
 				}
 			}
@@ -72,9 +72,9 @@ export function withAuditLogging({
 				if (includeResponse) {
 					try {
 						const responseBody = await response.clone().json();
-						result.responseBody = responseBody;
+						result["responseBody"] = responseBody;
 					} catch (error) {
-						result.responseBodyError =
+						result["responseBodyError"] =
 							error instanceof Error ? error.message : String(error);
 					}
 				}

@@ -19,7 +19,7 @@ export async function verifyRecaptchaToken(
 	options: RecaptchaOptions = {},
 ): Promise<boolean> {
 	const {
-		secretKey = process.env.RECAPTCHA_SECRET_KEY,
+		secretKey = process.env["RECAPTCHA_SECRET_KEY"],
 		action = null,
 		minScore = 0.5,
 		timeoutMs = DEFAULT_TIMEOUT_MS,
@@ -28,7 +28,7 @@ export async function verifyRecaptchaToken(
 
 	if (!token) return false;
 	if (!secretKey) {
-		return process.env.NODE_ENV === "production" ? false : allowInDevelopment;
+		return process.env["NODE_ENV"] === "production" ? false : allowInDevelopment;
 	}
 
 	const controller = new AbortController();

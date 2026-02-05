@@ -20,10 +20,10 @@ function normalizeOAuthTokens(value: DrizzleJson): OAuthTokens | null {
 	if (!value || typeof value !== "object" || Array.isArray(value) || value instanceof Date) {
 		return null;
 	}
-	const accessTokenRaw = value.accessToken;
-	const refreshTokenRaw = value.refreshToken;
-	const scopeRaw = value.scope;
-	const accessTokenExpiresAtRaw = value.accessTokenExpiresAt;
+	const accessTokenRaw = value["accessToken"];
+	const refreshTokenRaw = value["refreshToken"];
+	const scopeRaw = value["scope"];
+	const accessTokenExpiresAtRaw = value["accessTokenExpiresAt"];
 	if (typeof accessTokenRaw !== "string") return null;
 	const refreshToken =
 		typeof refreshTokenRaw === "string" || refreshTokenRaw === null
@@ -116,7 +116,7 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 				)),
 			);
 		if (!row) return null;
-		const raw = row.tokens;
+		const raw = row["tokens"];
 		if (typeof raw !== "string") return null;
 		if (this.encrypt) {
 			const decrypted = await decryptTokens<DrizzleJson>(raw, this.getEncryptionKey());

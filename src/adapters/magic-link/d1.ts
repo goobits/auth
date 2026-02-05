@@ -37,13 +37,13 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 		this.db = db;
 		this.tokensTable = options.tokensTable || "magic_link_tokens";
 		this.columns = {
-			id: options.columns?.id || "id",
-			userId: options.columns?.userId || "user_id",
-			email: options.columns?.email || "email",
-			tokenHash: options.columns?.tokenHash || "token_hash",
-			otpHash: options.columns?.otpHash || "otp_hash",
-			expiresAt: options.columns?.expiresAt || "expires_at",
-			createdAt: options.columns?.createdAt || "created_at",
+			id: options.columns?.["id"] || "id",
+			userId: options.columns?.["userId"] || "user_id",
+			email: options.columns?.["email"] || "email",
+			tokenHash: options.columns?.["tokenHash"] || "token_hash",
+			otpHash: options.columns?.["otpHash"] || "otp_hash",
+			expiresAt: options.columns?.["expiresAt"] || "expires_at",
+			createdAt: options.columns?.["createdAt"] || "created_at",
 		};
 	}
 
@@ -120,13 +120,13 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 
 	private mapRow(row: D1Row | null): MagicLinkToken | null {
 		if (!row) return null;
-		const id = row[this.columns.id] ?? row.id;
-		const userId = row[this.columns.userId] ?? row.user_id;
-		const email = row[this.columns.email] ?? row.email;
-		const tokenHash = row[this.columns.tokenHash] ?? row.token_hash;
-		const otpHash = row[this.columns.otpHash] ?? row.otp_hash;
-		const expiresAt = row[this.columns.expiresAt] ?? row.expires_at;
-		const createdAt = row[this.columns.createdAt] ?? row.created_at;
+		const id = row[this.columns["id"]] ?? row["id"];
+		const userId = row[this.columns.userId] ?? row["user_id"];
+		const email = row[this.columns["email"]] ?? row["email"];
+		const tokenHash = row[this.columns.tokenHash] ?? row["token_hash"];
+		const otpHash = row[this.columns.otpHash] ?? row["otp_hash"];
+		const expiresAt = row[this.columns.expiresAt] ?? row["expires_at"];
+		const createdAt = row[this.columns.createdAt] ?? row["created_at"];
 		if (typeof id !== "string") return null;
 		if (userId !== null && typeof userId !== "string") return null;
 		if (typeof email !== "string") return null;

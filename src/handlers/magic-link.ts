@@ -101,8 +101,8 @@ export function createMagicLinkRequestHandler(
 
 		const data = await parseRequestData(event.request);
 		const emailInput =
-			(typeof data.email === "string" && data.email) ||
-			(typeof data.identifier === "string" && data.identifier) ||
+			(typeof data["email"] === "string" && data["email"]) ||
+			(typeof data["identifier"] === "string" && data["identifier"]) ||
 			"";
 		const email = normalizeEmail(String(emailInput || ""));
 
@@ -139,7 +139,7 @@ export function createMagicLinkRequestHandler(
 			metadata,
 		});
 
-		const redirectTo = typeof data.redirectTo === "string" ? data.redirectTo : "";
+		const redirectTo = typeof data["redirectTo"] === "string" ? data["redirectTo"] : "";
 		const origin = baseUrl || event.url.origin;
 		const url = new URL(magicLinkPath, origin);
 		url.searchParams.set("token", token);
@@ -215,11 +215,11 @@ export function createMagicLinkVerifyHandler(
 
 		const data = await parseRequestData(event.request);
 		const token =
-			(typeof data.token === "string" && data.token) ||
+			(typeof data["token"] === "string" && data["token"]) ||
 			event.url.searchParams.get("token");
-		const otp = (typeof data.otp === "string" && data.otp) || (typeof data.code === "string" && data.code);
+		const otp = (typeof data["otp"] === "string" && data["otp"]) || (typeof data["code"] === "string" && data["code"]);
 		const emailInput =
-			(typeof data.email === "string" && data.email) ||
+			(typeof data["email"] === "string" && data["email"]) ||
 			event.url.searchParams.get("email") ||
 			"";
 		const email = normalizeEmail(String(emailInput || ""));
@@ -256,35 +256,35 @@ export function createMagicLinkVerifyHandler(
 			return jsonResponse({ ok: false, error: "Invalid magic link" }, 400);
 		}
 
-		if (record.expiresAt && new Date(record.expiresAt) < new Date()) {
-			if (record.id) {
-				await magicLinkAdapter.deleteById(record.id);
+		if (record["expiresAt"] && new Date(record["expiresAt"]) < new Date()) {
+			if (record["id"]) {
+				await magicLinkAdapter.deleteById(record["id"]);
 			}
 			return jsonResponse({ ok: false, error: "Magic link expired" }, 400);
 		}
 
-		if (record.id) {
-			await magicLinkAdapter.deleteById(record.id);
+		if (record["id"]) {
+			await magicLinkAdapter.deleteById(record["id"]);
 		}
 
 		let user: User | null = null;
 		if (databaseAdapter) {
-			if (record.userId) {
-				user = await databaseAdapter.getUserById(record.userId);
+			if (record["userId"]) {
+				user = await databaseAdapter.getUserById(record["userId"]);
 			}
-			if (!user && (record.email || email)) {
-				user = await databaseAdapter.getUserByEmail(record.email || email);
+			if (!user && (record["email"] || email)) {
+				user = await databaseAdapter.getUserByEmail(record["email"] || email);
 			}
 		}
 
 		if (!user && allowSignup && databaseAdapter) {
 			if (typeof createUser === "function") {
-				user = await createUser(record.email || email, event);
+				user = await createUser(record["email"] || email, event);
 			} else {
 				user = await databaseAdapter.createUser({
-					id: record.email || email,
-					email: record.email || email,
-					name: (record.email || email).split("@")[0],
+					id: record["email"] || email,
+					email: record["email"] || email,
+					name: (record["email"] || email).split("@")[0],
 					verified_email: true,
 				});
 			}
@@ -296,13 +296,13 @@ export function createMagicLinkVerifyHandler(
 			} catch {}
 		}
 
-		let userId = user?.id ? String(user.id) : record?.userId ? String(record.userId) : null;
+		let userId = user?.id ? String(user.id) : record?.["userId"] ? String(record["userId"]) : null;
 
 		if (onLogin) {
 			const profile = {
-				id: userId || record.email || email,
-				email: record.email || email,
-				name: user?.name || (record.email || email).split("@")[0],
+				id: userId || record["email"] || email,
+				email: record["email"] || email,
+				name: user?.name || (record["email"] || email).split("@")[0],
 			};
 			const hookResult = await onLogin(event, profile, null, user);
 			if (hookResult?.userId) userId = String(hookResult.userId);

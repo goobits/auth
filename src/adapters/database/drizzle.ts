@@ -26,11 +26,11 @@ type OAuthAccountsTable = DrizzleTable & {
 
 function toUser(row: DrizzleRow | null): User | null {
 	if (!row) return null;
-	const id = row.id;
-	const email = row.email;
-	const name = row.name;
-	const avatar = row.avatar ?? null;
-	const emailVerified = row.emailVerified ?? row.email_verified ?? false;
+	const id = row["id"];
+	const email = row["email"];
+	const name = row["name"];
+	const avatar = row["avatar"] ?? null;
+	const emailVerified = row["emailVerified"] ?? row["email_verified"] ?? false;
 	if (typeof id !== "string" && typeof id !== "number") return null;
 	if (typeof email !== "string") return null;
 	if (typeof name !== "string") return null;
@@ -135,7 +135,7 @@ export class DrizzleUserAdapter extends DatabaseAdapter {
 					eq(this.oauthAccountsTable.providerAccountId, providerId),
 				),
 			));
-		return this.sanitizeUser(toUser(result?.user ?? null));
+		return this.sanitizeUser(toUser(result?.["user"] ?? null));
 	}
 
 	async updateUser(id: string, data: Partial<User> & Record<string, DrizzleJson>): Promise<User> {
@@ -179,7 +179,7 @@ export class DrizzleUserAdapter extends DatabaseAdapter {
 		if (!row) return null;
 		const user = toUser(row);
 		if (!user) return null;
-		const password = row.password;
+		const password = row["password"];
 		return {
 			...user,
 			password: typeof password === "string" ? password : null,

@@ -53,7 +53,7 @@ export function createLoginHandler(config: LoginHandlerConfig) {
 			throw redirect(302, redirectAfterLogin);
 		}
 
-		const providerName = String(params.provider ?? "");
+		const providerName = String(params["provider"] ?? "");
 		const providerConfig = providers[providerName];
 
 		if (!providerConfig) {
