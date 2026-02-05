@@ -1,6 +1,6 @@
 {
 	"name": "miko-art",
-	"version": "1.0.71",
+	"version": "1.0.82",
 	"private": true,
 	"workspaces": [
 		"packages/*"
@@ -17,6 +17,8 @@
 		"version:major": "npm version major --no-git-tag-version"
 	},
 	"devDependencies": {
+		"@node-rs/argon2": "^2.0.2",
+		"@node-rs/bcrypt": "^1.10.7",
 		"@sveltejs/adapter-cloudflare": "^7.2.6",
 		"@sveltejs/enhanced-img": "^0.9.3",
 		"@sveltejs/kit": "^2.50.1",
