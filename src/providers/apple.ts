@@ -119,8 +119,6 @@ export class AppleProvider extends OAuthProvider {
 				scopes?: string;
 				expiresIn?: number;
 				expires_in?: number;
-				accessToken?: string;
-				refreshToken?: string;
 			};
 
 			const client = this.client as unknown as {
@@ -184,16 +182,14 @@ export class AppleProvider extends OAuthProvider {
 	}
 
 	async refreshAccessToken(refreshToken: string): Promise<OAuthTokens> {
-		type AppleRefreshResponse = {
-			accessToken?: () => string;
-			refreshToken?: () => string;
-			scope?: string;
-			scopes?: string;
-			expiresIn?: number;
-			expires_in?: number;
-			accessToken?: string;
-			refreshToken?: string;
-		};
+			type AppleRefreshResponse = {
+				accessToken?: () => string;
+				refreshToken?: () => string;
+				scope?: string;
+				scopes?: string;
+				expiresIn?: number;
+				expires_in?: number;
+			};
 
 		const client = this.client as unknown as {
 			refreshAccessToken: (token: string) => Promise<AppleRefreshResponse>;
