@@ -1,20 +1,21 @@
 import { SessionAdapter } from "./base.ts";
 import { encodeBase64url } from "@oslojs/encoding";
 import { eq } from "drizzle-orm";
+import type { Cookies } from "@sveltejs/kit";
 
 /**
  * Drizzle ORM Session Adapter
  * Implements session management using Drizzle ORM with PostgreSQL
  */
 export class DrizzleSessionAdapter extends SessionAdapter {
-	private db: any;
-	private sessionsTable: any;
-	private usersTable: any;
+	private db: unknown;
+	private sessionsTable: Record<string, unknown>;
+	private usersTable: Record<string, unknown>;
 	private sessionLifetime: number;
 	private sessionRefreshThreshold: number;
 	private cookieName: string;
 	private secureCookies: boolean;
-	private sanitizeUser: (user: any) => any;
+	private sanitizeUser: (user: Record<string, unknown> | null) => Record<string, unknown> | null;
 	/**
 	 * @param {Object} db - Drizzle database instance
 	 * @param {Object} options - Configuration options
@@ -27,21 +28,21 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 	 * @param {Function} [options.sanitizeUser] - Function to sanitize user objects
 	 */
 	constructor(
-		db: any,
+		db: unknown,
 		options: {
-			sessionsTable?: any;
-			usersTable?: any;
+			sessionsTable?: Record<string, unknown>;
+			usersTable?: Record<string, unknown>;
 			sessionLifetime?: number;
 			sessionRefreshThreshold?: number;
 			cookieName?: string;
 			secureCookies?: boolean;
-			sanitizeUser?: (user: any) => any;
+			sanitizeUser?: (user: Record<string, unknown> | null) => Record<string, unknown> | null;
 		} = {},
 	) {
 		super();
 		this.db = db;
-		this.sessionsTable = options.sessionsTable;
-		this.usersTable = options.usersTable;
+		this.sessionsTable = options.sessionsTable ?? {};
+		this.usersTable = options.usersTable ?? {};
 		this.sessionLifetime = options.sessionLifetime || 30 * 24 * 60 * 60 * 1000; // 30 days
 		this.sessionRefreshThreshold =
 			options.sessionRefreshThreshold || this.sessionLifetime / 2; // 15 days
@@ -49,7 +50,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		this.secureCookies = options.secureCookies !== false;
 		this.sanitizeUser = options.sanitizeUser || this._defaultSanitizeUser;
 
-		if (!this.sessionsTable || !this.usersTable) {
+		if (!options.sessionsTable || !options.usersTable) {
 			throw new Error(
 				"DrizzleSessionAdapter requires sessionsTable and usersTable options",
 			);
@@ -62,7 +63,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 	 * @returns {Object|null}
 	 * @private
 	 */
-	_defaultSanitizeUser(user: any) {
+	_defaultSanitizeUser(user: Record<string, unknown> | null) {
 		if (!user) return null;
 		const { password, token, ...safeUser } = user;
 		return safeUser;
@@ -145,7 +146,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 	}
 
 	async listSessions(userId: string) {
-		const selectFields: Record<string, any> = {
+		const selectFields: Record<string, unknown> = {
 			id: this.sessionsTable.id,
 			userId: this.sessionsTable.userId,
 			expiresAt: this.sessionsTable.expiresAt,
@@ -170,7 +171,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 			.where(eq(this.sessionsTable.userId, userId));
 	}
 
-	setSessionCookie(cookies: any, session: { id: string; expiresAt: Date }) {
+	setSessionCookie(cookies: Cookies, session: { id: string; expiresAt: Date }) {
 		cookies.set(this.cookieName, session.id, {
 			httpOnly: true,
 			secure: this.secureCookies,
@@ -180,7 +181,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		});
 	}
 
-	deleteSessionCookie(cookies: any) {
+	deleteSessionCookie(cookies: Cookies) {
 		cookies.delete(this.cookieName, {
 			path: "/",
 		});

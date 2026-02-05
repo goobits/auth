@@ -15,6 +15,15 @@ import {
 	createSessionListHandler,
 	createSessionRevokeHandler,
 } from "./handlers/sessions.ts";
+import type {
+	AuthConfig,
+	AuthHandlers,
+	AuthLocals,
+	AuthRoutes,
+	OAuthProviderConfig,
+	RequestEventLike,
+} from "./types/auth.ts";
+import { getLogger, setLogger } from "./utils/logger.ts";
 
 /**
  * Create a complete authentication system with all handlers and hooks
@@ -94,7 +103,7 @@ import {
  * // src/routes/logout/+page.server.ts
  * export const actions = auth.handlers.logout;
  */
-export function createAuth(config: any) {
+export function createAuth(config: AuthConfig) {
 	const {
 		adapters,
 		providers = {},
@@ -103,11 +112,15 @@ export function createAuth(config: any) {
 		hooks = {},
 		autoCreateSession = true,
 		requireVerifiedEmailForLinking = true,
-		isAuthenticated = (locals: any) => !!locals.user,
+		isAuthenticated = (locals: AuthLocals) => !!locals.user,
 		magicLink,
 		webauthn,
 		sessions,
+		logger,
 	} = config;
+
+	setLogger(logger);
+	const log = getLogger();
 
 	// Validate required configuration
 	if (!adapters.session) {
@@ -136,8 +149,8 @@ export function createAuth(config: any) {
 	};
 
 	// Create handlers
-	let loginHandler;
-	let callbackHandler;
+	let loginHandler: AuthHandlers["login"];
+	let callbackHandler: AuthHandlers["callback"];
 
 	if (hasProviders) {
 		loginHandler = createLoginHandler({
@@ -149,15 +162,13 @@ export function createAuth(config: any) {
 
 		callbackHandler = createCallbackHandler({
 			providers: Object.fromEntries(
-				Object.entries(providers as Record<string, any>).map(([name, config]) => [
-					name,
-					(config as any).provider,
-				]),
+				Object.entries(providers as Record<string, OAuthProviderConfig>).map(
+					([name, providerConfig]) => [name, providerConfig.provider],
+				),
 			),
 			redirectAfterLogin: urlConfig.afterLogin,
 			isAuthenticated,
 			onAuthenticated: async (event, profile, tokens) => {
-				const profileData = profile as any;
 				const providerName = event.params.provider;
 				let user = null;
 
@@ -169,18 +180,18 @@ export function createAuth(config: any) {
 						);
 					} catch {}
 
-					const canLinkByEmail = profileData.email
+					const canLinkByEmail = profile.email
 						? requireVerifiedEmailForLinking
-							? profileData.verified_email === true
+							? profile.verified_email === true
 							: true
 						: false;
 
 					if (!user && canLinkByEmail) {
-						user = await adapters.database.getUserByEmail(profileData.email);
+						user = await adapters.database.getUserByEmail(profile.email);
 					}
 
 					if (!user) {
-						user = await adapters.database.createUser(profileData);
+						user = await adapters.database.createUser(profile);
 					}
 
 					if (user && adapters.database.linkOAuthAccount) {
@@ -188,7 +199,7 @@ export function createAuth(config: any) {
 								await adapters.database.linkOAuthAccount(
 									user.id,
 									providerName,
-									profileData.id,
+									profile.id,
 								);
 						} catch {}
 					}
@@ -197,12 +208,7 @@ export function createAuth(config: any) {
 				let userId = user?.id ?? null;
 
 					if (hooks.onLogin) {
-						const hookResult = await hooks.onLogin(
-							event,
-							profileData,
-							tokens,
-							user,
-						);
+						const hookResult = await hooks.onLogin(event, profile, tokens, user);
 					if (hookResult?.userId) userId = hookResult.userId;
 					if (hookResult?.id) userId = hookResult.id;
 					if (hookResult?.user?.id) userId = hookResult.user.id;
@@ -216,12 +222,12 @@ export function createAuth(config: any) {
 				// Store tokens if adapter provided
 				if (adapters.token) {
 					if (!userId) {
-						console.warn(
+						log.warn?.(
 							"[auth] Token adapter enabled but no userId resolved. Falling back to provider profile id.",
 						);
 					}
 					await adapters.token.storeTokens(
-						userId ?? profileData.id,
+						userId ?? profile.id,
 						providerName,
 						tokens,
 					);
@@ -238,7 +244,7 @@ export function createAuth(config: any) {
 	const logoutHandler = createLogoutHandler({
 		sessionAdapter: adapters.session,
 		redirectAfterLogout: urlConfig.afterLogout,
-		getSession: (locals) => locals.session,
+		getSession: (locals: AuthLocals) => locals.session,
 		onLogout: hooks.onLogout
 			? async (event) => {
 					await hooks.onLogout(event);
@@ -247,7 +253,13 @@ export function createAuth(config: any) {
 	});
 
 	// Create hooks server handler
-	const handleHooks = async ({ event, resolve }: { event: any; resolve: any }) => {
+	const handleHooks = async ({
+		event,
+		resolve,
+	}: {
+		event: RequestEventLike;
+		resolve: (e: RequestEventLike) => Promise<Response>;
+	}) => {
 		const sessionId = event.cookies.get(adapters.session.cookieName ?? "session");
 
 			if (sessionId) {
@@ -277,7 +289,7 @@ export function createAuth(config: any) {
 		return resolve(event);
 	};
 
-	const handlers: Record<string, any> = {
+	const handlers: AuthHandlers = {
 		logout: logoutHandler,
 		hooks: handleHooks,
 	};
@@ -405,12 +417,12 @@ export function createAuth(config: any) {
 		cookies: cookieConfig,
 		hooks,
 		handlers,
-		routes,
+		routes: routes as AuthRoutes,
 		// Utility functions
 		utils: {
-			isAuthenticated: (locals: any) => isAuthenticated(locals),
-			getUser: (locals: any) => locals.user,
-			getSession: (locals: any) => locals.session,
+			isAuthenticated: (locals: AuthLocals) => isAuthenticated(locals),
+			getUser: (locals: AuthLocals) => locals.user,
+			getSession: (locals: AuthLocals) => locals.session,
 		},
 	};
 }

@@ -8,31 +8,12 @@ import { encodeBase64url, decodeBase64url } from "@oslojs/encoding";
 import { generateRandomUUID } from "../utils/crypto.ts";
 import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.ts";
 import { redirect } from "@sveltejs/kit";
-import type { RequestEvent, RequestHandler } from "@sveltejs/kit";
+import type { RequestHandler } from "@sveltejs/kit";
+import { jsonResponse, parseRequestData } from "../utils/http.ts";
+import type { AuthLocals, RequestEventLike } from "../types/auth.ts";
+import type { User } from "../types/index.ts";
 
-async function parseRequestData(request: Request): Promise<Record<string, any>> {
-	const contentType = request.headers.get("content-type") || "";
-	if (contentType.includes("application/json")) {
-		return request.json().catch(() => ({}));
-	}
-	if (
-		contentType.includes("application/x-www-form-urlencoded") ||
-		contentType.includes("multipart/form-data")
-	) {
-		const form = await request.formData();
-		return Object.fromEntries((form as any).entries());
-	}
-	return {};
-}
-
-function jsonResponse(payload: any, status: number = 200): Response {
-	return new Response(JSON.stringify(payload), {
-		status,
-		headers: { "content-type": "application/json" },
-	});
-}
-
-function toUint8Array(value: any): Uint8Array {
+function toUint8Array(value: unknown): Uint8Array {
 	if (!value) return new Uint8Array();
 	if (value instanceof Uint8Array) return value;
 	if (value instanceof ArrayBuffer) return new Uint8Array(value);
@@ -42,14 +23,33 @@ function toUint8Array(value: any): Uint8Array {
 	if (typeof value === "string") {
 		return decodeBase64url(value);
 	}
-	return new Uint8Array(value);
+	return new Uint8Array(value as ArrayBufferLike);
 }
 
-function encodeCredential(value: any): string {
+function encodeCredential(value: unknown): string {
 	return encodeBase64url(toUint8Array(value));
 }
 
-export function createWebAuthnRegisterOptionsHandler(config: any): RequestHandler {
+export function createWebAuthnRegisterOptionsHandler(config: {
+	webauthnAdapter: {
+		listCredentials: (userId: string) => Promise<Record<string, unknown>[]>;
+		createChallenge: (input: {
+			challengeId: string;
+			userId: string;
+			challenge: string;
+			type: string;
+			expiresAt: Date;
+		}) => Promise<void>;
+	};
+	rpName: string;
+	rpID: string;
+	timeout?: number;
+	attestationType?: "none" | "indirect" | "direct" | "enterprise";
+	authenticatorSelection?: Record<string, unknown>;
+	supportedAlgorithmIDs?: number[];
+	userVerification?: "preferred" | "required" | "discouraged";
+	getUser?: (event: RequestEventLike) => User | null | Promise<User | null>;
+}): RequestHandler {
 	const {
 		webauthnAdapter,
 		rpName,
@@ -59,7 +59,7 @@ export function createWebAuthnRegisterOptionsHandler(config: any): RequestHandle
 		authenticatorSelection,
 		supportedAlgorithmIDs,
 		userVerification = "preferred",
-		getUser = (event: any) => event.locals.user,
+		getUser = (event: RequestEventLike) => event.locals.user as User | null,
 	} = config;
 
 	if (!webauthnAdapter) {
@@ -69,17 +69,18 @@ export function createWebAuthnRegisterOptionsHandler(config: any): RequestHandle
 		throw new Error("createWebAuthnRegisterOptionsHandler requires rpID and rpName");
 	}
 
-	return async (event: RequestEvent | any) => {
+	return async (event: RequestEventLike) => {
 		const user = await getUser(event);
 		if (!user || !user.id) {
 			return jsonResponse({ ok: false, error: "Unauthorized" }, 401);
 		}
 
 		const credentials = await webauthnAdapter.listCredentials(user.id);
-		const excludeCredentials = credentials.map((cred: any) => ({
-			id: cred.credentialId || cred.credential_id,
+		const excludeCredentials = credentials.map((cred) => ({
+			id: (cred as { credentialId?: string; credential_id?: string }).credentialId ||
+				(cred as { credential_id?: string }).credential_id,
 			type: "public-key" as const,
-			transports: cred.transports || undefined,
+			transports: (cred as { transports?: string[] | null }).transports || undefined,
 		}));
 
 		const options = generateRegistrationOptions({
@@ -94,7 +95,7 @@ export function createWebAuthnRegisterOptionsHandler(config: any): RequestHandle
 			authenticatorSelection,
 			supportedAlgorithmIDs,
 			userVerification,
-		} as any) as any;
+		} as Record<string, unknown>) as ReturnType<typeof generateRegistrationOptions>;
 
 		const challengeId = await generateRandomUUID();
 		const expiresAt = new Date(Date.now() + timeout);
@@ -110,7 +111,28 @@ export function createWebAuthnRegisterOptionsHandler(config: any): RequestHandle
 	};
 }
 
-export function createWebAuthnRegisterVerifyHandler(config: Record<string, any>) {
+export function createWebAuthnRegisterVerifyHandler(config: {
+	webauthnAdapter: {
+		getChallenge: (id: string) => Promise<Record<string, unknown> | null>;
+		deleteChallenge: (id: string) => Promise<void>;
+		createCredential: (input: {
+			userId: string;
+			credentialId: string;
+			publicKey: string;
+			counter: number;
+			transports?: string[] | null;
+			name?: string | null;
+		}) => Promise<void>;
+	};
+	rpID: string;
+	origin: string;
+	requireUserVerification?: boolean;
+	onCredentialCreated?: (input: {
+		userId: string;
+		credentialId: string;
+		publicKey: string;
+	}) => Promise<void> | void;
+}) {
 	const {
 		webauthnAdapter,
 		rpID,
@@ -126,10 +148,11 @@ export function createWebAuthnRegisterVerifyHandler(config: Record<string, any>)
 		throw new Error("createWebAuthnRegisterVerifyHandler requires rpID and origin");
 	}
 
-	return async (event: any) => {
+	return async (event: RequestEventLike) => {
 		const data = await parseRequestData(event.request);
-		const challengeId = data.challengeId;
-		const credential = data.credential;
+		const challengeId =
+			typeof data.challengeId === "string" ? data.challengeId : "";
+		const credential = data.credential as unknown;
 
 		if (!challengeId || !credential) {
 			return jsonResponse({ ok: false, error: "Invalid request" }, 400);
@@ -151,27 +174,35 @@ export function createWebAuthnRegisterVerifyHandler(config: Record<string, any>)
 
 		const verification = await verifyRegistrationResponse({
 			response: credential,
-			expectedChallenge: challenge.challenge,
+			expectedChallenge: String((challenge as { challenge?: string }).challenge ?? ""),
 			expectedOrigin: origin,
 			expectedRPID: rpID,
 			requireUserVerification,
-		} as any);
+		} as Record<string, unknown>);
 
 		if (!verification.verified) {
 			return jsonResponse({ ok: false, error: "Registration failed" }, 400);
 		}
 
-		const { credential: regCredential } = verification.registrationInfo as any;
+		const { credential: regCredential } = verification.registrationInfo as {
+			credential?: {
+				id?: string;
+				credentialID?: ArrayBuffer | Uint8Array | string;
+				publicKey?: ArrayBuffer | Uint8Array | string;
+				credentialPublicKey?: ArrayBuffer | Uint8Array | string;
+				counter?: number;
+			};
+		};
 		const credentialId = regCredential?.id || encodeCredential(regCredential?.credentialID);
 		const publicKey = encodeCredential(regCredential?.publicKey || regCredential?.credentialPublicKey);
 		const counter = regCredential?.counter ?? 0;
 
 		await webauthnAdapter.createCredential({
-			userId: challenge.userId,
+			userId: String((challenge as { userId?: string }).userId ?? ""),
 			credentialId,
 			publicKey,
 			counter,
-			transports: credential.response?.transports ?? null,
+			transports: (credential as { response?: { transports?: string[] } })?.response?.transports ?? null,
 			name: data.name || null,
 		});
 
@@ -179,7 +210,7 @@ export function createWebAuthnRegisterVerifyHandler(config: Record<string, any>)
 
 		if (onCredentialCreated) {
 			await onCredentialCreated({
-				userId: challenge.userId,
+				userId: String((challenge as { userId?: string }).userId ?? ""),
 				credentialId,
 				publicKey,
 			});
@@ -189,7 +220,22 @@ export function createWebAuthnRegisterVerifyHandler(config: Record<string, any>)
 	};
 }
 
-export function createWebAuthnLoginOptionsHandler(config: any): RequestHandler {
+export function createWebAuthnLoginOptionsHandler(config: {
+	webauthnAdapter: {
+		listCredentials: (userId: string) => Promise<Record<string, unknown>[]>;
+		createChallenge: (input: {
+			challengeId: string;
+			userId: string | null;
+			challenge: string;
+			type: string;
+			expiresAt: Date;
+		}) => Promise<void>;
+	};
+	databaseAdapter?: { getUserByEmail: (email: string) => Promise<User | null> };
+	rpID: string;
+	timeout?: number;
+	userVerification?: "preferred" | "required" | "discouraged";
+}): RequestHandler {
 	const {
 		webauthnAdapter,
 		databaseAdapter,
@@ -205,9 +251,9 @@ export function createWebAuthnLoginOptionsHandler(config: any): RequestHandler {
 		throw new Error("createWebAuthnLoginOptionsHandler requires rpID");
 	}
 
-	return async (event: RequestEvent | any) => {
+	return async (event: RequestEventLike) => {
 		const data = await parseRequestData(event.request);
-		const email = data.email;
+		const email = typeof data.email === "string" ? data.email : "";
 		let user = null;
 
 		if (email && databaseAdapter) {
@@ -217,10 +263,11 @@ export function createWebAuthnLoginOptionsHandler(config: any): RequestHandler {
 		let allowCredentials;
 		if (user) {
 			const credentials = await webauthnAdapter.listCredentials(user.id);
-			allowCredentials = credentials.map((cred: any) => ({
-				id: cred.credentialId || cred.credential_id,
+			allowCredentials = credentials.map((cred) => ({
+				id: (cred as { credentialId?: string; credential_id?: string }).credentialId ||
+					(cred as { credential_id?: string }).credential_id,
 				type: "public-key" as const,
-				transports: cred.transports || undefined,
+				transports: (cred as { transports?: string[] | null }).transports || undefined,
 			}));
 		}
 
@@ -229,7 +276,7 @@ export function createWebAuthnLoginOptionsHandler(config: any): RequestHandler {
 			timeout,
 			allowCredentials,
 			userVerification,
-		} as any) as any;
+		} as Record<string, unknown>) as ReturnType<typeof generateAuthenticationOptions>;
 
 		const challengeId = await generateRandomUUID();
 		const expiresAt = new Date(Date.now() + timeout);
@@ -245,7 +292,36 @@ export function createWebAuthnLoginOptionsHandler(config: any): RequestHandler {
 	};
 }
 
-export function createWebAuthnLoginVerifyHandler(config: any): RequestHandler {
+export function createWebAuthnLoginVerifyHandler(config: {
+	webauthnAdapter: {
+		getChallenge: (id: string) => Promise<Record<string, unknown> | null>;
+		deleteChallenge: (id: string) => Promise<void>;
+		getCredential: (id: string) => Promise<Record<string, unknown> | null>;
+		updateCredential: (id: string, updates: Record<string, unknown>) => Promise<void>;
+	};
+	databaseAdapter?: { getUserById: (id: string) => Promise<User | null> };
+	sessionAdapter: {
+		createSession: (userId: string) => Promise<{ id: string; expiresAt: Date }>;
+		setSessionCookie?: (
+			cookies: RequestEventLike["cookies"],
+			session: { id: string; expiresAt: Date },
+		) => void;
+	};
+	rpID: string;
+	origin: string;
+	redirectAfterLogin?: string;
+	requireUserVerification?: boolean;
+	onLogin?: (
+		event: RequestEventLike,
+		profile: { id: string; email?: string; name?: string },
+		tokens: null,
+		user: User | null,
+	) => Promise<
+		| { userId?: string | number; id?: string | number; user?: { id?: string | number } }
+		| void
+	>;
+	sanitizeUser?: (user: User | null) => User | null;
+}): RequestHandler {
 	const {
 		webauthnAdapter,
 		databaseAdapter,
@@ -267,10 +343,11 @@ export function createWebAuthnLoginVerifyHandler(config: any): RequestHandler {
 		throw new Error("createWebAuthnLoginVerifyHandler requires rpID and origin");
 	}
 
-	return async (event: RequestEvent | any) => {
+	return async (event: RequestEventLike) => {
 		const data = await parseRequestData(event.request);
-		const challengeId = data.challengeId;
-		const credential = data.credential;
+		const challengeId =
+			typeof data.challengeId === "string" ? data.challengeId : "";
+		const credential = data.credential as unknown;
 
 		if (!challengeId || !credential) {
 			return jsonResponse({ ok: false, error: "Invalid request" }, 400);
@@ -284,7 +361,7 @@ export function createWebAuthnLoginVerifyHandler(config: any): RequestHandler {
 			return jsonResponse({ ok: false, error: "Invalid challenge" }, 400);
 		}
 
-		const credentialId = credential.id;
+		const credentialId = (credential as { id?: string }).id;
 		const storedCredential = await webauthnAdapter.getCredential(credentialId);
 		if (!storedCredential) {
 			return jsonResponse({ ok: false, error: "Credential not found" }, 400);
@@ -292,34 +369,43 @@ export function createWebAuthnLoginVerifyHandler(config: any): RequestHandler {
 
 		const verification = await verifyAuthenticationResponse({
 			response: credential,
-			expectedChallenge: challenge.challenge,
+			expectedChallenge: String((challenge as { challenge?: string }).challenge ?? ""),
 			expectedOrigin: origin,
 			expectedRPID: rpID,
 			credential: {
-				id: storedCredential.credentialId,
-				publicKey: toUint8Array(storedCredential.publicKey),
-				counter: storedCredential.counter,
-				transports: storedCredential.transports || undefined,
+				id: (storedCredential as { credentialId?: string }).credentialId as string,
+				publicKey: toUint8Array((storedCredential as { publicKey?: unknown }).publicKey),
+				counter: (storedCredential as { counter?: number }).counter ?? 0,
+				transports: (storedCredential as { transports?: string[] | null }).transports || undefined,
 			},
 			requireUserVerification,
-		} as any);
+		} as Record<string, unknown>);
 
 		if (!verification.verified) {
 			return jsonResponse({ ok: false, error: "Authentication failed" }, 400);
 		}
 
-		await webauthnAdapter.updateCredential(storedCredential.credentialId, {
-			counter: (verification as any).authenticationInfo?.newCounter ?? storedCredential.counter,
-		});
+		await webauthnAdapter.updateCredential(
+			(storedCredential as { credentialId?: string }).credentialId as string,
+			{
+				counter:
+					(verification as { authenticationInfo?: { newCounter?: number } })
+						.authenticationInfo?.newCounter ??
+					(storedCredential as { counter?: number }).counter ??
+					0,
+			},
+		);
 
 		await webauthnAdapter.deleteChallenge(challengeId);
 
 		let user = null;
-		if (databaseAdapter && storedCredential.userId) {
-			user = await databaseAdapter.getUserById(storedCredential.userId);
+		if (databaseAdapter && (storedCredential as { userId?: string }).userId) {
+			user = await databaseAdapter.getUserById(
+				String((storedCredential as { userId?: string }).userId),
+			);
 		}
 
-		let userId = storedCredential.userId;
+		let userId = String((storedCredential as { userId?: string }).userId ?? "");
 
 		if (onLogin) {
 			const profile = {

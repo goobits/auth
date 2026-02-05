@@ -1,5 +1,7 @@
 import { TokenAdapter } from "./base.ts";
 import { encryptTokens, decryptTokens } from "../../utils/crypto.ts";
+import type { Cookies } from "@sveltejs/kit";
+import type { OAuthTokens } from "../../types/index.ts";
 
 /**
  * Cookie-based Token Adapter
@@ -10,7 +12,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 	private encryptionKey: string;
 	private secureCookies: boolean;
 	private maxAge: number;
-	private _cookies: any;
+	private _cookies: Cookies | null;
 	/**
 	 * @param {Object} options - Configuration options
 	 * @param {string} options.cookieName - Cookie name for storing tokens
@@ -44,11 +46,11 @@ export class CookieTokenAdapter extends TokenAdapter {
 	 * Set the cookies object for this adapter
 	 * @param {import('@sveltejs/kit').Cookies} cookies
 	 */
-	_setCookies(cookies: any) {
+	_setCookies(cookies: Cookies) {
 		this._cookies = cookies;
 	}
 
-	async storeTokens(userId: string, provider: string, tokens: any) {
+	async storeTokens(userId: string, provider: string, tokens: Record<string, unknown>) {
 		if (!this._cookies) {
 			throw new Error("Cookies not set. Call _setCookies() first.");
 		}
@@ -65,7 +67,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 		});
 	}
 
-	async getTokens(userId: string, provider: string) {
+	async getTokens(userId: string, provider: string): Promise<OAuthTokens | null> {
 		if (!this._cookies) {
 			throw new Error("Cookies not set. Call _setCookies() first.");
 		}
@@ -75,10 +77,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 
 		if (!encryptedTokens) return null;
 
-		return (await decryptTokens(
-			encryptedTokens,
-			this.encryptionKey,
-		)) as import("../../types/index.ts").OAuthTokens;
+		return (await decryptTokens(encryptedTokens, this.encryptionKey)) as OAuthTokens;
 	}
 
 	async refreshTokens(

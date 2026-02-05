@@ -7,8 +7,8 @@ import { eq, and } from "drizzle-orm";
  * Stores encrypted OAuth tokens in database
  */
 export class DrizzleTokenAdapter extends TokenAdapter {
-	private db: any;
-	private tokensTable: any;
+	private db: unknown;
+	private tokensTable: Record<string, unknown>;
 	private encryptionKey: string | null;
 	private encrypt: boolean;
 	/**
@@ -19,20 +19,20 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 	 * @param {boolean} [options.encrypt=true] - Whether to encrypt tokens
 	 */
 	constructor(
-		db: any,
+		db: unknown,
 		options: {
-			tokensTable?: any;
+			tokensTable?: Record<string, unknown>;
 			encryptionKey?: string | null;
 			encrypt?: boolean;
 		} = {},
 	) {
 		super();
 		this.db = db;
-		this.tokensTable = options.tokensTable;
+		this.tokensTable = options.tokensTable ?? {};
 		this.encryptionKey = options.encryptionKey ?? null;
 		this.encrypt = options.encrypt !== false;
 
-		if (!this.tokensTable) {
+		if (!options.tokensTable) {
 			throw new Error("DrizzleTokenAdapter requires tokensTable option");
 		}
 
@@ -43,7 +43,7 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 		}
 	}
 
-	async storeTokens(userId: string, provider: string, tokens: any) {
+	async storeTokens(userId: string, provider: string, tokens: Record<string, unknown>) {
 		const key = this.encryptionKey as string;
 		const tokenData = this.encrypt
 			? await encryptTokens(tokens, key)

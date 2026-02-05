@@ -30,7 +30,8 @@ export async function verifyPassword(
 	try {
 		return await verify(storedHash, password);
 	} catch (error) {
-		console.error("Password verification error:", error);
+		const { getLogger } = await import("./logger.ts");
+		getLogger().error?.("Password verification error:", error);
 		return false;
 	}
 }

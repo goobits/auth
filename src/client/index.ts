@@ -39,14 +39,17 @@ function toBase64url(value: Base64Input): string {
 	return encodeBase64url(toUint8Array(value));
 }
 
-function parseCreationOptions(options: any) {
-	const parsed = { ...options };
-	parsed.challenge = toUint8Array(options.challenge);
-	if (options.user?.id) {
-		parsed.user = { ...options.user, id: toUint8Array(options.user.id) };
+function parseCreationOptions(options: Record<string, unknown>) {
+	const parsed = { ...options } as Record<string, unknown>;
+	parsed.challenge = toUint8Array((options as { challenge?: Base64Input }).challenge);
+	const user = (options as { user?: { id?: Base64Input } }).user;
+	if (user?.id) {
+		parsed.user = { ...user, id: toUint8Array(user.id) };
 	}
-	if (Array.isArray(options.excludeCredentials)) {
-		parsed.excludeCredentials = options.excludeCredentials.map((cred: any) => ({
+	const exclude = (options as { excludeCredentials?: Array<{ id?: Base64Input }> })
+		.excludeCredentials;
+	if (Array.isArray(exclude)) {
+		parsed.excludeCredentials = exclude.map((cred) => ({
 			...cred,
 			id: toUint8Array(cred.id),
 		}));
@@ -54,11 +57,13 @@ function parseCreationOptions(options: any) {
 	return parsed;
 }
 
-function parseRequestOptions(options: any) {
-	const parsed = { ...options };
-	parsed.challenge = toUint8Array(options.challenge);
-	if (Array.isArray(options.allowCredentials)) {
-		parsed.allowCredentials = options.allowCredentials.map((cred: any) => ({
+function parseRequestOptions(options: Record<string, unknown>) {
+	const parsed = { ...options } as Record<string, unknown>;
+	parsed.challenge = toUint8Array((options as { challenge?: Base64Input }).challenge);
+	const allow = (options as { allowCredentials?: Array<{ id?: Base64Input }> })
+		.allowCredentials;
+	if (Array.isArray(allow)) {
+		parsed.allowCredentials = allow.map((cred) => ({
 			...cred,
 			id: toUint8Array(cred.id),
 		}));
@@ -66,28 +71,32 @@ function parseRequestOptions(options: any) {
 	return parsed;
 }
 
-function serializeCredential(credential: any) {
+function serializeCredential(credential: unknown) {
 	if (!credential) return null;
-	const response = credential.response || {};
+	const response = (credential as { response?: Record<string, unknown> }).response || {};
 	return {
-		id: credential.id,
-		type: credential.type,
-		rawId: toBase64url(credential.rawId),
+		id: (credential as { id?: string }).id,
+		type: (credential as { type?: string }).type,
+		rawId: toBase64url((credential as { rawId?: Base64Input }).rawId),
 		response: {
 			attestationObject: response.attestationObject
-				? toBase64url(response.attestationObject)
+				? toBase64url(response.attestationObject as Base64Input)
 				: undefined,
 			clientDataJSON: response.clientDataJSON
-				? toBase64url(response.clientDataJSON)
+				? toBase64url(response.clientDataJSON as Base64Input)
 				: undefined,
 			authenticatorData: response.authenticatorData
-				? toBase64url(response.authenticatorData)
+				? toBase64url(response.authenticatorData as Base64Input)
 				: undefined,
-			signature: response.signature ? toBase64url(response.signature) : undefined,
+			signature: response.signature
+				? toBase64url(response.signature as Base64Input)
+				: undefined,
 			userHandle: response.userHandle
-				? toBase64url(response.userHandle)
+				? toBase64url(response.userHandle as Base64Input)
 				: undefined,
-			transports: response.getTransports ? response.getTransports() : undefined,
+			transports: response.getTransports
+				? (response.getTransports as () => string[])()
+				: undefined,
 		},
 	};
 }

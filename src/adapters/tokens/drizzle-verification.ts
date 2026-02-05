@@ -6,9 +6,9 @@ import { and, eq } from "drizzle-orm";
  * Stores verification tokens in a database table
  */
 export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
-	private db: any;
-	private tokensTable: any;
-	private usersTable: any;
+	private db: unknown;
+	private tokensTable: Record<string, unknown>;
+	private usersTable: Record<string, unknown>;
 	/**
 	 * @param {import('drizzle-orm').DrizzleD1Database} db - Drizzle database instance
 	 * @param {Object} options - Configuration
@@ -16,8 +16,8 @@ export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
 	 * @param {import('drizzle-orm').Table} options.usersTable - Users table
 	 */
 	constructor(
-		db: any,
-		options: { tokensTable?: any; usersTable?: any } = {},
+		db: unknown,
+		options: { tokensTable?: Record<string, unknown>; usersTable?: Record<string, unknown> } = {},
 	) {
 		super();
 
@@ -34,8 +34,8 @@ export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
 		}
 
 		this.db = db;
-		this.tokensTable = options.tokensTable;
-		this.usersTable = options.usersTable;
+		this.tokensTable = options.tokensTable ?? {};
+		this.usersTable = options.usersTable ?? {};
 	}
 
 	async create({

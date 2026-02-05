@@ -1,11 +1,13 @@
 import { generateState, generateCodeVerifier } from "arctic";
 import type { RequestEvent } from "@sveltejs/kit";
 import type { OAuthProvider } from "../providers/base.ts";
+import type { OAuthProfile, OAuthTokens } from "../types/index.ts";
+import type { RequestEventLike } from "../types/auth.ts";
 
 type CookiesLike = {
-	set: (name: string, value: string, options?: any) => void;
+	set: (name: string, value: string, options?: CookieOptions) => void;
 	get: (name: string) => string | null | undefined;
-	delete: (name: string, options?: any) => void;
+	delete: (name: string, options?: CookieOptions) => void;
 };
 
 type CookieOptions = {
@@ -30,7 +32,10 @@ type OAuthCallbackOverrides = {
 };
 
 type OAuthCallbackHandlers = {
-	onAuthenticated?: (profile: unknown, tokens: unknown) => Promise<void> | void;
+	onAuthenticated?: (
+		profile: OAuthProfile,
+		tokens: OAuthTokens,
+	) => Promise<void> | void;
 	onError?: (error: unknown) => Promise<void> | void;
 };
 
@@ -147,13 +152,13 @@ export async function handleOAuthCallback({
 	appleUserData = null,
 	overrideParams = null,
 }: {
-	event: RequestEvent | { cookies: CookiesLike; url: URL; request: Request };
+	event: RequestEvent | RequestEventLike | { cookies: CookiesLike; url: URL; request: Request };
 	provider: string;
 	providerInstance: OAuthProvider;
 	callbacks: OAuthCallbackHandlers;
 	appleUserData?: string | null;
 	overrideParams?: OAuthCallbackOverrides | null;
-}): Promise<{ profile: unknown; tokens: unknown }> {
+}): Promise<{ profile: OAuthProfile; tokens: OAuthTokens }> {
 	const { cookies, url } = event;
 	let override: OAuthCallbackOverrides = overrideParams || {};
 	if (!overrideParams) {
@@ -180,7 +185,9 @@ export async function handleOAuthCallback({
 		}
 
 		// Fetch user profile from provider
-		let profile: { profile: import("../types/index.ts").OAuthProfile; tokens: import("../types/index.ts").OAuthTokens } | null = null;
+		let profile:
+			| { profile: OAuthProfile; tokens: OAuthTokens }
+			| null = null;
 		if (provider === "apple" && appleUserData) {
 				profile = await providerInstance.getUserProfile(
 					params.code,

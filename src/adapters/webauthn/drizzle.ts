@@ -2,9 +2,9 @@ import { WebAuthnAdapter } from "./base.ts";
 import { eq } from "drizzle-orm";
 
 export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
-	private db: any;
-	private credentialsTable: any;
-	private challengesTable: any;
+	private db: unknown;
+	private credentialsTable: Record<string, unknown>;
+	private challengesTable: Record<string, unknown>;
 	private columns: {
 		credentialId: string;
 		userId: string;
@@ -28,17 +28,17 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 	 * @param {Object} [options.columns]
 	 */
 	constructor(
-		db: any,
+		db: unknown,
 		options: {
-			credentialsTable?: any;
-			challengesTable?: any;
+			credentialsTable?: Record<string, unknown>;
+			challengesTable?: Record<string, unknown>;
 			columns?: Partial<Record<string, string>>;
 		} = {},
 	) {
 		super();
 		this.db = db;
-		this.credentialsTable = options.credentialsTable;
-		this.challengesTable = options.challengesTable;
+		this.credentialsTable = options.credentialsTable ?? {};
+		this.challengesTable = options.challengesTable ?? {};
 		this.columns = {
 			credentialId: options.columns?.credentialId || "credentialId",
 			userId: options.columns?.userId || "userId",
@@ -55,7 +55,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 			challengeExpiresAt: options.columns?.challengeExpiresAt || "expiresAt",
 		};
 
-		if (!this.credentialsTable || !this.challengesTable) {
+		if (!options.credentialsTable || !options.challengesTable) {
 			throw new Error(
 				"DrizzleWebAuthnAdapter requires credentialsTable and challengesTable options",
 			);
@@ -75,7 +75,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		type: string;
 		expiresAt: Date;
 	}) {
-		const columns: any = this.columns;
+		const columns: Record<string, string> = this.columns;
 		await this.db.insert(this.challengesTable).values({
 			[columns.challengeId]: challengeId,
 			[columns.challengeUserId]: userId,
@@ -121,7 +121,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		transports?: string[] | null;
 		name?: string | null;
 	}) {
-		const columns: any = this.columns;
+		const columns: Record<string, string> = this.columns;
 		await this.db.insert(this.credentialsTable).values({
 			[columns.userId]: userId,
 			[columns.credentialId]: credentialId,
@@ -157,7 +157,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 			.select()
 			.from(this.credentialsTable)
 			.where(eq(this.credentialsTable[this.columns.userId], userId));
-		return records.map((record: any) => ({
+		return records.map((record: Record<string, unknown>) => ({
 			credentialId: record[this.columns.credentialId],
 			userId: record[this.columns.userId],
 			publicKey: record[this.columns.publicKey],

@@ -6,10 +6,10 @@ import { eq } from "drizzle-orm";
  * Implements user management using Drizzle ORM
  */
 export class DrizzleUserAdapter extends DatabaseAdapter {
-	private db: any;
-	private usersTable: any;
-	private oauthAccountsTable?: any;
-	private sanitizeUser: (user: any) => any;
+	private db: unknown;
+	private usersTable: Record<string, unknown>;
+	private oauthAccountsTable?: Record<string, unknown>;
+	private sanitizeUser: (user: Record<string, unknown> | null) => Record<string, unknown> | null;
 	/**
 	 * @param {Object} db - Drizzle database instance
 	 * @param {Object} options - Configuration options
@@ -18,20 +18,20 @@ export class DrizzleUserAdapter extends DatabaseAdapter {
 	 * @param {Function} [options.sanitizeUser] - Function to sanitize user objects
 	 */
 	constructor(
-		db: any,
+		db: unknown,
 		options: {
-			usersTable?: any;
-			oauthAccountsTable?: any;
-			sanitizeUser?: (user: any) => any;
+			usersTable?: Record<string, unknown>;
+			oauthAccountsTable?: Record<string, unknown>;
+			sanitizeUser?: (user: Record<string, unknown> | null) => Record<string, unknown> | null;
 		} = {},
 	) {
 		super();
 		this.db = db;
-		this.usersTable = options.usersTable;
+		this.usersTable = options.usersTable ?? {};
 		this.oauthAccountsTable = options.oauthAccountsTable;
 		this.sanitizeUser = options.sanitizeUser || this._defaultSanitizeUser;
 
-		if (!this.usersTable) {
+		if (!options.usersTable) {
 			throw new Error("DrizzleUserAdapter requires usersTable option");
 		}
 	}
@@ -42,18 +42,18 @@ export class DrizzleUserAdapter extends DatabaseAdapter {
 	 * @returns {Object|null}
 	 * @private
 	 */
-	_defaultSanitizeUser(user: any) {
+	_defaultSanitizeUser(user: Record<string, unknown> | null) {
 		if (!user) return null;
 		const { password, token, ...safeUser } = user;
 		return safeUser;
 	}
 
-	async createUser(profile: any, metadata: Record<string, unknown> = {}) {
+	async createUser(profile: Record<string, unknown>, metadata: Record<string, unknown> = {}) {
 		const userData = {
-			email: profile.email,
-			name: profile.name || profile.email,
-			avatar: profile.picture || null,
-			emailVerified: profile.verified_email || false,
+			email: String(profile.email ?? ""),
+			name: String(profile.name ?? profile.email ?? ""),
+			avatar: (profile.picture as string | null | undefined) ?? null,
+			emailVerified: Boolean(profile.verified_email),
 			...metadata,
 		};
 

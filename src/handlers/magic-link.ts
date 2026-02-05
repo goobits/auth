@@ -1,10 +1,60 @@
 import { redirect } from "@sveltejs/kit";
-import { generateMagicLinkToken, generateOtp, hashToken } from "../utils/magic-link.ts";
+import {
+	generateMagicLinkToken,
+	generateOtp,
+	hashToken,
+} from "../utils/magic-link.ts";
 import { createRateLimiter } from "../utils/rate-limit.ts";
 import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.ts";
-import type { RequestEvent, RequestHandler } from "@sveltejs/kit";
+import { jsonResponse, parseRequestData } from "../utils/http.ts";
+import type { RequestHandler } from "@sveltejs/kit";
+import type {
+	AuthLocals,
+	MagicLinkConfig,
+	RequestEventLike,
+} from "../types/auth.ts";
+import type { User } from "../types/index.ts";
 
-function getRateLimitKey(event: any, config: any): string {
+type MagicLinkAdapterLike = {
+	createToken: (params: {
+		userId: string | null;
+		email: string;
+		tokenHash: string;
+		otpHash?: string | null;
+		expiresAt: Date;
+		metadata?: Record<string, unknown>;
+	}) => Promise<Record<string, unknown> | void>;
+	findByTokenHash: (hash: string) => Promise<Record<string, unknown> | null>;
+	findByEmailAndOtpHash: (params: {
+		email: string;
+		otpHash: string;
+	}) => Promise<Record<string, unknown> | null>;
+	deleteById: (id: string) => Promise<void>;
+	deleteByEmail: (email: string) => Promise<void>;
+};
+
+type MagicLinkDatabaseAdapterLike = {
+	getUserByEmail: (email: string) => Promise<User | null>;
+	getUserById: (id: string) => Promise<User | null>;
+	createUser: (profile: {
+		id: string;
+		email: string;
+		name: string;
+		verified_email?: boolean;
+	}) => Promise<User>;
+	updateUser: (id: string, data: Record<string, unknown>) => Promise<User>;
+};
+
+type MagicLinkSessionAdapterLike = {
+	createSession: (userId: string) => Promise<{ id: string; expiresAt: Date }>;
+	setSessionCookie?: (
+		cookies: RequestEventLike["cookies"],
+		session: { id: string; expiresAt: Date },
+		options?: { secure?: boolean },
+	) => void;
+};
+
+function getRateLimitKey(event: RequestEventLike, config: MagicLinkConfig): string {
 	if (config?.key) return config.key(event);
 	if (event.getClientAddress) return event.getClientAddress();
 	if (config?.trustProxyHeader) {
@@ -13,30 +63,11 @@ function getRateLimitKey(event: any, config: any): string {
 	return "unknown";
 }
 
-async function parseRequestData(request: Request): Promise<Record<string, any>> {
-	const contentType = request.headers.get("content-type") || "";
-	if (contentType.includes("application/json")) {
-		return request.json().catch(() => ({}));
-	}
-	if (
-		contentType.includes("application/x-www-form-urlencoded") ||
-		contentType.includes("multipart/form-data")
-	) {
-		const form = await request.formData();
-		return Object.fromEntries((form as any).entries());
-	}
-	return {};
-}
-
-function jsonResponse(payload: any, status: number = 200): Response {
-	return new Response(JSON.stringify(payload), {
-		status,
-		headers: { "content-type": "application/json" },
-	});
-}
-
 export function createMagicLinkRequestHandler(
-	config: Record<string, any>,
+	config: MagicLinkConfig & {
+		magicLinkAdapter: MagicLinkAdapterLike;
+		databaseAdapter?: Pick<MagicLinkDatabaseAdapterLike, "getUserByEmail">;
+	},
 ): RequestHandler {
 	const {
 		magicLinkAdapter,
@@ -63,13 +94,16 @@ export function createMagicLinkRequestHandler(
 		throw new Error("createMagicLinkRequestHandler requires sendEmail");
 	}
 
-	return async (event: RequestEvent) => {
+	return async (event: RequestEventLike) => {
 		if (rateLimit) {
 			await rateLimit(event);
 		}
 
 		const data = await parseRequestData(event.request);
-		const emailInput = data.email || data.identifier || "";
+		const emailInput =
+			(typeof data.email === "string" && data.email) ||
+			(typeof data.identifier === "string" && data.identifier) ||
+			"";
 		const email = normalizeEmail(String(emailInput || ""));
 
 		if (!email) {
@@ -105,7 +139,7 @@ export function createMagicLinkRequestHandler(
 			metadata,
 		});
 
-		const redirectTo = data.redirectTo || "";
+		const redirectTo = typeof data.redirectTo === "string" ? data.redirectTo : "";
 		const origin = baseUrl || event.url.origin;
 		const url = new URL(magicLinkPath, origin);
 		url.searchParams.set("token", token);
@@ -132,7 +166,13 @@ export function createMagicLinkRequestHandler(
 	};
 }
 
-export function createMagicLinkVerifyHandler(config: Record<string, any>) {
+export function createMagicLinkVerifyHandler(
+	config: MagicLinkConfig & {
+		magicLinkAdapter: MagicLinkAdapterLike;
+		databaseAdapter?: MagicLinkDatabaseAdapterLike;
+		sessionAdapter: MagicLinkSessionAdapterLike;
+	},
+) {
 	const {
 		magicLinkAdapter,
 		databaseAdapter,
@@ -141,7 +181,7 @@ export function createMagicLinkVerifyHandler(config: Record<string, any>) {
 		createUser,
 		onLogin,
 		redirectAfterLogin = "/",
-		isAuthenticated = (locals: any) => !!locals.user,
+		isAuthenticated = (locals: AuthLocals) => !!locals.user,
 		secureCookies = true,
 		normalizeEmail = (email: string) => email.trim().toLowerCase(),
 		verifyRateLimit,
@@ -166,16 +206,20 @@ export function createMagicLinkVerifyHandler(config: Record<string, any>) {
 					keyPrefix: "mlv",
 				});
 
-	return async (event: RequestEvent) => {
+	return async (event: RequestEventLike) => {
 		if (isAuthenticated(event.locals)) {
 			throw redirect(302, redirectAfterLogin);
 		}
 
 		const data = await parseRequestData(event.request);
-		const token = data.token || event.url.searchParams.get("token");
-		const otp = data.otp || data.code;
+		const token =
+			(typeof data.token === "string" && data.token) ||
+			event.url.searchParams.get("token");
+		const otp = (typeof data.otp === "string" && data.otp) || (typeof data.code === "string" && data.code);
 		const emailInput =
-			data.email || event.url.searchParams.get("email") || "";
+			(typeof data.email === "string" && data.email) ||
+			event.url.searchParams.get("email") ||
+			"";
 		const email = normalizeEmail(String(emailInput || ""));
 
 		if (!token && !(otp && email)) {

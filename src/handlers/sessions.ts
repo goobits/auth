@@ -1,38 +1,34 @@
-function jsonResponse(payload: any, status: number = 200): Response {
-	return new Response(JSON.stringify(payload), {
-		status,
-		headers: { "content-type": "application/json" },
-	});
-}
+import { jsonResponse, parseRequestData } from "../utils/http.ts";
+import type { AuthLocals, RequestEventLike } from "../types/auth.ts";
+import type { SessionSummary, Session } from "../types/index.ts";
 
-async function parseRequestData(request: Request): Promise<Record<string, any>> {
-	const contentType = request.headers.get("content-type") || "";
-	if (contentType.includes("application/json")) {
-		return request.json().catch(() => ({}));
-	}
-	if (
-		contentType.includes("application/x-www-form-urlencoded") ||
-		contentType.includes("multipart/form-data")
-	) {
-		const form = await request.formData();
-		return Object.fromEntries((form as any).entries());
-	}
-	return {};
-}
+type SessionAdapterLike = {
+	listSessions?: (userId: string) => Promise<SessionSummary[]>;
+	invalidateSession: (sessionId: string) => Promise<void>;
+	invalidateUserSessions: (userId: string) => Promise<void>;
+	deleteSessionCookie?: (cookies: RequestEventLike["cookies"]) => void;
+};
 
-export function createSessionListHandler(config: any) {
+type SessionHandlerConfig = {
+	sessionAdapter: SessionAdapterLike;
+	isAuthenticated?: (locals: AuthLocals) => boolean;
+	getUser?: (locals: AuthLocals) => { id: string };
+	getSession?: (locals: AuthLocals) => Session | null;
+};
+
+export function createSessionListHandler(config: SessionHandlerConfig) {
 	const {
 		sessionAdapter,
-		isAuthenticated = (locals: any) => !!locals.user,
-		getUser = (locals: any) => locals.user,
-		getSession = (locals: any) => locals.session,
+		isAuthenticated = (locals: AuthLocals) => !!locals.user,
+		getUser = (locals: AuthLocals) => locals.user as { id: string },
+		getSession = (locals: AuthLocals) => locals.session ?? null,
 	} = config;
 
 	if (!sessionAdapter) {
 		throw new Error("createSessionListHandler requires sessionAdapter");
 	}
 
-	return async (event: any) => {
+	return async (event: RequestEventLike) => {
 		if (!isAuthenticated(event.locals)) {
 			return jsonResponse({ ok: false, error: "Unauthorized" }, 401);
 		}
@@ -47,7 +43,7 @@ export function createSessionListHandler(config: any) {
 		const user = getUser(event.locals);
 		const current = getSession(event.locals);
 		const sessions = await sessionAdapter.listSessions(user.id);
-		const normalized = sessions.map((session: any) => ({
+		const normalized = sessions.map((session) => ({
 			...session,
 			current: current?.id === session.id,
 		}));
@@ -56,19 +52,19 @@ export function createSessionListHandler(config: any) {
 	};
 }
 
-export function createSessionRevokeHandler(config: any) {
+export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 	const {
 		sessionAdapter,
-		isAuthenticated = (locals: any) => !!locals.user,
-		getUser = (locals: any) => locals.user,
-		getSession = (locals: any) => locals.session,
+		isAuthenticated = (locals: AuthLocals) => !!locals.user,
+		getUser = (locals: AuthLocals) => locals.user as { id: string },
+		getSession = (locals: AuthLocals) => locals.session ?? null,
 	} = config;
 
 	if (!sessionAdapter) {
 		throw new Error("createSessionRevokeHandler requires sessionAdapter");
 	}
 
-	return async (event: any) => {
+	return async (event: RequestEventLike) => {
 		if (!isAuthenticated(event.locals)) {
 			return jsonResponse({ ok: false, error: "Unauthorized" }, 401);
 		}
@@ -77,9 +73,16 @@ export function createSessionRevokeHandler(config: any) {
 		const user = getUser(event.locals);
 		const current = getSession(event.locals);
 
-		const sessionId = data.sessionId || data.id;
-		const revokeAll = data.all === true || data.all === "true";
-		const revokeOthers = data.others === true || data.others === "true";
+		const sessionId =
+			typeof data.sessionId === "string"
+				? data.sessionId
+				: typeof data.id === "string"
+					? data.id
+					: "";
+		const revokeAll =
+			data.all === true || data.all === "true" || data.all === 1;
+		const revokeOthers =
+			data.others === true || data.others === "true" || data.others === 1;
 
 		if (sessionId) {
 			if (typeof sessionAdapter.listSessions !== "function") {
@@ -89,7 +92,7 @@ export function createSessionRevokeHandler(config: any) {
 				);
 			}
 			const sessions = await sessionAdapter.listSessions(user.id);
-			const ownsSession = sessions.some((session: any) => session.id === sessionId);
+			const ownsSession = sessions.some((session) => session.id === sessionId);
 			if (!ownsSession) {
 				return jsonResponse({ ok: false, error: "Session not found" }, 404);
 			}
@@ -118,8 +121,8 @@ export function createSessionRevokeHandler(config: any) {
 			const sessions = await sessionAdapter.listSessions(user.id);
 			await Promise.all(
 				sessions
-					.filter((session: any) => session.id !== current?.id)
-					.map((session: any) => sessionAdapter.invalidateSession(session.id)),
+					.filter((session) => session.id !== current?.id)
+					.map((session) => sessionAdapter.invalidateSession(session.id)),
 			);
 			return jsonResponse({ ok: true });
 		}
