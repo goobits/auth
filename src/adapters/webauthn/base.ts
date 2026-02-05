@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Base WebAuthn Adapter Interface
  */

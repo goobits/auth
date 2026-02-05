@@ -1,7 +1,7 @@
-// @ts-nocheck
 import { SessionAdapter } from "./base.ts";
 import { generateRandomUUID } from "../../utils/crypto.ts";
 import type { Cookies } from "@sveltejs/kit";
+import type { Session, User } from "../../types/index.ts";
 
 type KVNamespaceLike = {
 	put: (key: string, value: string, options?: { expirationTtl?: number }) => Promise<void>;
@@ -13,14 +13,29 @@ type KVNamespaceLike = {
 	list?: (options?: { prefix?: string }) => Promise<{ keys?: Array<{ name: string }> }>;
 };
 
+type KVSessionRecord = {
+	userId: string;
+	expiresAt: string;
+};
+
+function isKVSessionRecord(value: Record<string, unknown> | string | null): value is KVSessionRecord {
+	if (!value || typeof value !== "object") return false;
+	return (
+		"userId" in value &&
+		typeof value.userId === "string" &&
+		"expiresAt" in value &&
+		typeof value.expiresAt === "string"
+	);
+}
+
 export class KVSessionAdapter extends SessionAdapter {
 	private namespace: KVNamespaceLike;
 	private sessionLifetime: number;
 	private sessionRefreshThreshold: number;
 	private cookieName: string;
 	private secureCookies: boolean;
-	private getUserById: ((id: string) => Promise<Record<string, unknown> | null>) | null;
-	private sanitizeUser: (user: Record<string, unknown> | null) => Record<string, unknown> | null;
+	private getUserById: ((id: string) => Promise<User | null>) | null;
+	private sanitizeUser: (user: User | null) => User | null;
 	private keyPrefix: string;
 
 	constructor(
@@ -30,8 +45,8 @@ export class KVSessionAdapter extends SessionAdapter {
 			sessionRefreshThreshold?: number;
 			cookieName?: string;
 			secureCookies?: boolean;
-			getUserById?: (id: string) => Promise<Record<string, unknown> | null>;
-			sanitizeUser?: (user: Record<string, unknown> | null) => Record<string, unknown> | null;
+			getUserById?: (id: string) => Promise<User | null>;
+			sanitizeUser?: (user: User | null) => User | null;
 			keyPrefix?: string;
 		} = {},
 	) {
@@ -47,10 +62,8 @@ export class KVSessionAdapter extends SessionAdapter {
 		this.keyPrefix = options.keyPrefix || "session";
 	}
 
-	_defaultSanitizeUser(user: Record<string, unknown> | null) {
-		if (!user) return null;
-		const { password, token, ...safeUser } = user;
-		return safeUser;
+	_defaultSanitizeUser(user: User | null): User | null {
+		return user;
 	}
 
 	_key(sessionId: string) {
@@ -72,10 +85,12 @@ export class KVSessionAdapter extends SessionAdapter {
 		return { id: sessionId, userId, expiresAt, ...metadata };
 	}
 
-	async validateSession(sessionId: string) {
-		const raw = (await this.namespace.get(this._key(sessionId), { type: "json" })) as
-			| { userId?: string; expiresAt?: string }
-			| null;
+	async validateSession(sessionId: string): Promise<{
+		session: Session | null;
+		user: User | null;
+	}> {
+		const rawValue = await this.namespace.get(this._key(sessionId), { type: "json" });
+		const raw = isKVSessionRecord(rawValue) ? rawValue : null;
 		if (!raw) return { session: null, user: null };
 
 		const expiresAt = new Date(raw.expiresAt);
@@ -117,14 +132,15 @@ export class KVSessionAdapter extends SessionAdapter {
 		throw new Error("KVSessionAdapter does not support invalidateUserSessions");
 	}
 
-	async listSessions(userId: string) {
+	async listSessions(userId: string): Promise<Session[]> {
 		if (typeof this.namespace.list !== "function") {
 			throw new Error("KVSessionAdapter does not support listSessions");
 		}
 		const keys = await this.namespace.list({ prefix: `${this.keyPrefix}:` });
-		const sessions = [];
+		const sessions: Session[] = [];
 		for (const key of keys.keys ?? []) {
-			const raw = await this.namespace.get(key.name, { type: "json" });
+			const rawValue = await this.namespace.get(key.name, { type: "json" });
+			const raw = isKVSessionRecord(rawValue) ? rawValue : null;
 			if (!raw) continue;
 			if (raw.userId !== userId) continue;
 			sessions.push({
