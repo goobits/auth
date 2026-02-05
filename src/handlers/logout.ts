@@ -37,7 +37,7 @@ export function createLogoutHandler(config: {
 	const {
 		sessionAdapter,
 		redirectAfterLogout = "/",
-		getSession = (locals: AuthLocals) => locals.session,
+		getSession = (locals: AuthLocals) => locals.session ?? null,
 		onLogout,
 	} = config;
 	const log = getLogger();

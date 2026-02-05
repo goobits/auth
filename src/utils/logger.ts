@@ -7,22 +7,39 @@ export type Logger = {
 
 const noop = () => {};
 
-let activeLogger: Logger = {
-	debug: noop,
-	info: noop,
-	warn: noop,
-	error: noop,
-};
+let activeLoggers: Logger[] = [];
 
 export function setLogger(logger: Logger | null | undefined) {
-	activeLogger = logger ?? {
-		debug: noop,
-		info: noop,
-		warn: noop,
-		error: noop,
-	};
+	if (!logger) {
+		activeLoggers = [];
+		return;
+	}
+
+	if (!activeLoggers.includes(logger)) {
+		activeLoggers.push(logger);
+	}
 }
 
 export function getLogger(): Logger {
-	return activeLogger;
+	if (activeLoggers.length === 0) {
+		return {
+			debug: noop,
+			info: noop,
+			warn: noop,
+			error: noop,
+		};
+	}
+
+	const forward = (level: keyof Logger, args: unknown[]) => {
+		for (const logger of activeLoggers) {
+			logger[level]?.(...args);
+		}
+	};
+
+	return {
+		debug: (...args: unknown[]) => forward("debug", args),
+		info: (...args: unknown[]) => forward("info", args),
+		warn: (...args: unknown[]) => forward("warn", args),
+		error: (...args: unknown[]) => forward("error", args),
+	};
 }

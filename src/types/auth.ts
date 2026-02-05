@@ -1,4 +1,4 @@
-import type { Cookies, RequestEvent, RequestHandler } from "@sveltejs/kit";
+import type { Cookies, RequestEvent, RequestHandler, Actions } from "@sveltejs/kit";
 import type { OAuthProvider } from "../providers/base.ts";
 import type {
 	OAuthProfile,
@@ -15,7 +15,7 @@ import type { WebAuthnAdapter } from "../adapters/webauthn/base.ts";
 import type { VerificationTokenAdapter } from "../utils/tokens.ts";
 import type { Logger } from "../utils/logger.ts";
 
-export type AuthLocals = Record<string, unknown> & {
+export type AuthLocals = {
 	user?: User | null;
 	session?: Session | null;
 };
@@ -24,6 +24,8 @@ export type RequestEventLike = Pick<
 	RequestEvent,
 	"request" | "cookies" | "params" | "locals" | "url"
 > & {
+	params: Record<string, string | undefined>;
+	locals: AuthLocals;
 	getClientAddress?: () => string;
 };
 
@@ -140,7 +142,7 @@ export type AuthConfig = {
 export type AuthHandlers = {
 	login?: RequestHandler;
 	callback?: RequestHandler;
-	logout: RequestHandler;
+	logout: Actions;
 	hooks: (input: { event: RequestEventLike; resolve: (e: RequestEventLike) => Promise<Response> }) => Promise<Response>;
 	magicLink?: {
 		request: RequestHandler;

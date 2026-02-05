@@ -169,14 +169,14 @@ export function createAuth(config: AuthConfig) {
 			redirectAfterLogin: urlConfig.afterLogin,
 			isAuthenticated,
 			onAuthenticated: async (event, profile, tokens) => {
-				const providerName = event.params.provider;
+				const providerName = String(event.params.provider ?? "");
 				let user = null;
 
 				if (adapters.database) {
 					try {
 						user = await adapters.database.getUserByProviderId(
 							providerName,
-							profileData.id,
+							profile.id,
 						);
 					} catch {}
 
@@ -205,13 +205,13 @@ export function createAuth(config: AuthConfig) {
 					}
 				}
 
-				let userId = user?.id ?? null;
+				let userId = user?.id ? String(user.id) : null;
 
-					if (hooks.onLogin) {
-						const hookResult = await hooks.onLogin(event, profile, tokens, user);
-					if (hookResult?.userId) userId = hookResult.userId;
-					if (hookResult?.id) userId = hookResult.id;
-					if (hookResult?.user?.id) userId = hookResult.user.id;
+				if (hooks.onLogin) {
+					const hookResult = await hooks.onLogin(event, profile, tokens, user);
+					if (hookResult?.userId) userId = String(hookResult.userId);
+					if (hookResult?.id) userId = String(hookResult.id);
+					if (hookResult?.user?.id) userId = String(hookResult.user.id);
 				} else if (userId && adapters.session && autoCreateSession) {
 					const session = await adapters.session.createSession(userId);
 					if (adapters.session.setSessionCookie) {
@@ -226,11 +226,11 @@ export function createAuth(config: AuthConfig) {
 							"[auth] Token adapter enabled but no userId resolved. Falling back to provider profile id.",
 						);
 					}
-					await adapters.token.storeTokens(
-						userId ?? profile.id,
-						providerName,
-						tokens,
-					);
+						await adapters.token.storeTokens(
+							userId ?? profile.id,
+							providerName,
+							tokens,
+						);
 				}
 			},
 			onError: hooks.onError
@@ -244,7 +244,7 @@ export function createAuth(config: AuthConfig) {
 	const logoutHandler = createLogoutHandler({
 		sessionAdapter: adapters.session,
 		redirectAfterLogout: urlConfig.afterLogout,
-		getSession: (locals: AuthLocals) => locals.session,
+		getSession: (locals: AuthLocals) => locals.session ?? null,
 		onLogout: hooks.onLogout
 			? async (event) => {
 					await hooks.onLogout(event);
@@ -260,7 +260,9 @@ export function createAuth(config: AuthConfig) {
 		event: RequestEventLike;
 		resolve: (e: RequestEventLike) => Promise<Response>;
 	}) => {
-		const sessionId = event.cookies.get(adapters.session.cookieName ?? "session");
+		const sessionCookieName =
+			(adapters.session as { cookieName?: string }).cookieName ?? "session";
+		const sessionId = event.cookies.get(sessionCookieName);
 
 			if (sessionId) {
 				const { session, user } = await adapters.session.validateSession(sessionId);
