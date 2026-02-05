@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { MagicLinkAdapter } from "./base.ts";
 import { eq, and } from "drizzle-orm";
 

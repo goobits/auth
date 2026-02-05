@@ -118,7 +118,7 @@ export function createSigninHandler(config: {
 				};
 			}
 
-			const safeUser = sanitizeUser(user);
+			const safeUser = sanitizeUser(user) as User | null;
 
 			// Call onSignin hook if provided
 			if (onSignin) {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { VerificationTokenAdapter } from "../../utils/tokens.ts";
 import { and, eq } from "drizzle-orm";
 

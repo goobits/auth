@@ -15,6 +15,7 @@
 import type { RequestEventLike } from "../types/auth.ts";
 import { getLogger } from "../utils/logger.ts";
 import type { User } from "../types/index.ts";
+import type { VerificationTokenAdapter } from "../utils/tokens.ts";
 
 type RateLimitConfig = {
 	check?: (key: string) => Promise<{ allowed: boolean }>;
@@ -24,7 +25,7 @@ type RateLimitConfig = {
 
 export function createPasswordResetRequestHandler(config: {
 	userAdapter: { getUserByEmail: (email: string) => Promise<User | null> };
-	verificationTokenAdapter: unknown;
+	verificationTokenAdapter: VerificationTokenAdapter;
 	sendPasswordResetEmail: (email: string, token: string) => Promise<void> | void;
 	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string };
 	rateLimit?: RateLimitConfig;
@@ -137,7 +138,7 @@ export function createPasswordResetConfirmHandler(config: {
 		}) => Promise<void>;
 	};
 	userAdapter: unknown;
-	verificationTokenAdapter: unknown;
+	verificationTokenAdapter: VerificationTokenAdapter;
 	sessionAdapter?: { invalidateUserSessions?: (userId: string) => Promise<void> };
 	redirectTo?: string;
 }) {

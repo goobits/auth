@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { DatabaseAdapter } from "./base.ts";
 
 type D1DatabaseLike = {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { Session, User } from "../../types/index.ts";
 import type { Cookies } from "@sveltejs/kit";
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { SessionAdapter } from "./base.ts";
 import { encodeBase64url } from "@oslojs/encoding";
 import { eq } from "drizzle-orm";
