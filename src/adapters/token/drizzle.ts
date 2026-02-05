@@ -1,42 +1,76 @@
-// @ts-nocheck
 import { TokenAdapter } from "./base.ts";
-import { encryptTokens, decryptTokens } from "../../utils/crypto.ts";
-import { eq, and } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { decryptTokens, encryptTokens } from "../../utils/crypto.ts";
+import type { OAuthTokens } from "../../types/index.ts";
+import {
+	requireCondition,
+	requireColumn,
+	type DrizzleDbLike,
+	type DrizzleJson,
+	type DrizzleTable,
+} from "../drizzle-types.ts";
 
-/**
- * Drizzle ORM Token Adapter
- * Stores encrypted OAuth tokens in database
- */
+type TokensTable = DrizzleTable & {
+	userId: DrizzleTable[string];
+	provider: DrizzleTable[string];
+	tokens: DrizzleTable[string];
+};
+
+function normalizeOAuthTokens(value: DrizzleJson): OAuthTokens | null {
+	if (!value || typeof value !== "object" || Array.isArray(value) || value instanceof Date) {
+		return null;
+	}
+	const accessTokenRaw = value.accessToken;
+	const refreshTokenRaw = value.refreshToken;
+	const scopeRaw = value.scope;
+	const accessTokenExpiresAtRaw = value.accessTokenExpiresAt;
+	if (typeof accessTokenRaw !== "string") return null;
+	const refreshToken =
+		typeof refreshTokenRaw === "string" || refreshTokenRaw === null
+			? refreshTokenRaw
+			: null;
+	const scope =
+		typeof scopeRaw === "string" || scopeRaw === null
+			? scopeRaw
+			: null;
+	let accessTokenExpiresAt: string;
+	if (typeof accessTokenExpiresAtRaw === "string") {
+		accessTokenExpiresAt = accessTokenExpiresAtRaw;
+	} else if (accessTokenExpiresAtRaw instanceof Date) {
+		accessTokenExpiresAt = accessTokenExpiresAtRaw.toISOString();
+	} else {
+		accessTokenExpiresAt = new Date().toISOString();
+	}
+	return {
+		accessToken: accessTokenRaw,
+		refreshToken,
+		scope,
+		accessTokenExpiresAt,
+	};
+}
+
 export class DrizzleTokenAdapter extends TokenAdapter {
-	private db: unknown;
-	private tokensTable: Record<string, unknown>;
+	private db: DrizzleDbLike;
+	private tokensTable: TokensTable;
 	private encryptionKey: string | null;
 	private encrypt: boolean;
-	/**
-	 * @param {Object} db - Drizzle database instance
-	 * @param {Object} options - Configuration options
-	 * @param {Object} options.tokensTable - Drizzle OAuth tokens table schema
-	 * @param {string} options.encryptionKey - 32-byte hex encryption key
-	 * @param {boolean} [options.encrypt=true] - Whether to encrypt tokens
-	 */
+
 	constructor(
-		db: unknown,
+		db: DrizzleDbLike,
 		options: {
-			tokensTable?: Record<string, unknown>;
+			tokensTable?: TokensTable;
 			encryptionKey?: string | null;
 			encrypt?: boolean;
 		} = {},
 	) {
 		super();
-		this.db = db;
-		this.tokensTable = options.tokensTable ?? {};
-		this.encryptionKey = options.encryptionKey ?? null;
-		this.encrypt = options.encrypt !== false;
-
 		if (!options.tokensTable) {
 			throw new Error("DrizzleTokenAdapter requires tokensTable option");
 		}
-
+		this.db = db;
+		this.tokensTable = options.tokensTable;
+		this.encryptionKey = options.encryptionKey ?? null;
+		this.encrypt = options.encrypt !== false;
 		if (this.encrypt && !this.encryptionKey) {
 			throw new Error(
 				"DrizzleTokenAdapter requires encryptionKey when encryption is enabled",
@@ -44,23 +78,26 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 		}
 	}
 
-	async storeTokens(userId: string, provider: string, tokens: Record<string, unknown>) {
-		const key = this.encryptionKey as string;
+	private getEncryptionKey(): string {
+		if (!this.encryptionKey) {
+			throw new Error("Encryption key is required");
+		}
+		return this.encryptionKey;
+	}
+
+	async storeTokens(userId: string, provider: string, tokens: OAuthTokens): Promise<void> {
+	const key = this.getEncryptionKey();
 		const tokenData = this.encrypt
 			? await encryptTokens(tokens, key)
 			: JSON.stringify(tokens);
-
-		// Delete existing tokens for this user/provider
 		await this.db
 			.delete(this.tokensTable)
 			.where(
-				and(
-					eq(this.tokensTable.userId, userId),
-					eq(this.tokensTable.provider, provider),
-				),
+				requireCondition(and(
+					eq(requireColumn(this.tokensTable, "userId"), userId),
+					eq(requireColumn(this.tokensTable, "provider"), provider),
+				)),
 			);
-
-		// Insert new tokens
 		await this.db.insert(this.tokensTable).values({
 			userId,
 			provider,
@@ -68,45 +105,41 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 		});
 	}
 
-	async getTokens(userId: string, provider: string) {
-		const [result] = await this.db
+	async getTokens(userId: string, provider: string): Promise<OAuthTokens | null> {
+		const [row] = await this.db
 			.select()
 			.from(this.tokensTable)
 			.where(
-				and(
-					eq(this.tokensTable.userId, userId),
-					eq(this.tokensTable.provider, provider),
-				),
+				requireCondition(and(
+					eq(requireColumn(this.tokensTable, "userId"), userId),
+					eq(requireColumn(this.tokensTable, "provider"), provider),
+				)),
 			);
-
-		if (!result) return null;
-
-		const key = this.encryptionKey as string;
-		return this.encrypt
-			? await decryptTokens(result.tokens, key)
-			: JSON.parse(result.tokens);
+		if (!row) return null;
+		const raw = row.tokens;
+		if (typeof raw !== "string") return null;
+		if (this.encrypt) {
+			const decrypted = await decryptTokens<DrizzleJson>(raw, this.getEncryptionKey());
+			return decrypted ? normalizeOAuthTokens(decrypted) : null;
+		}
+		const parsed: DrizzleJson = JSON.parse(raw);
+		return normalizeOAuthTokens(parsed);
 	}
 
-	async refreshTokens(
-		userId: string,
-		provider: string,
-	): Promise<import("../../types/index.ts").OAuthTokens | null> {
-		// This would need to be implemented with provider-specific refresh logic
-		// For now, just return the existing tokens
-		// In a full implementation, this would call the OAuth provider's refresh endpoint
+	async refreshTokens(_userId: string, _provider: string): Promise<OAuthTokens | null> {
 		throw new Error(
 			"refreshTokens not implemented - use provider-specific refresh logic",
 		);
 	}
 
-	async deleteTokens(userId: string, provider: string) {
+	async deleteTokens(userId: string, provider: string): Promise<void> {
 		await this.db
 			.delete(this.tokensTable)
 			.where(
-				and(
-					eq(this.tokensTable.userId, userId),
-					eq(this.tokensTable.provider, provider),
-				),
+				requireCondition(and(
+					eq(requireColumn(this.tokensTable, "userId"), userId),
+					eq(requireColumn(this.tokensTable, "provider"), provider),
+				)),
 			);
 	}
 }
