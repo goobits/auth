@@ -151,19 +151,19 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		this.credentialsTable = options.credentialsTable;
 		this.challengesTable = options.challengesTable;
 		this.columns = {
-			credentialId: options.columns?.credentialId || "credentialId",
-			userId: options.columns?.userId || "userId",
-			publicKey: options.columns?.publicKey || "publicKey",
-			counter: options.columns?.counter || "counter",
-			transports: options.columns?.transports || "transports",
-			name: options.columns?.name || "name",
-			createdAt: options.columns?.createdAt || "createdAt",
-			updatedAt: options.columns?.updatedAt || "updatedAt",
-			challengeId: options.columns?.challengeId || "id",
-			challenge: options.columns?.challenge || "challenge",
-			challengeType: options.columns?.challengeType || "type",
-			challengeUserId: options.columns?.challengeUserId || "userId",
-			challengeExpiresAt: options.columns?.challengeExpiresAt || "expiresAt",
+			credentialId: options.columns?.["credentialId"] || "credentialId",
+			userId: options.columns?.["userId"] || "userId",
+			publicKey: options.columns?.["publicKey"] || "publicKey",
+			counter: options.columns?.["counter"] || "counter",
+			transports: options.columns?.["transports"] || "transports",
+			name: options.columns?.["name"] || "name",
+			createdAt: options.columns?.["createdAt"] || "createdAt",
+			updatedAt: options.columns?.["updatedAt"] || "updatedAt",
+			challengeId: options.columns?.["challengeId"] || "id",
+			challenge: options.columns?.["challenge"] || "challenge",
+			challengeType: options.columns?.["challengeType"] || "type",
+			challengeUserId: options.columns?.["challengeUserId"] || "userId",
+			challengeExpiresAt: options.columns?.["challengeExpiresAt"] || "expiresAt",
 		};
 	}
 

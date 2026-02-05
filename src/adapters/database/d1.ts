@@ -49,18 +49,18 @@ export class D1UserAdapter extends DatabaseAdapter {
 		this.oauthAccountsTable = options.oauthAccountsTable || "oauth_accounts";
 		this.sanitizeUser = options.sanitizeUser || this._defaultSanitizeUser;
 		this.columns = {
-			id: options.columns?.id || "id",
-			email: options.columns?.email || "email",
-			name: options.columns?.name || "name",
-			avatar: options.columns?.avatar || "avatar",
-			emailVerified: options.columns?.emailVerified || "email_verified",
-			password: options.columns?.password || "password",
+			id: options.columns?.["id"] || "id",
+			email: options.columns?.["email"] || "email",
+			name: options.columns?.["name"] || "name",
+			avatar: options.columns?.["avatar"] || "avatar",
+			emailVerified: options.columns?.["emailVerified"] || "email_verified",
+			password: options.columns?.["password"] || "password",
 		};
 		this.oauthColumns = {
-			userId: options.oauthColumns?.userId || "user_id",
-			provider: options.oauthColumns?.provider || "provider",
+			userId: options.oauthColumns?.["userId"] || "user_id",
+			provider: options.oauthColumns?.["provider"] || "provider",
 			providerAccountId:
-				options.oauthColumns?.providerAccountId || "provider_account_id",
+				options.oauthColumns?.["providerAccountId"] || "provider_account_id",
 		};
 		this.allowedFields = options.allowedFields || [
 			"email",
@@ -73,11 +73,11 @@ export class D1UserAdapter extends DatabaseAdapter {
 
 	private mapUser(row: D1Row | null): User | null {
 		if (!row) return null;
-		const id = row[this.columns.id] ?? row.id;
-		const email = row[this.columns.email] ?? row.email;
-		const name = row[this.columns.name] ?? row.name;
-		const avatar = row[this.columns.avatar] ?? row.avatar;
-		const emailVerified = row[this.columns.emailVerified] ?? row.email_verified;
+		const id = row[this.columns["id"]] ?? row["id"];
+		const email = row[this.columns["email"]] ?? row["email"];
+		const name = row[this.columns["name"]] ?? row["name"];
+		const avatar = row[this.columns["avatar"]] ?? row["avatar"];
+		const emailVerified = row[this.columns.emailVerified] ?? row["email_verified"];
 		if (typeof id !== "string" && typeof id !== "number") return null;
 		if (typeof email !== "string") return null;
 		if (typeof name !== "string") return null;
@@ -209,7 +209,7 @@ export class D1UserAdapter extends DatabaseAdapter {
 		const row = await this.db.prepare(sql).bind(email).first();
 		const mapped = this.mapUser(row);
 		if (!mapped) return null;
-		const password = row?.[this.columns.password] ?? row?.password;
+		const password = row?.[this.columns["password"]] ?? row?.["password"];
 		return {
 			...mapped,
 			password: typeof password === "string" ? password : null,

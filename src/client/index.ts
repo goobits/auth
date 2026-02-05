@@ -41,15 +41,15 @@ function toBase64url(value: Base64Input): string {
 
 function parseCreationOptions(options: Record<string, unknown>): PublicKeyCredentialCreationOptions {
 	const parsed = { ...options } as Record<string, unknown>;
-	parsed.challenge = toUint8Array((options as { challenge?: Base64Input }).challenge);
+	parsed["challenge"] = toUint8Array((options as { challenge?: Base64Input })["challenge"]);
 	const user = (options as { user?: { id?: Base64Input } }).user;
 	if (user?.id) {
-		parsed.user = { ...user, id: toUint8Array(user.id) };
+		parsed["user"] = { ...user, id: toUint8Array(user.id) };
 	}
 	const exclude = (options as { excludeCredentials?: Array<{ id?: Base64Input }> })
 		.excludeCredentials;
 	if (Array.isArray(exclude)) {
-		parsed.excludeCredentials = exclude.map((cred) => ({
+		parsed["excludeCredentials"] = exclude.map((cred) => ({
 			...cred,
 			id: toUint8Array(cred.id),
 		}));
@@ -59,11 +59,11 @@ function parseCreationOptions(options: Record<string, unknown>): PublicKeyCreden
 
 function parseRequestOptions(options: Record<string, unknown>): PublicKeyCredentialRequestOptions {
 	const parsed = { ...options } as Record<string, unknown>;
-	parsed.challenge = toUint8Array((options as { challenge?: Base64Input }).challenge);
+	parsed["challenge"] = toUint8Array((options as { challenge?: Base64Input })["challenge"]);
 	const allow = (options as { allowCredentials?: Array<{ id?: Base64Input }> })
 		.allowCredentials;
 	if (Array.isArray(allow)) {
-		parsed.allowCredentials = allow.map((cred) => ({
+		parsed["allowCredentials"] = allow.map((cred) => ({
 			...cred,
 			id: toUint8Array(cred.id),
 		}));
@@ -79,23 +79,23 @@ function serializeCredential(credential: unknown) {
 		type: (credential as { type?: string }).type,
 		rawId: toBase64url((credential as { rawId?: Base64Input }).rawId),
 		response: {
-			attestationObject: response.attestationObject
-				? toBase64url(response.attestationObject as Base64Input)
+			attestationObject: response["attestationObject"]
+				? toBase64url(response["attestationObject"] as Base64Input)
 				: undefined,
-			clientDataJSON: response.clientDataJSON
-				? toBase64url(response.clientDataJSON as Base64Input)
+			clientDataJSON: response["clientDataJSON"]
+				? toBase64url(response["clientDataJSON"] as Base64Input)
 				: undefined,
-			authenticatorData: response.authenticatorData
-				? toBase64url(response.authenticatorData as Base64Input)
+			authenticatorData: response["authenticatorData"]
+				? toBase64url(response["authenticatorData"] as Base64Input)
 				: undefined,
-			signature: response.signature
-				? toBase64url(response.signature as Base64Input)
+			signature: response["signature"]
+				? toBase64url(response["signature"] as Base64Input)
 				: undefined,
-			userHandle: response.userHandle
-				? toBase64url(response.userHandle as Base64Input)
+			userHandle: response["userHandle"]
+				? toBase64url(response["userHandle"] as Base64Input)
 				: undefined,
-			transports: response.getTransports
-				? (response.getTransports as () => string[])()
+			transports: response["getTransports"]
+				? (response["getTransports"] as () => string[])()
 				: undefined,
 		},
 	};

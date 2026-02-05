@@ -81,13 +81,13 @@ export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
 		this.db = db;
 		this.tokensTable = options.tokensTable;
 		this.columns = {
-			id: options.columns?.id || "id",
-			userId: options.columns?.userId || "userId",
-			email: options.columns?.email || "email",
-			tokenHash: options.columns?.tokenHash || "tokenHash",
-			otpHash: options.columns?.otpHash || "otpHash",
-			expiresAt: options.columns?.expiresAt || "expiresAt",
-			createdAt: options.columns?.createdAt || "createdAt",
+			id: options.columns?.["id"] || "id",
+			userId: options.columns?.["userId"] || "userId",
+			email: options.columns?.["email"] || "email",
+			tokenHash: options.columns?.["tokenHash"] || "tokenHash",
+			otpHash: options.columns?.["otpHash"] || "otpHash",
+			expiresAt: options.columns?.["expiresAt"] || "expiresAt",
+			createdAt: options.columns?.["createdAt"] || "createdAt",
 		};
 	}
 
