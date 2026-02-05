@@ -1,9 +1,9 @@
-import { json } from '@sveltejs/kit'
-import { requireAdminSession, unauthorized, noStoreHeaders } from '../../../admin/_helpers.ts'
+import { json, type RequestEvent } from '@sveltejs/kit'
+import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized, noStoreHeaders } from '../../../admin/_helpers.ts'
 import { getAdminAuth } from '$lib/auth/admin.ts'
 import { createInvite, deleteInvite, listInvites } from '@packages/calendar/src/calendar/invites.ts'
 
-export async function GET(event: any) {
+export async function GET(event: RequestEvent) {
 	try {
 		const auth = await requireAdminSession({ event })
 		if (!auth.ok) return unauthorized()
@@ -17,8 +17,11 @@ export async function GET(event: any) {
 	}
 }
 
-export async function POST(event: any) {
+export async function POST(event: RequestEvent) {
 	try {
+		const csrf = enforceSameOrigin(event)
+		if (csrf) return csrf
+
 		const auth = await requireAdminSession({ event })
 		if (!auth.ok) return unauthorized()
 
@@ -37,6 +40,7 @@ export async function POST(event: any) {
 			expiresAt
 		})
 
+		logAdminEvent(event, 'invite_create', { inviteId: invite?.id, email: invite?.email ?? null })
 		return json({ ok: true, invite }, { headers: noStoreHeaders })
 	} catch (err) {
 		console.error('Admin invite create error:', err)
@@ -44,8 +48,11 @@ export async function POST(event: any) {
 	}
 }
 
-export async function DELETE(event: any) {
+export async function DELETE(event: RequestEvent) {
 	try {
+		const csrf = enforceSameOrigin(event)
+		if (csrf) return csrf
+
 		const auth = await requireAdminSession({ event })
 		if (!auth.ok) return unauthorized()
 
@@ -56,6 +63,7 @@ export async function DELETE(event: any) {
 
 		const { db } = await getAdminAuth({ event })
 		await deleteInvite({ db, inviteId })
+		logAdminEvent(event, 'invite_delete', { inviteId })
 		return json({ ok: true }, { headers: noStoreHeaders })
 	} catch (err) {
 		console.error('Admin invite delete error:', err)

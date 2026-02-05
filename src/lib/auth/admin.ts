@@ -11,7 +11,7 @@ async function getDb(platform: PlatformLike) {
 	return platform?.env?.DB || null
 }
 
-export async function getAdminAuth({ event }: { event: any }) {
+export async function getAdminAuth({ event }: { event: { platform?: PlatformLike } }) {
 	const db = await getDb(event.platform)
 	if (!db) throw new Error('Database unavailable')
 	const env = event.platform?.env || {}
@@ -39,8 +39,8 @@ export async function ensureAdminAccount({
 	userAdapter,
 	env
 }: {
-	userAdapter: any
-	env: Record<string, any>
+	userAdapter: { getUserByEmail: (email: string) => Promise<unknown> }
+	env: Record<string, string | undefined>
 }) {
 	const passcode = env.ADMIN_PASSCODE || ''
 	if (!passcode) {

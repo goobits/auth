@@ -20,7 +20,7 @@ async function getDb(platform: PlatformLike) {
 	return platform?.env?.DB || null
 }
 
-function getBaseUrl({ env, url }: { env: Record<string, any>; url: URL }) {
+function getBaseUrl({ env, url }: { env: Record<string, string | undefined>; url: URL }) {
 	return env.PUBLIC_BASE_URL || env.BASE_URL || url?.origin || ''
 }
 
@@ -35,7 +35,7 @@ function normalizeRedirect(redirectTo: unknown) {
 	return trimmed
 }
 
-export async function getCalendarAuth({ event }: { event: any }) {
+export async function getCalendarAuth({ event }: { event: { platform?: PlatformLike; url: URL } }) {
 	const db = await getDb(event.platform)
 	if (!db) throw new Error('Database unavailable')
 
@@ -77,7 +77,7 @@ export async function getCalendarAuth({ event }: { event: any }) {
 		}
 	})
 
-	const providers: Record<string, { provider: any; scopes?: string[] }> = {}
+	const providers: Record<string, { provider: InstanceType<typeof GoogleProvider> | InstanceType<typeof AppleProvider>; scopes?: string[] }> = {}
 	if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
 		providers.google = {
 			provider: new GoogleProvider({
@@ -166,7 +166,7 @@ export async function getCalendarAuth({ event }: { event: any }) {
 }
 
 export function setCalendarLoginContext(
-	cookies: any,
+	cookies: { set: (name: string, value: string, opts: Record<string, unknown>) => void },
 	{ invite, redirectTo, secure }: { invite?: string; redirectTo?: string; secure: boolean }
 ) {
 	if (invite) {
@@ -190,7 +190,7 @@ export function setCalendarLoginContext(
 	}
 }
 
-export function getCalendarRedirect(cookies: any) {
+export function getCalendarRedirect(cookies: { get: (name: string) => string | undefined; delete: (name: string, opts: Record<string, unknown>) => void }) {
 	const redirectTo = cookies.get(REDIRECT_COOKIE)
 	if (redirectTo) {
 		cookies.delete(REDIRECT_COOKIE, { path: '/' })

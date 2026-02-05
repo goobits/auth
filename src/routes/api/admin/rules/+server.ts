@@ -1,9 +1,12 @@
-import { json } from '@sveltejs/kit'
+import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
-import { requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
+import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
 
-export async function POST(event: any) {
+export async function POST(event: RequestEvent) {
 	try {
+		const csrf = enforceSameOrigin(event)
+		if (csrf) return csrf
+
 		const env = await buildEnv(event.platform)
 		const auth = await requireAdminSession({ event })
 		if (!auth.ok) {
@@ -52,6 +55,7 @@ export async function POST(event: any) {
 			).bind(key, value, now).run()
 		}
 
+		logAdminEvent(event, 'rules_update', { hoursFrom, hoursTo, buffer: bufferValue, notice: noticeValue, capacity: capacityValue })
 		return json({ ok: true }, { headers: noStoreHeaders })
 	} catch (err) {
 		console.error('Admin rules save error:', err)

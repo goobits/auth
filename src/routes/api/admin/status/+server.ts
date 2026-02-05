@@ -1,8 +1,8 @@
-import { json } from '@sveltejs/kit'
+import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
 import { requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
 
-export async function GET(event: any) {
+export async function GET(event: RequestEvent) {
 	try {
 		const env = await buildEnv(event.platform)
 		const auth = await requireAdminSession({ event })
@@ -26,8 +26,8 @@ export async function GET(event: any) {
 		).all()
 
 		const settings: Record<string, string> = {}
-		for (const row of settingsRes?.results || []) {
-			settings[(row as any).key] = (row as any).value
+		for (const row of (settingsRes?.results ?? []) as Array<{ key: string; value: string }>) {
+			settings[row.key] = row.value
 		}
 
 		const rules = {

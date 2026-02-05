@@ -1,16 +1,17 @@
-import { json } from '@sveltejs/kit'
+import { json, type RequestEvent } from '@sveltejs/kit'
 import { requireAdminSession, unauthorized, noStoreHeaders } from '../../../admin/_helpers.ts'
 import { getAdminAuth } from '$lib/auth/admin.ts'
 import { listCalendarUsers } from '@packages/calendar/src/storage/d1.ts'
 
-export async function GET(event: any) {
+export async function GET(event: RequestEvent) {
 	try {
 		const auth = await requireAdminSession({ event })
 		if (!auth.ok) return unauthorized()
 
 		const { db } = await getAdminAuth({ event })
 		const users = await listCalendarUsers({ db })
-		const sanitized = users.map((user: any) => ({
+		type UserRow = { id: number; email: string; name: string; avatar_url: string | null; email_verified: number; last_login_at: number | null; provider: string | null }
+		const sanitized = (users as UserRow[]).map(user => ({
 			id: user.id,
 			email: user.email,
 			name: user.name,

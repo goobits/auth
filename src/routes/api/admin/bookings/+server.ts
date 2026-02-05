@@ -1,8 +1,8 @@
-import { json } from '@sveltejs/kit'
+import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
 import { requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
 
-export async function GET(event: any) {
+export async function GET(event: RequestEvent) {
 	try {
 		const env = await buildEnv(event.platform)
 		const auth = await requireAdminSession({ event })
@@ -13,10 +13,13 @@ export async function GET(event: any) {
 
 		// Get upcoming bookings (next 30 days by default)
 		const now = new Date()
-		const start = event.url.searchParams.get('start') || now.toISOString()
 		const endDate = new Date(now)
 		endDate.setDate(endDate.getDate() + 30)
-		const end = event.url.searchParams.get('end') || endDate.toISOString()
+
+		const rawStart = event.url.searchParams.get('start')
+		const rawEnd = event.url.searchParams.get('end')
+		const start = rawStart && Number.isFinite(Date.parse(rawStart)) ? rawStart : now.toISOString()
+		const end = rawEnd && Number.isFinite(Date.parse(rawEnd)) ? rawEnd : endDate.toISOString()
 
 		const res = await db.prepare(
 			`SELECT id, start_at as start, end_at as end, timezone, seats, name, email, note, status, created_at
@@ -27,7 +30,8 @@ export async function GET(event: any) {
 			 ORDER BY start_at ASC`
 		).bind(start, end).all()
 
-		const bookings = (res?.results ?? []).map((row: any) => ({
+		type BookingRow = { id: number; start: string; end: string; timezone: string; seats: number | null; name: string; email: string; note: string | null; status: string; created_at: number }
+		const bookings = ((res?.results ?? []) as BookingRow[]).map(row => ({
 			id: row.id,
 			date: formatDate(row.start),
 			time: `${formatTime(row.start)} – ${formatTime(row.end)}`,
@@ -44,7 +48,7 @@ export async function GET(event: any) {
 
 		const stats = {
 			upcoming: bookings.length,
-			seats: bookings.reduce((sum: number, b: any) => sum + (b.seats || 1), 0)
+			seats: bookings.reduce((sum, b) => sum + (b.seats || 1), 0)
 		}
 
 		return json({ ok: true, bookings, stats }, { headers: noStoreHeaders })
