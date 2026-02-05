@@ -1,14 +1,20 @@
 import { TokenAdapter } from "./base.ts";
 import { encryptTokens, decryptTokens } from "../../utils/crypto.ts";
 
+type KVNamespaceLike = {
+	put: (key: string, value: string) => Promise<void>;
+	get: (key: string) => Promise<string | null>;
+	delete: (key: string) => Promise<void>;
+};
+
 export class KVTokenAdapter extends TokenAdapter {
-	private namespace: any;
+	private namespace: KVNamespaceLike;
 	private encrypt: boolean;
 	private encryptionKey: string | null;
 	private keyPrefix: string;
 
 	constructor(
-		namespace: any,
+		namespace: KVNamespaceLike,
 		options: {
 			encrypt?: boolean;
 			encryptionKey?: string | null;
@@ -30,7 +36,7 @@ export class KVTokenAdapter extends TokenAdapter {
 		return `${this.keyPrefix}:${userId}:${provider}`;
 	}
 
-	async storeTokens(userId: string, provider: string, tokens: any) {
+	async storeTokens(userId: string, provider: string, tokens: Record<string, unknown>) {
 		const key = this.encryptionKey as string;
 		const tokenData = this.encrypt
 			? await encryptTokens(tokens, key)

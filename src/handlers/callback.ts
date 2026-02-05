@@ -1,19 +1,21 @@
 import { redirect, error } from "@sveltejs/kit";
 import { OAuth2RequestError } from "arctic";
 import { handleOAuthCallback } from "../utils/oauth.ts";
-import type { RequestEvent } from "@sveltejs/kit";
 import type { OAuthProvider } from "../providers/base.ts";
+import type { AuthLocals, RequestEventLike } from "../types/auth.ts";
+import type { OAuthProfile, OAuthTokens } from "../types/index.ts";
+import { getLogger } from "../utils/logger.ts";
 
 type CallbackConfig = {
 	providers: Record<string, OAuthProvider>;
 	redirectAfterLogin?: string;
-	isAuthenticated?: (locals: Record<string, unknown>) => boolean;
+	isAuthenticated?: (locals: AuthLocals) => boolean;
 	onAuthenticated: (
-		event: RequestEvent,
-		profile: unknown,
-		tokens: unknown,
+		event: RequestEventLike,
+		profile: OAuthProfile,
+		tokens: OAuthTokens,
 	) => Promise<void> | void;
-	onError?: (event: RequestEvent, error: unknown) => Promise<void> | void;
+	onError?: (event: RequestEventLike, error: unknown) => Promise<void> | void;
 };
 
 /**
@@ -49,12 +51,13 @@ export function createCallbackHandler(config: CallbackConfig) {
 	const {
 		providers,
 		redirectAfterLogin = "/",
-		isAuthenticated = (locals) => !!locals.user,
+		isAuthenticated = (locals: AuthLocals) => !!locals.user,
 		onAuthenticated,
 		onError,
 	} = config;
+	const log = getLogger();
 
-	return async (event: RequestEvent | any) => {
+	return async (event: RequestEventLike) => {
 		const { params, locals, url } = event;
 
 		try {
@@ -112,7 +115,7 @@ export function createCallbackHandler(config: CallbackConfig) {
 			}
 
 			// Log and throw generic error
-			console.error("Authentication error:", err);
+			log.error?.("Authentication error:", err);
 			throw error(500, "Authentication system error");
 		}
 	};

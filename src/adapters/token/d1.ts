@@ -1,15 +1,24 @@
 import { TokenAdapter } from "./base.ts";
 import { encryptTokens, decryptTokens } from "../../utils/crypto.ts";
 
+type D1DatabaseLike = {
+	prepare: (sql: string) => {
+		bind: (...args: unknown[]) => {
+			run: () => Promise<unknown>;
+			first: () => Promise<Record<string, unknown> | null>;
+		};
+	};
+};
+
 export class D1TokenAdapter extends TokenAdapter {
-	private db: any;
+	private db: D1DatabaseLike;
 	private tokensTable: string;
 	private encrypt: boolean;
 	private encryptionKey: string | null;
 	private columns: { userId: string; provider: string; tokens: string };
 
 	constructor(
-		db: any,
+		db: D1DatabaseLike,
 		options: {
 			tokensTable?: string;
 			encrypt?: boolean;
@@ -35,7 +44,7 @@ export class D1TokenAdapter extends TokenAdapter {
 		}
 	}
 
-	async storeTokens(userId: string, provider: string, tokens: any) {
+	async storeTokens(userId: string, provider: string, tokens: Record<string, unknown>) {
 		const key = this.encryptionKey as string;
 		const tokenData = this.encrypt
 			? await encryptTokens(tokens, key)
@@ -72,7 +81,8 @@ export class D1TokenAdapter extends TokenAdapter {
 	}
 
 	async refreshTokens(userId: string, provider: string) {
-		console.warn(
+		const { getLogger } = await import("../../utils/logger.ts");
+		getLogger().warn?.(
 			"refreshTokens not implemented - use provider-specific refresh logic",
 		);
 		return this.getTokens(userId, provider);

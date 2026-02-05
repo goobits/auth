@@ -35,7 +35,7 @@ export class WebAuthnAdapter {
 	 */
 	async getChallenge(
 		challengeId: string,
-	): Promise<Record<string, any> | null> {
+	): Promise<Record<string, unknown> | null> {
 		throw new Error("getChallenge must be implemented");
 	}
 
@@ -84,7 +84,7 @@ export class WebAuthnAdapter {
 	 */
 	async getCredential(
 		credentialId: string,
-	): Promise<Record<string, any> | null> {
+	): Promise<Record<string, unknown> | null> {
 		throw new Error("getCredential must be implemented");
 	}
 
@@ -93,7 +93,7 @@ export class WebAuthnAdapter {
 	 * @param {string} userId
 	 * @returns {Promise<Object[]>}
 	 */
-	async listCredentials(userId: string): Promise<Record<string, any>[]> {
+	async listCredentials(userId: string): Promise<Record<string, unknown>[]> {
 		throw new Error("listCredentials must be implemented");
 	}
 
@@ -105,7 +105,7 @@ export class WebAuthnAdapter {
 	 */
 	async updateCredential(
 		credentialId: string,
-		updates: Record<string, any>,
+		updates: Record<string, unknown>,
 	): Promise<void> {
 		throw new Error("updateCredential must be implemented");
 	}

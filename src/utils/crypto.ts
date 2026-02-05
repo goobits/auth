@@ -86,7 +86,8 @@ export async function encryptTokens<T extends Record<string, unknown>>(
 			tag: bytesToHex(tag),
 		});
 	} catch (error) {
-		console.error("Token encryption error:", error);
+		const { getLogger } = await import("./logger.ts");
+		getLogger().error?.("Token encryption error:", error);
 		throw error;
 	}
 }
@@ -125,7 +126,8 @@ export async function decryptTokens<T = Record<string, unknown>>(
 		);
 		return JSON.parse(new TextDecoder().decode(plainBuffer));
 	} catch (error) {
-		console.error("Token decryption error:", error);
+		const { getLogger } = await import("./logger.ts");
+		getLogger().error?.("Token decryption error:", error);
 		return null;
 	}
 }

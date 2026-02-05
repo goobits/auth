@@ -1,5 +1,23 @@
 import { generateSecret, createOtpAuthURL, verifyTOTP } from "../mfa/totp.ts";
 import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from "../mfa/backup-codes.ts";
+import type { RequestEventLike } from "../types/auth.ts";
+
+type MfaStore = {
+	setSecret: (userId: string, secret: string) => Promise<void>;
+	setBackupCodes: (userId: string, codes: string[]) => Promise<void>;
+	enableMfa: (userId: string) => Promise<void>;
+	getSecret: (userId: string) => Promise<string>;
+	disableMfa: (userId: string) => Promise<void>;
+	getBackupCodes: (userId: string) => Promise<string[]>;
+	consumeBackupCode: (userId: string, hash: string) => Promise<void>;
+};
+
+type MfaConfig = {
+	getUserId: (locals: RequestEventLike["locals"]) => string | null;
+	store: MfaStore;
+	issuer?: string;
+	label?: (userId: string, locals: RequestEventLike["locals"]) => string;
+};
 
 /**
  * Create MFA enrollment handler
@@ -9,9 +27,9 @@ import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from "../mfa/b
  * @param {string} config.issuer - issuer name
  * @param {Function} [config.label] - function (userId, locals) => label
  */
-export function createMfaEnrollHandler(config: any) {
+export function createMfaEnrollHandler(config: MfaConfig) {
 	const { getUserId, store, issuer, label } = config;
-	return async (event: any) => {
+	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals);
 		if (!userId) return { success: false, error: "Unauthorized" };
 
@@ -31,9 +49,9 @@ export function createMfaEnrollHandler(config: any) {
 /**
  * Verify MFA token to enable MFA
  */
-export function createMfaVerifyHandler(config: any) {
+export function createMfaVerifyHandler(config: MfaConfig) {
 	const { getUserId, store } = config;
-	return async (event: any) => {
+	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals);
 		if (!userId) return { success: false, error: "Unauthorized" };
 		const formData = await event.request.formData();
@@ -46,9 +64,9 @@ export function createMfaVerifyHandler(config: any) {
 	};
 }
 
-export function createMfaDisableHandler(config: any) {
+export function createMfaDisableHandler(config: MfaConfig) {
 	const { getUserId, store } = config;
-	return async (event: any) => {
+	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals);
 		if (!userId) return { success: false, error: "Unauthorized" };
 		await store.disableMfa(userId);
@@ -56,9 +74,9 @@ export function createMfaDisableHandler(config: any) {
 	};
 }
 
-export function createMfaBackupCodeHandler(config: any) {
+export function createMfaBackupCodeHandler(config: MfaConfig) {
 	const { getUserId, store } = config;
-	return async (event: any) => {
+	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals);
 		if (!userId) return { success: false, error: "Unauthorized" };
 		const formData = await event.request.formData();

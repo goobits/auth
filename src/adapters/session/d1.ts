@@ -1,15 +1,53 @@
 import { SessionAdapter } from "./base.ts";
 import { encodeBase64url } from "@oslojs/encoding";
+import type { Cookies } from "@sveltejs/kit";
+
+type D1DatabaseLike = {
+	prepare: (sql: string) => {
+		bind: (...args: unknown[]) => {
+			run: () => Promise<unknown>;
+			first: () => Promise<Record<string, unknown> | null>;
+			all: () => Promise<{ results?: Record<string, unknown>[] }>;
+		};
+	};
+};
+
+type D1SessionOptions = {
+	sessionsTable?: string;
+	usersTable?: string;
+	sessionLifetime?: number;
+	sessionRefreshThreshold?: number;
+	cookieName?: string;
+	secureCookies?: boolean;
+	sanitizeUser?: (user: Record<string, unknown> | null) => Record<string, unknown> | null;
+	columns?: Partial<{
+		sessionId: string;
+		userId: string;
+		expiresAt: string;
+		createdAt: string | null;
+		lastActiveAt: string | null;
+		ip: string | null;
+		userAgent: string | null;
+	}>;
+	userColumns?: Partial<{
+		id: string;
+		email: string;
+		name: string;
+		avatar: string;
+		password: string;
+		emailVerified: string;
+	}>;
+};
 
 export class D1SessionAdapter extends SessionAdapter {
-	private db: any;
+	private db: D1DatabaseLike;
 	private sessionsTable: string;
 	private usersTable: string;
 	private sessionLifetime: number;
 	private sessionRefreshThreshold: number;
 	private cookieName: string;
 	private secureCookies: boolean;
-	private sanitizeUser: (user: any) => any;
+	private sanitizeUser: (user: Record<string, unknown> | null) => Record<string, unknown> | null;
 	private columns: {
 		sessionId: string;
 		userId: string;
@@ -28,7 +66,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		emailVerified: string;
 	};
 
-	constructor(db: any, options: Record<string, any> = {}) {
+	constructor(db: D1DatabaseLike, options: D1SessionOptions = {}) {
 		super();
 		this.db = db;
 		this.sessionsTable = options.sessionsTable || "sessions";
@@ -58,7 +96,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		};
 	}
 
-	_defaultSanitizeUser(user: any) {
+	_defaultSanitizeUser(user: Record<string, unknown> | null) {
 		if (!user) return null;
 		const { password, token, ...safeUser } = user;
 		return safeUser;
@@ -118,14 +156,16 @@ export class D1SessionAdapter extends SessionAdapter {
 		};
 	}
 
-	_mapUserRow(row: any) {
+	_mapUserRow(row: Record<string, unknown>) {
 		return {
-			id: row[this.userColumns.id] ?? row.id,
-			email: row[this.userColumns.email] ?? row.email,
-			name: row[this.userColumns.name] ?? row.name,
-			avatar: row[this.userColumns.avatar] ?? row.avatar,
-			password: row[this.userColumns.password] ?? row.password,
-			emailVerified: row[this.userColumns.emailVerified] ?? row.email_verified,
+			id: (row as Record<string, unknown>)[this.userColumns.id] ?? (row as Record<string, unknown>).id,
+			email: (row as Record<string, unknown>)[this.userColumns.email] ?? (row as Record<string, unknown>).email,
+			name: (row as Record<string, unknown>)[this.userColumns.name] ?? (row as Record<string, unknown>).name,
+			avatar: (row as Record<string, unknown>)[this.userColumns.avatar] ?? (row as Record<string, unknown>).avatar,
+			password: (row as Record<string, unknown>)[this.userColumns.password] ?? (row as Record<string, unknown>).password,
+			emailVerified:
+				(row as Record<string, unknown>)[this.userColumns.emailVerified] ??
+				(row as Record<string, unknown>).email_verified,
 		};
 	}
 
@@ -156,7 +196,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		const unique = [...new Set(columns.filter(Boolean))];
 		const sql = `SELECT ${unique.join(", ")} FROM ${this.sessionsTable} WHERE ${this.columns.userId} = ?`;
 		const result = await this.db.prepare(sql).bind(userId).all();
-		return (result?.results ?? []).map((row: any) => ({
+		return (result?.results ?? []).map((row: Record<string, unknown>) => ({
 			id: row[this.columns.sessionId] ?? row.id,
 			userId: row[this.columns.userId] ?? row.user_id,
 			expiresAt: new Date(
@@ -175,7 +215,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		}));
 	}
 
-	setSessionCookie(cookies: any, session: { id: string; expiresAt: Date }) {
+	setSessionCookie(cookies: Cookies, session: { id: string; expiresAt: Date }) {
 		cookies.set(this.cookieName, session.id, {
 			httpOnly: true,
 			secure: this.secureCookies,
@@ -185,7 +225,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		});
 	}
 
-	deleteSessionCookie(cookies: any) {
+	deleteSessionCookie(cookies: Cookies) {
 		cookies.delete(this.cookieName, {
 			path: "/",
 		});

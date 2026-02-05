@@ -1,7 +1,16 @@
 import { MagicLinkAdapter } from "./base.ts";
 
+type D1DatabaseLike = {
+	prepare: (sql: string) => {
+		bind: (...args: unknown[]) => {
+			run: () => Promise<unknown>;
+			first: () => Promise<Record<string, unknown> | null>;
+		};
+	};
+};
+
 export class D1MagicLinkAdapter extends MagicLinkAdapter {
-	private db: any;
+	private db: D1DatabaseLike;
 	private tokensTable: string;
 	private columns: {
 		id: string;
@@ -14,7 +23,7 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 	};
 
 	constructor(
-		db: any,
+		db: D1DatabaseLike,
 		options: {
 			tokensTable?: string;
 			columns?: Partial<Record<string, string>>;
@@ -62,13 +71,21 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 		const row = await this.db.prepare(sql).bind(tokenHash).first();
 		if (!row) return null;
 		return {
-			id: row[this.columns.id] ?? row.id,
-			userId: row[this.columns.userId] ?? row.user_id,
-			email: row[this.columns.email] ?? row.email,
-			tokenHash: row[this.columns.tokenHash] ?? row.token_hash,
-			otpHash: row[this.columns.otpHash] ?? row.otp_hash,
-			expiresAt: row[this.columns.expiresAt] ?? row.expires_at,
-			createdAt: row[this.columns.createdAt] ?? row.created_at ?? null,
+			id: row[this.columns.id] ?? (row as Record<string, unknown>).id,
+			userId:
+				row[this.columns.userId] ?? (row as Record<string, unknown>).user_id,
+			email: row[this.columns.email] ?? (row as Record<string, unknown>).email,
+			tokenHash:
+				row[this.columns.tokenHash] ??
+				(row as Record<string, unknown>).token_hash,
+			otpHash:
+				row[this.columns.otpHash] ?? (row as Record<string, unknown>).otp_hash,
+			expiresAt:
+				row[this.columns.expiresAt] ?? (row as Record<string, unknown>).expires_at,
+			createdAt:
+				row[this.columns.createdAt] ??
+				(row as Record<string, unknown>).created_at ??
+				null,
 		};
 	}
 
@@ -83,13 +100,21 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 		const row = await this.db.prepare(sql).bind(email, otpHash).first();
 		if (!row) return null;
 		return {
-			id: row[this.columns.id] ?? row.id,
-			userId: row[this.columns.userId] ?? row.user_id,
-			email: row[this.columns.email] ?? row.email,
-			tokenHash: row[this.columns.tokenHash] ?? row.token_hash,
-			otpHash: row[this.columns.otpHash] ?? row.otp_hash,
-			expiresAt: row[this.columns.expiresAt] ?? row.expires_at,
-			createdAt: row[this.columns.createdAt] ?? row.created_at ?? null,
+			id: row[this.columns.id] ?? (row as Record<string, unknown>).id,
+			userId:
+				row[this.columns.userId] ?? (row as Record<string, unknown>).user_id,
+			email: row[this.columns.email] ?? (row as Record<string, unknown>).email,
+			tokenHash:
+				row[this.columns.tokenHash] ??
+				(row as Record<string, unknown>).token_hash,
+			otpHash:
+				row[this.columns.otpHash] ?? (row as Record<string, unknown>).otp_hash,
+			expiresAt:
+				row[this.columns.expiresAt] ?? (row as Record<string, unknown>).expires_at,
+			createdAt:
+				row[this.columns.createdAt] ??
+				(row as Record<string, unknown>).created_at ??
+				null,
 		};
 	}
 

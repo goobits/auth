@@ -1,6 +1,7 @@
 import { OAuthProvider } from "./base.ts";
 import { Google } from "arctic";
 import type { OAuthProfile, OAuthTokens } from "../types/index.ts";
+import { getLogger } from "../utils/logger.ts";
 
 type GoogleProviderConfig = {
 	clientId: string;
@@ -64,10 +65,23 @@ export class GoogleProvider extends OAuthProvider {
 		codeVerifier: string,
 	): Promise<{ profile: OAuthProfile; tokens: OAuthTokens }> {
 		try {
-			const tokens: any = await this.client.validateAuthorizationCode(
+			type GoogleTokenResponse = {
+				accessToken: () => string;
+				refreshToken?: () => string;
+				scope?: string;
+				expiresIn?: number;
+				data?: {
+					access_token?: string;
+					refresh_token?: string;
+					scope?: string;
+					expires_in?: number;
+				};
+			};
+
+			const tokens = (await this.client.validateAuthorizationCode(
 				code,
 				codeVerifier,
-			);
+			)) as GoogleTokenResponse;
 
 			const googleUserResponse = await fetch(
 				"https://www.googleapis.com/oauth2/v1/userinfo?alt=json",
@@ -100,7 +114,8 @@ export class GoogleProvider extends OAuthProvider {
 				},
 				tokens: {
 					accessToken: tokens.data?.access_token ?? tokens.accessToken(),
-					refreshToken: tokens.data?.refresh_token ?? tokens.refreshToken?.() ?? null,
+					refreshToken:
+						tokens.data?.refresh_token ?? tokens.refreshToken?.() ?? null,
 					scope: tokens.data?.scope ?? tokens.scope ?? null,
 					accessTokenExpiresAt: new Date(
 						Date.now() + (tokens.data?.expires_in ?? tokens.expiresIn ?? 0) * 1000,
@@ -108,13 +123,24 @@ export class GoogleProvider extends OAuthProvider {
 				},
 			};
 		} catch (error) {
-			console.error("Error in GoogleProvider.getUserProfile:", error);
+			getLogger().error?.("Error in GoogleProvider.getUserProfile:", error);
 			throw error;
 		}
 	}
 
 	async refreshAccessToken(refreshToken: string): Promise<OAuthTokens> {
-		const newTokens: any = await this.client.refreshAccessToken(refreshToken);
+		type GoogleRefreshResponse = {
+			accessToken?: () => string;
+			refreshToken?: () => string;
+			scope?: string;
+			scopes?: string;
+			expiresIn?: number;
+			expires_in?: number;
+		};
+
+		const newTokens = (await this.client.refreshAccessToken(
+			refreshToken,
+		)) as GoogleRefreshResponse;
 
 		return {
 			accessToken: newTokens.accessToken?.() ?? newTokens.accessToken,

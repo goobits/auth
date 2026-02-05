@@ -1,15 +1,33 @@
 import { DatabaseAdapter } from "./base.ts";
 
+type D1DatabaseLike = {
+	prepare: (sql: string) => {
+		bind: (...args: unknown[]) => {
+			run: () => Promise<{ meta?: { last_row_id?: string | number } } | undefined>;
+			first: () => Promise<Record<string, unknown> | null>;
+		};
+	};
+};
+
+type D1UserAdapterOptions = {
+	usersTable?: string;
+	oauthAccountsTable?: string;
+	sanitizeUser?: (user: Record<string, unknown> | null) => Record<string, unknown> | null;
+	columns?: Partial<Record<string, string>>;
+	oauthColumns?: Partial<Record<string, string>>;
+	allowedFields?: string[];
+};
+
 export class D1UserAdapter extends DatabaseAdapter {
-	db: any;
+	db: D1DatabaseLike;
 	usersTable: string;
 	oauthAccountsTable: string;
-	sanitizeUser: (user: any) => any;
+	sanitizeUser: (user: Record<string, unknown> | null) => Record<string, unknown> | null;
 	columns: Record<string, string>;
 	oauthColumns: Record<string, string>;
 	allowedFields: string[];
 
-	constructor(db: any, options: Record<string, any> = {}) {
+	constructor(db: D1DatabaseLike, options: D1UserAdapterOptions = {}) {
 		super();
 		this.db = db;
 		this.usersTable = options.usersTable || "users";
@@ -38,18 +56,21 @@ export class D1UserAdapter extends DatabaseAdapter {
 		];
 	}
 
-	_defaultSanitizeUser(user: any) {
+	_defaultSanitizeUser(user: Record<string, unknown> | null) {
 		if (!user) return null;
 		const { password, token, ...safeUser } = user;
 		return safeUser;
 	}
 
-	async createUser(profile: any, metadata: Record<string, any> = {}) {
+	async createUser(
+		profile: Record<string, unknown>,
+		metadata: Record<string, unknown> = {},
+	) {
 		const userData = {
-			email: profile.email,
-			name: profile.name || profile.email,
-			avatar: profile.picture || null,
-			emailVerified: profile.verified_email || false,
+			email: String(profile.email ?? ""),
+			name: String(profile.name ?? profile.email ?? ""),
+			avatar: (profile.picture as string | null | undefined) ?? null,
+			emailVerified: Boolean(profile.verified_email),
 			...metadata,
 		};
 
@@ -82,7 +103,7 @@ export class D1UserAdapter extends DatabaseAdapter {
 		return this.sanitizeUser(row);
 	}
 
-	async updateUser(id: string | number, data: Record<string, any>) {
+	async updateUser(id: string | number, data: Record<string, unknown>) {
 		const fields = Object.keys(data);
 		if (fields.length === 0) return this.getUserById(id);
 		for (const field of fields) {

@@ -1,7 +1,17 @@
 import { WebAuthnAdapter } from "./base.ts";
 
+type D1DatabaseLike = {
+	prepare: (sql: string) => {
+		bind: (...args: unknown[]) => {
+			run: () => Promise<unknown>;
+			first: () => Promise<Record<string, unknown> | null>;
+			all: () => Promise<{ results?: Record<string, unknown>[] }>;
+		};
+	};
+};
+
 export class D1WebAuthnAdapter extends WebAuthnAdapter {
-	private db: any;
+	private db: D1DatabaseLike;
 	private credentialsTable: string;
 	private challengesTable: string;
 	private columns: {
@@ -21,7 +31,7 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 	};
 
 	constructor(
-		db: any,
+		db: D1DatabaseLike,
 		options: {
 			credentialsTable?: string;
 			challengesTable?: string;
@@ -148,7 +158,7 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 		const sql = `SELECT * FROM ${this.credentialsTable} WHERE ${this.columns.userId} = ?`;
 		const result = await this.db.prepare(sql).bind(userId).all();
 		const rows = result?.results ?? [];
-		return rows.map((row: any) => ({
+		return rows.map((row) => ({
 			credentialId: row[this.columns.credentialId],
 			userId: row[this.columns.userId],
 			publicKey: row[this.columns.publicKey],

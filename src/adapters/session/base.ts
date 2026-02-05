@@ -1,4 +1,5 @@
 import type { Session, User } from "../../types/index.ts";
+import type { Cookies } from "@sveltejs/kit";
 
 /**
  * Base Session Adapter Interface
@@ -62,7 +63,7 @@ export class SessionAdapter {
 	 * @param {import('../../types').Session} session - Session to set
 	 * @returns {void}
 	 */
-	setSessionCookie(cookies: any, session: Session): void {
+	setSessionCookie(cookies: Cookies, session: Session): void {
 		throw new Error("setSessionCookie must be implemented");
 	}
 
@@ -71,7 +72,7 @@ export class SessionAdapter {
 	 * @param {import('@sveltejs/kit').Cookies} cookies - SvelteKit cookies object
 	 * @returns {void}
 	 */
-	deleteSessionCookie(cookies: any): void {
+	deleteSessionCookie(cookies: Cookies): void {
 		throw new Error("deleteSessionCookie must be implemented");
 	}
 }

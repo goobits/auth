@@ -2,6 +2,7 @@ import { OAuthProvider } from "./base.ts";
 import { Apple } from "arctic";
 import { decodeBase64IgnorePadding } from "@oslojs/encoding";
 import type { OAuthProfile, OAuthTokens } from "../types/index.ts";
+import { getLogger } from "../utils/logger.ts";
 
 type AppleProviderConfig = {
 	clientId: string;
@@ -70,7 +71,7 @@ export class AppleProvider extends OAuthProvider {
 
 			return decodeBase64IgnorePadding(cleaned);
 		} catch (error) {
-			console.error("Error decoding Apple private key:", error);
+			getLogger().error?.("Error decoding Apple private key:", error);
 			throw new Error("Invalid Apple private key format");
 		}
 	}
@@ -82,7 +83,10 @@ export class AppleProvider extends OAuthProvider {
 	): URL {
 		// Apple uses name and email scopes
 		const requestedScopes = scopes || ["name", "email"];
-		const createAuthorizationURL = (this.client as any).createAuthorizationURL;
+		const client = this.client as unknown as {
+			createAuthorizationURL: (...args: unknown[]) => URL;
+		};
+		const createAuthorizationURL = client.createAuthorizationURL;
 		if (createAuthorizationURL.length >= 3) {
 			return createAuthorizationURL.call(
 				this.client,
@@ -107,18 +111,33 @@ export class AppleProvider extends OAuthProvider {
 		userData: string | null = null,
 	): Promise<{ profile: OAuthProfile; tokens: OAuthTokens }> {
 		try {
-		const validateAuthorizationCode = (this.client as any)
-			.validateAuthorizationCode;
-		const tokens: any =
-			validateAuthorizationCode.length >= 2
-				? await validateAuthorizationCode.call(
-						this.client,
-						code,
-						codeVerifier,
-					)
-				: await validateAuthorizationCode.call(this.client, code);
+			type AppleTokenResponse = {
+				idToken: () => { email?: string; sub?: string };
+				accessToken?: () => string;
+				refreshToken?: () => string;
+				scope?: string;
+				scopes?: string;
+				expiresIn?: number;
+				expires_in?: number;
+				accessToken?: string;
+				refreshToken?: string;
+			};
 
-		const { email, sub: appleUserId } = tokens.idToken();
+			const client = this.client as unknown as {
+				validateAuthorizationCode: (...args: unknown[]) => Promise<AppleTokenResponse>;
+			};
+
+			const validateAuthorizationCode = client.validateAuthorizationCode;
+			const tokens =
+				validateAuthorizationCode.length >= 2
+					? await validateAuthorizationCode.call(
+							this.client,
+							code,
+							codeVerifier,
+						)
+					: await validateAuthorizationCode.call(this.client, code);
+
+			const { email, sub: appleUserId } = tokens.idToken();
 
 			if (!email || !appleUserId) {
 				throw new Error("Invalid token data from Apple");
@@ -137,7 +156,7 @@ export class AppleProvider extends OAuthProvider {
 						if (fullName) name = fullName;
 					}
 				} catch (e) {
-					console.warn("Could not parse Apple user data:", e);
+					getLogger().warn?.("Could not parse Apple user data:", e);
 				}
 			}
 
@@ -150,7 +169,8 @@ export class AppleProvider extends OAuthProvider {
 				},
 				tokens: {
 					accessToken: tokens.accessToken?.() ?? tokens.accessToken,
-					refreshToken: tokens.refreshToken?.() ?? tokens.refreshToken ?? null,
+					refreshToken:
+						tokens.refreshToken?.() ?? tokens.refreshToken ?? null,
 					scope: tokens.scope ?? tokens.scopes ?? null,
 					accessTokenExpiresAt: new Date(
 						Date.now() + (tokens.expiresIn ?? tokens.expires_in ?? 0) * 1000,
@@ -158,13 +178,28 @@ export class AppleProvider extends OAuthProvider {
 				},
 			};
 		} catch (error) {
-			console.error("Error in AppleProvider.getUserProfile:", error);
+			getLogger().error?.("Error in AppleProvider.getUserProfile:", error);
 			throw error;
 		}
 	}
 
 	async refreshAccessToken(refreshToken: string): Promise<OAuthTokens> {
-		const newTokens: any = await (this.client as any).refreshAccessToken(refreshToken);
+		type AppleRefreshResponse = {
+			accessToken?: () => string;
+			refreshToken?: () => string;
+			scope?: string;
+			scopes?: string;
+			expiresIn?: number;
+			expires_in?: number;
+			accessToken?: string;
+			refreshToken?: string;
+		};
+
+		const client = this.client as unknown as {
+			refreshAccessToken: (token: string) => Promise<AppleRefreshResponse>;
+		};
+
+		const newTokens = await client.refreshAccessToken(refreshToken);
 
 		return {
 			accessToken: newTokens.accessToken?.() ?? newTokens.accessToken,

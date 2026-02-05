@@ -190,8 +190,16 @@ export class CredentialsProvider {
 		}
 
 		// Update to new password
+		const userId = typeof (user as { id?: unknown }).id === "string" || typeof (user as { id?: unknown }).id === "number"
+			? String((user as { id?: string | number }).id)
+			: "";
+
+		if (!userId) {
+			return { user: null, valid: false };
+		}
+
 		const updatedUser = await this.updatePassword({
-			userId: String((user as any).id),
+			userId,
 			newPassword,
 			userAdapter,
 		});

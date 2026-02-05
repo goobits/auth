@@ -1,7 +1,16 @@
 import { redirect } from "@sveltejs/kit";
 import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.ts";
+import type { RequestEventLike } from "../types/auth.ts";
+import { getLogger } from "../utils/logger.ts";
+import type { User } from "../types/index.ts";
 
-function getRateLimitKey(event: any, rateLimit: any) {
+type RateLimitConfig = {
+	check?: (key: string) => Promise<{ allowed: boolean }>;
+	key?: (event: RequestEventLike) => string;
+	trustProxyHeader?: boolean;
+};
+
+function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
 	if (rateLimit?.key) return rateLimit.key(event);
 	if (event.getClientAddress) return event.getClientAddress();
 	if (rateLimit?.trustProxyHeader) {
@@ -26,7 +35,28 @@ function getRateLimitKey(event: any, rateLimit: any) {
  * @param {string} [config.redirectTo] - Redirect URL after signin (default: '/')
  * @returns {Function} SvelteKit request handler
  */
-export function createSigninHandler(config: any) {
+export function createSigninHandler(config: {
+	credentialsProvider: {
+		authenticate: (input: {
+			email: string;
+			password: string;
+			userAdapter: unknown;
+		}) => Promise<{ user: User | null; valid: boolean }>;
+	};
+	userAdapter: unknown;
+	sessionAdapter: {
+		createSession: (userId: string) => Promise<{ id: string; expiresAt: Date }>;
+		setSessionCookie: (
+			cookies: RequestEventLike["cookies"],
+			session: { id: string; expiresAt: Date },
+		) => void;
+	};
+	onSignin?: (user: User | null) => Promise<void> | void;
+	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string };
+	rateLimit?: RateLimitConfig;
+	redirectTo?: string;
+	sanitizeUser?: (user: User | null) => User | null;
+}) {
 	const {
 		credentialsProvider,
 		userAdapter,
@@ -38,7 +68,9 @@ export function createSigninHandler(config: any) {
 		sanitizeUser = defaultSanitizeUser,
 	} = config;
 
-	return async (event: any) => {
+	const log = getLogger();
+
+	return async (event: RequestEventLike) => {
 		if (csrf?.validate) {
 			const valid = await csrf.validate(event);
 			if (!valid) {
@@ -107,13 +139,15 @@ export function createSigninHandler(config: any) {
 				user: safeUser,
 			};
 		} catch (error) {
-			console.error("[Signin] Error:", error);
+			log.error?.("[Signin] Error:", error);
 
 			// Check if this is a redirect (don't treat as error)
 			if (
 				error &&
 				typeof error === "object" &&
-				("status" in error && ((error as any).status === 302 || (error as any).status === 303))
+				"status" in error &&
+				((error as { status?: number }).status === 302 ||
+					(error as { status?: number }).status === 303)
 			) {
 				throw error;
 			}
