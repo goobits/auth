@@ -4,6 +4,7 @@ import { sequence } from '@sveltejs/kit/hooks'
 import { createThemeHooks } from '@goobits/themes/server'
 import { themeConfig } from '$lib/config/theme.ts'
 import { getCalendarAuth } from '$lib/auth/calendar.ts'
+import { dev } from '$app/environment'
 import type { Handle } from '@sveltejs/kit'
 
 /**
@@ -85,9 +86,45 @@ async function requireCalendarUser({ event, resolve }: Parameters<Handle>[0]) {
 	return resolve(event)
 }
 
+function setIfMissing(headers: Headers, key: string, value: string) {
+	if (!headers.has(key)) headers.set(key, value)
+}
+
+const securityHeadersHandle: Handle = async ({ event, resolve }) => {
+	const response = await resolve(event)
+
+	const url = event.url
+	const isHttps = url?.protocol === 'https:'
+
+	const csp = [
+		"default-src 'self'",
+		"base-uri 'self'",
+		"form-action 'self'",
+		"frame-ancestors 'none'",
+		"img-src 'self' data: https:",
+		"style-src 'self' 'unsafe-inline'",
+		`script-src 'self'${dev ? " 'unsafe-inline' 'unsafe-eval'" : " 'unsafe-inline'"}`,
+		"connect-src 'self' https:",
+		"font-src 'self' data: https:"
+	].join('; ')
+
+	setIfMissing(response.headers, 'Content-Security-Policy', csp)
+	setIfMissing(response.headers, 'Referrer-Policy', 'strict-origin-when-cross-origin')
+	setIfMissing(response.headers, 'X-Content-Type-Options', 'nosniff')
+	setIfMissing(response.headers, 'X-Frame-Options', 'DENY')
+	setIfMissing(response.headers, 'Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+
+	if (isHttps) {
+		setIfMissing(response.headers, 'Strict-Transport-Security', 'max-age=15552000; includeSubDomains')
+	}
+
+	return response
+}
+
 export const handle = sequence(
 	themeHandle,
 	handleRedirects,
 	handleCalendarAuth,
-	requireCalendarUser
+	requireCalendarUser,
+	securityHeadersHandle
 )
