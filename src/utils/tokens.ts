@@ -1,4 +1,5 @@
 import { generateRandomUUID, sha256Hex } from "./crypto.ts";
+import { VerificationTokenAdapter } from "../adapters/verification-token/base.ts";
 
 const DEFAULT_TOKEN_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -15,78 +16,6 @@ type VerificationTokenRecord<TUser = Record<string, unknown>> = {
 	token: { id: string; token: string; type: VerificationTokenType; expiresAt: Date };
 	user: TUser;
 };
-
-/**
- * Verification Token Adapter Interface
- * Implement this to use verification tokens with your database
- */
-export class VerificationTokenAdapter {
-	/**
-	 * Create a new verification token
-	 * @param {Object} params
-	 * @param {string} params.userId - User ID
-	 * @param {string} params.type - Token type
-	 * @param {string} params.token - Token value
-	 * @param {Date} params.expiresAt - Expiration date
-	 * @returns {Promise<void>}
-	 */
-	async create({
-		userId,
-		type,
-		token,
-		expiresAt,
-	}: {
-		userId: string;
-		type: VerificationTokenType;
-		token: string;
-		expiresAt: Date;
-	}): Promise<void> {
-		throw new Error("create must be implemented");
-	}
-
-	/**
-	 * Find a token by value and type
-	 * @param {Object} params
-	 * @param {string} params.token - Token value
-	 * @param {string} params.type - Token type
-	 * @returns {Promise<{token: Object, user: Object} | null>}
-	 */
-	async findByToken({
-		token,
-		type,
-	}: {
-		token: string;
-		type: VerificationTokenType;
-	}): Promise<VerificationTokenRecord | null> {
-		throw new Error("findByToken must be implemented");
-	}
-
-	/**
-	 * Delete a token by ID
-	 * @param {string} tokenId - Token ID
-	 * @returns {Promise<void>}
-	 */
-	async deleteById(tokenId: string): Promise<void> {
-		throw new Error("deleteById must be implemented");
-	}
-
-	/**
-	 * Delete all tokens of a specific type for a user
-	 * @param {Object} params
-	 * @param {string} params.userId - User ID
-	 * @param {string} params.type - Token type
-	 * @returns {Promise<void>}
-	 */
-	async deleteByUserAndType({
-		userId,
-		type,
-	}: {
-		userId: string;
-		type: VerificationTokenType;
-	}): Promise<void> {
-		throw new Error("deleteByUserAndType must be implemented");
-	}
-}
 
 /**
  * Create a new single-use verification token for a user.

@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { VerificationTokenAdapter } from "../../utils/tokens.ts";
+import { VerificationTokenAdapter } from "./base.ts";
 import type { User, VerificationToken } from "../../types/index.ts";
 import {
 	requireCondition,

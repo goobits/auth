@@ -22,7 +22,7 @@ import { randomUUID } from 'crypto';
 import { pgTable, uuid, timestamp, text, serial } from 'drizzle-orm/pg-core';
 import { DrizzleSessionAdapter } from '../../src/adapters/session/drizzle.ts';
 import { DrizzleUserAdapter } from '../../src/adapters/database/drizzle.ts';
-import { DrizzleTokenAdapter } from '../../src/adapters/token/drizzle.ts';
+import { DrizzleTokenAdapter } from '../../src/adapters/oauth-token/drizzle.ts';
 
 // Define test tables (should match your actual schema)
 const users = pgTable('users', {

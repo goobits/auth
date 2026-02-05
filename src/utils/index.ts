@@ -13,11 +13,11 @@ export {
 	handleOAuthCallback,
 } from "./oauth.ts";
 export {
-	VerificationTokenAdapter,
 	VERIFICATION_TOKEN_TYPES,
 	createVerificationToken,
 	consumeVerificationToken,
 	getUserForVerificationToken,
 } from "./tokens.ts";
+export { VerificationTokenAdapter } from "../adapters/verification-token/base.ts";
 export { MemoryRateLimitStore, createRateLimiter } from "./rate-limit.ts";
 export { redactObject, DEFAULT_REDACT_KEYS } from "./redact.ts";

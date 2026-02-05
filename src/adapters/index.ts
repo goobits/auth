@@ -15,14 +15,14 @@ export {
 	DrizzleTokenAdapter,
 	CookieTokenAdapter,
 	D1TokenAdapter,
-} from "./token/index.ts";
+} from "./oauth-token/index.ts";
 
 // Verification Token Adapters (email verification, password reset, etc.)
 export {
 	VerificationTokenAdapter,
 	DrizzleVerificationTokenAdapter,
 	D1VerificationTokenAdapter,
-} from "./tokens/index.ts";
+} from "./verification-token/index.ts";
 
 // Magic Link Adapters
 export {

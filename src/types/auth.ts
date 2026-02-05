@@ -9,10 +9,10 @@ import type {
 } from "./index.ts";
 import type { SessionAdapter } from "../adapters/session/base.ts";
 import type { DatabaseAdapter } from "../adapters/database/base.ts";
-import type { TokenAdapter } from "../adapters/token/base.ts";
+import type { TokenAdapter } from "../adapters/oauth-token/base.ts";
 import type { MagicLinkAdapter } from "../adapters/magic-link/base.ts";
 import type { WebAuthnAdapter } from "../adapters/webauthn/base.ts";
-import type { VerificationTokenAdapter } from "../utils/tokens.ts";
+import type { VerificationTokenAdapter } from "../adapters/verification-token/base.ts";
 import type { Logger } from "../utils/logger.ts";
 
 export type AuthLocals = {
@@ -44,6 +44,8 @@ export type AuthCookiesConfig = {
 	secure?: boolean;
 };
 
+export type AuthLoginResult = { userId: string | number } | void;
+
 export type AuthHooks = {
 	onSessionValidated?: (
 		event: RequestEventLike,
@@ -55,49 +57,50 @@ export type AuthHooks = {
 		profile: OAuthProfile,
 		tokens: OAuthTokens | null,
 		user?: User | null,
-	) => Promise<
-		| {
-				userId?: string | number;
-				id?: string | number;
-				user?: { id?: string | number };
-		  }
-		| void
-	> | void;
+	) => Promise<AuthLoginResult> | AuthLoginResult;
 	onLogout?: (event: RequestEventLike) => Promise<void> | void;
 	onError?: (event: RequestEventLike, error: unknown) => Promise<void> | void;
 };
 
 export type MagicLinkConfig = {
-	sendEmail: (payload: {
-		email: string;
-		link: string;
-		otp: string | null;
-		token: string;
-		expiresAt: Date;
-		user: User | null;
-		redirectTo: string;
-		secureCookies: boolean;
-	}) => Promise<void> | void;
-	allowSignup?: boolean;
-	expiresInMs?: number;
-	magicLinkPath?: string;
-	includeOtp?: boolean;
-	otpDigits?: number;
-	singleUsePerEmail?: boolean;
-	secureCookies?: boolean;
-	normalizeEmail?: (email: string) => string;
-	exposeToken?: boolean;
-	baseUrl?: string;
-	rateLimit?: (event: RequestEventLike) => Promise<void> | void;
-	getMetadata?: (event: RequestEventLike) => Promise<Record<string, unknown>>;
-	onLogin?: AuthHooks["onLogin"];
-	createUser?: (email: string, event: RequestEventLike) => Promise<User>;
-	verifyRateLimit?: (key: string) => Promise<{ allowed: boolean }>;
-	verifyRateLimitMax?: number;
-	verifyRateLimitWindowMs?: number;
-	sanitizeUser?: (user: User | null) => User | null;
-	trustProxyHeader?: boolean;
-	key?: (event: RequestEventLike) => string;
+	send: {
+		email: (payload: {
+			email: string;
+			link: string;
+			otp: string | null;
+			token: string;
+			expiresAt: Date;
+			user: User | null;
+			redirectTo: string;
+			secureCookies: boolean;
+		}) => Promise<void> | void;
+	};
+	settings?: {
+		allowSignup?: boolean;
+		expiresInMs?: number;
+		magicLinkPath?: string;
+		includeOtp?: boolean;
+		otpDigits?: number;
+		singleUsePerEmail?: boolean;
+		secureCookies?: boolean;
+		normalizeEmail?: (email: string) => string;
+		exposeToken?: boolean;
+		baseUrl?: string;
+		trustProxyHeader?: boolean;
+		key?: (event: RequestEventLike) => string;
+	};
+	limits?: {
+		request?: (event: RequestEventLike) => Promise<void> | void;
+		verify?: (key: string) => Promise<{ allowed: boolean }>;
+		verifyMax?: number;
+		verifyWindowMs?: number;
+	};
+	hooks?: {
+		onLogin?: AuthHooks["onLogin"];
+		getMetadata?: (event: RequestEventLike) => Promise<Record<string, unknown>>;
+		createUser?: (email: string, event: RequestEventLike) => Promise<User>;
+		sanitizeUser?: (user: User | null) => User | null;
+	};
 };
 
 export type WebAuthnConfig = {
@@ -108,24 +111,25 @@ export type WebAuthnConfig = {
 	attestation?: "none" | "indirect" | "direct" | "enterprise";
 	userVerification?: "required" | "preferred" | "discouraged";
 	credentialName?: string;
-	onLogin?: AuthHooks["onLogin"];
+	hooks?: {
+		onLogin?: AuthHooks["onLogin"];
+	};
 };
 
 export type SessionsConfig = {
 	listLimit?: number;
 };
 
-export type AuthAdapters = {
+type BaseAuthAdapters = {
 	session: SessionAdapter;
 	database?: DatabaseAdapter;
-	token?: TokenAdapter;
-	verificationTokens?: VerificationTokenAdapter;
+	oauthToken?: TokenAdapter;
+	verificationToken?: VerificationTokenAdapter;
 	magicLink?: MagicLinkAdapter;
 	webauthn?: WebAuthnAdapter;
 };
 
-export type AuthConfig = {
-	adapters: AuthAdapters;
+type CommonAuthConfigFields = {
 	providers?: Record<string, OAuthProviderConfig>;
 	urls?: AuthUrls;
 	cookies?: AuthCookiesConfig;
@@ -133,11 +137,42 @@ export type AuthConfig = {
 	autoCreateSession?: boolean;
 	requireVerifiedEmailForLinking?: boolean;
 	isAuthenticated?: (locals: AuthLocals) => boolean;
-	magicLink?: MagicLinkConfig;
-	webauthn?: WebAuthnConfig;
 	sessions?: SessionsConfig;
 	logger?: Logger;
 };
+
+type AuthConfigNoFeatures = CommonAuthConfigFields & {
+	adapters: BaseAuthAdapters;
+	magicLink?: undefined;
+	webauthn?: undefined;
+};
+
+type AuthConfigWithMagicLink = CommonAuthConfigFields & {
+	adapters: BaseAuthAdapters & { magicLink: MagicLinkAdapter };
+	magicLink: MagicLinkConfig;
+	webauthn?: undefined;
+};
+
+type AuthConfigWithWebAuthn = CommonAuthConfigFields & {
+	adapters: BaseAuthAdapters & { webauthn: WebAuthnAdapter };
+	magicLink?: undefined;
+	webauthn: WebAuthnConfig;
+};
+
+type AuthConfigWithBoth = CommonAuthConfigFields & {
+	adapters: BaseAuthAdapters & {
+		magicLink: MagicLinkAdapter;
+		webauthn: WebAuthnAdapter;
+	};
+	magicLink: MagicLinkConfig;
+	webauthn: WebAuthnConfig;
+};
+
+export type AuthConfig =
+	| AuthConfigNoFeatures
+	| AuthConfigWithMagicLink
+	| AuthConfigWithWebAuthn
+	| AuthConfigWithBoth;
 
 export type AuthHandlers = {
 	login?: RequestHandler;
