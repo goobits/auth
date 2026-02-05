@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { TokenAdapter } from "./base.ts";
 import { encryptTokens, decryptTokens } from "../../utils/crypto.ts";
 

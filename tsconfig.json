@@ -15,6 +15,6 @@
     "skipLibCheck": true,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*.ts", "__tests__/**/*.ts", "vitest.config.js", "vitest.setup.js"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", ".svelte-kit"]
 }

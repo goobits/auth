@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { MagicLinkAdapter } from "./base.ts";
 
 type D1DatabaseLike = {

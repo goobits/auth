@@ -24,7 +24,7 @@ export type RequestEventLike = Pick<
 	RequestEvent,
 	"request" | "cookies" | "params" | "locals" | "url"
 > & {
-	params: Record<string, string | undefined>;
+	params: Record<string, string>;
 	locals: AuthLocals;
 	getClientAddress?: () => string;
 };

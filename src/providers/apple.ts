@@ -19,6 +19,11 @@ type AppleProviderConfig = {
 export class AppleProvider extends OAuthProvider {
 	private client: Apple;
 
+	private readTokenValue(value?: string | (() => string) | null): string | null {
+		if (typeof value === "function") return value();
+		return value ?? null;
+	}
+
 	/**
 	 * @param {Object} config - Configuration
 	 * @param {string} config.clientId - Apple Services ID
@@ -113,8 +118,8 @@ export class AppleProvider extends OAuthProvider {
 		try {
 			type AppleTokenResponse = {
 				idToken: () => { email?: string; sub?: string };
-				accessToken?: () => string;
-				refreshToken?: () => string;
+				accessToken?: string | (() => string);
+				refreshToken?: string | (() => string);
 				scope?: string;
 				scopes?: string;
 				expiresIn?: number;
@@ -166,9 +171,8 @@ export class AppleProvider extends OAuthProvider {
 					verified_email: true, // Apple emails are always verified
 				},
 				tokens: {
-					accessToken: tokens.accessToken?.() ?? tokens.accessToken,
-					refreshToken:
-						tokens.refreshToken?.() ?? tokens.refreshToken ?? null,
+					accessToken: this.readTokenValue(tokens.accessToken) ?? "",
+					refreshToken: this.readTokenValue(tokens.refreshToken),
 					scope: tokens.scope ?? tokens.scopes ?? null,
 					accessTokenExpiresAt: new Date(
 						Date.now() + (tokens.expiresIn ?? tokens.expires_in ?? 0) * 1000,
@@ -182,12 +186,12 @@ export class AppleProvider extends OAuthProvider {
 	}
 
 	async refreshAccessToken(refreshToken: string): Promise<OAuthTokens> {
-			type AppleRefreshResponse = {
-				accessToken?: () => string;
-				refreshToken?: () => string;
-				scope?: string;
-				scopes?: string;
-				expiresIn?: number;
+		type AppleRefreshResponse = {
+			accessToken?: string | (() => string);
+			refreshToken?: string | (() => string);
+			scope?: string;
+			scopes?: string;
+			expiresIn?: number;
 				expires_in?: number;
 			};
 
@@ -198,8 +202,8 @@ export class AppleProvider extends OAuthProvider {
 		const newTokens = await client.refreshAccessToken(refreshToken);
 
 		return {
-			accessToken: newTokens.accessToken?.() ?? newTokens.accessToken,
-			refreshToken: newTokens.refreshToken?.() ?? newTokens.refreshToken ?? null,
+			accessToken: this.readTokenValue(newTokens.accessToken) ?? "",
+			refreshToken: this.readTokenValue(newTokens.refreshToken),
 			scope: newTokens.scope ?? newTokens.scopes ?? null,
 			accessTokenExpiresAt: new Date(
 				Date.now() + (newTokens.expiresIn ?? newTokens.expires_in ?? 0) * 1000,

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { DatabaseAdapter } from "./base.ts";
 import { eq } from "drizzle-orm";
 

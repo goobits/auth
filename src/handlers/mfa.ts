@@ -82,8 +82,9 @@ export function createMfaBackupCodeHandler(config: MfaConfig) {
 		const formData = await event.request.formData();
 		const code = formData.get("code")?.toString();
 		const hashedCodes = await store.getBackupCodes(userId);
-		const result = await verifyBackupCode({ code, hashedCodes });
+		const result = await verifyBackupCode({ code: code ?? "", hashedCodes });
 		if (!result.valid) return { success: false, error: "Invalid backup code" };
+		if (!result.hash) return { success: false, error: "Invalid backup code" };
 		await store.consumeBackupCode(userId, result.hash);
 		return { success: true };
 	};

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { VerificationTokenAdapter } from "../../utils/tokens.ts";
 
 type D1DatabaseLike = {

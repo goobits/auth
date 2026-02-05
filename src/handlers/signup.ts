@@ -3,6 +3,7 @@ import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.ts";
 import type { RequestEventLike } from "../types/auth.ts";
 import { getLogger } from "../utils/logger.ts";
 import type { User } from "../types/index.ts";
+import type { VerificationTokenAdapter } from "../utils/tokens.ts";
 
 type RateLimitConfig = {
 	check?: (key: string) => Promise<{ allowed: boolean }>;
@@ -55,7 +56,7 @@ export function createSignupHandler(config: {
 			session: { id: string; expiresAt: Date },
 		) => void;
 	};
-	verificationTokenAdapter?: unknown;
+	verificationTokenAdapter?: VerificationTokenAdapter;
 	onSignup?: (user: User | null) => Promise<void> | void;
 	sendVerificationEmail?: (email: string, token: string) => Promise<void> | void;
 	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string };
@@ -132,7 +133,7 @@ export function createSignupHandler(config: {
 				userAdapter,
 			});
 
-			const safeUser = sanitizeUser(user);
+			const safeUser = sanitizeUser(user) as User | null;
 
 			// Call onSignup hook if provided
 			if (onSignup) {

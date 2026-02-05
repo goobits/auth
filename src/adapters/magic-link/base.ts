@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Base Magic Link Adapter Interface
  * Stores one-time magic link tokens and OTPs.

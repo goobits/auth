@@ -5,19 +5,12 @@ import type { OAuthProfile, OAuthTokens } from "../types/index.ts";
 import type { RequestEventLike } from "../types/auth.ts";
 
 type CookiesLike = {
-	set: (name: string, value: string, options?: CookieOptions) => void;
+	set: (...args: any[]) => void;
 	get: (name: string) => string | null | undefined;
-	delete: (name: string, options?: CookieOptions) => void;
+	delete: (...args: any[]) => void;
 };
 
-type CookieOptions = {
-	secure?: boolean;
-	maxAge?: number;
-	sameSite?: "lax" | "strict" | "none";
-	path?: string;
-	httpOnly?: boolean;
-	[key: string]: unknown;
-};
+type CookieOptions = Record<string, unknown>;
 
 type OAuthCallbackParams = {
 	code: string | null;

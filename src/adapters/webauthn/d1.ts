@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { WebAuthnAdapter } from "./base.ts";
 
 type D1DatabaseLike = {

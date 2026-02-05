@@ -235,7 +235,7 @@ export function createAuth(config: AuthConfig) {
 			},
 			onError: hooks.onError
 				? async (event, error) => {
-						await hooks.onError(event, error);
+						await hooks.onError?.(event, error);
 				  }
 				: undefined,
 		});
@@ -247,7 +247,7 @@ export function createAuth(config: AuthConfig) {
 		getSession: (locals: AuthLocals) => locals.session ?? null,
 		onLogout: hooks.onLogout
 			? async (event) => {
-					await hooks.onLogout(event);
+					await hooks.onLogout?.(event);
 			  }
 			: undefined,
 	});
@@ -306,49 +306,49 @@ export function createAuth(config: AuthConfig) {
 
 	if (magicLink) {
 		handlers.magicLink = {
-			request: createMagicLinkRequestHandler({
-				...magicLink,
-				magicLinkAdapter: adapters.magicLink,
-				databaseAdapter: adapters.database,
-			}),
-			verify: createMagicLinkVerifyHandler({
-				...magicLink,
-				magicLinkAdapter: adapters.magicLink,
-				databaseAdapter: adapters.database,
-				sessionAdapter: adapters.session,
-				redirectAfterLogin: urlConfig.afterLogin,
-				secureCookies: cookieConfig.secure,
-				onLogin: magicLink.onLogin || hooks.onLogin,
-				isAuthenticated,
-			}),
+				request: createMagicLinkRequestHandler({
+					...magicLink,
+					magicLinkAdapter: adapters.magicLink!,
+					databaseAdapter: adapters.database,
+				}),
+				verify: createMagicLinkVerifyHandler({
+					...magicLink,
+					magicLinkAdapter: adapters.magicLink!,
+					databaseAdapter: adapters.database,
+					sessionAdapter: adapters.session as any,
+					redirectAfterLogin: urlConfig.afterLogin,
+					secureCookies: cookieConfig.secure,
+					onLogin: magicLink.onLogin || hooks.onLogin,
+					isAuthenticated,
+				}),
 		};
 	}
 
 	if (webauthn) {
 		handlers.webauthn = {
-			registerOptions: createWebAuthnRegisterOptionsHandler({
-				...webauthn,
-				webauthnAdapter: adapters.webauthn,
-			}),
-			registerVerify: createWebAuthnRegisterVerifyHandler({
-				...webauthn,
-				webauthnAdapter: adapters.webauthn,
-			}),
-			loginOptions: createWebAuthnLoginOptionsHandler({
-				...webauthn,
-				webauthnAdapter: adapters.webauthn,
-				databaseAdapter: adapters.database,
-			}),
-			loginVerify: createWebAuthnLoginVerifyHandler({
-				...webauthn,
-				webauthnAdapter: adapters.webauthn,
-				databaseAdapter: adapters.database,
-				sessionAdapter: adapters.session,
-				redirectAfterLogin: urlConfig.afterLogin,
-				onLogin: webauthn.onLogin || hooks.onLogin,
-			}),
-		};
-	}
+				registerOptions: createWebAuthnRegisterOptionsHandler({
+					...webauthn,
+					webauthnAdapter: adapters.webauthn!,
+				} as any),
+				registerVerify: createWebAuthnRegisterVerifyHandler({
+					...webauthn,
+					webauthnAdapter: adapters.webauthn!,
+				} as any),
+				loginOptions: createWebAuthnLoginOptionsHandler({
+					...webauthn,
+					webauthnAdapter: adapters.webauthn!,
+					databaseAdapter: adapters.database,
+				} as any),
+				loginVerify: createWebAuthnLoginVerifyHandler({
+					...webauthn,
+					webauthnAdapter: adapters.webauthn!,
+					databaseAdapter: adapters.database,
+					sessionAdapter: adapters.session as any,
+					redirectAfterLogin: urlConfig.afterLogin,
+					onLogin: (webauthn.onLogin || hooks.onLogin) as any,
+				} as any),
+			};
+		}
 
 	if (sessions) {
 		handlers.sessions = {

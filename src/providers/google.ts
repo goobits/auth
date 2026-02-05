@@ -18,6 +18,11 @@ export class GoogleProvider extends OAuthProvider {
 	private client: Google;
 	private defaultScopes: string[];
 
+	private readTokenValue(value?: string | (() => string) | null): string | null {
+		if (typeof value === "function") return value();
+		return value ?? null;
+	}
+
 	/**
 	 * @param {Object} config - Configuration
 	 * @param {string} config.clientId - Google OAuth client ID
@@ -66,8 +71,8 @@ export class GoogleProvider extends OAuthProvider {
 	): Promise<{ profile: OAuthProfile; tokens: OAuthTokens }> {
 		try {
 			type GoogleTokenResponse = {
-				accessToken: () => string;
-				refreshToken?: () => string;
+				accessToken: string | (() => string);
+				refreshToken?: string | (() => string);
 				scope?: string;
 				expiresIn?: number;
 				data?: {
@@ -86,11 +91,11 @@ export class GoogleProvider extends OAuthProvider {
 			const googleUserResponse = await fetch(
 				"https://www.googleapis.com/oauth2/v1/userinfo?alt=json",
 				{
-					headers: {
-						Authorization: `Bearer ${tokens.accessToken()}`,
+						headers: {
+							Authorization: `Bearer ${this.readTokenValue(tokens.accessToken) ?? ""}`,
+						},
 					},
-				},
-			);
+				);
 
 			const googleUser = (await googleUserResponse.json()) as {
 				id: string;
@@ -111,14 +116,18 @@ export class GoogleProvider extends OAuthProvider {
 					name: googleUser.name,
 					picture: googleUser.picture,
 					verified_email: googleUser.verified_email,
-				},
-				tokens: {
-					accessToken: tokens.data?.access_token ?? tokens.accessToken(),
-					refreshToken:
-						tokens.data?.refresh_token ?? tokens.refreshToken?.() ?? null,
-					scope: tokens.data?.scope ?? tokens.scope ?? null,
-					accessTokenExpiresAt: new Date(
-						Date.now() + (tokens.data?.expires_in ?? tokens.expiresIn ?? 0) * 1000,
+					},
+					tokens: {
+						accessToken:
+							tokens.data?.access_token ??
+							this.readTokenValue(tokens.accessToken) ??
+							"",
+						refreshToken:
+							tokens.data?.refresh_token ??
+							this.readTokenValue(tokens.refreshToken),
+						scope: tokens.data?.scope ?? tokens.scope ?? null,
+						accessTokenExpiresAt: new Date(
+							Date.now() + (tokens.data?.expires_in ?? tokens.expiresIn ?? 0) * 1000,
 					).toISOString(),
 				},
 			};
@@ -130,8 +139,8 @@ export class GoogleProvider extends OAuthProvider {
 
 	async refreshAccessToken(refreshToken: string): Promise<OAuthTokens> {
 		type GoogleRefreshResponse = {
-			accessToken?: () => string;
-			refreshToken?: () => string;
+			accessToken?: string | (() => string);
+			refreshToken?: string | (() => string);
 			scope?: string;
 			scopes?: string;
 			expiresIn?: number;
@@ -140,11 +149,11 @@ export class GoogleProvider extends OAuthProvider {
 
 		const newTokens = (await this.client.refreshAccessToken(
 			refreshToken,
-		)) as GoogleRefreshResponse;
+		)) as unknown as GoogleRefreshResponse;
 
 		return {
-			accessToken: newTokens.accessToken?.() ?? newTokens.accessToken,
-			refreshToken: newTokens.refreshToken?.() ?? newTokens.refreshToken ?? null,
+			accessToken: this.readTokenValue(newTokens.accessToken) ?? "",
+			refreshToken: this.readTokenValue(newTokens.refreshToken),
 			scope: newTokens.scope ?? newTokens.scopes ?? null,
 			accessTokenExpiresAt: new Date(
 				Date.now() + (newTokens.expiresIn ?? newTokens.expires_in ?? 0) * 1000,
