@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Base Token Adapter Interface
  * All token adapters must implement these methods

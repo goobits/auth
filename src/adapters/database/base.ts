@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { OAuthProfile, User } from "../../types/index.ts";
 
 /**
