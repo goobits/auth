@@ -1,25 +1,36 @@
 import { SessionAdapter } from "./base.ts";
 import { generateRandomUUID } from "../../utils/crypto.ts";
+import type { Cookies } from "@sveltejs/kit";
+
+type KVNamespaceLike = {
+	put: (key: string, value: string, options?: { expirationTtl?: number }) => Promise<void>;
+	get: (
+		key: string,
+		options?: { type?: "json" | "text" },
+	) => Promise<Record<string, unknown> | string | null>;
+	delete: (key: string) => Promise<void>;
+	list?: (options?: { prefix?: string }) => Promise<{ keys?: Array<{ name: string }> }>;
+};
 
 export class KVSessionAdapter extends SessionAdapter {
-	private namespace: any;
+	private namespace: KVNamespaceLike;
 	private sessionLifetime: number;
 	private sessionRefreshThreshold: number;
 	private cookieName: string;
 	private secureCookies: boolean;
-	private getUserById: ((id: string) => Promise<any>) | null;
-	private sanitizeUser: (user: any) => any;
+	private getUserById: ((id: string) => Promise<Record<string, unknown> | null>) | null;
+	private sanitizeUser: (user: Record<string, unknown> | null) => Record<string, unknown> | null;
 	private keyPrefix: string;
 
 	constructor(
-		namespace: any,
+		namespace: KVNamespaceLike,
 		options: {
 			sessionLifetime?: number;
 			sessionRefreshThreshold?: number;
 			cookieName?: string;
 			secureCookies?: boolean;
-			getUserById?: (id: string) => Promise<any>;
-			sanitizeUser?: (user: any) => any;
+			getUserById?: (id: string) => Promise<Record<string, unknown> | null>;
+			sanitizeUser?: (user: Record<string, unknown> | null) => Record<string, unknown> | null;
 			keyPrefix?: string;
 		} = {},
 	) {
@@ -35,7 +46,7 @@ export class KVSessionAdapter extends SessionAdapter {
 		this.keyPrefix = options.keyPrefix || "session";
 	}
 
-	_defaultSanitizeUser(user: any) {
+	_defaultSanitizeUser(user: Record<string, unknown> | null) {
 		if (!user) return null;
 		const { password, token, ...safeUser } = user;
 		return safeUser;
@@ -61,7 +72,9 @@ export class KVSessionAdapter extends SessionAdapter {
 	}
 
 	async validateSession(sessionId: string) {
-		const raw = await this.namespace.get(this._key(sessionId), { type: "json" });
+		const raw = (await this.namespace.get(this._key(sessionId), { type: "json" })) as
+			| { userId?: string; expiresAt?: string }
+			| null;
 		if (!raw) return { session: null, user: null };
 
 		const expiresAt = new Date(raw.expiresAt);
@@ -86,7 +99,7 @@ export class KVSessionAdapter extends SessionAdapter {
 		}
 
 		const user = this.getUserById
-			? this.sanitizeUser(await this.getUserById(raw.userId))
+			? this.sanitizeUser(await this.getUserById(String(raw.userId ?? "")))
 			: null;
 
 		return {
@@ -122,7 +135,7 @@ export class KVSessionAdapter extends SessionAdapter {
 		return sessions;
 	}
 
-	setSessionCookie(cookies: any, session: { id: string; expiresAt: Date }) {
+	setSessionCookie(cookies: Cookies, session: { id: string; expiresAt: Date }) {
 		cookies.set(this.cookieName, session.id, {
 			httpOnly: true,
 			secure: this.secureCookies,
@@ -132,7 +145,7 @@ export class KVSessionAdapter extends SessionAdapter {
 		});
 	}
 
-	deleteSessionCookie(cookies: any) {
+	deleteSessionCookie(cookies: Cookies) {
 		cookies.delete(this.cookieName, { path: "/" });
 	}
 }

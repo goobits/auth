@@ -1,5 +1,6 @@
 import { SessionAdapter } from "./base.ts";
 import { encodeBase64url } from "@oslojs/encoding";
+import type { Cookies } from "@sveltejs/kit";
 
 /**
  * Cookie-based Session Adapter
@@ -103,7 +104,7 @@ export class CookieSessionAdapter extends SessionAdapter {
 		return sessions;
 	}
 
-	setSessionCookie(cookies: any, session: { id: string; expiresAt: Date }) {
+	setSessionCookie(cookies: Cookies, session: { id: string; expiresAt: Date }) {
 		cookies.set(this.cookieName, session.id, {
 			httpOnly: true,
 			secure: this.secureCookies,
@@ -113,7 +114,7 @@ export class CookieSessionAdapter extends SessionAdapter {
 		});
 	}
 
-	deleteSessionCookie(cookies: any) {
+	deleteSessionCookie(cookies: Cookies) {
 		cookies.delete(this.cookieName, {
 			path: "/",
 		});

@@ -1,7 +1,16 @@
 import { VerificationTokenAdapter } from "../../utils/tokens.ts";
 
+type D1DatabaseLike = {
+	prepare: (sql: string) => {
+		bind: (...args: unknown[]) => {
+			run: () => Promise<unknown>;
+			first: () => Promise<Record<string, unknown> | null>;
+		};
+	};
+};
+
 export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
-	private db: any;
+	private db: D1DatabaseLike;
 	private tokensTable: string;
 	private usersTable: string;
 	private columns: {
@@ -20,7 +29,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 	};
 
 	constructor(
-		db: any,
+		db: D1DatabaseLike,
 		options: {
 			tokensTable?: string;
 			usersTable?: string;
@@ -85,7 +94,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 			userId: row[this.columns.userId],
 			type: row[this.columns.type],
 			token: row[this.columns.token],
-			expiresAt: new Date(row[this.columns.expiresAt]),
+			expiresAt: new Date(row[this.columns.expiresAt] as string),
 		};
 
 		const user = {

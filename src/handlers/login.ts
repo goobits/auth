@@ -1,13 +1,13 @@
 import { redirect } from "@sveltejs/kit";
 import { createOAuthCookies } from "../utils/oauth.ts";
-import type { RequestEvent } from "@sveltejs/kit";
 import type { OAuthProvider } from "../providers/base.ts";
+import type { AuthLocals, RequestEventLike } from "../types/auth.ts";
 
 type LoginHandlerConfig = {
 	providers: Record<string, { provider: OAuthProvider; scopes?: string[] }>;
 	redirectAfterLogin?: string;
 	secureCookies?: boolean;
-	isAuthenticated?: (locals: Record<string, unknown>) => boolean;
+	isAuthenticated?: (locals: AuthLocals) => boolean;
 };
 
 /**
@@ -44,10 +44,10 @@ export function createLoginHandler(config: LoginHandlerConfig) {
 		providers,
 		redirectAfterLogin = "/",
 		secureCookies = true,
-		isAuthenticated = (locals) => !!locals.user,
+		isAuthenticated = (locals: AuthLocals) => !!locals.user,
 	} = config;
 
-	return async ({ cookies, params, locals }: RequestEvent | any) => {
+	return async ({ cookies, params, locals }: RequestEventLike) => {
 		// Check if already authenticated
 		if (isAuthenticated(locals)) {
 			throw redirect(302, redirectAfterLogin);

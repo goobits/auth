@@ -1,6 +1,8 @@
 import { redirect } from "@sveltejs/kit";
 import type { Actions } from "@sveltejs/kit";
 import type { SessionAdapter } from "../adapters/session/base.ts";
+import type { AuthLocals, RequestEventLike } from "../types/auth.ts";
+import { getLogger } from "../utils/logger.ts";
 
 /**
  * Create a logout route handler
@@ -29,15 +31,16 @@ import type { SessionAdapter } from "../adapters/session/base.ts";
 export function createLogoutHandler(config: {
 	sessionAdapter: SessionAdapter;
 	redirectAfterLogout?: string;
-	getSession?: (locals: any) => { id: string } | null;
-	onLogout?: (event: any) => Promise<void> | void;
+	getSession?: (locals: AuthLocals) => { id: string } | null;
+	onLogout?: (event: RequestEventLike) => Promise<void> | void;
 }): Actions {
 	const {
 		sessionAdapter,
 		redirectAfterLogout = "/",
-		getSession = (locals) => (locals as any).session,
+		getSession = (locals: AuthLocals) => locals.session,
 		onLogout,
 	} = config;
+	const log = getLogger();
 
 	return {
 		default: async (event) => {
@@ -57,11 +60,16 @@ export function createLogoutHandler(config: {
 				throw redirect(302, redirectAfterLogout);
 			} catch (error) {
 				// Re-throw redirects
-				if (error && typeof error === "object" && "status" in error && (error as any).status === 302) {
+				if (
+					error &&
+					typeof error === "object" &&
+					"status" in error &&
+					(error as { status?: number }).status === 302
+				) {
 					throw error;
 				}
 
-				console.error("Error during logout:", error);
+				log.error?.("Error during logout:", error);
 				throw redirect(302, redirectAfterLogout);
 			}
 		},

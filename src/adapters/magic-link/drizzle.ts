@@ -2,8 +2,8 @@ import { MagicLinkAdapter } from "./base.ts";
 import { eq, and } from "drizzle-orm";
 
 export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
-	private db: any;
-	private tokensTable: any;
+	private db: unknown;
+	private tokensTable: Record<string, unknown>;
 	private columns: {
 		id: string;
 		userId: string;
@@ -20,15 +20,15 @@ export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
 	 * @param {Object} [options.columns]
 	 */
 	constructor(
-		db: any,
+		db: unknown,
 		options: {
-			tokensTable?: any;
+			tokensTable?: Record<string, unknown>;
 			columns?: Partial<Record<string, string>>;
 		} = {},
 	) {
 		super();
 		this.db = db;
-		this.tokensTable = options.tokensTable;
+		this.tokensTable = options.tokensTable ?? {};
 		this.columns = {
 			id: options.columns?.id || "id",
 			userId: options.columns?.userId || "userId",
@@ -39,7 +39,7 @@ export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
 			createdAt: options.columns?.createdAt || "createdAt",
 		};
 
-		if (!this.tokensTable) {
+		if (!options.tokensTable) {
 			throw new Error("DrizzleMagicLinkAdapter requires tokensTable option");
 		}
 	}
