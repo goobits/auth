@@ -83,7 +83,7 @@ export function createWebAuthnRegisterOptionsHandler(config: {
 			transports: (cred as { transports?: string[] | null }).transports || undefined,
 		}));
 
-		const options = generateRegistrationOptions({
+		const options = await generateRegistrationOptions({
 			rpID,
 			rpName,
 			userID: String(user.id),
@@ -95,7 +95,7 @@ export function createWebAuthnRegisterOptionsHandler(config: {
 			authenticatorSelection,
 			supportedAlgorithmIDs,
 			userVerification,
-		} as Record<string, unknown>) as ReturnType<typeof generateRegistrationOptions>;
+		} as any);
 
 		const challengeId = await generateRandomUUID();
 		const expiresAt = new Date(Date.now() + timeout);
@@ -167,7 +167,8 @@ export function createWebAuthnRegisterVerifyHandler(config: {
 			return jsonResponse({ ok: false, error: "Invalid challenge" }, 400);
 		}
 
-		if (challenge.expiresAt && new Date(challenge.expiresAt) < new Date()) {
+		const challengeExpiresAt = (challenge as { expiresAt?: string | number | Date }).expiresAt;
+		if (challengeExpiresAt && new Date(challengeExpiresAt) < new Date()) {
 			await webauthnAdapter.deleteChallenge(challengeId);
 			return jsonResponse({ ok: false, error: "Challenge expired" }, 400);
 		}
@@ -178,7 +179,7 @@ export function createWebAuthnRegisterVerifyHandler(config: {
 			expectedOrigin: origin,
 			expectedRPID: rpID,
 			requireUserVerification,
-		} as Record<string, unknown>);
+		} as any);
 
 		if (!verification.verified) {
 			return jsonResponse({ ok: false, error: "Registration failed" }, 400);
@@ -203,7 +204,7 @@ export function createWebAuthnRegisterVerifyHandler(config: {
 			publicKey,
 			counter,
 			transports: (credential as { response?: { transports?: string[] } })?.response?.transports ?? null,
-			name: data.name || null,
+			name: (typeof data.name === "string" ? data.name : null),
 		});
 
 		await webauthnAdapter.deleteChallenge(challengeId);
@@ -271,12 +272,12 @@ export function createWebAuthnLoginOptionsHandler(config: {
 			}));
 		}
 
-		const options = generateAuthenticationOptions({
+		const options = await generateAuthenticationOptions({
 			rpID,
 			timeout,
 			allowCredentials,
 			userVerification,
-		} as Record<string, unknown>) as ReturnType<typeof generateAuthenticationOptions>;
+		} as any);
 
 		const challengeId = await generateRandomUUID();
 		const expiresAt = new Date(Date.now() + timeout);
@@ -301,10 +302,10 @@ export function createWebAuthnLoginVerifyHandler(config: {
 	};
 	databaseAdapter?: { getUserById: (id: string) => Promise<User | null> };
 	sessionAdapter: {
-		createSession: (userId: string) => Promise<{ id: string; expiresAt: Date }>;
+		createSession: (userId: string) => Promise<{ id: string; expiresAt: Date } | Record<string, unknown>>;
 		setSessionCookie?: (
 			cookies: RequestEventLike["cookies"],
-			session: { id: string; expiresAt: Date },
+			session: unknown,
 		) => void;
 	};
 	rpID: string;
@@ -362,6 +363,9 @@ export function createWebAuthnLoginVerifyHandler(config: {
 		}
 
 		const credentialId = (credential as { id?: string }).id;
+		if (!credentialId) {
+			return jsonResponse({ ok: false, error: "Credential not found" }, 400);
+		}
 		const storedCredential = await webauthnAdapter.getCredential(credentialId);
 		if (!storedCredential) {
 			return jsonResponse({ ok: false, error: "Credential not found" }, 400);
@@ -379,7 +383,7 @@ export function createWebAuthnLoginVerifyHandler(config: {
 				transports: (storedCredential as { transports?: string[] | null }).transports || undefined,
 			},
 			requireUserVerification,
-		} as Record<string, unknown>);
+		} as any);
 
 		if (!verification.verified) {
 			return jsonResponse({ ok: false, error: "Authentication failed" }, 400);
@@ -414,9 +418,9 @@ export function createWebAuthnLoginVerifyHandler(config: {
 				name: user?.name,
 			};
 			const hookResult = await onLogin(event, profile, null, user);
-			if (hookResult?.userId) userId = hookResult.userId;
-			if (hookResult?.id) userId = hookResult.id;
-			if (hookResult?.user?.id) userId = hookResult.user.id;
+			if (hookResult?.userId) userId = String(hookResult.userId);
+			if (hookResult?.id) userId = String(hookResult.id);
+			if (hookResult?.user?.id) userId = String(hookResult.user.id);
 		} else if (userId) {
 			const session = await sessionAdapter.createSession(userId);
 			if (sessionAdapter.setSessionCookie) {

@@ -39,7 +39,7 @@ function toBase64url(value: Base64Input): string {
 	return encodeBase64url(toUint8Array(value));
 }
 
-function parseCreationOptions(options: Record<string, unknown>) {
+function parseCreationOptions(options: Record<string, unknown>): PublicKeyCredentialCreationOptions {
 	const parsed = { ...options } as Record<string, unknown>;
 	parsed.challenge = toUint8Array((options as { challenge?: Base64Input }).challenge);
 	const user = (options as { user?: { id?: Base64Input } }).user;
@@ -54,10 +54,10 @@ function parseCreationOptions(options: Record<string, unknown>) {
 			id: toUint8Array(cred.id),
 		}));
 	}
-	return parsed;
+	return parsed as unknown as PublicKeyCredentialCreationOptions;
 }
 
-function parseRequestOptions(options: Record<string, unknown>) {
+function parseRequestOptions(options: Record<string, unknown>): PublicKeyCredentialRequestOptions {
 	const parsed = { ...options } as Record<string, unknown>;
 	parsed.challenge = toUint8Array((options as { challenge?: Base64Input }).challenge);
 	const allow = (options as { allowCredentials?: Array<{ id?: Base64Input }> })
@@ -68,7 +68,7 @@ function parseRequestOptions(options: Record<string, unknown>) {
 			id: toUint8Array(cred.id),
 		}));
 	}
-	return parsed;
+	return parsed as unknown as PublicKeyCredentialRequestOptions;
 }
 
 function serializeCredential(credential: unknown) {

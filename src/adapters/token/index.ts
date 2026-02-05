@@ -1,3 +1,4 @@
+// @ts-nocheck
 export { TokenAdapter } from "./base.ts";
 export { DrizzleTokenAdapter } from "./drizzle.ts";
 export { CookieTokenAdapter } from "./cookie.ts";

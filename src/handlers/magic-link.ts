@@ -29,8 +29,8 @@ type MagicLinkAdapterLike = {
 		email: string;
 		otpHash: string;
 	}) => Promise<Record<string, unknown> | null>;
-	deleteById: (id: string) => Promise<void>;
-	deleteByEmail: (email: string) => Promise<void>;
+	deleteById: (id: string) => Promise<unknown>;
+	deleteByEmail: (email: string) => Promise<unknown>;
 };
 
 type MagicLinkDatabaseAdapterLike = {
@@ -46,10 +46,10 @@ type MagicLinkDatabaseAdapterLike = {
 };
 
 type MagicLinkSessionAdapterLike = {
-	createSession: (userId: string) => Promise<{ id: string; expiresAt: Date }>;
+	createSession: (userId: string) => Promise<{ id: string; expiresAt: Date } | Record<string, unknown>>;
 	setSessionCookie?: (
 		cookies: RequestEventLike["cookies"],
-		session: { id: string; expiresAt: Date },
+		session: unknown,
 		options?: { secure?: boolean },
 	) => void;
 };
@@ -171,6 +171,8 @@ export function createMagicLinkVerifyHandler(
 		magicLinkAdapter: MagicLinkAdapterLike;
 		databaseAdapter?: MagicLinkDatabaseAdapterLike;
 		sessionAdapter: MagicLinkSessionAdapterLike;
+		redirectAfterLogin?: string;
+		isAuthenticated?: (locals: AuthLocals) => boolean;
 	},
 ) {
 	const {
@@ -237,7 +239,7 @@ export function createMagicLinkVerifyHandler(
 			);
 		}
 
-		let record = null;
+		let record: Record<string, any> | null = null;
 
 		if (token) {
 			const tokenHash = await hashToken(token);
@@ -265,7 +267,7 @@ export function createMagicLinkVerifyHandler(
 			await magicLinkAdapter.deleteById(record.id);
 		}
 
-		let user = null;
+		let user: User | null = null;
 		if (databaseAdapter) {
 			if (record.userId) {
 				user = await databaseAdapter.getUserById(record.userId);
@@ -294,7 +296,7 @@ export function createMagicLinkVerifyHandler(
 			} catch {}
 		}
 
-		let userId = user?.id ?? record.userId ?? null;
+		let userId = user?.id ? String(user.id) : record?.userId ? String(record.userId) : null;
 
 		if (onLogin) {
 			const profile = {
@@ -303,9 +305,9 @@ export function createMagicLinkVerifyHandler(
 				name: user?.name || (record.email || email).split("@")[0],
 			};
 			const hookResult = await onLogin(event, profile, null, user);
-			if (hookResult?.userId) userId = hookResult.userId;
-			if (hookResult?.id) userId = hookResult.id;
-			if (hookResult?.user?.id) userId = hookResult.user.id;
+			if (hookResult?.userId) userId = String(hookResult.userId);
+			if (hookResult?.id) userId = String(hookResult.id);
+			if (hookResult?.user?.id) userId = String(hookResult.user.id);
 		} else if (userId) {
 			const session = await sessionAdapter.createSession(userId);
 			if (sessionAdapter.setSessionCookie) {

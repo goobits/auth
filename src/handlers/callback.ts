@@ -66,7 +66,7 @@ export function createCallbackHandler(config: CallbackConfig) {
 				throw redirect(302, redirectAfterLogin);
 			}
 
-			const providerName = params.provider;
+			const providerName = String(params.provider ?? "");
 			const providerInstance = providers[providerName];
 
 			if (!providerInstance) {

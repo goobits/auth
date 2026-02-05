@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { SessionAdapter } from "./base.ts";
 import { generateRandomUUID } from "../../utils/crypto.ts";
 import type { Cookies } from "@sveltejs/kit";

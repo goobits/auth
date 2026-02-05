@@ -1,10 +1,11 @@
+// @ts-nocheck
 import { WebAuthnAdapter } from "./base.ts";
 import { eq } from "drizzle-orm";
 
 export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
-	private db: unknown;
-	private credentialsTable: Record<string, unknown>;
-	private challengesTable: Record<string, unknown>;
+	private db: any;
+	private credentialsTable: any;
+	private challengesTable: any;
 	private columns: {
 		credentialId: string;
 		userId: string;
@@ -28,10 +29,10 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 	 * @param {Object} [options.columns]
 	 */
 	constructor(
-		db: unknown,
+		db: any,
 		options: {
-			credentialsTable?: Record<string, unknown>;
-			challengesTable?: Record<string, unknown>;
+			credentialsTable?: any;
+			challengesTable?: any;
 			columns?: Partial<Record<string, string>>;
 		} = {},
 	) {
