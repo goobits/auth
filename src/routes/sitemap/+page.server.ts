@@ -10,8 +10,34 @@ const ROUTES_DIR = 'src/routes'
 // Categories to hide in production
 const DEV_ONLY_CATEGORIES = ['Admin Pages', 'API Routes', 'Utility Pages']
 
+type PageRoute = {
+	path: string
+	name: string
+	type: 'page'
+	hasServerLoad: boolean
+	hasClientLoad: boolean
+	hasLayout: boolean
+	isDynamic: boolean
+	hasAuth: boolean
+	isNoIndex: boolean
+	lastModified: string
+	category: string
+}
+
+type ApiRoute = {
+	path: string
+	name: string
+	type: 'api'
+	httpMethods: string[]
+	isDynamic: boolean
+	lastModified: string
+	category: string
+}
+
+type RouteEntry = PageRoute | ApiRoute
+
 function scanRoutes(dir: string, basePath = '') {
-	const routes: any[] = []
+	const routes: RouteEntry[] = []
 	const entries = fs.readdirSync(dir, { withFileTypes: true })
 
 	for (const entry of entries) {
@@ -54,7 +80,7 @@ function scanRoutes(dir: string, basePath = '') {
 					pageContent.includes('auth') ||
 					pageContent.includes('session')
 
-				routes.push({
+				const pageRoute: PageRoute = {
 					path: routePath,
 					name: getRouteName(routePath),
 					type: 'page',
@@ -66,7 +92,8 @@ function scanRoutes(dir: string, basePath = '') {
 					isNoIndex,
 					lastModified: stat.mtime.toISOString(),
 					category: categorizeRoute(routePath)
-				})
+				}
+				routes.push(pageRoute)
 			} else if (entry.name === '+server.js' || entry.name === '+server.ts') {
 				const stat = fs.statSync(fullPath)
 				const content = fs.readFileSync(fullPath, 'utf-8')
@@ -79,7 +106,7 @@ function scanRoutes(dir: string, basePath = '') {
 				if (content.includes('export async function DELETE') || content.includes('export function DELETE')) methods.push('DELETE')
 				if (content.includes('export async function PATCH') || content.includes('export function PATCH')) methods.push('PATCH')
 
-				routes.push({
+				const apiRoute: ApiRoute = {
 					path: routePath,
 					name: getRouteName(routePath),
 					type: 'api',
@@ -87,7 +114,8 @@ function scanRoutes(dir: string, basePath = '') {
 					isDynamic: routePath.includes('['),
 					lastModified: stat.mtime.toISOString(),
 					category: 'API Routes'
-				})
+				}
+				routes.push(apiRoute)
 			}
 		}
 	}
@@ -132,21 +160,25 @@ export async function load() {
 	const posts = await getJournalPosts()
 
 	// Add dynamic journal post routes
-	const postRoutes = (posts as any[]).map(p => ({
-		path: `/${p.urlPath}`,
-		name: p.metadata?.fm?.title || p.slug,
-		type: 'page',
-		hasServerLoad: true,
-		hasClientLoad: false,
-		isDynamic: true,
-		hasAuth: false,
-		isNoIndex: false,
-		lastModified: p.date.toISOString(),
-		category: 'Journal Posts'
-	}))
+	const postRoutes: PageRoute[] = posts.map(p => {
+		const fm = p.metadata?.fm
+		const title = fm && typeof fm === 'object' && 'title' in fm ? String((fm as { title?: unknown }).title ?? '') : ''
+		return {
+			path: `/${p.urlPath}`,
+			name: title || p.slug,
+			type: 'page',
+			hasServerLoad: true,
+			hasClientLoad: false,
+			isDynamic: true,
+			hasAuth: false,
+			isNoIndex: false,
+			lastModified: p.date.toISOString(),
+			category: 'Journal Posts'
+		}
+	})
 
 	// Filter routes based on environment
-	let allRoutes = [...routes, ...postRoutes]
+	let allRoutes: RouteEntry[] = [...routes, ...postRoutes]
 
 	if (!dev) {
 		// In production, hide sensitive routes
@@ -154,26 +186,28 @@ export async function load() {
 	}
 
 	// Calculate stats
+	const pageRoutes = allRoutes.filter((route): route is PageRoute => route.type === 'page')
+	const apiRoutes = allRoutes.filter((route): route is ApiRoute => route.type === 'api')
 	const stats = {
 		total: allRoutes.length,
-		pages: allRoutes.filter(r => r.type === 'page').length,
-		api: allRoutes.filter(r => r.type === 'api').length,
+		pages: pageRoutes.length,
+		api: apiRoutes.length,
 		dynamic: allRoutes.filter(r => r.isDynamic).length,
-		ssr: allRoutes.filter(r => r.hasServerLoad).length,
-		protected: allRoutes.filter(r => r.hasAuth).length
+		ssr: pageRoutes.filter(r => r.hasServerLoad).length,
+		protected: pageRoutes.filter(r => r.hasAuth).length
 	}
 
 	// Group by category
-	const grouped: Record<string, any[]> = {}
-	for (const route of allRoutes as any[]) {
-		const cat = (route as any).category
+	const grouped: Record<string, RouteEntry[]> = {}
+	for (const route of allRoutes) {
+		const cat = route.category
 		if (!grouped[cat]) grouped[cat] = []
 		grouped[cat].push(route)
 	}
 
 	// Sort routes within each category by path
 	for (const cat of Object.keys(grouped)) {
-		grouped[cat].sort((a: any, b: any) => a.path.localeCompare(b.path))
+		grouped[cat].sort((a, b) => a.path.localeCompare(b.path))
 	}
 
 	return {

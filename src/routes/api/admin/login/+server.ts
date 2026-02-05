@@ -1,9 +1,17 @@
-import { json } from '@sveltejs/kit'
+import { json, type RequestEvent } from '@sveltejs/kit'
 import { getAdminAuth, ensureAdminAccount, getAdminEmail } from '$lib/auth/admin.ts'
 import { checkRateLimit } from '@packages/calendar/src/index.ts'
 import { noStoreHeaders } from '../_helpers.ts'
 
-export async function POST(event: any) {
+type AuthUser = { id: string | number }
+
+function isAuthUser(value: unknown): value is AuthUser {
+	if (!value || typeof value !== 'object') return false
+	const id = (value as AuthUser).id
+	return typeof id === 'string' || typeof id === 'number'
+}
+
+export async function POST(event: RequestEvent) {
 	try {
 		const { request, platform, cookies } = event
 		const { userAdapter, sessionAdapter, credentialsProvider, env, db } = await getAdminAuth({ event: { platform } })
@@ -15,8 +23,8 @@ export async function POST(event: any) {
 			if (!rate.allowed) {
 				return json({ ok: false, error: { message: 'Too many requests' } }, { status: 429, headers: noStoreHeaders })
 			}
-		} catch (rateErr) {
-			console.warn('Admin login rate limit unavailable:', rateErr)
+		} catch {
+			// If rate limiting is unavailable, proceed without logging sensitive details.
 		}
 
 		const body = await request.json().catch(() => null)
@@ -31,16 +39,15 @@ export async function POST(event: any) {
 			userAdapter
 		})
 
-		if (!valid || !user) {
+		if (!valid || !isAuthUser(user)) {
 			return json({ ok: false, error: { message: 'Unauthorized' } }, { status: 401, headers: noStoreHeaders })
 		}
 
-		const session = await sessionAdapter.createSession(String((user as any).id))
+		const session = await sessionAdapter.createSession(String(user.id))
 		sessionAdapter.setSessionCookie(cookies, session)
 
 		return json({ ok: true }, { headers: noStoreHeaders })
-	} catch (err) {
-		console.error('Admin login error:', err)
+	} catch {
 		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
 	}
 }
