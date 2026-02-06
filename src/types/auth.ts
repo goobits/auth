@@ -1,4 +1,4 @@
-import type { Cookies, RequestEvent, RequestHandler, Actions } from "@sveltejs/kit";
+import type { Cookies, RequestEvent, RequestHandler } from "@sveltejs/kit";
 import type { OAuthProvider } from "../providers/base.ts";
 import type {
 	OAuthProfile,
@@ -8,7 +8,7 @@ import type {
 	User,
 } from "./index.ts";
 import type { SessionAdapter } from "../adapters/session/base.ts";
-import type { DatabaseAdapter } from "../adapters/database/base.ts";
+import type { UserAdapter } from "../adapters/database/base.ts";
 import type { TokenAdapter } from "../adapters/oauth-token/base.ts";
 import type { MagicLinkAdapter } from "../adapters/magic-link/base.ts";
 import type { WebAuthnAdapter } from "../adapters/webauthn/base.ts";
@@ -126,7 +126,7 @@ export type SessionsConfig = {
 
 type BaseAuthAdapters = {
 	session: SessionAdapter;
-	database?: DatabaseAdapter;
+	user?: UserAdapter;
 	oauthToken?: TokenAdapter;
 	verificationToken?: VerificationTokenAdapter;
 	magicLink?: MagicLinkAdapter;
@@ -141,6 +141,7 @@ type CommonAuthConfigFields = {
 	autoCreateSession?: boolean;
 	requireVerifiedEmailForLinking?: boolean;
 	isAuthenticated?: (locals: AuthLocals) => boolean;
+	sanitizeUser?: (user: User | null) => User | null;
 	sessions?: SessionsConfig;
 	logger?: Logger;
 };
@@ -181,7 +182,7 @@ export type AuthConfig =
 export type AuthHandlers = {
 	login?: RequestHandler;
 	callback?: RequestHandler;
-	logout: Actions;
+	logout: RequestHandler;
 	hooks: (input: { event: RequestEventLike; resolve: (e: RequestEventLike) => Promise<Response> }) => Promise<Response>;
 	magicLink?: {
 		request: RequestHandler;
@@ -202,6 +203,7 @@ export type AuthHandlers = {
 export type AuthRoutes = {
 	login: () => { GET: RequestHandler };
 	callback: () => { GET: RequestHandler };
+	logout: () => { POST: RequestHandler };
 	magicLink: () => { POST: RequestHandler };
 	magicLinkVerify: () => { GET: RequestHandler; POST: RequestHandler };
 	passkeyRegisterOptions: () => { POST: RequestHandler };

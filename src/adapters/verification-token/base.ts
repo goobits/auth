@@ -7,11 +7,11 @@ type VerificationTokenRecord<TUser = Record<string, unknown>> = {
  * Base Verification Token Adapter Interface
  * Implement this to use verification tokens with your database
  */
-export class VerificationTokenAdapter {
+export abstract class VerificationTokenAdapter {
 	/**
 	 * Create a new verification token
 	 */
-	async create({
+	abstract create({
 		userId,
 		type,
 		token,
@@ -21,40 +21,32 @@ export class VerificationTokenAdapter {
 		type: string;
 		token: string;
 		expiresAt: Date;
-	}): Promise<void> {
-		throw new Error("create must be implemented");
-	}
+	}): Promise<void>;
 
 	/**
 	 * Find a token by value and type
 	 */
-	async findByToken({
+	abstract findByToken({
 		token,
 		type,
 	}: {
 		token: string;
 		type: string;
-	}): Promise<VerificationTokenRecord | null> {
-		throw new Error("findByToken must be implemented");
-	}
+	}): Promise<VerificationTokenRecord | null>;
 
 	/**
 	 * Delete a token by ID
 	 */
-	async deleteById(tokenId: string): Promise<void> {
-		throw new Error("deleteById must be implemented");
-	}
+	abstract deleteById(tokenId: string): Promise<void>;
 
 	/**
 	 * Delete all tokens of a specific type for a user
 	 */
-	async deleteByUserAndType({
+	abstract deleteByUserAndType({
 		userId,
 		type,
 	}: {
 		userId: string;
 		type: string;
-	}): Promise<void> {
-		throw new Error("deleteByUserAndType must be implemented");
-	}
+	}): Promise<void>;
 }

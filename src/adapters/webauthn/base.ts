@@ -1,7 +1,7 @@
 /**
  * Base WebAuthn Adapter Interface
  */
-export class WebAuthnAdapter {
+export abstract class WebAuthnAdapter {
 	/**
 	 * Store a WebAuthn challenge
 	 * @param {Object} params
@@ -12,7 +12,7 @@ export class WebAuthnAdapter {
 	 * @param {Date} params.expiresAt
 	 * @returns {Promise<void>}
 	 */
-	async createChallenge({
+	abstract createChallenge({
 		challengeId,
 		userId,
 		challenge,
@@ -24,29 +24,23 @@ export class WebAuthnAdapter {
 		challenge: string;
 		type: string;
 		expiresAt: Date;
-	}): Promise<void> {
-		throw new Error("createChallenge must be implemented");
-	}
+	}): Promise<void>;
 
 	/**
 	 * Get challenge by ID
 	 * @param {string} challengeId
 	 * @returns {Promise<Object|null>}
 	 */
-	async getChallenge(
+	abstract getChallenge(
 		challengeId: string,
-	): Promise<Record<string, unknown> | null> {
-		throw new Error("getChallenge must be implemented");
-	}
+	): Promise<Record<string, unknown> | null>;
 
 	/**
 	 * Delete challenge by ID
 	 * @param {string} challengeId
 	 * @returns {Promise<void>}
 	 */
-	async deleteChallenge(challengeId: string): Promise<void> {
-		throw new Error("deleteChallenge must be implemented");
-	}
+	abstract deleteChallenge(challengeId: string): Promise<void>;
 
 	/**
 	 * Create a credential
@@ -59,7 +53,7 @@ export class WebAuthnAdapter {
 	 * @param {string|null} [params.name]
 	 * @returns {Promise<void>}
 	 */
-	async createCredential({
+	abstract createCredential({
 		userId,
 		credentialId,
 		publicKey,
@@ -73,29 +67,23 @@ export class WebAuthnAdapter {
 		counter: number;
 		transports?: string[] | null;
 		name?: string | null;
-	}): Promise<void> {
-		throw new Error("createCredential must be implemented");
-	}
+	}): Promise<void>;
 
 	/**
 	 * Get a credential by ID
 	 * @param {string} credentialId
 	 * @returns {Promise<Object|null>}
 	 */
-	async getCredential(
+	abstract getCredential(
 		credentialId: string,
-	): Promise<Record<string, unknown> | null> {
-		throw new Error("getCredential must be implemented");
-	}
+	): Promise<Record<string, unknown> | null>;
 
 	/**
 	 * List credentials for a user
 	 * @param {string} userId
 	 * @returns {Promise<Object[]>}
 	 */
-	async listCredentials(userId: string): Promise<Record<string, unknown>[]> {
-		throw new Error("listCredentials must be implemented");
-	}
+	abstract listCredentials(userId: string): Promise<Record<string, unknown>[]>;
 
 	/**
 	 * Update a credential (e.g., counter)
@@ -103,28 +91,22 @@ export class WebAuthnAdapter {
 	 * @param {Object} updates
 	 * @returns {Promise<void>}
 	 */
-	async updateCredential(
+	abstract updateCredential(
 		credentialId: string,
 		updates: Record<string, unknown>,
-	): Promise<void> {
-		throw new Error("updateCredential must be implemented");
-	}
+	): Promise<void>;
 
 	/**
 	 * Delete a credential
 	 * @param {string} credentialId
 	 * @returns {Promise<void>}
 	 */
-	async deleteCredential(credentialId: string): Promise<void> {
-		throw new Error("deleteCredential must be implemented");
-	}
+	abstract deleteCredential(credentialId: string): Promise<void>;
 
 	/**
 	 * Delete all credentials for a user
 	 * @param {string} userId
 	 * @returns {Promise<void>}
 	 */
-	async deleteUserCredentials(userId: string): Promise<void> {
-		throw new Error("deleteUserCredentials must be implemented");
-	}
+	abstract deleteUserCredentials(userId: string): Promise<void>;
 }

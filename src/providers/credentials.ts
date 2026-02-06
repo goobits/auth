@@ -1,5 +1,5 @@
 import { hashPassword, verifyPassword } from "../utils/password.ts";
-import type { DatabaseAdapter } from "../adapters/database/base.ts";
+import type { UserAdapter } from "../adapters/database/base.ts";
 
 type PasswordValidationResult = { valid: boolean; errors: string[] };
 type ValidatePasswordFn = (password: string) => PasswordValidationResult;
@@ -28,7 +28,7 @@ export class CredentialsProvider {
 	 * @param {Object} params
 	 * @param {string} params.email - User email
 	 * @param {string} params.password - Plain text password
-	 * @param {import('../adapters/database/base.ts').DatabaseAdapter} params.userAdapter - User adapter
+	 * @param {import('../adapters/database/base.ts').UserAdapter} params.userAdapter - User adapter
 	 * @returns {Promise<{user: Object, valid: boolean}>}
 	 */
 	async authenticate({
@@ -38,14 +38,14 @@ export class CredentialsProvider {
 	}: {
 		email: string;
 		password: string;
-		userAdapter: DatabaseAdapter;
+		userAdapter: UserAdapter;
 	}): Promise<{ user: Record<string, unknown> | null; valid: boolean }> {
 		if (!email || !password) {
 			return { user: null, valid: false };
 		}
 
 		// Get user with password hash (using internal method)
-		const user = await userAdapter._getUserWithPassword(email.toLowerCase());
+		const user = await userAdapter.getUserWithPasswordHash(email.toLowerCase());
 
 		if (!user || !user.password) {
 			return { user: null, valid: false };
@@ -70,7 +70,7 @@ export class CredentialsProvider {
 	 * @param {string} params.password - Plain text password
 	 * @param {string} [params.name] - User name
 	 * @param {Object} [params.metadata] - Additional user data
-	 * @param {import('../adapters/database/base.ts').DatabaseAdapter} params.userAdapter - User adapter
+	 * @param {import('../adapters/database/base.ts').UserAdapter} params.userAdapter - User adapter
 	 * @returns {Promise<Object>} Created user (sanitized)
 	 */
 	async signUp({
@@ -84,7 +84,7 @@ export class CredentialsProvider {
 		password: string;
 		name?: string;
 		metadata?: Record<string, unknown>;
-		userAdapter: DatabaseAdapter;
+		userAdapter: UserAdapter;
 	}): Promise<Record<string, unknown>> {
 		if (!email || !password) {
 			throw new Error("Email and password are required");
@@ -135,7 +135,7 @@ export class CredentialsProvider {
 	 * @param {Object} params
 	 * @param {string} params.userId - User ID
 	 * @param {string} params.newPassword - New plain text password
-	 * @param {import('../adapters/database/base.ts').DatabaseAdapter} params.userAdapter - User adapter
+	 * @param {import('../adapters/database/base.ts').UserAdapter} params.userAdapter - User adapter
 	 * @returns {Promise<Object>} Updated user (sanitized)
 	 */
 	async updatePassword({
@@ -145,7 +145,7 @@ export class CredentialsProvider {
 	}: {
 		userId: string;
 		newPassword: string;
-		userAdapter: DatabaseAdapter;
+		userAdapter: UserAdapter;
 	}): Promise<Record<string, unknown>> {
 		if (!userId || !newPassword) {
 			throw new Error("User ID and new password are required");
@@ -176,7 +176,7 @@ export class CredentialsProvider {
 	 * @param {string} params.email - User email
 	 * @param {string} params.currentPassword - Current plain text password
 	 * @param {string} params.newPassword - New plain text password
-	 * @param {import('../adapters/database/base.ts').DatabaseAdapter} params.userAdapter - User adapter
+	 * @param {import('../adapters/database/base.ts').UserAdapter} params.userAdapter - User adapter
 	 * @returns {Promise<{user: Object, valid: boolean}>}
 	 */
 	async changePassword({
@@ -188,7 +188,7 @@ export class CredentialsProvider {
 		email: string;
 		currentPassword: string;
 		newPassword: string;
-		userAdapter: DatabaseAdapter;
+		userAdapter: UserAdapter;
 	}): Promise<{ user: Record<string, unknown> | null; valid: boolean }> {
 		// First verify current password
 		const { user, valid } = await this.authenticate({

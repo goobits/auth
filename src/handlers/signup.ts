@@ -24,7 +24,7 @@ function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
  * Create a signup handler for credentials-based authentication
  * @param {Object} config - Handler configuration
  * @param {import('../providers/credentials.ts').CredentialsProvider} config.credentialsProvider - Credentials provider
- * @param {import('../adapters/database/base.ts').DatabaseAdapter} config.userAdapter - User adapter
+ * @param {import('../adapters/database/base.ts').UserAdapter} config.userAdapter - User adapter
  * @param {import('../adapters/session/base.ts').SessionAdapter} config.sessionAdapter - Session adapter
  * @param {import('../adapters/verification-token/base.ts').VerificationTokenAdapter} [config.verificationTokenAdapter] - Verification token adapter (optional)
  * @param {Function} [config.onSignup] - Callback after user creation (user) => Promise<void>

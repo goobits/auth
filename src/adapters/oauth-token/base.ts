@@ -2,7 +2,7 @@
  * Base Token Adapter Interface
  * All token adapters must implement these methods
  */
-export class TokenAdapter {
+export abstract class TokenAdapter {
 	/**
 	 * Store OAuth tokens for a user
 	 * @param {string} userId - User ID
@@ -10,13 +10,11 @@ export class TokenAdapter {
 	 * @param {import('../../types').OAuthTokens} tokens - OAuth tokens
 	 * @returns {Promise<void>}
 	 */
-	async storeTokens(
+	abstract storeTokens(
 		userId: string,
 		provider: string,
 		tokens: import("../../types/index.ts").OAuthTokens,
-	): Promise<void> {
-		throw new Error("storeTokens must be implemented");
-	}
+	): Promise<void>;
 
 	/**
 	 * Get OAuth tokens for a user
@@ -24,12 +22,10 @@ export class TokenAdapter {
 	 * @param {string} provider - Provider name
 	 * @returns {Promise<import('../../types').OAuthTokens | null>}
 	 */
-	async getTokens(
+	abstract getTokens(
 		userId: string,
 		provider: string,
-	): Promise<import("../../types/index.ts").OAuthTokens | null> {
-		throw new Error("getTokens must be implemented");
-	}
+	): Promise<import("../../types/index.ts").OAuthTokens | null>;
 
 	/**
 	 * Refresh OAuth tokens
@@ -37,12 +33,10 @@ export class TokenAdapter {
 	 * @param {string} provider - Provider name
 	 * @returns {Promise<import('../../types').OAuthTokens>}
 	 */
-	async refreshTokens(
+	abstract refreshTokens(
 		userId: string,
 		provider: string,
-	): Promise<import("../../types/index.ts").OAuthTokens | null> {
-		throw new Error("refreshTokens must be implemented");
-	}
+	): Promise<import("../../types/index.ts").OAuthTokens | null>;
 
 	/**
 	 * Delete OAuth tokens
@@ -50,7 +44,5 @@ export class TokenAdapter {
 	 * @param {string} provider - Provider name
 	 * @returns {Promise<void>}
 	 */
-	async deleteTokens(userId: string, provider: string): Promise<void> {
-		throw new Error("deleteTokens must be implemented");
-	}
+	abstract deleteTokens(userId: string, provider: string): Promise<void>;
 }

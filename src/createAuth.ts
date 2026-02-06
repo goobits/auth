@@ -30,6 +30,7 @@ import type {
 	OAuthProviderConfig,
 	RequestEventLike,
 } from "./types/auth.ts";
+import type { User } from "./types/index.ts";
 import { getLogger, setLogger } from "./utils/logger.ts";
 import { ensureSessionAfterLogin } from "./utils/session-lifecycle.ts";
 
@@ -133,6 +134,7 @@ function createHandlers(config: AuthConfig, defaults: ResolvedDefaults): AuthHan
 		magicLink,
 		webauthn,
 		sessions,
+		sanitizeUser = (user: User | null) => user,
 	} = config;
 	const { urlConfig, cookieConfig, autoCreateSession, requireVerifiedEmailForLinking, isAuthenticated } =
 		defaults;
@@ -162,9 +164,9 @@ function createHandlers(config: AuthConfig, defaults: ResolvedDefaults): AuthHan
 				const providerName = String(event.params["provider"] ?? "");
 				let user = null;
 
-				if (adapters.database) {
+				if (adapters.user) {
 					try {
-						user = await adapters.database.getUserByProviderId(providerName, profile.id);
+						user = await adapters.user.getUserByProviderId(providerName, profile.id);
 					} catch {
 						user = null;
 					}
@@ -175,14 +177,14 @@ function createHandlers(config: AuthConfig, defaults: ResolvedDefaults): AuthHan
 							: true
 						: false;
 					if (!user && canLinkByEmail) {
-						user = await adapters.database.getUserByEmail(profile.email);
+						user = await adapters.user.getUserByEmail(profile.email);
 					}
 					if (!user) {
-						user = await adapters.database.createUser(profile);
+						user = await adapters.user.createUser(profile);
 					}
-					if (user && adapters.database.linkOAuthAccount) {
+					if (user && adapters.user.linkOAuthAccount) {
 						try {
-							await adapters.database.linkOAuthAccount(user.id, providerName, profile.id);
+							await adapters.user.linkOAuthAccount(user.id, providerName, profile.id);
 						} catch {
 							// ignore duplicate link failures
 						}
@@ -241,7 +243,7 @@ function createHandlers(config: AuthConfig, defaults: ResolvedDefaults): AuthHan
 		}
 		const { session, user } = await adapters.session.validateSession(sessionId);
 		event.locals.session = session;
-		event.locals.user = user;
+		event.locals.user = sanitizeUser(user);
 		if (session && user) {
 			if (hooks.onSessionValidated) {
 				await hooks.onSessionValidated(event, session, user);
@@ -271,7 +273,7 @@ function createHandlers(config: AuthConfig, defaults: ResolvedDefaults): AuthHan
 		const requestConfig: Parameters<typeof createMagicLinkRequestHandler>[0] = {
 			...normalizedMagicLink,
 			magicLinkAdapter: adapters.magicLink!,
-			...(adapters.database ? { databaseAdapter: adapters.database } : {}),
+			...(adapters.user ? { databaseAdapter: adapters.user } : {}),
 		};
 		const verifyConfig: Parameters<typeof createMagicLinkVerifyHandler>[0] = {
 			...normalizedMagicLink,
@@ -281,7 +283,10 @@ function createHandlers(config: AuthConfig, defaults: ResolvedDefaults): AuthHan
 			onLoginMode,
 			redirectAfterLogin: urlConfig.afterLogin,
 			isAuthenticated,
-			...(adapters.database ? { databaseAdapter: adapters.database } : {}),
+			...(normalizedMagicLink["sanitizeUser"] === undefined
+				? { sanitizeUser }
+				: {}),
+			...(adapters.user ? { databaseAdapter: adapters.user } : {}),
 		};
 		handlers.magicLink = {
 			request: createMagicLinkRequestHandler(requestConfig),
@@ -310,7 +315,7 @@ function createHandlers(config: AuthConfig, defaults: ResolvedDefaults): AuthHan
 			rpID: webauthn.rpID ?? "",
 			...(webauthn.timeoutMs ? { timeout: webauthn.timeoutMs } : {}),
 			...(webauthn.userVerification ? { userVerification: webauthn.userVerification } : {}),
-			...(adapters.database ? { databaseAdapter: adapters.database } : {}),
+			...(adapters.user ? { databaseAdapter: adapters.user } : {}),
 		};
 		const loginVerifyConfig: WebAuthnLoginVerifyHandlerConfig = {
 			webauthnAdapter: adapters.webauthn!,
@@ -321,7 +326,8 @@ function createHandlers(config: AuthConfig, defaults: ResolvedDefaults): AuthHan
 			requireUserVerification: webauthn.userVerification === "required",
 			autoCreateSession,
 			onLoginMode,
-			...(adapters.database ? { databaseAdapter: adapters.database } : {}),
+			sanitizeUser,
+			...(adapters.user ? { databaseAdapter: adapters.user } : {}),
 		};
 		const webauthnOnLogin = webauthn.hooks?.onLogin ?? hooks.onLogin;
 		if (webauthnOnLogin) {
@@ -363,6 +369,7 @@ function buildRoutes(handlers: AuthHandlers): AuthRoutes {
 			if (!handlers.callback) throw new Error("OAuth callback handler not configured");
 			return { GET: handlers.callback };
 		},
+		logout: () => ({ POST: handlers.logout }),
 		magicLink: () => {
 			if (!handlers.magicLink) throw new Error("Magic link handlers not configured");
 			return { POST: handlers.magicLink.request };
