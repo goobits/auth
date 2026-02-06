@@ -24,6 +24,7 @@ import {
 } from "$lib/db/schema";
 
 export const auth = createAuth({
+  profile: "secure",
   adapters: {
     session: new DrizzleSessionAdapter(db, {
       sessionsTable: sessions,
@@ -54,6 +55,10 @@ export const auth = createAuth({
         callbackUrl: `${process.env.APP_URL}/auth/apple/callback`,
       }),
     },
+  },
+  security: {
+    rateLimit: { max: 20, windowMs: 60_000 },
+    alerts: { enabled: true },
   },
   magicLink: {
     send: {

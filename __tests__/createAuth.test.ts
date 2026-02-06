@@ -17,6 +17,7 @@ function createCookies() {
 
 function createEvent() {
 	return {
+		request: new Request('http://localhost/', { method: 'GET' }),
 		cookies: createCookies(),
 		locals: {} as Record<string, unknown>,
 		params: {},

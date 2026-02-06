@@ -39,3 +39,4 @@ This uses entrypoints that match `package.json` exports.
 - `hooks.onLogin` is for principal resolution; session issuance remains managed by auth handlers unless `hooks.onLoginMode` is `"manual"`.
 - Login flows now fail deterministically when no authenticated principal can be resolved.
 - Session revoke endpoints return `501` for unsupported adapter capabilities.
+- `profile` + `security` config now control policy wiring (CSRF, rate limiting, audit events, alerts).
