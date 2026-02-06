@@ -63,4 +63,35 @@ describe("session handlers", () => {
 		expect(payload.ok).toBe(true);
 		expect(sessionAdapter.invalidateSession).toHaveBeenCalledWith("s2");
 	});
+
+	it("returns 501 when bulk revoke is unsupported", async () => {
+		const sessionAdapter = {
+			invalidateSession: vi.fn(async () => {}),
+		};
+
+		const handler = createSessionRevokeHandler({ sessionAdapter });
+		const response = await handler(createEvent({ all: true }));
+		const payload = await response.json();
+
+		expect(response.status).toBe(501);
+		expect(payload.ok).toBe(false);
+		expect(payload.error).toContain("not supported");
+	});
+
+	it("maps adapter failures to deterministic responses", async () => {
+		const sessionAdapter = {
+			listSessions: vi.fn(async () => [{ id: "s2", userId: "u1" }]),
+			invalidateSession: vi.fn(async () => {
+				throw new Error("db down");
+			}),
+		};
+
+		const handler = createSessionRevokeHandler({ sessionAdapter });
+		const response = await handler(createEvent({ id: "s2" }));
+		const payload = await response.json();
+
+		expect(response.status).toBe(500);
+		expect(payload.ok).toBe(false);
+		expect(payload.error).toBe("Failed to revoke session");
+	});
 });

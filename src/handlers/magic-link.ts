@@ -15,6 +15,9 @@ import type {
 } from "../types/auth.ts";
 import type { User } from "../types/index.ts";
 import type { Session } from "../types/index.ts";
+import { ensureSessionAfterLogin, type OnLoginMode } from "../utils/session-lifecycle.ts";
+import { AuthPrincipalResolutionError } from "../errors/auth.ts";
+import { auditAuthEvent } from "../security/audit.ts";
 
 type MagicLinkAdapterLike = {
 	createToken: (params: {
@@ -98,6 +101,8 @@ type MagicLinkVerifyConfig = {
 	verifyRateLimitMax?: number;
 	verifyRateLimitWindowMs?: number;
 	sanitizeUser?: (user: User | null) => User | null;
+	autoCreateSession?: boolean;
+	onLoginMode?: OnLoginMode;
 	trustProxyHeader?: boolean;
 	key?: (event: RequestEventLike) => string;
 };
@@ -242,6 +247,8 @@ export function createMagicLinkVerifyHandler(
 		verifyRateLimitMax = 5,
 		verifyRateLimitWindowMs = 10 * 60 * 1000,
 		sanitizeUser = defaultSanitizeUser,
+		autoCreateSession = true,
+		onLoginMode = "augment",
 	} = config;
 
 	if (!magicLinkAdapter) {
@@ -305,6 +312,11 @@ export function createMagicLinkVerifyHandler(
 		}
 
 		if (!record) {
+			auditAuthEvent("magic_link.invalid", {
+				email,
+				hasToken: Boolean(token),
+				hasOtp: Boolean(otp),
+			});
 			return jsonResponse({ ok: false, error: "Invalid magic link" }, 400);
 		}
 
@@ -314,6 +326,9 @@ export function createMagicLinkVerifyHandler(
 			if (typeof recordId === "string") {
 				await magicLinkAdapter.deleteById(recordId);
 			}
+			auditAuthEvent("magic_link.expired", {
+				email: record["email"] ?? email,
+			});
 			return jsonResponse({ ok: false, error: "Magic link expired" }, 400);
 		}
 
@@ -369,13 +384,20 @@ export function createMagicLinkVerifyHandler(
 			};
 			const hookResult = await onLogin(event, profile, null, user);
 			if (hookResult?.userId) userId = String(hookResult.userId);
-		} else if (userId) {
-			const session = await sessionAdapter.createSession(userId);
-			if (sessionAdapter.setSessionCookie) {
-				sessionAdapter.setSessionCookie(event.cookies, session);
+		}
+		try {
+			userId = await ensureSessionAfterLogin({
+				event,
+				sessionAdapter,
+				userId,
+				autoCreateSession,
+				onLoginMode,
+			});
+		} catch (error) {
+			if (error instanceof AuthPrincipalResolutionError) {
+				return jsonResponse({ ok: false, error: error.message }, error.status);
 			}
-		} else {
-			return jsonResponse({ ok: false, error: "User not found" }, 400);
+			throw error;
 		}
 
 		if (event.request.method === "GET") {

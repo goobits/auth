@@ -21,6 +21,7 @@ This package exposes a small set of entrypoints. Everything else is internal.
 - `@goobits/auth/mfa`
 - `@goobits/auth/ui`
 - `@goobits/auth/security`
+- `@goobits/auth/errors`
 
 ## CodeAtlas
 
@@ -31,3 +32,9 @@ npm run api:scan
 ```
 
 This uses entrypoints that match `package.json` exports.
+
+## Behavioral Notes
+
+- `hooks.onLogin` is for principal resolution; session issuance remains managed by auth handlers unless `hooks.onLoginMode` is `"manual"`.
+- Login flows now fail deterministically when no authenticated principal can be resolved.
+- Session revoke endpoints return `501` for unsupported adapter capabilities.

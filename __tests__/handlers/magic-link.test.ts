@@ -144,4 +144,77 @@ describe("magic link handlers", () => {
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith("u1");
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled();
 	});
+
+	it("creates a session when onLogin returns a userId", async () => {
+		const magicLinkAdapter = createMagicLinkAdapter();
+		const sendEmail = vi.fn();
+		const sessionAdapter = {
+			createSession: vi.fn(async (userId: string) => ({ id: "s2", userId })),
+			setSessionCookie: vi.fn(),
+		};
+
+		const requestHandler = createMagicLinkRequestHandler({
+			magicLinkAdapter,
+			sendEmail,
+			allowSignup: true,
+			exposeToken: true,
+		});
+
+		const requestResponse = await requestHandler(
+			createEvent({ body: { email: "hook@example.com" } }) as RequestEventLike,
+		);
+		const { token } = await requestResponse.json();
+
+		const verifyHandler = createMagicLinkVerifyHandler({
+			magicLinkAdapter,
+			sessionAdapter,
+			onLogin: async () => ({ userId: "hook-user" }),
+		});
+
+		const verifyResponse = await verifyHandler(
+			createEvent({ body: { token } }) as RequestEventLike,
+		);
+		const payload = await verifyResponse.json();
+
+		expect(payload.ok).toBe(true);
+		expect(sessionAdapter.createSession).toHaveBeenCalledWith("hook-user");
+		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled();
+	});
+
+	it("rejects verification when no principal can be resolved", async () => {
+		const magicLinkAdapter = createMagicLinkAdapter();
+		const sendEmail = vi.fn();
+		const sessionAdapter = {
+			createSession: vi.fn(async (userId: string) => ({ id: "s3", userId })),
+			setSessionCookie: vi.fn(),
+		};
+
+		const requestHandler = createMagicLinkRequestHandler({
+			magicLinkAdapter,
+			sendEmail,
+			allowSignup: true,
+			exposeToken: true,
+		});
+
+		const requestResponse = await requestHandler(
+			createEvent({ body: { email: "missing@example.com" } }) as RequestEventLike,
+		);
+		const { token } = await requestResponse.json();
+
+		const verifyHandler = createMagicLinkVerifyHandler({
+			magicLinkAdapter,
+			sessionAdapter,
+			onLogin: async () => undefined,
+		});
+
+		const verifyResponse = await verifyHandler(
+			createEvent({ body: { token } }) as RequestEventLike,
+		);
+		const payload = await verifyResponse.json();
+
+		expect(verifyResponse.status).toBe(401);
+		expect(payload.ok).toBe(false);
+		expect(payload.error).toContain("Unable to resolve authenticated principal");
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled();
+	});
 });

@@ -20,6 +20,9 @@ import type { User } from "../types/index.ts";
 import { generateRandomUUID } from "../utils/crypto.ts";
 import { jsonResponse, parseRequestDataWithSchema } from "../utils/http.ts";
 import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.ts";
+import { ensureSessionAfterLogin, type OnLoginMode } from "../utils/session-lifecycle.ts";
+import { AuthPrincipalResolutionError } from "../errors/auth.ts";
+import { auditAuthEvent } from "../security/audit.ts";
 
 type ChallengeRecord = {
 	id: string;
@@ -451,6 +454,8 @@ export type WebAuthnLoginVerifyHandlerConfig = {
 	requireUserVerification?: boolean;
 	onLogin?: AuthHooks["onLogin"];
 	sanitizeUser?: (user: User | null) => User | null;
+	autoCreateSession?: boolean;
+	onLoginMode?: OnLoginMode;
 };
 
 export function createWebAuthnLoginVerifyHandler(
@@ -466,6 +471,8 @@ export function createWebAuthnLoginVerifyHandler(
 		requireUserVerification = false,
 		onLogin,
 		sanitizeUser = defaultSanitizeUser,
+		autoCreateSession = true,
+		onLoginMode = "augment",
 	} = config;
 
 	if (!rpID || !origin) {
@@ -482,15 +489,20 @@ export function createWebAuthnLoginVerifyHandler(
 		const challengeRaw = await webauthnAdapter.getChallenge(challengeId);
 		const challenge = toChallengeRecord(challengeRaw);
 		if (!challenge) {
+			auditAuthEvent("webauthn.challenge_missing", { challengeId });
 			return jsonResponse({ ok: false, error: "Challenge not found" }, 400);
 		}
 		if (challenge.type !== "authentication") {
+			auditAuthEvent("webauthn.challenge_invalid_type", { challengeId });
 			return jsonResponse({ ok: false, error: "Invalid challenge" }, 400);
 		}
 
 		const storedCredentialRaw = await webauthnAdapter.getCredential(credential.id);
 		const storedCredential = toCredentialRecord(storedCredentialRaw);
 		if (!storedCredential) {
+			auditAuthEvent("webauthn.credential_missing", {
+				credentialId: credential.id,
+			});
 			return jsonResponse({ ok: false, error: "Credential not found" }, 400);
 		}
 
@@ -512,6 +524,9 @@ export function createWebAuthnLoginVerifyHandler(
 		});
 
 		if (!verification.verified) {
+			auditAuthEvent("webauthn.authentication_failed", {
+				credentialId: credential.id,
+			});
 			return jsonResponse({ ok: false, error: "Authentication failed" }, 400);
 		}
 
@@ -534,9 +549,20 @@ export function createWebAuthnLoginVerifyHandler(
 			};
 			const hookResult = await onLogin(event, profile, null, user);
 			if (hookResult?.userId) userId = String(hookResult.userId);
-		} else {
-			const session = await sessionAdapter.createSession(userId);
-			sessionAdapter.setSessionCookie?.(event.cookies, session);
+		}
+		try {
+			userId = await ensureSessionAfterLogin({
+				event,
+				sessionAdapter,
+				userId,
+				autoCreateSession,
+				onLoginMode,
+			});
+		} catch (error) {
+			if (error instanceof AuthPrincipalResolutionError) {
+				return jsonResponse({ ok: false, error: error.message }, error.status);
+			}
+			throw error;
 		}
 
 		if (event.request.method === "GET") {

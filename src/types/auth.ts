@@ -45,6 +45,7 @@ export type AuthCookiesConfig = {
 };
 
 export type AuthLoginResult = { userId: string | number } | void;
+export type OnLoginMode = "augment" | "manual";
 
 export type AuthHooks = {
 	onSessionValidated?: (
@@ -58,6 +59,9 @@ export type AuthHooks = {
 		tokens: OAuthTokens | null,
 		user?: User | null,
 	) => Promise<AuthLoginResult> | AuthLoginResult;
+	// "augment" keeps framework-managed session creation (default).
+	// "manual" lets advanced callers fully manage session creation.
+	onLoginMode?: OnLoginMode;
 	onLogout?: (event: RequestEventLike) => Promise<void> | void;
 	onError?: (event: RequestEventLike, error: unknown) => Promise<void> | void;
 };
