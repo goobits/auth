@@ -54,6 +54,18 @@ export const { GET, POST } = auth.handlers;
 - `await auth.requireRole(event, "admin")`
 - `await auth.getSession(event)`
 
+## Credentials Provider
+
+```ts
+import { CredentialsProvider } from "@goobits/auth/providers";
+
+const credentials = new CredentialsProvider({
+  identifierField: "nickname",
+  allowBoth: true,
+  normalizeIdentifier: (value) => value.trim().toLowerCase(),
+});
+```
+
 ## One-Stop Drizzle Adapter
 
 `drizzleAdapter(db, { schema })` returns a unified bundle.
