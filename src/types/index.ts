@@ -3,6 +3,18 @@ export type Session = {
 	userId: string;
 	expiresAt: Date;
 	fresh?: boolean;
+	createdAt?: Date;
+	lastActiveAt?: Date | null;
+	ip?: string | null;
+	userAgent?: string | null;
+	fingerprint?: string | null;
+};
+
+export type SessionMetadata = {
+	rememberMe?: boolean;
+	ip?: string;
+	userAgent?: string;
+	fingerprint?: string;
 };
 
 export type User = {
@@ -15,6 +27,11 @@ export type User = {
 	settings?: Record<string, unknown>;
 	createdAt?: Date;
 	updatedAt?: Date;
+	user_id?: number;
+	nickname?: string;
+	is_admin?: boolean;
+	is_moderator?: boolean;
+	u_posts?: number;
 };
 
 export type OAuthTokens = {
