@@ -5,57 +5,47 @@ import type { Cookies } from "@sveltejs/kit";
  * Base Session Adapter Interface
  * All session adapters must implement these methods
  */
-export class SessionAdapter {
+export abstract class SessionAdapter {
 	/**
 	 * Create a new session for a user
 	 * @param {string} userId - User ID to create session for
 	 * @param {Object} [metadata] - Additional session metadata
 	 * @returns {Promise<import('../../types').Session>}
 	 */
-	async createSession(
+	abstract createSession(
 		userId: string,
-		metadata: Record<string, unknown> = {},
-	): Promise<Session> {
-		throw new Error("createSession must be implemented");
-	}
+		metadata?: Record<string, unknown>,
+	): Promise<Session>;
 
 	/**
 	 * Validate a session and return session + sanitized user
 	 * @param {string} sessionId - Session ID to validate
 	 * @returns {Promise<{session: import('../../types').Session | null, user: import('../../types').User | null}>}
 	 */
-	async validateSession(
+	abstract validateSession(
 		sessionId: string,
-	): Promise<{ session: Session | null; user: User | null }> {
-		throw new Error("validateSession must be implemented");
-	}
+	): Promise<{ session: Session | null; user: User | null }>;
 
 	/**
 	 * Invalidate a specific session
 	 * @param {string} sessionId - Session ID to invalidate
 	 * @returns {Promise<void>}
 	 */
-	async invalidateSession(sessionId: string): Promise<void> {
-		throw new Error("invalidateSession must be implemented");
-	}
+	abstract invalidateSession(sessionId: string): Promise<void>;
 
 	/**
 	 * Invalidate all sessions for a user
 	 * @param {string} userId - User ID whose sessions to invalidate
 	 * @returns {Promise<void>}
 	 */
-	async invalidateUserSessions(userId: string): Promise<void> {
-		throw new Error("invalidateUserSessions must be implemented");
-	}
+	abstract invalidateUserSessions(userId: string): Promise<void>;
 
 	/**
 	 * List sessions for a user
 	 * @param {string} userId - User ID
 	 * @returns {Promise<Array<import('../../types').Session>>}
 	 */
-	async listSessions(userId: string): Promise<Session[]> {
-		throw new Error("listSessions must be implemented");
-	}
+	abstract listSessions(userId: string): Promise<Session[]>;
 
 	/**
 	 * Set session cookie
@@ -63,16 +53,12 @@ export class SessionAdapter {
 	 * @param {import('../../types').Session} session - Session to set
 	 * @returns {void}
 	 */
-	setSessionCookie(cookies: Cookies, session: Session): void {
-		throw new Error("setSessionCookie must be implemented");
-	}
+	abstract setSessionCookie(cookies: Cookies, session: Session): void;
 
 	/**
 	 * Delete session cookie
 	 * @param {import('@sveltejs/kit').Cookies} cookies - SvelteKit cookies object
 	 * @returns {void}
 	 */
-	deleteSessionCookie(cookies: Cookies): void {
-		throw new Error("deleteSessionCookie must be implemented");
-	}
+	abstract deleteSessionCookie(cookies: Cookies): void;
 }

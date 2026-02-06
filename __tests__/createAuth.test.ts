@@ -63,6 +63,7 @@ describe('createAuth', () => {
 		const auth = createAuth({ adapters: { session: createSessionAdapter() } })
 		expect(auth.handlers.login).toBeUndefined()
 		expect(auth.handlers.callback).toBeUndefined()
+		expect(auth.routes.logout().POST).toBeDefined()
 	})
 
 	it('clears cookie when session is invalid', async () => {

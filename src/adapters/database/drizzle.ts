@@ -1,4 +1,4 @@
-import { DatabaseAdapter } from "./base.ts";
+import { UserAdapter } from "./base.ts";
 import { and, eq } from "drizzle-orm";
 import type { OAuthProfile, User } from "../../types/index.ts";
 import {
@@ -55,7 +55,7 @@ function toDrizzleRow(values: Record<string, DrizzleJson>): DrizzleRow {
 	return values;
 }
 
-export class DrizzleUserAdapter extends DatabaseAdapter {
+export class DrizzleUserAdapter extends UserAdapter {
 	private db: DrizzleDbLike;
 	private usersTable: UsersTable;
 	private oauthAccountsTable: OAuthAccountsTable | null;
@@ -171,7 +171,7 @@ export class DrizzleUserAdapter extends DatabaseAdapter {
 		});
 	}
 
-	async _getUserWithPassword(email: string): Promise<(User & { password?: string | null }) | null> {
+	async getUserWithPasswordHash(email: string): Promise<(User & { password?: string | null }) | null> {
 		const [row] = await this.db
 			.select()
 			.from(this.usersTable)

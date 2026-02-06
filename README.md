@@ -15,6 +15,7 @@ OAuth (Google, Apple, extensible) · Local auth (Argon2id) · Sessions (rolling,
 - `docs/quickstart.md` — setup, routes, client SDK
 - `docs/schema.md` — all SQL
 - `docs/public-api.md` — entry points
+- `docs/migrations/vnext-breaking.md` — breaking API migration notes
 
 ## Production Guarantees
 
@@ -249,7 +250,7 @@ export const actions = {
     const email = formData.get('email');
     const password = formData.get('password');
 
-    const user = await userAdapter._getUserWithPassword(email);
+    const user = await userAdapter.getUserWithPasswordHash(email);
     if (!user || !user.password) return { error: 'Invalid email or password' };
 
     const valid = await verifyPassword(user.password, password);

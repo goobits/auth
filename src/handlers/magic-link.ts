@@ -37,7 +37,7 @@ type MagicLinkAdapterLike = {
 	deleteByEmail: (email: string) => Promise<unknown>;
 };
 
-type MagicLinkDatabaseAdapterLike = {
+type MagicLinkUserAdapterLike = {
 	getUserByEmail: (email: string) => Promise<User | null>;
 	getUserById: (id: string) => Promise<User | null>;
 	createUser: (profile: {
@@ -59,7 +59,7 @@ type MagicLinkSessionAdapterLike = {
 
 type MagicLinkRequestConfig = {
 	magicLinkAdapter: MagicLinkAdapterLike;
-	databaseAdapter?: Pick<MagicLinkDatabaseAdapterLike, "getUserByEmail">;
+	databaseAdapter?: Pick<MagicLinkUserAdapterLike, "getUserByEmail">;
 	sendEmail: (payload: {
 		email: string;
 		link: string;
@@ -88,7 +88,7 @@ type MagicLinkRequestConfig = {
 
 type MagicLinkVerifyConfig = {
 	magicLinkAdapter: MagicLinkAdapterLike;
-	databaseAdapter?: MagicLinkDatabaseAdapterLike;
+	databaseAdapter?: MagicLinkUserAdapterLike;
 	sessionAdapter: MagicLinkSessionAdapterLike;
 	allowSignup?: boolean;
 	createUser?: (email: string, event: RequestEventLike) => Promise<User>;

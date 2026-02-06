@@ -11,16 +11,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CredentialsProvider } from '../../src/providers/credentials.ts';
 import { hashPassword } from '../../src/utils/password.ts';
-import type { DatabaseAdapter } from '../../src/adapters/database/base.ts';
+import type { UserAdapter } from '../../src/adapters/database/base.ts';
 
-type MockDatabaseAdapter = Pick<
-	DatabaseAdapter,
-	'getUserByEmail' | 'createUser' | 'updateUser' | '_getUserWithPassword'
+type MockUserAdapter = Pick<
+	UserAdapter,
+	'getUserByEmail' | 'createUser' | 'updateUser' | 'getUserWithPasswordHash'
 >;
 
 describe('CredentialsProvider', () => {
 	let provider: CredentialsProvider;
-	let mockUserAdapter: MockDatabaseAdapter;
+	let mockUserAdapter: MockUserAdapter;
 
 	beforeEach(() => {
 		// Create mock user adapter
@@ -28,7 +28,7 @@ describe('CredentialsProvider', () => {
 			getUserByEmail: vi.fn(),
 			createUser: vi.fn(),
 			updateUser: vi.fn(),
-			_getUserWithPassword: vi.fn(),
+			getUserWithPasswordHash: vi.fn(),
 		};
 
 		provider = new CredentialsProvider();
@@ -56,8 +56,8 @@ describe('CredentialsProvider', () => {
 			const password = 'ValidPassword123!';
 			const hashedPassword = await hashPassword(password);
 
-			// Mock _getUserWithPassword to return user with password
-			mockUserAdapter._getUserWithPassword.mockResolvedValue({
+			// Mock getUserWithPasswordHash to return user with password
+			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'user-123',
 				email,
 				password: hashedPassword,
@@ -82,7 +82,7 @@ describe('CredentialsProvider', () => {
 			if (!result.user) throw new Error('Expected user');
 			expect(result.user.id).toBe('user-123');
 			expect(result.user.password).toBeUndefined(); // Should be sanitized
-			expect(mockUserAdapter._getUserWithPassword).toHaveBeenCalledWith(email);
+			expect(mockUserAdapter.getUserWithPasswordHash).toHaveBeenCalledWith(email);
 			expect(mockUserAdapter.getUserByEmail).toHaveBeenCalledWith(email);
 		});
 
@@ -92,7 +92,7 @@ describe('CredentialsProvider', () => {
 			const incorrectPassword = 'WrongPassword123!';
 			const hashedPassword = await hashPassword(correctPassword);
 
-			mockUserAdapter._getUserWithPassword.mockResolvedValue({
+			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'user-123',
 				email,
 				password: hashedPassword,
@@ -110,7 +110,7 @@ describe('CredentialsProvider', () => {
 		});
 
 		it('should reject authentication for non-existent user', async () => {
-			mockUserAdapter._getUserWithPassword.mockResolvedValue(null);
+			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue(null);
 
 			const result = await provider.authenticate({
 				email: 'nonexistent@example.com',
@@ -123,7 +123,7 @@ describe('CredentialsProvider', () => {
 		});
 
 		it('should reject authentication for user without password', async () => {
-			mockUserAdapter._getUserWithPassword.mockResolvedValue({
+			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'user-123',
 				email: 'oauth-user@example.com',
 				password: null, // OAuth user without password
@@ -148,7 +148,7 @@ describe('CredentialsProvider', () => {
 
 			expect(result.valid).toBe(false);
 			expect(result.user).toBeNull();
-			expect(mockUserAdapter._getUserWithPassword).not.toHaveBeenCalled();
+			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled();
 		});
 
 		it('should reject authentication with empty password', async () => {
@@ -160,7 +160,7 @@ describe('CredentialsProvider', () => {
 
 			expect(result.valid).toBe(false);
 			expect(result.user).toBeNull();
-			expect(mockUserAdapter._getUserWithPassword).not.toHaveBeenCalled();
+			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled();
 		});
 
 		it('should handle email case-insensitively', async () => {
@@ -168,7 +168,7 @@ describe('CredentialsProvider', () => {
 			const password = 'ValidPassword123!';
 			const hashedPassword = await hashPassword(password);
 
-			mockUserAdapter._getUserWithPassword.mockResolvedValue({
+			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'user-123',
 				email: email.toLowerCase(),
 				password: hashedPassword,
@@ -186,7 +186,7 @@ describe('CredentialsProvider', () => {
 			});
 
 			expect(result.valid).toBe(true);
-			expect(mockUserAdapter._getUserWithPassword).toHaveBeenCalledWith(email.toLowerCase());
+			expect(mockUserAdapter.getUserWithPasswordHash).toHaveBeenCalledWith(email.toLowerCase());
 		});
 	});
 
@@ -422,7 +422,7 @@ describe('CredentialsProvider', () => {
 			const currentHash = await hashPassword(currentPassword);
 
 			// Mock authenticate to succeed
-			mockUserAdapter._getUserWithPassword.mockResolvedValue({
+			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'user-123',
 				email,
 				password: currentHash,
@@ -465,7 +465,7 @@ describe('CredentialsProvider', () => {
 			const newPassword = 'NewPassword123!';
 			const currentHash = await hashPassword(currentPassword);
 
-			mockUserAdapter._getUserWithPassword.mockResolvedValue({
+			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'user-123',
 				email,
 				password: currentHash,
@@ -484,7 +484,7 @@ describe('CredentialsProvider', () => {
 		});
 
 		it('should reject password change for non-existent user', async () => {
-			mockUserAdapter._getUserWithPassword.mockResolvedValue(null);
+			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue(null);
 
 			const result = await provider.changePassword({
 				email: 'nonexistent@example.com',
@@ -522,7 +522,7 @@ describe('CredentialsProvider', () => {
 
 			// 2. Authenticate (simulate signin)
 			const hashedPassword = await hashPassword(password);
-			mockUserAdapter._getUserWithPassword.mockResolvedValue({
+			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'user-int',
 				email,
 				password: hashedPassword,
@@ -553,7 +553,7 @@ describe('CredentialsProvider', () => {
 			const newHash = await hashPassword(newPassword);
 
 			// 1. Initial state: user has old password
-			mockUserAdapter._getUserWithPassword.mockResolvedValue({
+			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'user-change',
 				email,
 				password: oldHash,
@@ -580,7 +580,7 @@ describe('CredentialsProvider', () => {
 			expect(changeResult.valid).toBe(true);
 
 			// 3. After password change, mock should return new hash
-			mockUserAdapter._getUserWithPassword.mockResolvedValue({
+			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'user-change',
 				email,
 				password: newHash, // Now has new password

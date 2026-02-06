@@ -1,4 +1,4 @@
-import { DatabaseAdapter } from "./base.ts";
+import { UserAdapter } from "./base.ts";
 import type { User } from "../../types/index.ts";
 
 type D1Value = string | number | boolean | null;
@@ -22,7 +22,7 @@ type D1UserAdapterOptions = {
 	allowedFields?: string[];
 };
 
-export class D1UserAdapter extends DatabaseAdapter {
+export class D1UserAdapter extends UserAdapter {
 	db: D1DatabaseLike;
 	usersTable: string;
 	oauthAccountsTable: string;
@@ -204,7 +204,7 @@ export class D1UserAdapter extends DatabaseAdapter {
 		await this.db.prepare(sql).bind(userId, provider, providerAccountId).run();
 	}
 
-	async _getUserWithPassword(email: string): Promise<(User & { password?: string | null }) | null> {
+	async getUserWithPasswordHash(email: string): Promise<(User & { password?: string | null }) | null> {
 		const sql = `SELECT * FROM ${this.usersTable} WHERE ${this.columns.email} = ? LIMIT 1`;
 		const row = await this.db.prepare(sql).bind(email).first();
 		const mapped = this.mapUser(row);

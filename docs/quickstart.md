@@ -29,7 +29,7 @@ export const auth = createAuth({
       sessionsTable: sessions,
       usersTable: users,
     }),
-    database: new DrizzleUserAdapter(db, { usersTable: users }),
+    user: new DrizzleUserAdapter(db, { usersTable: users }),
     magicLink: new DrizzleMagicLinkAdapter(db, { tokensTable: magicLinkTokens }),
     webauthn: new DrizzleWebAuthnAdapter(db, {
       credentialsTable: webauthnCredentials,
@@ -56,10 +56,14 @@ export const auth = createAuth({
     },
   },
   magicLink: {
-    allowSignup: true,
-    magicLinkPath: "/auth/magic/verify",
-    sendEmail: async ({ email, link, otp }) => {
-      // send email with your provider
+    send: {
+      email: async ({ email, link, otp }) => {
+        // send email with your provider
+      },
+    },
+    settings: {
+      allowSignup: true,
+      magicLinkPath: "/auth/magic/verify",
     },
   },
   webauthn: {

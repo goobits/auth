@@ -18,6 +18,7 @@ This package exposes a small set of entrypoints. Everything else is internal.
 - `@goobits/auth/utils`
 - `@goobits/auth/client`
 - `@goobits/auth/types`
+- `@goobits/auth/testing`
 - `@goobits/auth/mfa`
 - `@goobits/auth/ui`
 - `@goobits/auth/security`
