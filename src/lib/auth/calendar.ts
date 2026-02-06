@@ -1,4 +1,4 @@
-import { createAuth } from '@goobits/auth'
+import { GoobitsAuth } from '@goobits/auth'
 import { D1SessionAdapter, D1UserAdapter } from '@goobits/auth/adapters'
 import { GoogleProvider, AppleProvider } from '@goobits/auth/providers'
 import { dev } from '$app/environment'
@@ -59,7 +59,7 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 		}
 	})
 
-	const databaseAdapter = new D1UserAdapter(db, {
+	const userAdapter = new D1UserAdapter(db, {
 		usersTable: 'calendar_users',
 		oauthAccountsTable: 'calendar_oauth_accounts',
 		columns: {
@@ -101,16 +101,17 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 		}
 	}
 
-	const auth = createAuth({
-		adapters: {
+	const auth = new GoobitsAuth({
+		adapter: {
 			session: sessionAdapter,
-			database: databaseAdapter
+			user: userAdapter
 		},
 		providers,
 		urls: {
 			afterLogin: '/calendar/login/redirect',
 			afterLogout: '/calendar/login'
 		},
+		profile: 'secure',
 		sessions: {},
 		hooks: {
 			onLogin: async (evt: any, profile: any, _tokens: any, user: any) => {
