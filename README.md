@@ -42,11 +42,15 @@ OAuth (Google, Apple, extensible) · Local auth (Argon2id) · Sessions (rolling,
 ## Easy Secure Setup
 
 ```ts
-import { createAuth } from "@goobits/auth";
+import { GoobitsAuth } from "@goobits/auth";
+import { drizzleAdapter } from "@goobits/auth/adapters/drizzle";
 
-export const auth = createAuth({
+export const auth = new GoobitsAuth({
   profile: "secure",
-  adapters: { session, user, oauthToken, magicLink, webauthn },
+  adapter: drizzleAdapter(db, {
+    schema,
+    oauthTokenEncryptionKey: process.env.TOKEN_ENCRYPTION_KEY ?? null,
+  }),
   providers: { google: { provider: googleProvider } },
   security: {
     alerts: { enabled: true },
@@ -56,6 +60,7 @@ export const auth = createAuth({
 
 - `profile: "secure"` enables rate limiting and audit policy wiring.
 - `profile: "strict"` additionally enforces CSRF checks on state-changing auth routes.
+- For the full zero-plumbing setup (`auth.handle()` + catch-all `auth.handlers`), see `docs/quickstart.md`.
 
 ---
 
