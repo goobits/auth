@@ -1,201 +1,77 @@
-# Quickstart
+# Quick Start (SvelteKit)
 
-This is the only place with setup + code examples.
+This is the 5-minute path.
 
-## 1) Server config
+## 1. Create auth instance
 
-```js
-// src/lib/auth/server.js
-import { createAuth } from "@goobits/auth";
-import {
-  DrizzleSessionAdapter,
-  DrizzleUserAdapter,
-  DrizzleMagicLinkAdapter,
-  DrizzleWebAuthnAdapter,
-} from "@goobits/auth/adapters";
-import { GoogleProvider, AppleProvider } from "@goobits/auth/providers";
-import { db } from "$lib/db";
-import {
-  users,
-  sessions,
-  magicLinkTokens,
-  webauthnCredentials,
-  webauthnChallenges,
-} from "$lib/db/schema";
+```ts
+// src/lib/auth.ts
+import { GoobitsAuth } from "@goobits/auth";
+import { drizzleAdapter } from "@goobits/auth/adapters/drizzle";
+import { GoogleProvider } from "@goobits/auth/providers";
+import { db, schema } from "$lib/server/db";
+import { env } from "$env/dynamic/private";
 
-export const auth = createAuth({
-  profile: "secure",
-  adapters: {
-    session: new DrizzleSessionAdapter(db, {
-      sessionsTable: sessions,
-      usersTable: users,
-    }),
-    user: new DrizzleUserAdapter(db, { usersTable: users }),
-    magicLink: new DrizzleMagicLinkAdapter(db, { tokensTable: magicLinkTokens }),
-    webauthn: new DrizzleWebAuthnAdapter(db, {
-      credentialsTable: webauthnCredentials,
-      challengesTable: webauthnChallenges,
-    }),
-  },
+export const auth = new GoobitsAuth({
+  adapter: drizzleAdapter(db, {
+    schema,
+    oauthTokenEncryptionKey: env.TOKEN_ENCRYPTION_KEY,
+  }),
   providers: {
     google: {
       provider: new GoogleProvider({
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackUrl: `${process.env.APP_URL}/auth/google/callback`,
-      }),
-      scopes: ["openid", "profile", "email"],
-    },
-    apple: {
-      provider: new AppleProvider({
-        clientId: process.env.APPLE_CLIENT_ID,
-        teamId: process.env.APPLE_TEAM_ID,
-        keyId: process.env.APPLE_KEY_ID,
-        privateKey: process.env.APPLE_PRIVATE_KEY,
-        callbackUrl: `${process.env.APP_URL}/auth/apple/callback`,
+        clientId: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+        callbackUrl: `${env.APP_URL}/auth/callback/google`,
       }),
     },
   },
-  security: {
-    rateLimit: { max: 20, windowMs: 60_000 },
-    alerts: { enabled: true },
-  },
-  magicLink: {
-    send: {
-      email: async ({ email, link, otp }) => {
-        // send email with your provider
-      },
-    },
-    settings: {
-      allowSignup: true,
-      magicLinkPath: "/auth/magic/verify",
-    },
-  },
-  webauthn: {
-    rpID: "localhost",
-    rpName: "Your App",
-    origin: "http://localhost:5173",
-  },
-  sessions: {},
 });
 ```
 
-## 2) Hooks
+## 2. Wire SvelteKit hook
 
-```js
-// src/hooks.server.js
-import { auth } from "$lib/auth/server";
-export const handle = auth.handlers.hooks;
+```ts
+// src/hooks.server.ts
+import { auth } from "$lib/auth";
+
+export const handle = auth.handle();
 ```
 
-## 3) Routes (DRY)
+## 3. Add catch-all auth route
 
-```js
-// src/routes/auth/magic/+server.js
-import { auth } from "$lib/auth/server";
-export const POST = auth.routes.magicLink().POST;
+```ts
+// src/routes/auth/[...auth]/+server.ts
+import { auth } from "$lib/auth";
+
+export const { GET, POST } = auth.handlers;
 ```
 
-```js
-// src/routes/auth/magic/verify/+server.js
-import { auth } from "$lib/auth/server";
-export const GET = auth.routes.magicLinkVerify().GET;
-export const POST = auth.routes.magicLinkVerify().POST;
+## 4. Protect routes
+
+```ts
+// src/routes/admin/+page.server.ts
+import { auth } from "$lib/auth";
+
+export async function load(event) {
+  await auth.requireRole(event, "admin");
+  return {};
+}
 ```
 
-```js
-// src/routes/auth/passkey/register/options/+server.js
-import { auth } from "$lib/auth/server";
-export const POST = auth.routes.passkeyRegisterOptions().POST;
+## 5. Optional: wrapper handlers
+
+```ts
+import { auth } from "$lib/auth";
+
+export const POST = async (event) => {
+  console.info("auth POST", event.url.pathname);
+  return auth.handlers.POST(event);
+};
 ```
 
-```js
-// src/routes/auth/passkey/register/verify/+server.js
-import { auth } from "$lib/auth/server";
-export const POST = auth.routes.passkeyRegisterVerify().POST;
-```
+## Notes
 
-```js
-// src/routes/auth/passkey/login/options/+server.js
-import { auth } from "$lib/auth/server";
-export const POST = auth.routes.passkeyLoginOptions().POST;
-```
-
-```js
-// src/routes/auth/passkey/login/verify/+server.js
-import { auth } from "$lib/auth/server";
-export const POST = auth.routes.passkeyLoginVerify().POST;
-```
-
-```js
-// src/routes/auth/sessions/+server.js
-import { auth } from "$lib/auth/server";
-export const GET = auth.routes.sessions().GET;
-export const POST = auth.routes.sessions().POST;
-```
-
-```js
-// src/routes/auth/[provider]/+server.js
-import { auth } from "$lib/auth/server";
-export const GET = auth.routes.login().GET;
-```
-
-```js
-// src/routes/auth/[provider]/callback/+server.js
-import { auth } from "$lib/auth/server";
-export const GET = auth.routes.callback().GET;
-```
-
-## 4) Client SDK
-
-```js
-// src/lib/auth/client.js
-import { createAuthClient } from "@goobits/auth/client";
-
-export const authClient = createAuthClient({
-  baseUrl: "",
-  endpoints: {
-    magicLinkRequest: "/auth/magic",
-    magicLinkVerify: "/auth/magic/verify",
-    passkeyRegisterOptions: "/auth/passkey/register/options",
-    passkeyRegisterVerify: "/auth/passkey/register/verify",
-    passkeyLoginOptions: "/auth/passkey/login/options",
-    passkeyLoginVerify: "/auth/passkey/login/verify",
-    sessions: "/auth/sessions",
-  },
-});
-
-// OAuth redirect
-// authClient.loginWithOAuth("google");
-
-// Magic link
-// await authClient.sendMagicLink({ email });
-// await authClient.verifyMagicLink({ email, otp });
-
-// Passkeys
-// await authClient.registerPasskey({ name: "MacBook" });
-// await authClient.loginWithPasskey({ email });
-
-// Sessions
-// await authClient.listSessions();
-// await authClient.revokeSession({ others: true });
-```
-
-## 5) UI helpers (optional)
-
-```svelte
-<script>
-  import { AuthGate, SessionManager } from "@goobits/auth/ui";
-  import "@goobits/auth/ui/theme.css";
-</script>
-
-<AuthGate let:user>
-  <p>Welcome {user.email}</p>
-</AuthGate>
-
-<SessionManager listEndpoint="/auth/sessions" revokeEndpoint="/auth/sessions" />
-```
-
-## Schema
-
-Use `docs/schema.md` for the SQL tables.
+- `auth.handle()` populates `event.locals.user`, `event.locals.session`, and `event.locals.auth`.
+- `auth.handlers` supports `/auth/signin/:provider`, `/auth/callback/:provider`, `/auth/signout`, and feature routes for magic links, passkeys, and sessions.
+- For low-level control, keep using manual handlers/adapters from `@goobits/auth/handlers` and `@goobits/auth/adapters`.

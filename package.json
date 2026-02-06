@@ -14,6 +14,7 @@
     "./adapters/database": "./src/adapters/database/index.ts",
     "./adapters/session": "./src/adapters/session/index.ts",
     "./adapters/oauth-token": "./src/adapters/oauth-token/index.ts",
+    "./adapters/drizzle": "./src/adapters/drizzle/index.ts",
     "./adapters/verification-token": "./src/adapters/verification-token/index.ts",
     "./adapters/magic-link": "./src/adapters/magic-link/index.ts",
     "./adapters/webauthn": "./src/adapters/webauthn/index.ts",
@@ -37,8 +38,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "audit": "npm audit --omit=dev --audit-level=high",
     "security:check": "npm run typecheck && npm test && npm run audit",
-    "api:scan": "npx @goobits/codeatlas . --format json --out .codeatlas --suggest --entrypoints src/index.ts,src/adapters/index.ts,src/adapters/database/index.ts,src/adapters/session/index.ts,src/adapters/oauth-token/index.ts,src/adapters/verification-token/index.ts,src/adapters/magic-link/index.ts,src/adapters/webauthn/index.ts,src/providers/index.ts,src/handlers/index.ts,src/utils/index.ts,src/types/index.ts,src/testing/index.ts,src/mfa/index.ts,src/ui/index.ts,src/security/index.ts,src/errors/index.ts",
-    "api:map": "npx @goobits/codeatlas . --format mermaid --out .codeatlas --entrypoints src/index.ts,src/adapters/index.ts,src/adapters/database/index.ts,src/adapters/session/index.ts,src/adapters/oauth-token/index.ts,src/adapters/verification-token/index.ts,src/adapters/magic-link/index.ts,src/adapters/webauthn/index.ts,src/providers/index.ts,src/handlers/index.ts,src/utils/index.ts,src/types/index.ts,src/testing/index.ts,src/mfa/index.ts,src/ui/index.ts,src/security/index.ts,src/errors/index.ts"
+    "api:scan": "npx @goobits/codeatlas . --format json --out .codeatlas --suggest --entrypoints src/index.ts,src/adapters/index.ts,src/adapters/drizzle/index.ts,src/adapters/database/index.ts,src/adapters/session/index.ts,src/adapters/oauth-token/index.ts,src/adapters/verification-token/index.ts,src/adapters/magic-link/index.ts,src/adapters/webauthn/index.ts,src/providers/index.ts,src/handlers/index.ts,src/utils/index.ts,src/types/index.ts,src/testing/index.ts,src/mfa/index.ts,src/ui/index.ts,src/security/index.ts,src/errors/index.ts",
+    "api:map": "npx @goobits/codeatlas . --format mermaid --out .codeatlas --entrypoints src/index.ts,src/adapters/index.ts,src/adapters/drizzle/index.ts,src/adapters/database/index.ts,src/adapters/session/index.ts,src/adapters/oauth-token/index.ts,src/adapters/verification-token/index.ts,src/adapters/magic-link/index.ts,src/adapters/webauthn/index.ts,src/providers/index.ts,src/handlers/index.ts,src/utils/index.ts,src/types/index.ts,src/testing/index.ts,src/mfa/index.ts,src/ui/index.ts,src/security/index.ts,src/errors/index.ts"
   },
   "keywords": [
     "auth",
