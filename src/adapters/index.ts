@@ -37,3 +37,11 @@ export {
 	DrizzleWebAuthnAdapter,
 	D1WebAuthnAdapter,
 } from "./webauthn/index.ts";
+
+// One-stop Drizzle adapter bundle
+export { drizzleAdapter } from "./drizzle/index.ts";
+export type {
+	DrizzleAdapterBundle,
+	DrizzleAdapterOptions,
+	DrizzleAuthSchema,
+} from "./drizzle/index.ts";

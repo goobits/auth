@@ -1,42 +1,104 @@
-# Public API (curated)
+# Public API (vNext)
 
-This package exposes a small set of entrypoints. Everything else is internal.
+Primary API: `new GoobitsAuth(...)`
 
-## Entry points
+## Main entrypoint
 
-- `@goobits/auth`
-  - `createAuth`
-- `@goobits/auth/adapters`
-- `@goobits/auth/adapters/database`
-- `@goobits/auth/adapters/session`
-- `@goobits/auth/adapters/oauth-token`
-- `@goobits/auth/adapters/verification-token`
-- `@goobits/auth/adapters/magic-link`
-- `@goobits/auth/adapters/webauthn`
-- `@goobits/auth/providers`
-- `@goobits/auth/handlers`
-- `@goobits/auth/utils`
-- `@goobits/auth/client`
-- `@goobits/auth/types`
-- `@goobits/auth/testing`
-- `@goobits/auth/mfa`
-- `@goobits/auth/ui`
-- `@goobits/auth/security`
-- `@goobits/auth/errors`
+```ts
+import { GoobitsAuth } from "@goobits/auth";
+import { drizzleAdapter } from "@goobits/auth/adapters/drizzle";
+import { GoogleProvider } from "@goobits/auth/providers";
+import { db, schema } from "$lib/server/db";
+import { env } from "$env/dynamic/private";
 
-## CodeAtlas
-
-Use CodeAtlas to verify the public surface:
-
-```
-npm run api:scan
+export const auth = new GoobitsAuth({
+  adapter: drizzleAdapter(db, {
+    schema,
+    oauthTokenEncryptionKey: env.TOKEN_ENCRYPTION_KEY,
+  }),
+  providers: {
+    google: {
+      provider: new GoogleProvider({
+        clientId: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+        callbackUrl: `${env.APP_URL}/auth/callback/google`,
+      }),
+    },
+  },
+});
 ```
 
-This uses entrypoints that match `package.json` exports.
+## `GoobitsAuth` surface
 
-## Behavioral Notes
+- `auth.handle()`
+- `auth.handlers` (`GET`, `POST`) for catch-all auth route
+- `auth.createHandlers({ basePath? })` for custom mount paths
+- `auth.getSession(event)`
+- `auth.requireUser(event)`
+- `auth.requireRole(event, role | role[])`
+- `auth.adapter` (raw adapters for advanced/manual usage)
 
-- `hooks.onLogin` is for principal resolution; session issuance remains managed by auth handlers unless `hooks.onLoginMode` is `"manual"`.
-- Login flows now fail deterministically when no authenticated principal can be resolved.
-- Session revoke endpoints return `501` for unsupported adapter capabilities.
-- `profile` + `security` config now control policy wiring (CSRF, rate limiting, audit events, alerts).
+## SvelteKit wiring
+
+```ts
+// src/hooks.server.ts
+import { auth } from "$lib/auth";
+
+export const handle = auth.handle();
+```
+
+```ts
+// src/routes/auth/[...auth]/+server.ts
+import { auth } from "$lib/auth";
+
+export const { GET, POST } = auth.handlers;
+```
+
+## Wrappable handlers
+
+```ts
+import { auth } from "$lib/auth";
+
+export const GET = async (event) => {
+  console.info("auth request", event.url.pathname);
+  return auth.handlers.GET(event);
+};
+```
+
+## Adapter bundle
+
+`drizzleAdapter(db, { schema })` returns a single bundle with:
+
+- required: `session`, `user`
+- optional (when tables exist): `oauthToken`, `verificationToken`, `magicLink`, `webauthn`
+
+### Required schema tables
+
+- `users`
+- `sessions`
+
+### Optional schema tables
+
+- `oauthAccounts`
+- `oauthTokens`
+- `verificationTokens`
+- `magicLinkTokens`
+- `webauthnCredentials`
+- `webauthnChallenges`
+
+## Typing App locals
+
+```ts
+// src/app.d.ts
+import type { Session, User } from "@goobits/auth/types";
+
+declare global {
+  namespace App {
+    interface Locals {
+      user?: User | null;
+      session?: Session | null;
+      auth?: { user: User; session: Session } | null;
+    }
+  }
+}
+```
