@@ -86,6 +86,23 @@ export const GET = async (event) => {
 - `webauthnCredentials`
 - `webauthnChallenges`
 
+## Credentials Provider
+
+```ts
+import { CredentialsProvider } from "@goobits/auth/providers";
+
+const credentials = new CredentialsProvider({
+  identifierField: "nickname",
+  allowBoth: true,
+  normalizeIdentifier: (value) => value.trim().toLowerCase(),
+});
+```
+
+Handler options support custom form field names and metadata:
+
+- `createSigninHandler({ fields: { identifier, password, remember }, identifierField })`
+- `createSignupHandler({ fields: { email, password, name }, metadataFields, getSignupMetadata })`
+
 ## Typing App locals
 
 ```ts

@@ -62,7 +62,10 @@ describe('createSigninHandler', () => {
 			expect(getRedirectLocation(error)).toBe('/dashboard')
 		}
 
-		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1')
+		expect(sessionAdapter.createSession).toHaveBeenCalledWith(
+			'u1',
+			expect.objectContaining({ rememberMe: false })
+		)
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
 })

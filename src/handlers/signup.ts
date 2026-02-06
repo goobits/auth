@@ -37,6 +37,9 @@ function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
  * @param {Function} [config.rateLimit.key] - Function (event) => string for rate limit key
  * @param {string} [config.redirectTo] - Redirect URL after signup (default: '/')
  * @param {boolean} [config.autoLogin] - Automatically log in user after signup (default: true)
+ * @param {Object} [config.fields] - Form field names (email, password, name)
+ * @param {string[]} [config.metadataFields] - Form fields to pass as metadata to createUser
+ * @param {Function} [config.getSignupMetadata] - Compute additional metadata from FormData
  * @returns {Function} SvelteKit request handler
  */
 export function createSignupHandler(config: {
@@ -45,6 +48,7 @@ export function createSignupHandler(config: {
 			email: string;
 			password: string;
 			name?: string;
+			metadata?: Record<string, unknown>;
 			userAdapter: unknown;
 		}) => Promise<User>;
 	};
@@ -64,6 +68,9 @@ export function createSignupHandler(config: {
 	redirectTo?: string;
 	autoLogin?: boolean;
 	sanitizeUser?: (user: User | null) => User | null;
+	fields?: { email?: string; password?: string; name?: string };
+	metadataFields?: string[];
+	getSignupMetadata?: (formData: FormData) => Record<string, unknown> | Promise<Record<string, unknown>>;
 }) {
 	const {
 		credentialsProvider,
@@ -77,6 +84,9 @@ export function createSignupHandler(config: {
 		redirectTo = "/",
 		autoLogin = true,
 		sanitizeUser = defaultSanitizeUser,
+		fields,
+		metadataFields,
+		getSignupMetadata,
 	} = config;
 
 	const log = getLogger();
@@ -104,9 +114,13 @@ export function createSignupHandler(config: {
 		}
 
 		const formData = await event.request.formData();
-		const email = formData.get("email")?.toString();
-		const password = formData.get("password")?.toString();
-		const name = formData.get("name")?.toString();
+		const emailFieldName = fields?.email ?? "email";
+		const passwordFieldName = fields?.password ?? "password";
+		const nameFieldName = fields?.name ?? "name";
+
+		const email = formData.get(emailFieldName)?.toString();
+		const password = formData.get(passwordFieldName)?.toString();
+		const name = formData.get(nameFieldName)?.toString();
 
 		if (!email || !password) {
 			return {
@@ -130,6 +144,7 @@ export function createSignupHandler(config: {
 				email: string;
 				password: string;
 				name?: string;
+				metadata?: Record<string, unknown>;
 				userAdapter: typeof userAdapter;
 			} = {
 				email,
@@ -137,6 +152,22 @@ export function createSignupHandler(config: {
 				userAdapter,
 			};
 			if (name) signUpInput.name = name;
+			if (metadataFields?.length) {
+				signUpInput.metadata = {};
+				for (const field of metadataFields) {
+					const value = formData.get(field);
+					if (typeof value === "string" && value.trim().length > 0) {
+						signUpInput.metadata[field] = value;
+					}
+				}
+			}
+			if (getSignupMetadata) {
+				const extra = await getSignupMetadata(formData);
+				signUpInput.metadata = {
+					...(signUpInput.metadata ?? {}),
+					...extra,
+				};
+			}
 			const user = await credentialsProvider.signUp(signUpInput);
 
 			const safeUser = sanitizeUser(user) as User | null;
