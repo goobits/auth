@@ -14,6 +14,8 @@ import type { MagicLinkAdapter } from "../adapters/magic-link/base.ts";
 import type { WebAuthnAdapter } from "../adapters/webauthn/base.ts";
 import type { VerificationTokenAdapter } from "../adapters/verification-token/base.ts";
 import type { Logger } from "../utils/logger.ts";
+import type { AuthEventEmitter } from "../security/events.ts";
+import type { SecurityAlertHandler } from "../security/alerts.ts";
 
 export type AuthLocals = {
 	user?: User | null;
@@ -124,6 +126,33 @@ export type SessionsConfig = {
 	listLimit?: number;
 };
 
+export type SecurityProfile = "basic" | "secure" | "strict";
+export type SecurityMode = "required" | "optional" | "off";
+
+export type AuthSecurityConfig = {
+	csrf?: {
+		mode?: SecurityMode;
+		cookieName?: string;
+		headerName?: string;
+		checkExpiry?: boolean;
+	};
+	rateLimit?: {
+		mode?: SecurityMode;
+		max?: number;
+		windowMs?: number;
+		keyPrefix?: string;
+		trustProxyHeader?: boolean;
+	};
+	audit?: {
+		mode?: SecurityMode;
+		emitter?: AuthEventEmitter;
+	};
+	alerts?: {
+		enabled?: boolean;
+		onAlert?: SecurityAlertHandler;
+	};
+};
+
 type BaseAuthAdapters = {
 	session: SessionAdapter;
 	user?: UserAdapter;
@@ -142,6 +171,8 @@ type CommonAuthConfigFields = {
 	requireVerifiedEmailForLinking?: boolean;
 	isAuthenticated?: (locals: AuthLocals) => boolean;
 	sanitizeUser?: (user: User | null) => User | null;
+	profile?: SecurityProfile;
+	security?: AuthSecurityConfig;
 	sessions?: SessionsConfig;
 	logger?: Logger;
 };
