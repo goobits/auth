@@ -6,6 +6,15 @@ const DEFAULT_REDACT_KEYS = [
 	"secret",
 	"authorization",
 	"cookie",
+	"api_key",
+	"apikey",
+	"client_secret",
+	"clientsecret",
+	"verification_token",
+	"verificationtoken",
+	"totp",
+	"otp",
+	"passphrase",
 ];
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
