@@ -63,7 +63,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/node": "^22.13.4",
+    "@types/node": "^25.2.1",
     "pg": "^8.18.0",
     "pg-mem": "^3.0.8",
     "pg-server": "^0.1.8",
