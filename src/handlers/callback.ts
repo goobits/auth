@@ -5,6 +5,7 @@ import type { OAuthProvider } from "../providers/base.ts";
 import type { AuthLocals, RequestEventLike } from "../types/auth.ts";
 import type { OAuthProfile, OAuthTokens } from "../types/index.ts";
 import { getLogger } from "../utils/logger.ts";
+import { AuthPrincipalResolutionError } from "../errors/auth.ts";
 
 type CallbackConfig = {
 	providers: Record<string, OAuthProvider>;
@@ -119,6 +120,9 @@ export function createCallbackHandler(config: CallbackConfig) {
 			// Re-throw redirects and errors
 			if (isStatusError(err)) {
 				throw err;
+			}
+			if (err instanceof AuthPrincipalResolutionError) {
+				throw error(err.status, err.message);
 			}
 
 			// Log and throw generic error

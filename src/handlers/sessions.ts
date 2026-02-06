@@ -1,11 +1,12 @@
 import { jsonResponse, parseRequestData } from "../utils/http.ts";
 import type { AuthLocals, RequestEventLike } from "../types/auth.ts";
 import type { SessionSummary, Session } from "../types/index.ts";
+import { AuthAdapterCapabilityError } from "../errors/auth.ts";
 
 type SessionAdapterLike = {
 	listSessions?: (userId: string) => Promise<SessionSummary[]>;
-	invalidateSession: (sessionId: string) => Promise<void>;
-	invalidateUserSessions: (userId: string) => Promise<void>;
+	invalidateSession?: (sessionId: string) => Promise<void>;
+	invalidateUserSessions?: (userId: string) => Promise<void>;
 	deleteSessionCookie?: (cookies: RequestEventLike["cookies"]) => void;
 };
 
@@ -69,6 +70,12 @@ export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 			return jsonResponse({ ok: false, error: "Unauthorized" }, 401);
 		}
 
+		const isUnsupportedError = (error: unknown): boolean =>
+			error instanceof AuthAdapterCapabilityError ||
+			(error instanceof Error &&
+				(error.message.includes("not support") ||
+					error.message.includes("not implemented")));
+
 		const data = await parseRequestData(event.request);
 		const user = getUser(event.locals);
 		const current = getSession(event.locals);
@@ -96,7 +103,23 @@ export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 			if (!ownsSession) {
 				return jsonResponse({ ok: false, error: "Session not found" }, 404);
 			}
-			await sessionAdapter.invalidateSession(sessionId);
+			if (typeof sessionAdapter.invalidateSession !== "function") {
+				return jsonResponse(
+					{ ok: false, error: "Session invalidation not supported" },
+					501,
+				);
+			}
+			try {
+				await sessionAdapter.invalidateSession(sessionId);
+			} catch (error) {
+				if (isUnsupportedError(error)) {
+					return jsonResponse(
+						{ ok: false, error: "Session invalidation not supported" },
+						501,
+					);
+				}
+				return jsonResponse({ ok: false, error: "Failed to revoke session" }, 500);
+			}
 			if (current?.id === sessionId && sessionAdapter.deleteSessionCookie) {
 				sessionAdapter.deleteSessionCookie(event.cookies);
 			}
@@ -104,7 +127,23 @@ export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 		}
 
 		if (revokeAll) {
-			await sessionAdapter.invalidateUserSessions(user.id);
+			if (typeof sessionAdapter.invalidateUserSessions !== "function") {
+				return jsonResponse(
+					{ ok: false, error: "Bulk session revocation not supported" },
+					501,
+				);
+			}
+			try {
+				await sessionAdapter.invalidateUserSessions(user.id);
+			} catch (error) {
+				if (isUnsupportedError(error)) {
+					return jsonResponse(
+						{ ok: false, error: "Bulk session revocation not supported" },
+						501,
+					);
+				}
+				return jsonResponse({ ok: false, error: "Failed to revoke sessions" }, 500);
+			}
 			if (sessionAdapter.deleteSessionCookie) {
 				sessionAdapter.deleteSessionCookie(event.cookies);
 			}
@@ -119,11 +158,27 @@ export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 				);
 			}
 			const sessions = await sessionAdapter.listSessions(user.id);
-			await Promise.all(
-				sessions
-					.filter((session) => session.id !== current?.id)
-					.map((session) => sessionAdapter.invalidateSession(session.id)),
-			);
+			if (typeof sessionAdapter.invalidateSession !== "function") {
+				return jsonResponse(
+					{ ok: false, error: "Session invalidation not supported" },
+					501,
+				);
+			}
+			try {
+				await Promise.all(
+					sessions
+						.filter((session) => session.id !== current?.id)
+						.map((session) => sessionAdapter.invalidateSession!(session.id)),
+				);
+			} catch (error) {
+				if (isUnsupportedError(error)) {
+					return jsonResponse(
+						{ ok: false, error: "Session invalidation not supported" },
+						501,
+					);
+				}
+				return jsonResponse({ ok: false, error: "Failed to revoke sessions" }, 500);
+			}
 			return jsonResponse({ ok: true });
 		}
 

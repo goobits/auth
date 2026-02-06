@@ -187,4 +187,86 @@ describe("webauthn handlers", () => {
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith("u1");
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled();
 	});
+
+	it("creates a session when onLogin returns a userId", async () => {
+		const webauthnAdapter = createWebAuthnAdapter();
+		const sessionAdapter = {
+			createSession: vi.fn(async () => ({ id: "s2", userId: "hook-user" })),
+			setSessionCookie: vi.fn(),
+		};
+
+		await webauthnAdapter.createChallenge({
+			challengeId: "c3",
+			userId: "u1",
+			challenge: "auth-challenge",
+			type: "authentication",
+			expiresAt: new Date(Date.now() + 1000),
+		});
+		await webauthnAdapter.createCredential({
+			userId: "u1",
+			credentialId: "AQIDBAcJ",
+			publicKey: "AQID",
+			counter: 0,
+		});
+
+		const handler = createWebAuthnLoginVerifyHandler({
+			webauthnAdapter,
+			sessionAdapter,
+			rpID: "example.com",
+			origin: "http://localhost",
+			onLogin: async () => ({ userId: "hook-user" }),
+		});
+
+		const response = await handler(
+			createEvent({
+				body: { challengeId: "c3", credential: { id: "AQIDBAcJ" } },
+			}) as RequestEventLike,
+		);
+		const payload = await response.json();
+
+		expect(payload.ok).toBe(true);
+		expect(sessionAdapter.createSession).toHaveBeenCalledWith("hook-user");
+		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled();
+	});
+
+	it("rejects login when resolved principal is invalid", async () => {
+		const webauthnAdapter = createWebAuthnAdapter();
+		const sessionAdapter = {
+			createSession: vi.fn(async () => ({ id: "s3", userId: "u1" })),
+			setSessionCookie: vi.fn(),
+		};
+
+		await webauthnAdapter.createChallenge({
+			challengeId: "c4",
+			userId: "",
+			challenge: "auth-challenge",
+			type: "authentication",
+			expiresAt: new Date(Date.now() + 1000),
+		});
+		await webauthnAdapter.createCredential({
+			userId: "",
+			credentialId: "AQIDBAcK",
+			publicKey: "AQID",
+			counter: 0,
+		});
+
+		const handler = createWebAuthnLoginVerifyHandler({
+			webauthnAdapter,
+			sessionAdapter,
+			rpID: "example.com",
+			origin: "http://localhost",
+		});
+
+		const response = await handler(
+			createEvent({
+				body: { challengeId: "c4", credential: { id: "AQIDBAcK" } },
+			}) as RequestEventLike,
+		);
+		const payload = await response.json();
+
+		expect(response.status).toBe(401);
+		expect(payload.ok).toBe(false);
+		expect(payload.error).toContain("Unable to resolve authenticated principal");
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled();
+	});
 });

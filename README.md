@@ -16,6 +16,27 @@ OAuth (Google, Apple, extensible) · Local auth (Argon2id) · Sessions (rolling,
 - `docs/schema.md` — all SQL
 - `docs/public-api.md` — entry points
 
+## Production Guarantees
+
+- `hooks.onLogin` resolves identity only. Session issuance is framework-managed by default.
+- If `hooks.onLogin` is set, a session is still created when a principal is resolved.
+- If no principal can be resolved after login (`OAuth`, `Magic Link`, `WebAuthn`), auth fails explicitly.
+- For advanced flows, set `hooks.onLoginMode = "manual"` to disable automatic session creation.
+
+## Session Adapter Capability Matrix
+
+- `list + revoke by id + revoke others`: requires `listSessions` and `invalidateSession`.
+- `revoke all`: requires `invalidateUserSessions`.
+- Unsupported capability paths return `501` responses instead of uncaught server errors.
+
+## Production Checklist
+
+- Set `cookies.secure = true` in production.
+- Configure `magicLink.settings.trustProxyHeader` only behind a trusted proxy.
+- Rotate token encryption keys with an operational key-rotation policy.
+- Keep `rateLimit` and `verifyRateLimit` enabled for magic links.
+- Monitor auth audit events via `auditAuthEvent` or your logger pipeline.
+
 ---
 
 ## Quick Start
