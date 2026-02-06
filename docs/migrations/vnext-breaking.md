@@ -2,37 +2,76 @@
 
 ## Summary
 
+- Primary API is now `new GoobitsAuth({...})`.
+- Preferred adapter key is singular: `adapter`.
+- `drizzleAdapter(db, { schema })` is the one-stop Drizzle bundle.
 - `DatabaseAdapter` has been renamed to `UserAdapter`.
-- `createAuth` adapter key changed from `adapters.database` to `adapters.user`.
-- `DatabaseAdapter._getUserWithPassword` has been renamed to `UserAdapter.getUserWithPasswordHash`.
-- Adapter base classes are now `abstract` and enforce compile-time implementation.
-- `createLogoutHandler` now returns a `RequestHandler` (`POST`) instead of `Actions`.
-  For action-style routes, use `createLogoutAction`.
+- Adapter base classes are `abstract` and enforce compile-time implementation.
+- Logout handlers are `RequestHandler`-first.
 
 ## Before/After
 
-### Adapter key
+### Auth instance
 
 Before:
 
 ```ts
-createAuth({
-  adapters: {
-    session,
-    database: userAdapter,
-  },
+import { createAuth } from "@goobits/auth";
+
+const auth = createAuth({
+  adapters: { session, user, oauthToken },
+  providers: { google: { provider: googleProvider } },
 });
 ```
 
 After:
 
 ```ts
-createAuth({
-  adapters: {
-    session,
-    user: userAdapter,
-  },
+import { GoobitsAuth } from "@goobits/auth";
+import { drizzleAdapter } from "@goobits/auth/adapters/drizzle";
+
+const auth = new GoobitsAuth({
+  adapter: drizzleAdapter(db, { schema }),
+  providers: { google: { provider: googleProvider } },
 });
+```
+
+### SvelteKit plumbing
+
+Before (manual hook + route handlers):
+
+```ts
+// custom cookie/session plumbing in hooks and routes
+```
+
+After:
+
+```ts
+// hooks.server.ts
+export const handle = auth.handle();
+
+// routes/auth/[...auth]/+server.ts
+export const { GET, POST } = auth.handlers;
+```
+
+### Adapter naming
+
+Before:
+
+```ts
+adapters: {
+  session,
+  database: userAdapter,
+}
+```
+
+After:
+
+```ts
+adapter: {
+  session,
+  user: userAdapter,
+}
 ```
 
 ### Credentials method
@@ -49,25 +88,9 @@ After:
 userAdapter.getUserWithPasswordHash(email);
 ```
 
-### Logout handler
-
-Before:
-
-```ts
-export const actions = createLogoutHandler({ sessionAdapter });
-```
-
-After:
-
-```ts
-export const POST = createLogoutHandler({ sessionAdapter });
-// or:
-export const actions = createLogoutAction({ sessionAdapter });
-```
-
 ## Testing utilities
 
-`@goobits/auth/testing` now exports mock adapters:
+`@goobits/auth/testing` exports mock adapters:
 
 - `MockSessionAdapter`
 - `MockUserAdapter`
