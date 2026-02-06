@@ -16,6 +16,7 @@ OAuth (Google, Apple, extensible) · Local auth (Argon2id) · Sessions (rolling,
 - `docs/schema.md` — all SQL
 - `docs/public-api.md` — entry points
 - `docs/migrations/vnext-breaking.md` — breaking API migration notes
+- `docs/security-contract.md` — security policy and production contract
 
 ## Production Guarantees
 
@@ -37,6 +38,24 @@ OAuth (Google, Apple, extensible) · Local auth (Argon2id) · Sessions (rolling,
 - Rotate token encryption keys with an operational key-rotation policy.
 - Keep `rateLimit` and `verifyRateLimit` enabled for magic links.
 - Monitor auth audit events via `auditAuthEvent` or your logger pipeline.
+
+## Easy Secure Setup
+
+```ts
+import { createAuth } from "@goobits/auth";
+
+export const auth = createAuth({
+  profile: "secure",
+  adapters: { session, user, oauthToken, magicLink, webauthn },
+  providers: { google: { provider: googleProvider } },
+  security: {
+    alerts: { enabled: true },
+  },
+});
+```
+
+- `profile: "secure"` enables rate limiting and audit policy wiring.
+- `profile: "strict"` additionally enforces CSRF checks on state-changing auth routes.
 
 ---
 

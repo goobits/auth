@@ -1,11 +1,8 @@
 import { getRandomBytes } from "../utils/crypto.ts";
+import type { Cookies } from "@sveltejs/kit";
 type CsrfStoreRecord = { value: boolean; expiresAt: number | null };
 
-type CookiesLike = {
-	set: (name: string, value: string, options?: Record<string, unknown>) => void;
-	get: (name: string) => string | null;
-	delete: (name: string, options?: Record<string, unknown>) => void;
-};
+type CookiesLike = Pick<Cookies, "set" | "get" | "delete">;
 
 export type CsrfStore = {
 	get: (key: string) => Promise<CsrfStoreRecord | null>;
