@@ -14,9 +14,11 @@ This package enforces authentication primitives and secure defaults, while autho
 ## Setup
 
 ```ts
-const auth = createAuth({
+import { GoobitsAuth } from "@goobits/auth";
+
+const auth = new GoobitsAuth({
   profile: "secure",
-  adapters: { session, user, oauthToken },
+  adapter,
   security: {
     alerts: { enabled: true },
   },
@@ -37,7 +39,7 @@ const auth = createAuth({
 
 ## Required Production Checks
 
-1. Set `cookies.secure = true` in production.
+1. Set secure cookies in production.
 2. Configure trusted proxy behavior explicitly.
 3. Enable alert sink (`SECURITY_WEBHOOK_URL` or custom `alerts.onAlert`).
 4. Validate secrets at deploy-time (`TOKEN_ENCRYPTION_KEY`, OAuth secrets).
