@@ -18,6 +18,17 @@ type AuditWrapperOptions = {
 	redactKeys?: string[];
 };
 
+export type AuthAuditEvent =
+	| "auth.success"
+	| "auth.failure"
+	| "magic_link.invalid"
+	| "magic_link.expired"
+	| "webauthn.challenge_missing"
+	| "webauthn.challenge_invalid_type"
+	| "webauthn.credential_missing"
+	| "webauthn.authentication_failed"
+	| "session.revoked";
+
 export function auditLog(event: unknown, options: AuditOptions = {}): void {
 	const { logger = console, redactKeys = DEFAULT_REDACT_KEYS } = options;
 
@@ -97,4 +108,20 @@ export function withAuditLogging({
 			}
 		};
 	};
+}
+
+export function auditAuthEvent(
+	event: AuthAuditEvent,
+	payload: Record<string, unknown> = {},
+	options: AuditOptions = {},
+): void {
+	auditLog(
+		{
+			category: "auth",
+			event,
+			timestamp: new Date().toISOString(),
+			...payload,
+		},
+		options,
+	);
 }

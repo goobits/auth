@@ -26,10 +26,12 @@ import type {
 	AuthLoginResult,
 	AuthRoutes,
 	MagicLinkConfig,
+	OnLoginMode,
 	OAuthProviderConfig,
 	RequestEventLike,
 } from "./types/auth.ts";
 import { getLogger, setLogger } from "./utils/logger.ts";
+import { ensureSessionAfterLogin } from "./utils/session-lifecycle.ts";
 
 type ResolvedDefaults = {
 	urlConfig: {
@@ -134,6 +136,7 @@ function createHandlers(config: AuthConfig, defaults: ResolvedDefaults): AuthHan
 	} = config;
 	const { urlConfig, cookieConfig, autoCreateSession, requireVerifiedEmailForLinking, isAuthenticated } =
 		defaults;
+	const onLoginMode: OnLoginMode = hooks.onLoginMode ?? "augment";
 	const log = getLogger();
 	const hasProviders = Object.keys(providers).length > 0;
 	let loginHandler: AuthHandlers["login"];
@@ -190,18 +193,17 @@ function createHandlers(config: AuthConfig, defaults: ResolvedDefaults): AuthHan
 				if (hooks.onLogin) {
 					const hookResult = await hooks.onLogin(event, profile, tokens, user);
 					userId = resolveOnLoginUserId(hookResult, userId);
-				} else if (userId && autoCreateSession) {
-					const session = await adapters.session.createSession(userId);
-					adapters.session.setSessionCookie?.(event.cookies, session);
 				}
+				userId = await ensureSessionAfterLogin({
+					event,
+					sessionAdapter: adapters.session,
+					userId,
+					autoCreateSession,
+					onLoginMode,
+				});
 
 				if (adapters.oauthToken) {
-					if (!userId) {
-						log.warn?.(
-							"[auth] OAuth token adapter enabled but no userId resolved. Falling back to provider profile id.",
-						);
-					}
-					await adapters.oauthToken.storeTokens(userId ?? profile.id, providerName, tokens);
+					await adapters.oauthToken.storeTokens(userId, providerName, tokens);
 				}
 			},
 			...(hooks.onError
@@ -275,6 +277,8 @@ function createHandlers(config: AuthConfig, defaults: ResolvedDefaults): AuthHan
 			...normalizedMagicLink,
 			magicLinkAdapter: adapters.magicLink!,
 			sessionAdapter: adapters.session,
+			autoCreateSession,
+			onLoginMode,
 			redirectAfterLogin: urlConfig.afterLogin,
 			isAuthenticated,
 			...(adapters.database ? { databaseAdapter: adapters.database } : {}),
@@ -315,6 +319,8 @@ function createHandlers(config: AuthConfig, defaults: ResolvedDefaults): AuthHan
 			origin: webauthn.origin ?? "",
 			redirectAfterLogin: urlConfig.afterLogin,
 			requireUserVerification: webauthn.userVerification === "required",
+			autoCreateSession,
+			onLoginMode,
 			...(adapters.database ? { databaseAdapter: adapters.database } : {}),
 		};
 		const webauthnOnLogin = webauthn.hooks?.onLogin ?? hooks.onLogin;
