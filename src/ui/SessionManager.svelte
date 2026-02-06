@@ -6,6 +6,7 @@
 	export let sessions = null;
 
 	let loading = false;
+	let revokingId = null;
 	let error = null;
 
 	async function loadSessions() {
@@ -28,7 +29,7 @@
 	}
 
 	async function revoke(sessionId) {
-		loading = true;
+		revokingId = sessionId;
 		error = null;
 		try {
 			const response = await fetcher(revokeEndpoint, {
@@ -46,7 +47,8 @@
 			await loadSessions();
 		} catch (err) {
 			error = err.message;
-			loading = false;
+		} finally {
+			revokingId = null;
 		}
 	}
 
@@ -62,7 +64,7 @@
 	{#if loading && !sessions}
 		<p class="auth-session-loading">Loading sessions…</p>
 	{:else if sessions && sessions.length > 0}
-		<ul class="auth-session-list">
+		<ul class="auth-session-list" aria-label="Active sessions">
 			{#each sessions as session}
 				<li class="auth-session-item">
 					<div>
@@ -78,9 +80,11 @@
 						<button
 							class="auth-session-revoke"
 							type="button"
+							disabled={revokingId === session.id}
+							aria-label="Revoke session {session.ip || 'Unknown IP'}"
 							on:click={() => revoke(session.id)}
 						>
-							Revoke
+							{revokingId === session.id ? 'Revoking…' : 'Revoke'}
 						</button>
 					{/if}
 				</li>
