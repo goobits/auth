@@ -1,17 +1,8 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
-import { getAdminAuth } from '$lib/auth/admin.ts'
-import { ADMIN_COOKIE_NAME } from '@packages/calendar/src/admin/auth.ts'
 
-export async function requireAdminSession({ event }: { event: RequestEvent }) {
-	const { sessionAdapter } = await getAdminAuth({ event })
-	const token = event.cookies.get(ADMIN_COOKIE_NAME)
-	if (!token) return { ok: false }
-	const { session, user } = await sessionAdapter.validateSession(token)
-	if (!session) return { ok: false }
-	if (session.fresh) {
-		sessionAdapter.setSessionCookie(event.cookies, session)
-	}
-	return { ok: true, session, user }
+export function requireAdminSession({ event }: { event: RequestEvent }) {
+	const locals = event.locals as { user?: unknown; session?: unknown }
+	return { ok: !!(locals.session && locals.user) }
 }
 
 export const noStoreHeaders = {

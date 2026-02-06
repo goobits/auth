@@ -1,5 +1,6 @@
 import { dev } from '$app/environment'
-import { createAdminAdapters, ensureAdminUser, ADMIN_EMAIL } from '@packages/calendar/src/admin/auth.ts'
+import { GoobitsAuth } from '@goobits/auth'
+import { createAdminAdapters, ensureAdminUser } from '@packages/calendar/src/admin/auth.ts'
 import { getDevDb, type D1DatabaseLike } from '$lib/dev/devDb.ts'
 
 type PlatformLike = { env?: { DB?: D1DatabaseLike } } | null | undefined
@@ -32,7 +33,16 @@ export async function getAdminAuth({ event }: { event: { platform?: PlatformLike
 		sessionLifetimeMs
 	})
 
-	return { db, env, secureCookies, ...adapters }
+	const auth = new GoobitsAuth({
+		adapter: {
+			session: adapters.sessionAdapter,
+			user: adapters.userAdapter
+		},
+		providers: {},
+		profile: 'basic'
+	})
+
+	return { auth, db, env, secureCookies, ...adapters }
 }
 
 export async function ensureAdminAccount({
@@ -49,6 +59,3 @@ export async function ensureAdminAccount({
 	return ensureAdminUser({ userAdapter, passcode })
 }
 
-export function getAdminEmail() {
-	return ADMIN_EMAIL
-}

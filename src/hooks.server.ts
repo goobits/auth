@@ -4,6 +4,7 @@ import { sequence } from '@sveltejs/kit/hooks'
 import { createThemeHooks } from '@goobits/themes/server'
 import { themeConfig } from '$lib/config/theme.ts'
 import { getCalendarAuth } from '$lib/auth/calendar.ts'
+import { getAdminAuth } from '$lib/auth/admin.ts'
 import { dev } from '$app/environment'
 import type { Handle } from '@sveltejs/kit'
 
@@ -47,6 +48,21 @@ const themeHandle = createThemeHooks(themeConfig, {
 	blockingScript: true
 }).transform
 
+async function handleAdminAuth({ event, resolve }: Parameters<Handle>[0]) {
+	const pathname = event.url.pathname
+
+	if (
+		!pathname.startsWith('/admin') &&
+		!pathname.startsWith('/api/admin') &&
+		!pathname.startsWith('/api/calendar/admin')
+	) {
+		return resolve(event)
+	}
+
+	const { auth } = await getAdminAuth({ event })
+	return auth.handle()({ event, resolve })
+}
+
 async function handleCalendarAuth({ event, resolve }: Parameters<Handle>[0]) {
 	const pathname = event.url.pathname
 
@@ -56,7 +72,7 @@ async function handleCalendarAuth({ event, resolve }: Parameters<Handle>[0]) {
 	}
 
 	const { auth } = await getCalendarAuth({ event })
-	return auth.handlers.hooks({ event, resolve })
+	return auth.handle()({ event, resolve })
 }
 
 async function requireCalendarUser({ event, resolve }: Parameters<Handle>[0]) {
@@ -124,6 +140,7 @@ const securityHeadersHandle: Handle = async ({ event, resolve }) => {
 export const handle = sequence(
 	themeHandle,
 	handleRedirects,
+	handleAdminAuth,
 	handleCalendarAuth,
 	requireCalendarUser,
 	securityHeadersHandle

@@ -1,6 +1,8 @@
 <script>
-	import { onMount } from 'svelte'
+	import { enhance } from '$app/forms'
 	import { Clock, Calendar, Check, RefreshCw, Save, ChevronRight, Loader, Users, LogOut } from '@lucide/svelte'
+
+	let { data, form } = $props()
 
 	let tab = $state('dash')
 	let hours = $state({ from: '06:00', to: '22:00' })
@@ -18,10 +20,7 @@
 	let stats = $state({ upcoming: 0, seats: 0 })
 	let loading = $state(true)
 	let error = $state('')
-	let authed = $state(false)
-	let authChecking = $state(true)
-	let passcode = $state('')
-	let authError = $state('')
+	let authed = $derived(!!data.user)
 
 	// Calendar auth tab state
 	let calendarInvites = $state([])
@@ -39,56 +38,11 @@
 		{ label: 'Members', id: 'calendar-auth' }
 	]
 
-	async function checkAuth() {
-		authChecking = true
-		authError = ''
-		try {
-			const res = await fetch('/api/admin/me')
-			const data = await res.json()
-			authed = !!data.authenticated
-		} catch (err) {
-			authError = err.message || 'Failed to check session'
-			authed = false
-		} finally {
-			authChecking = false
-		}
-	}
-
-	async function login() {
-		authError = ''
-		try {
-			const res = await fetch('/api/admin/login', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ passcode })
-			})
-			const data = await res.json()
-			if (data.ok) {
-				authed = true
-				passcode = ''
-				await loadStatus()
-				await loadBookings()
-			} else {
-				authError = data.error?.message || 'Login failed'
-			}
-		} catch (err) {
-			authError = err.message || 'Login failed'
-		}
-	}
-
-	async function logout() {
-		try {
-			await fetch('/api/admin/logout', { method: 'POST' })
-		} finally {
-			authed = false
-		}
-	}
-
 	async function loadStatus() {
 		try {
 			const res = await fetch('/api/admin/status')
 			if (res.status === 401) {
-				authed = false
+				window.location.reload()
 				return
 			}
 			const data = await res.json()
@@ -113,7 +67,7 @@
 		try {
 			const res = await fetch('/api/admin/bookings')
 			if (res.status === 401) {
-				authed = false
+				window.location.reload()
 				return
 			}
 			const data = await res.json()
@@ -145,7 +99,7 @@
 				})
 			})
 			if (res.status === 401) {
-				authed = false
+				window.location.reload()
 				return
 			}
 			const data = await res.json()
@@ -172,7 +126,7 @@
 				body: JSON.stringify({ bookingId })
 			})
 			if (res.status === 401) {
-				authed = false
+				window.location.reload()
 				return
 			}
 			const data = await res.json()
@@ -192,7 +146,7 @@
 	async function reconnect() {
 		const res = await fetch('/api/calendar/oauth-start')
 		if (res.status === 401) {
-			authed = false
+			window.location.reload()
 			return
 		}
 		const data = await res.json()
@@ -283,13 +237,11 @@
 		return new Date(timestamp * 1000).toLocaleDateString()
 	}
 
-	onMount(() => {
-		checkAuth().then(() => {
-			if (authed) {
-				loadStatus()
-				loadBookings()
-			}
-		})
+	$effect(() => {
+		if (authed) {
+			loadStatus()
+			loadBookings()
+		}
 	})
 
 	$effect(() => {
@@ -303,25 +255,21 @@
 	<title>Admin | Rainbow Gym | MIKO.ART</title>
 </svelte:head>
 
-{#if authChecking}
-	<div class="admin-login">
-		<div class="login-card">
-			<div class="login-title">Admin access</div>
-			<div class="login-sub">Checking session…</div>
-		</div>
-	</div>
-{:else if !authed}
+{#if !authed}
 	<div class="admin-login">
 		<div class="login-card">
 			<div class="login-title">Admin access</div>
 			<div class="login-sub">Enter the admin passcode to continue.</div>
-			<div class="login-field">
-				<input type="password" placeholder="Passcode" bind:value={passcode} />
-			</div>
-			{#if authError}
-				<div class="login-error">{authError}</div>
-			{/if}
-			<button class="btn-sec" onclick={login}>Unlock</button>
+			<form method="POST" action="?/login" use:enhance>
+				<input type="hidden" name="email" value="admin@miko.art" />
+				<div class="login-field">
+					<input type="password" name="password" placeholder="Passcode" />
+				</div>
+				{#if form?.error}
+					<div class="login-error">{form.error}</div>
+				{/if}
+				<button class="btn-sec" type="submit">Unlock</button>
+			</form>
 		</div>
 	</div>
 {:else}
@@ -345,7 +293,9 @@
 					{n.label}
 				</button>
 			{/each}
-			<button class="side-item logout" onclick={logout}><LogOut size={16} strokeWidth={1.8} /> Logout</button>
+			<form method="POST" action="?/logout" use:enhance>
+				<button class="side-item logout" type="submit"><LogOut size={16} strokeWidth={1.8} /> Logout</button>
+			</form>
 		</aside>
 
 		<!-- Content -->
