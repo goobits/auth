@@ -1,7 +1,7 @@
 // OAuth handlers
 export { createLoginHandler } from "./login.ts";
 export { createCallbackHandler } from "./callback.ts";
-export { createLogoutHandler } from "./logout.ts";
+export { createLogoutHandler, createLogoutAction } from "./logout.ts";
 
 // Credentials handlers
 export { createSignupHandler } from "./signup.ts";

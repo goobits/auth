@@ -7,7 +7,7 @@ export {
 } from "./session/index.ts";
 
 // Database Adapters
-export { DatabaseAdapter, DrizzleUserAdapter, D1UserAdapter } from "./database/index.ts";
+export { UserAdapter, DrizzleUserAdapter, D1UserAdapter } from "./database/index.ts";
 
 // Token Adapters (OAuth tokens)
 export {
