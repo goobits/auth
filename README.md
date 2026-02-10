@@ -82,6 +82,9 @@ pnpm build            # Production build
 pnpm preview          # Preview build (port 3000)
 pnpm stop             # Stop dev server
 pnpm restart          # Restart dev server
+pnpm deploy:secrets   # Push production secrets only (no site deploy)
+pnpm deploy:prod      # Build + Cloudflare Pages deploy (standard)
+pnpm deploy:prod:full # Secrets + build + Cloudflare Pages deploy
 
 # Versioning
 pnpm version:patch    # Bump patch version
@@ -112,6 +115,8 @@ pnpm deploy:secrets
 
 > `.env.keys` holds the private decryption key — never commit it (already in `.gitignore`).
 
+`pnpm deploy:secrets` only updates runtime secrets and does not deploy site code.
+
 ## 🚢 Deployment
 
 Deployed to Cloudflare Pages via `wrangler pages deploy`.
@@ -119,6 +124,18 @@ Deployed to Cloudflare Pages via `wrangler pages deploy`.
 Requires:
 - D1 database (`miko-art-db`) provisioned
 - Production secrets encrypted in `config/env/.env.production` and pushed via `pnpm deploy:secrets`
+
+### One-command deploy
+
+```bash
+# Standard deploy (most common)
+pnpm deploy:prod
+
+# Full deploy (when secrets changed)
+pnpm deploy:prod:full
+```
+
+`deploy:prod` uses Pages project `miko-art` by default. Override with `CF_PAGES_PROJECT=<project-name>`.
 
 ## 📝 License
 

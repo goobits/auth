@@ -14,6 +14,8 @@
 		"preview": "vite preview --port 3000",
 		"start": "NODE_ENV=production dotenvx run -f config/env/.env -- node build",
 		"deploy:secrets": "dotenvx run -f config/env/.env.production -- node scripts/deploy-secrets.mjs",
+		"deploy:prod": "node scripts/deploy-prod.mjs",
+		"deploy:prod:full": "node scripts/deploy-prod.mjs --full",
 		"version:minor": "npm version minor --no-git-tag-version",
 		"version:patch": "npm version patch --no-git-tag-version",
 		"version:major": "npm version major --no-git-tag-version"
