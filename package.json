@@ -1,23 +1,25 @@
 {
 	"name": "miko-art",
-	"version": "1.1.9",
+	"version": "1.1.13",
 	"private": true,
 	"workspaces": [
 		"packages/*"
 	],
 	"scripts": {
-		"build": "pnpm run version:patch && NODE_ENV=production vite build",
-		"dev": "bash tasks/dev-server.sh start",
-		"dev:wrangler": "NODE_OPTIONS='--dns-result-order=ipv4first' wrangler dev --local",
+		"build": "pnpm run version:patch && NODE_ENV=production dotenvx run -f config/env/.env -- vite build",
+		"dev": "dotenvx run -f config/env/.env -- bash tasks/dev-server.sh start",
+		"dev:wrangler": "NODE_OPTIONS='--dns-result-order=ipv4first' dotenvx run -f config/env/.env -- wrangler dev --local",
 		"stop": "bash tasks/dev-server.sh stop",
 		"restart": "bash tasks/dev-server.sh restart",
 		"preview": "vite preview --port 3000",
-		"start": "NODE_ENV=production DOTENV_CONFIG_PATH=./config/env/.env node -r dotenv/config build",
+		"start": "NODE_ENV=production dotenvx run -f config/env/.env -- node build",
+		"deploy:secrets": "dotenvx run -f config/env/.env.production -- node scripts/deploy-secrets.mjs",
 		"version:minor": "npm version minor --no-git-tag-version",
 		"version:patch": "npm version patch --no-git-tag-version",
 		"version:major": "npm version major --no-git-tag-version"
 	},
 	"devDependencies": {
+		"@dotenvx/dotenvx": "^1.52.0",
 		"@node-rs/argon2": "^2.0.2",
 		"@node-rs/bcrypt": "^1.10.7",
 		"@sveltejs/adapter-cloudflare": "^7.2.6",

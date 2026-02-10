@@ -16,6 +16,9 @@ node_modules/
 /repos/*
 !/repos/*.revision
 
+# Dotenvx private keys (decryption keys — never commit)
+.env.keys
+
 # Local dev artifacts
 .DS_Store
 .dev/
