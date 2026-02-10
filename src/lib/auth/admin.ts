@@ -39,7 +39,7 @@ export async function getAdminAuth({ event }: { event: { platform?: PlatformLike
 			user: adapters.userAdapter
 		},
 		providers: {},
-		profile: 'basic'
+		profile: 'strict'
 	})
 
 	return { auth, db, env, secureCookies, ...adapters }
@@ -58,4 +58,3 @@ export async function ensureAdminAccount({
 	}
 	return ensureAdminUser({ userAdapter, passcode })
 }
-

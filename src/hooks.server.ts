@@ -119,7 +119,7 @@ const securityHeadersHandle: Handle = async ({ event, resolve }) => {
 		"frame-ancestors 'none'",
 		"img-src 'self' data: https:",
 		"style-src 'self' 'unsafe-inline'",
-		`script-src 'self'${dev ? " 'unsafe-inline' 'unsafe-eval'" : " 'unsafe-inline'"}`,
+		`script-src 'self'${dev ? " 'unsafe-inline' 'unsafe-eval'" : ''}`,
 		"connect-src 'self' https:",
 		"font-src 'self' data: https:"
 	].join('; ')
