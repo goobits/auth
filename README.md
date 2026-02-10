@@ -89,13 +89,36 @@ pnpm version:minor    # Bump minor version
 pnpm version:major    # Bump major version
 ```
 
+## 🔐 Environment
+
+All env files live in `config/env/` and are encrypted at rest with [dotenvx](https://dotenvx.com/encryption).
+
+| File | Purpose |
+|---|---|
+| `.env.example` | Template with all variables and setup hints — copy to `.env` |
+| `.env` | Local dev values (encrypted, decryption key in `.env.keys`) |
+| `.env.production` | Production values pushed to Cloudflare secrets |
+
+```bash
+# Decrypt for editing
+pnpm exec dotenvx decrypt -f config/env/.env
+
+# Re-encrypt after editing
+pnpm exec dotenvx encrypt -f config/env/.env
+
+# Push production secrets to Cloudflare
+pnpm deploy:secrets
+```
+
+> `.env.keys` holds the private decryption key — never commit it (already in `.gitignore`).
+
 ## 🚢 Deployment
 
 Deployed to Cloudflare Pages via `wrangler pages deploy`.
 
 Requires:
 - D1 database (`miko-art-db`) provisioned
-- Secrets configured via `wrangler secret put`
+- Production secrets encrypted in `config/env/.env.production` and pushed via `pnpm deploy:secrets`
 
 ## 📝 License
 
