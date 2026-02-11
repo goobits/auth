@@ -89,7 +89,7 @@
 <div class="journal">
 	<div class="journal-tools" aria-label="Journal filters">
 		<label class="search-field" aria-label="Search posts">
-			<Search class="search-icon" size={15} strokeWidth={2.2} />
+			<Search size={15} strokeWidth={2.2} style="color: var(--muted); flex-shrink: 0;" />
 			<input type="text" placeholder="Search posts..." bind:value={searchQuery} />
 		</label>
 
@@ -185,11 +185,6 @@
 		border: 1px solid var(--input-border);
 		border-radius: 6px;
 		background: var(--input-bg);
-	}
-
-	.search-icon {
-		color: var(--muted);
-		flex-shrink: 0;
 	}
 
 	input {

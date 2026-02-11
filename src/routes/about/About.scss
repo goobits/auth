@@ -5,6 +5,10 @@
 
 .about-article {
 	padding: 0 clamp(0.2rem, 1vw, 0.4rem);
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) min(34%, 260px);
+	column-gap: clamp(1rem, 2vw, 2rem);
+	align-items: start;
 }
 
 .intro,
@@ -12,6 +16,7 @@
 .closing {
 	padding: clamp(1rem, 2.2vw, 1.5rem) 0;
 	border-bottom: 1px solid var(--panel-border);
+	grid-column: 1;
 }
 
 .intro {
@@ -35,10 +40,12 @@
 }
 
 .portrait {
-	float: right;
-	width: min(34%, 240px);
-	margin: 0 0 0.9rem 1rem;
-	max-width: 240px;
+	grid-column: 2;
+	grid-row: 1 / span 99;
+	margin: clamp(1rem, 2.2vw, 1.5rem) 0 0;
+	width: 100%;
+	position: sticky;
+	top: calc(var(--header-height, 68px) + 1.2rem);
 
 	img {
 		width: 100%;
@@ -47,27 +54,6 @@
 		border-radius: 9px;
 		border: 1px solid var(--border);
 		box-shadow: 0 10px 24px var(--shadow-softest);
-	}
-}
-
-.meta-row {
-	margin-top: 1rem;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.5rem;
-
-	span {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		font-family: var(--font-sans);
-		font-size: 0.78rem;
-		font-weight: 500;
-		color: var(--muted);
-		padding: 0.25rem 0.55rem;
-		border-radius: 999px;
-		border: 1px solid var(--panel-border);
-		background: var(--card-bg);
 	}
 }
 
@@ -131,8 +117,14 @@
 }
 
 @media (max-width: 760px) {
+	.about-article {
+		grid-template-columns: 1fr;
+	}
+
 	.portrait {
-		float: none;
+		grid-column: 1;
+		grid-row: auto;
+		position: static;
 		width: min(72%, 260px);
 		max-width: 260px;
 		margin: 0 auto 1rem;

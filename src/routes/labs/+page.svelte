@@ -15,6 +15,17 @@
 		{ href: '/labs/zen-bg', title: 'Zen BG', vibe: 'Ambient background generator' }
 	]
 
+	const pastelCardThemes = [
+		{ bg: '#ffdfe8', border: '#f5b9cb', ink: '#4f2332', muted: '#74404f' },
+		{ bg: '#ffe8cc', border: '#f5c89f', ink: '#54341f', muted: '#7b5235' },
+		{ bg: '#fff6bf', border: '#eadf92', ink: '#4d4421', muted: '#6f6536' },
+		{ bg: '#daf6d8', border: '#b8e4b3', ink: '#22482b', muted: '#3e6b47' },
+		{ bg: '#d7f3f2', border: '#addfdd', ink: '#1e4647', muted: '#3b6a6b' },
+		{ bg: '#dde9ff', border: '#bdcff8', ink: '#27385a', muted: '#44577f' },
+		{ bg: '#ece2ff', border: '#d2bdf8', ink: '#3d2b5f', muted: '#5e4784' },
+		{ bg: '#ffe2f6', border: '#efbde0', ink: '#552949', muted: '#7a4a6f' }
+	]
+
 	function isExternalLab(href) {
 		return href.endsWith('.html')
 	}
@@ -22,6 +33,10 @@
 	let searchQuery = $state('')
 	let selectedScope = $state('all')
 	let sortBy = $state('title')
+
+	function getCardTheme(i) {
+		return pastelCardThemes[i % pastelCardThemes.length]
+	}
 
 	function matchesScope(lab) {
 		if (selectedScope === 'external') return isExternalLab(lab.href)
@@ -62,7 +77,7 @@
 <div class="labs">
 	<div class="tools" aria-label="Labs filters">
 		<label class="search-field" aria-label="Search labs">
-			<Search class="search-icon" size={15} strokeWidth={2.2} />
+			<Search size={15} strokeWidth={2.2} style="color: var(--muted); flex-shrink: 0;" />
 			<input type="text" placeholder="Search experiments..." bind:value={searchQuery} />
 		</label>
 
@@ -94,14 +109,14 @@
 		<ul class="grid">
 			{#each filteredLabs as lab, i}
 				<li>
-					<a href={lab.href} class="lab-card" style={`--i:${i % 6}`}>
+					<a href={lab.href} class="lab-card" style={`--card-bg:${getCardTheme(i).bg};--card-border:${getCardTheme(i).border};--card-ink:${getCardTheme(i).ink};--card-muted:${getCardTheme(i).muted};`}>
 						<p class="card-top">
 							<span class="kind">
 								<FlaskConical size={13} strokeWidth={2.2} />
 								{isExternalLab(lab.href) ? 'Demo' : 'Lab'}
 							</span>
 							{#if isExternalLab(lab.href)}
-								<ExternalLink size={14} strokeWidth={2.2} class="external" />
+								<ExternalLink size={14} strokeWidth={2.2} style="color: var(--card-muted);" />
 							{/if}
 						</p>
 						<h2>{lab.title}</h2>
@@ -138,11 +153,6 @@
 		border: 1px solid var(--input-border);
 		border-radius: 6px;
 		background: var(--input-bg);
-	}
-
-	.search-icon {
-		color: var(--muted);
-		flex-shrink: 0;
 	}
 
 	input {
@@ -225,31 +235,52 @@
 		margin: 0;
 		padding: 0;
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 		gap: 0.9rem;
 	}
 
 	.lab-card {
+		--card-surface-1: color-mix(in srgb, var(--card-bg) 88%, white);
+		--card-surface-2: color-mix(in srgb, var(--card-bg) 76%, #f7f3ff);
+		--card-glow: color-mix(in srgb, var(--card-border) 54%, transparent);
 		display: grid;
+		grid-template-rows: auto auto auto 1fr auto auto;
 		gap: 0.52rem;
 		padding: 0.9rem;
-		min-height: 200px;
+		aspect-ratio: 1 / 1;
 		text-decoration: none;
-		color: var(--text);
+		color: var(--card-ink);
 		border-radius: 10px;
-		border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+		border: 1px solid var(--card-border);
 		background:
-			radial-gradient(circle at 105% -10%, color-mix(in srgb, var(--brand-primary) 14%, transparent) 0, transparent 45%),
-			radial-gradient(circle at -10% 110%, color-mix(in srgb, var(--link) 11%, transparent) 0, transparent 40%),
-			var(--card-bg);
-		box-shadow: 0 6px 18px var(--shadow-softest);
+			radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--card-glow) 68%, transparent) 0%, transparent 55%),
+			radial-gradient(90% 110% at 100% 100%, color-mix(in srgb, var(--card-glow) 52%, transparent) 0%, transparent 60%),
+			linear-gradient(145deg, var(--card-surface-1) 0%, var(--card-surface-2) 100%);
+		box-shadow: 0 8px 18px color-mix(in srgb, var(--card-border) 34%, transparent);
 		transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 	}
 
 	.lab-card:hover {
 		transform: translateY(-2px);
-		border-color: color-mix(in srgb, var(--link) 45%, var(--border));
-		box-shadow: 0 12px 26px var(--shadow-softest);
+		border-color: color-mix(in srgb, var(--card-border) 82%, var(--card-ink));
+		box-shadow: 0 14px 26px color-mix(in srgb, var(--card-border) 48%, transparent);
+	}
+
+	:global(html[data-theme='dark']) .lab-card,
+	:global(html.theme-system-dark) .lab-card {
+		--card-surface-1: color-mix(in srgb, var(--card-bg) 32%, #181b26);
+		--card-surface-2: color-mix(in srgb, var(--card-bg) 22%, #10131c);
+		--card-glow: color-mix(in srgb, var(--card-border) 36%, transparent);
+		--card-ink: color-mix(in srgb, white 86%, var(--card-bg));
+		--card-muted: color-mix(in srgb, white 66%, var(--card-bg));
+		border-color: color-mix(in srgb, var(--card-border) 52%, #232837);
+		box-shadow: 0 10px 20px rgba(10, 12, 18, 0.42);
+	}
+
+	:global(html[data-theme='dark']) .lab-card:hover,
+	:global(html.theme-system-dark) .lab-card:hover {
+		border-color: color-mix(in srgb, var(--card-border) 64%, white 20%);
+		box-shadow: 0 16px 30px rgba(7, 9, 14, 0.58);
 	}
 
 	.card-top {
@@ -268,11 +299,7 @@
 		letter-spacing: 0.03em;
 		text-transform: uppercase;
 		font-family: var(--font-sans);
-		color: var(--muted);
-	}
-
-	.external {
-		color: var(--muted);
+		color: var(--card-muted);
 	}
 
 	.lab-card h2 {
@@ -286,16 +313,23 @@
 	.vibe {
 		margin: 0;
 		font-size: 0.9rem;
-		color: var(--muted);
+		color: var(--card-muted);
 		font-family: var(--font-serif);
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
 	}
 
 	.path {
 		margin: auto 0 0;
 		font-family: monospace;
 		font-size: 0.72rem;
-		color: var(--muted);
+		color: var(--card-muted);
 		opacity: 0.95;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.open {
@@ -306,7 +340,7 @@
 		font-size: 0.78rem;
 		font-weight: 600;
 		font-family: var(--font-sans);
-		color: var(--link);
+		color: var(--card-ink);
 	}
 
 	.no-results {

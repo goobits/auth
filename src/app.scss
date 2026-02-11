@@ -59,6 +59,11 @@
 	--color-violet: #8b5cf6;
 	--color-teal: #14b8a6;
 	--color-cyan: #0ea5a8;
+	--gradient-rainbow: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #a78bfa, #48dbfb);
+	--gradient-circus: linear-gradient(90deg, #ff6b9d, #ff9ff3, #c084fc, #f472b6);
+	--gradient-adventure: linear-gradient(90deg, #34d399, #22d3ee, #60a5fa, #a78bfa);
+	--gradient-movie: linear-gradient(90deg, #fbbf24, #f97316, #ef4444, #ec4899);
+	--gradient-action: linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #60a5fa 100%);
 
 	/* Core colors */
 	--bg: #ffffff;
@@ -149,6 +154,18 @@
 	--calendar-input-bg: #ffffff;
 	--calendar-btn-ghost-border: #cbd5e1;
 	--calendar-success: #047857;
+}
+
+html,
+body,
+input,
+button,
+select,
+textarea {
+	/* Prefer subpixel anti-aliasing for crisper body text rendering */
+	-webkit-font-smoothing: subpixel-antialiased;
+	-moz-osx-font-smoothing: auto;
+	text-rendering: optimizeSpeed;
 }
 
 /* Dark theme - combined selectors for @goobits/themes compatibility */
@@ -243,6 +260,108 @@ html.theme-system-dark,
 	--text-primary: var(--text);
 	--text-secondary: var(--muted);
 	--color-text-primary: var(--text);
+	--gradient-rainbow: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #a78bfa, #48dbfb);
+	--gradient-circus: linear-gradient(90deg, #ff6b9d, #ff9ff3, #c084fc, #f472b6);
+	--gradient-adventure: linear-gradient(90deg, #34d399, #22d3ee, #60a5fa, #a78bfa);
+	--gradient-movie: linear-gradient(90deg, #fbbf24, #f97316, #ef4444, #ec4899);
+	--gradient-action: linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #60a5fa 100%);
+}
+
+[data-theme='magic'],
+.theme-magic,
+.theme-magic.scheme-default {
+	/* Core colors */
+	--bg: #150f2f;
+	--text: #f8f7ff;
+	--muted: #b6aed6;
+	--link: #73f3ff;
+	--link-hover: #ff8ce6;
+	--border: #3f3468;
+
+	/* Brand colors */
+	--brand-primary: #2a1b56;
+	--brand-dark: #1e143f;
+	--accent-bg: #3a2476;
+
+	/* Surfaces */
+	--panel-bg: #211648;
+	--panel-border: #3f3468;
+	--card-bg: #281a55;
+	--card-border: #3f3468;
+
+	/* Form elements */
+	--button-bg: #7a5cff;
+	--button-text: #ffffff;
+	--input-bg: rgba(255, 255, 255, 0.08);
+	--input-border: rgba(255, 255, 255, 0.24);
+	--input-text: #f0ebff;
+	--form-error: #ff6b96;
+
+	/* Project cards */
+	--project-hover-bg: #6d48ef;
+	--project-image-bg: #352965;
+	--project-title-bg: #140d2d;
+	--project-title-border: rgba(255, 255, 255, 0.22);
+
+	/* Shadows */
+	--hero-shadow: rgba(0, 0, 0, 0.5);
+	--shadow-strong: rgba(0, 0, 0, 0.55);
+	--shadow-mid: rgba(0, 0, 0, 0.42);
+	--shadow-soft: rgba(0, 0, 0, 0.28);
+	--shadow-softest: rgba(0, 0, 0, 0.2);
+	--shadow-panel: rgba(0, 0, 0, 0.35);
+	--shadow-card: rgba(0, 0, 0, 0.28);
+
+	/* Status */
+	--status-success-bg: #1f4f40;
+	--status-success-text: #74e3bc;
+	--status-error-text: #ff9ab4;
+
+	/* Tags */
+	--tag-bg: #3b2c71;
+	--tag-hover-bg: #4c3a8f;
+
+	/* Labs page */
+	--lab-bg: var(--panel-bg);
+	--lab-item-bg: var(--card-bg);
+	--lab-item-hover-bg: #322566;
+	--lab-item-text: #ece7ff;
+	--lab-icon: #84d8ff;
+	--lab-icon-hover: #b490ff;
+
+	/* Calendar Gym page */
+	--calendar-shell-bg: #0f0b20;
+	--calendar-shell-text: #f8f7ff;
+	--calendar-body-bg: radial-gradient(circle at top left, #180f35 0%, #1e1440 45%, #251a4c 100%);
+	--calendar-text: var(--text);
+	--calendar-muted: #b3a8dc;
+	--calendar-subhead: #cbc2ee;
+	--calendar-tz: #8d82bb;
+	--calendar-panel-bg: rgba(28, 20, 57, 0.88);
+	--calendar-panel-shadow: rgba(0, 0, 0, 0.35);
+	--calendar-slot-bg: #32255f;
+	--calendar-slot-text: var(--text);
+	--calendar-slot-selected-bg: #7a5cff;
+	--calendar-slot-disabled-bg: #2a1f51;
+	--calendar-slot-disabled-text: #8d82bb;
+	--calendar-input-border: #4a3b81;
+	--calendar-input-bg: #281d50;
+	--calendar-btn-ghost-border: #5a4a91;
+	--calendar-success: #74e3bc;
+
+	/* Override @goobits/themes bundle variables */
+	--bg-primary: var(--bg);
+	--bg-secondary: var(--panel-bg);
+	--bg-tertiary: var(--card-bg);
+	--color-background: var(--bg);
+	--text-primary: var(--text);
+	--text-secondary: var(--muted);
+	--color-text-primary: var(--text);
+	--gradient-rainbow: linear-gradient(90deg, #8cf0ff, #7a8cff, #b490ff, #ff8ce6, #ff9ab4, #8cf0ff);
+	--gradient-circus: linear-gradient(90deg, #ff8ce6, #d6a5ff, #b490ff, #ff9ab4);
+	--gradient-adventure: linear-gradient(90deg, #74e3bc, #73f3ff, #84d8ff, #b490ff);
+	--gradient-movie: linear-gradient(90deg, #ffd56a, #ffb26b, #ff8d91, #ff8ce6);
+	--gradient-action: linear-gradient(135deg, #b490ff 0%, #7a5cff 50%, #73f3ff 100%);
 }
 
 html {
@@ -277,6 +396,17 @@ html.theme-system-dark {
 [data-theme='dark'] body,
 .theme-dark body,
 html.theme-system-dark body {
+	background: var(--bg);
+	color: var(--text);
+}
+
+[data-theme='magic'] html,
+.theme-magic html {
+	background: var(--bg);
+}
+
+[data-theme='magic'] body,
+.theme-magic body {
 	background: var(--bg);
 	color: var(--text);
 }

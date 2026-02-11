@@ -25,16 +25,10 @@
 	}
 
 	.hero-icon {
-		width: 64px;
-		height: 64px;
-		vertical-align: top;
+		width: 0.85em;
+		height: 0.85em;
+		vertical-align: -0.08em;
 		margin-left: 0.35rem;
-	}
-
-	@media (max-width: 700px) {
-		.hero-icon {
-			width: 58px;
-			height: 58px;
-		}
+		object-fit: contain;
 	}
 </style>

@@ -70,7 +70,7 @@
 	font-size: 15px;
 	font-weight: 600;
 	letter-spacing: 0.04em;
-	background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #a78bfa, #48dbfb);
+	background: var(--gradient-rainbow);
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	background-clip: text;
@@ -79,19 +79,19 @@
 }
 
 .eyebrow-circus {
-	background: linear-gradient(90deg, #ff6b9d, #ff9ff3, #c084fc, #f472b6);
+	background: var(--gradient-circus);
 	-webkit-background-clip: text;
 	background-clip: text;
 }
 
 .eyebrow-adventure {
-	background: linear-gradient(90deg, #34d399, #22d3ee, #60a5fa, #a78bfa);
+	background: var(--gradient-adventure);
 	-webkit-background-clip: text;
 	background-clip: text;
 }
 
 .eyebrow-movie {
-	background: linear-gradient(90deg, #fbbf24, #f97316, #ef4444, #ec4899);
+	background: var(--gradient-movie);
 	-webkit-background-clip: text;
 	background-clip: text;
 }
@@ -226,7 +226,7 @@
 	font-weight: 600;
 	font-family: inherit;
 	cursor: pointer;
-	background: linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #60a5fa 100%);
+	background: var(--gradient-action);
 	color: var(--color-white);
 	box-shadow: 0 2px 20px rgba(100, 80, 255, 0.25);
 	transition: all 0.3s ease;
@@ -568,7 +568,7 @@
 		width: 6px;
 		height: 6px;
 		border-radius: 50%;
-		background: linear-gradient(135deg, #a78bfa, #60a5fa);
+		background: var(--gradient-action);
 	}
 }
 
@@ -823,7 +823,7 @@
 
 	&.enabled {
 		cursor: pointer;
-		background: linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #60a5fa 100%);
+		background: var(--gradient-action);
 		color: var(--color-white);
 		box-shadow: 0 2px 20px rgba(100, 80, 255, 0.25);
 
