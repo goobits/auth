@@ -68,6 +68,13 @@
         </contact-form-errors>
 
         <button on:click={submitForm}>Send</button>
+
+		<p class="legal-note">
+			By sending this form, you agree to our
+			<a href="/privacy">Privacy Policy</a>,
+			<a href="/terms">Terms of Use</a>, and
+			<a href="/cookies">Cookie Policy</a>.
+		</p>
     </form>
     <div style="clear: both"></div>
 </contact-form>

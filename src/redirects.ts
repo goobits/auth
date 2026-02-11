@@ -6,6 +6,7 @@
 
 /** @type {Array<Object>} */
 export const redirects = [
+	{ from: '/privacy-policy*', to: '/privacy', status: 301 },
 	{ from: '/bg*', to: '/labs/zen-bg/', status: 301 },
 	{ from: '/journal/human*', to: '/about/', status: 301 },
 	{ from: '/labs/piano*', to: 'https://colorpiano.com', status: 301 },

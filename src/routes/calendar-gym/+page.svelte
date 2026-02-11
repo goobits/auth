@@ -519,6 +519,13 @@
 					Confirm booking
 				</button>
 
+				<p class="legal-note">
+					By booking, you agree to our
+					<a href="/privacy">Privacy Policy</a>,
+					<a href="/terms">Terms of Use</a>, and
+					<a href="/cookies">Cookie Policy</a>.
+				</p>
+
 				{#if status && status !== 'booked'}
 					<p class="form-error">{status}</p>
 				{/if}

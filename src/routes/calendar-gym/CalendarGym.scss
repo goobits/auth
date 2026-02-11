@@ -518,6 +518,22 @@
 	text-align: center;
 }
 
+.legal-note {
+	margin: 12px 0 0;
+	font-size: 12px;
+	line-height: 1.5;
+	text-align: center;
+	color: rgba(245, 245, 247, 0.56);
+
+	a {
+		color: #a78bfa;
+
+		&:hover {
+			color: #c4b5fd;
+		}
+	}
+}
+
 // Success Card
 .success-card {
 	text-align: center;

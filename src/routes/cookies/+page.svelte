@@ -1,0 +1,75 @@
+<svelte:head>
+	<title>Cookie Policy - MIKO.ART</title>
+	<meta name="description" content="Cookie policy for MIKO.ART" />
+</svelte:head>
+
+<section class="legal-page">
+	<h1>Cookie Policy</h1>
+	<p class="updated">Last updated: February 11, 2026</p>
+
+	<p>
+		This page describes how MIKO.ART uses cookies and similar browser storage.
+	</p>
+
+	<h2>What We Use Cookies For</h2>
+	<ul>
+		<li>Authentication sessions for calendar and admin features.</li>
+		<li>Short-lived login context (for invite and redirect flow during sign-in).</li>
+		<li>Theme preferences stored in browser local storage.</li>
+		<li>Google Analytics cookies for aggregate traffic and usage measurement.</li>
+	</ul>
+
+	<h2>Cookie Types on This Site</h2>
+	<ul>
+		<li><strong>Essential cookies</strong>: required for login/session behavior and security.</li>
+		<li><strong>Preference storage</strong>: used to remember UI theme settings.</li>
+	</ul>
+
+	<h2>Current Cookie Names</h2>
+	<ul>
+		<li><code>calendar_session</code> for calendar authentication sessions.</li>
+		<li><code>admin_session</code> for admin authentication sessions.</li>
+		<li><code>calendar_invite</code> and <code>calendar_redirect</code> for short login-flow context.</li>
+	</ul>
+
+	<p>
+		Cookie names may change as features evolve. This policy will be updated when material changes are made.
+	</p>
+
+	<h2>How to Manage Cookies</h2>
+	<p>
+		Most browsers let you block or delete cookies. Blocking essential cookies can break sign-in and booking features.
+	</p>
+
+	<h2>Contact</h2>
+	<p>
+		For cookie questions, email <a href="mailto:hello@miko.art">hello@miko.art</a>.
+	</p>
+</section>
+
+<style>
+	.legal-page {
+		max-width: 860px;
+		margin: 0 auto;
+		padding: 2rem 1rem 3rem;
+		line-height: 1.7;
+	}
+
+	h1 {
+		margin-bottom: 0.25rem;
+	}
+
+	.updated {
+		opacity: 0.8;
+		margin-bottom: 1.5rem;
+	}
+
+	h2 {
+		margin-top: 1.75rem;
+		margin-bottom: 0.5rem;
+	}
+
+	ul {
+		padding-left: 1.25rem;
+	}
+</style>

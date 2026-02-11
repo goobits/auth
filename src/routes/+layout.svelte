@@ -48,7 +48,9 @@
 		<nav>
 			<a href="/journal">Journal</a>
 			<a href="/labs">Labs</a>
-			<a href="/privacy-policy">Privacy</a>
+			<a href="/privacy">Privacy</a>
+			<a href="/terms">Terms</a>
+			<a href="/cookies">Cookies</a>
 		</nav>
 		<small>© {new Date().getFullYear()} Miko Meow™</small>
 	</footer>
