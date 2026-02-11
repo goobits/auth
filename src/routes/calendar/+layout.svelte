@@ -1,16 +1,10 @@
 <script>
 	import { page } from '$app/stores'
 	import { goto } from '$app/navigation'
+	import { CALENDAR_ACTIVITY_LIST } from '$lib/booking/activities'
 	import './Calendar.scss'
 
 	const { data, children } = $props()
-
-	const navItems = [
-		{ href: '/calendar/gym', label: 'Gym' },
-		{ href: '/calendar/circus', label: 'Circus' },
-		{ href: '/calendar/adventure', label: 'Adventure' },
-		{ href: '/calendar/movie-night', label: 'Movies' }
-	]
 
 	// Client-side auth check - redirect to login if no user (except on login page)
 	$effect(() => {
@@ -34,170 +28,173 @@
 </script>
 
 <div class="calendar-shell">
-	<nav class="calendar-nav">
-		<div class="nav-inner">
-			<a href="/calendar" class="nav-brand">Members</a>
-			<div class="nav-links">
-				{#each navItems as item}
+	<nav class="calendar-shell__nav">
+		<div class="calendar-shell__nav-inner">
+			<a href="/calendar" class="calendar-shell__brand">Members</a>
+			<div class="calendar-shell__links">
+				{#each CALENDAR_ACTIVITY_LIST as item}
 					<a
 						href={item.href}
-						class:active={isActive(item.href, item.exact)}
+						class:active={isActive(item.href)}
 					>
 						{item.label}
 					</a>
 				{/each}
 			</div>
-			<div class="nav-user">
+			<div class="calendar-shell__user">
 				{#if data.user}
 					{#if data.user.avatarUrl}
-						<img src={data.user.avatarUrl} alt="" class="avatar" />
+						<img src={data.user.avatarUrl} alt="" class="calendar-shell__avatar" />
 					{/if}
-					<span class="user-name">{data.user.name || data.user.email}</span>
-					<button onclick={logout} class="logout-btn">Logout</button>
+					<span class="calendar-shell__name">{data.user.name || data.user.email}</span>
+					<button onclick={logout} class="calendar-shell__logout">Logout</button>
 				{/if}
 			</div>
 		</div>
 	</nav>
 
-	<div class="calendar-layout">
-		<main class="calendar-main">
+	<div class="calendar-shell__layout">
+		<main class="calendar-shell__main">
 			{@render children()}
 		</main>
 	</div>
 </div>
 
-<style>
-	.calendar-layout {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-	}
+<style lang="scss">
+	.calendar-shell {
+		&__layout {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+		}
 
-	.calendar-nav {
-		background: rgba(255, 255, 255, 0.02);
-		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-		width: 100%;
-		position: sticky;
-		top: 0;
-		z-index: 100;
-		backdrop-filter: blur(20px);
-		-webkit-backdrop-filter: blur(20px);
-	}
+		&__nav {
+			background: rgba(255, 255, 255, 0.015);
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			width: 100%;
+			position: sticky;
+			top: 0;
+			z-index: 80;
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+		}
 
-	.nav-inner {
-		max-width: var(--max-width, 1060px);
-		margin: 0 auto;
-		width: calc(100% - 2em);
-		padding: 0;
-		height: 56px;
-		display: flex;
-		align-items: center;
-		gap: 32px;
-	}
+		&__nav-inner {
+			max-width: var(--max-width, 1060px);
+			margin: 0 auto;
+			width: calc(100% - 2em);
+			height: 50px;
+			display: flex;
+			align-items: center;
+			gap: 20px;
+		}
 
-	.nav-brand {
-		font-size: 17px;
-		font-weight: 600;
-		letter-spacing: -0.01em;
-		background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #a78bfa);
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
-		text-decoration: none;
-	}
+		&__brand {
+			font-size: 15px;
+			font-weight: 600;
+			letter-spacing: -0.01em;
+			background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #a78bfa);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			background-clip: text;
+			text-decoration: none;
+		}
 
-	.nav-links {
-		display: flex;
-		gap: 8px;
-		flex: 1;
-	}
+		&__links {
+			display: flex;
+			gap: 6px;
+			flex: 1;
 
-	.nav-links a {
-		color: rgba(245, 245, 247, 0.56);
-		text-decoration: none;
-		font-size: 14px;
-		font-weight: 500;
-		padding: 8px 14px;
-		border-radius: 8px;
-		transition: all 0.2s ease;
-	}
+			a {
+				color: rgba(245, 245, 247, 0.52);
+				text-decoration: none;
+				font-size: 13px;
+				font-weight: 500;
+				padding: 6px 11px;
+				border-radius: 999px;
+				transition: all 0.16s ease;
 
-	.nav-links a:hover {
-		color: rgba(245, 245, 247, 0.8);
-		background: rgba(255, 255, 255, 0.04);
-	}
+				&:hover {
+					color: rgba(245, 245, 247, 0.78);
+					background: rgba(255, 255, 255, 0.035);
+				}
 
-	.nav-links a.active {
-		color: #f5f5f7;
-		background: rgba(255, 255, 255, 0.08);
-	}
+				&.active {
+					color: #f5f5f7;
+					background: rgba(255, 255, 255, 0.075);
+				}
+			}
+		}
 
-	.nav-user {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
+		&__user {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
 
-	.avatar {
-		width: 28px;
-		height: 28px;
-		border-radius: 50%;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-	}
+		&__avatar {
+			width: 24px;
+			height: 24px;
+			border-radius: 50%;
+			border: 1px solid rgba(255, 255, 255, 0.12);
+		}
 
-	.user-name {
-		color: rgba(245, 245, 247, 0.7);
-		font-size: 13px;
-		font-weight: 500;
-	}
+		&__name {
+			color: rgba(245, 245, 247, 0.6);
+			font-size: 12px;
+			font-weight: 500;
+		}
 
-	.logout-btn {
-		background: transparent;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		color: rgba(245, 245, 247, 0.56);
-		padding: 6px 12px;
-		border-radius: 6px;
-		cursor: pointer;
-		font-size: 13px;
-		font-weight: 500;
-		transition: all 0.2s ease;
-	}
+		&__logout {
+			background: transparent;
+			border: 1px solid rgba(255, 255, 255, 0.1);
+			color: rgba(245, 245, 247, 0.54);
+			padding: 5px 10px;
+			border-radius: 999px;
+			cursor: pointer;
+			font-size: 12px;
+			font-weight: 500;
+			transition: all 0.2s ease;
 
-	.logout-btn:hover {
-		background: rgba(255, 255, 255, 0.04);
-		border-color: rgba(255, 255, 255, 0.15);
-		color: rgba(245, 245, 247, 0.8);
-	}
+			&:hover {
+				background: rgba(255, 255, 255, 0.04);
+				border-color: rgba(255, 255, 255, 0.16);
+				color: rgba(245, 245, 247, 0.82);
+			}
+		}
 
-	.calendar-main {
-		flex: 1;
+		&__main {
+			flex: 1;
+		}
 	}
 
 	@media (max-width: 700px) {
-		.nav-inner {
-			padding: 12px 16px;
-			gap: 16px;
-			height: auto;
-			min-height: 56px;
-			flex-wrap: wrap;
-		}
+		.calendar-shell {
+			&__nav-inner {
+				padding: 10px 14px;
+				gap: 12px;
+				height: auto;
+				min-height: 48px;
+				flex-wrap: wrap;
+			}
 
-		.nav-links {
-			order: 3;
-			width: 100%;
-			overflow-x: auto;
-			padding-bottom: 4px;
-			gap: 4px;
-		}
+			&__links {
+				order: 3;
+				width: 100%;
+				overflow-x: auto;
+				padding-bottom: 2px;
+				gap: 4px;
 
-		.nav-links a {
-			font-size: 13px;
-			padding: 6px 10px;
-			white-space: nowrap;
-		}
+				a {
+					font-size: 12px;
+					padding: 5px 9px;
+					white-space: nowrap;
+				}
+			}
 
-		.user-name {
-			display: none;
+			&__name {
+				display: none;
+			}
 		}
 	}
 </style>

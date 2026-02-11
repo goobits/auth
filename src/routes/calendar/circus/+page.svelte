@@ -1,18 +1,6 @@
 <script>
-	import BookingCalendar from '$lib/booking/BookingCalendar.svelte'
+	import ActivityBookingPage from '$lib/booking/ActivityBookingPage.svelte'
+	import { CALENDAR_ACTIVITIES } from '$lib/booking/activities'
 </script>
 
-<svelte:head>
-	<title>Circus | Rainbow Gym | MIKO.ART</title>
-</svelte:head>
-
-<div class="calendar-page">
-	<section class="hero">
-		<div class="glow glow-circus"></div>
-		<p class="eyebrow eyebrow-circus">Rainbow Circus</p>
-		<h1>Fly high. Spin fast.<br/>Be brave.</h1>
-		<p class="sub">Aerial arts and circus skills training for all levels.</p>
-	</section>
-
-	<BookingCalendar activityName="Rainbow Circus" glowClass="form-glow-circus" />
-</div>
+<ActivityBookingPage activity={CALENDAR_ACTIVITIES.circus} />

@@ -1,18 +1,6 @@
 <script>
-	import BookingCalendar from '$lib/booking/BookingCalendar.svelte'
+	import ActivityBookingPage from '$lib/booking/ActivityBookingPage.svelte'
+	import { CALENDAR_ACTIVITIES } from '$lib/booking/activities'
 </script>
 
-<svelte:head>
-	<title>Adventure | Rainbow Gym | MIKO.ART</title>
-</svelte:head>
-
-<div class="calendar-page">
-	<section class="hero">
-		<div class="glow glow-adventure"></div>
-		<p class="eyebrow eyebrow-adventure">Rainbow Adventure</p>
-		<h1>Get outside.<br/>Find something new.</h1>
-		<p class="sub">Outdoor excursions and group adventures in the Pacific Northwest.</p>
-	</section>
-
-	<BookingCalendar activityName="Rainbow Adventure" glowClass="form-glow-adventure" />
-</div>
+<ActivityBookingPage activity={CALENDAR_ACTIVITIES.adventure} />
