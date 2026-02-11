@@ -1,15 +1,5 @@
 <script>
-	import {
-		ArrowUpRight,
-		BookOpen,
-		ChevronDown,
-		ChevronRight,
-		Clock3,
-		Filter,
-		Search,
-		Tag,
-		Type
-	} from '@lucide/svelte'
+	import { ArrowUpRight, CalendarDays, Search, Tag } from '@lucide/svelte'
 	import HeroBanner from '@components/HeroBanner.svelte'
 
 	let { data } = $props()
@@ -17,10 +7,16 @@
 	let searchQuery = $state('')
 	let selectedCategory = $state('all')
 	let sortBy = $state('newest')
-	let collapsedYears = $state({})
 
-	function formatDate(value) {
+	function formatDate(value, mode = 'short') {
 		const d = new Date(value)
+		if (mode === 'year') return String(d.getFullYear())
+		if (mode === 'monthDay') {
+			return d.toLocaleDateString('en-US', {
+				month: 'short',
+				day: 'numeric'
+			})
+		}
 		return d.toLocaleDateString('en-US', {
 			month: 'numeric',
 			day: 'numeric',
@@ -55,9 +51,7 @@
 		})
 
 		return filtered.sort((a, b) => {
-			if (sortBy === 'title') {
-				return a.metadata.fm.title.localeCompare(b.metadata.fm.title)
-			}
+			if (sortBy === 'title') return a.metadata.fm.title.localeCompare(b.metadata.fm.title)
 			const aTime = new Date(a.date).getTime()
 			const bTime = new Date(b.date).getTime()
 			if (sortBy === 'oldest') return aTime - bTime
@@ -68,20 +62,14 @@
 	const groupedByYear = $derived.by(() => {
 		const groups = {}
 		for (const post of filteredPosts) {
-			const year = String(new Date(post.date).getFullYear())
+			const year = formatDate(post.date, 'year')
 			if (!groups[year]) groups[year] = []
 			groups[year].push(post)
 		}
 		return groups
 	})
 
-	const yearOrder = $derived.by(() => {
-		return Object.keys(groupedByYear).sort((a, b) => Number(b) - Number(a))
-	})
-
-	function toggleYear(year) {
-		collapsedYears[year] = !collapsedYears[year]
-	}
+	const yearOrder = $derived.by(() => Object.keys(groupedByYear).sort((a, b) => Number(b) - Number(a)))
 </script>
 
 <svelte:head>
@@ -95,119 +83,75 @@
 />
 
 <div class="journal">
-	<div class="controls">
-		<div class="search-field">
+	<div class="journal-tools" aria-label="Journal filters">
+		<label class="search-field" aria-label="Search posts">
 			<Search class="search-icon" size={15} strokeWidth={2.2} />
-			<input
-				type="text"
-				placeholder="Search posts..."
-				bind:value={searchQuery}
-			/>
-		</div>
+			<input type="text" placeholder="Search posts..." bind:value={searchQuery} />
+		</label>
 
-		<div class="filters">
-			<div class="tag-filters">
-				<span class="filter-label">
-					<Filter size={13} strokeWidth={2.2} />
-					<span>Category</span>
-				</span>
-				<button class="tag-filter" class:active={selectedCategory === 'all'} onclick={() => (selectedCategory = 'all')}>All</button>
-				{#each availableCategories as category}
-					<button
-						class="tag-filter"
-						class:active={selectedCategory === category}
-						onclick={() => (selectedCategory = category)}
-					>
-						{category}
-					</button>
-				{/each}
-			</div>
-
-			<div class="sort-view">
-				<div class="sort-toggle" role="tablist" aria-label="Sort posts">
-					<button
-						type="button"
-						role="tab"
-						class:active={sortBy === 'newest'}
-						aria-selected={sortBy === 'newest'}
-						onclick={() => (sortBy = 'newest')}
-					>
-						<Clock3 size={13} strokeWidth={2.2} />
-						<span>Newest</span>
-					</button>
-					<button
-						type="button"
-						role="tab"
-						class:active={sortBy === 'oldest'}
-						aria-selected={sortBy === 'oldest'}
-						onclick={() => (sortBy = 'oldest')}
-					>
-						<Clock3 size={13} strokeWidth={2.2} />
-						<span>Oldest</span>
-					</button>
-					<button
-						type="button"
-						role="tab"
-						class:active={sortBy === 'title'}
-						aria-selected={sortBy === 'title'}
-						onclick={() => (sortBy = 'title')}
-					>
-						<Type size={13} strokeWidth={2.2} />
-						<span>Title</span>
-					</button>
-				</div>
-			</div>
+		<div class="selects">
+			<label>
+				<span>Category</span>
+				<select bind:value={selectedCategory}>
+					<option value="all">All</option>
+					{#each availableCategories as category}
+						<option value={category}>{category}</option>
+					{/each}
+				</select>
+			</label>
+			<label>
+				<span>Sort</span>
+				<select bind:value={sortBy}>
+					<option value="newest">Newest</option>
+					<option value="oldest">Oldest</option>
+					<option value="title">Title</option>
+				</select>
+			</label>
 		</div>
 	</div>
 
 	{#if filteredPosts.length === 0}
 		<div class="no-results">
 			<p>No posts match your filters.</p>
-			<button onclick={() => { searchQuery = ''; selectedCategory = 'all' }}>Clear Filters</button>
+			<button onclick={() => { searchQuery = ''; selectedCategory = 'all'; sortBy = 'newest' }}>Clear Filters</button>
 		</div>
 	{:else}
-		<div class="results-count">Showing {filteredPosts.length} of {data.posts.length} posts</div>
+		<p class="results-count">{filteredPosts.length} entries</p>
 
 		{#each yearOrder as year}
-			<section class="category">
-				<button class="category-header" onclick={() => toggleYear(year)}>
-					<h2>
-						<BookOpen class="category-icon" size={14} strokeWidth={2.2} />
-						{#if collapsedYears[year]}
-							<ChevronRight class="toggle-icon" size={14} strokeWidth={2.25} />
-						{:else}
-							<ChevronDown class="toggle-icon" size={14} strokeWidth={2.25} />
-						{/if}
-						{year}
-						<span class="count">({groupedByYear[year].length})</span>
-					</h2>
-				</button>
+			<section class="year-group">
+				<h2>{year}</h2>
+				<ol>
+					{#each groupedByYear[year] as post}
+						<li>
+							<article class="entry">
+								<div class="entry-date">
+									<CalendarDays size={14} strokeWidth={2.2} />
+									<span>{formatDate(post.date, 'monthDay')}</span>
+								</div>
 
-				{#if !collapsedYears[year]}
-					<ul>
-						{#each groupedByYear[year] as post}
-							<li class="route">
-								<div class="route-main">
-									<a href={`/${post.urlPath}`} class="route-link">
-										<span>{post.metadata.fm.title}</span>
-										<ArrowUpRight class="title-arrow" size={15} strokeWidth={2.2} />
-									</a>
-								</div>
-								<div class="route-meta">
-									<div class="tags">
-										{#if post.metadata.fm.categories?.length}
-											<Tag class="tag-icon" size={13} strokeWidth={2.2} />
+								<div class="entry-body">
+									<h3>
+										<a href={`/${post.urlPath}`}>{post.metadata.fm.title}</a>
+									</h3>
+									{#if post.metadata.fm.categories?.length}
+										<div class="tags">
+											<Tag size={13} strokeWidth={2.2} />
 											{#each post.metadata.fm.categories as category}
-												<span class="tag">{category}</span>
+												<a class="tag" href={`/journal/category/${category.toLowerCase().replace(/\s+/g, '-')}`}>{category}</a>
 											{/each}
-										{/if}
-									</div>
-									<span class="modified">{formatDate(post.date)}</span>
+										</div>
+									{/if}
 								</div>
-							</li>
-						{/each}
-					</ul>
-				{/if}
+
+								<a href={`/${post.urlPath}`} class="read-link">
+									<span>Read</span>
+									<ArrowUpRight size={14} strokeWidth={2.2} />
+								</a>
+							</article>
+						</li>
+					{/each}
+				</ol>
 			</section>
 		{/each}
 	{/if}
@@ -219,19 +163,21 @@
 		margin: 0 auto;
 	}
 
-	.controls {
+	.journal-tools {
 		display: grid;
-		gap: 0.7rem;
-		margin-bottom: 1.25rem;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 0.8rem;
+		align-items: end;
+		margin-bottom: 0.9rem;
 	}
 
 	.search-field {
 		display: flex;
 		align-items: center;
 		gap: 0.45rem;
-		padding: 0 0.6rem;
+		padding: 0 0.65rem;
 		border: 1px solid var(--input-border);
-		border-radius: 5px;
+		border-radius: 6px;
 		background: var(--input-bg);
 	}
 
@@ -242,7 +188,7 @@
 
 	input {
 		width: 100%;
-		padding: 0.5rem 0;
+		padding: 0.52rem 0;
 		font-size: 0.95rem;
 		border: none;
 		background: transparent;
@@ -258,88 +204,126 @@
 		border-color: var(--link);
 	}
 
-	.filters {
+	.selects {
+		display: flex;
+		gap: 0.55rem;
+	}
+
+	.selects label {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		gap: 0.6rem;
-		align-items: center;
+		gap: 0.25rem;
 	}
 
-	.tag-filters {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.35rem;
-	}
-
-	.filter-label {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.3rem;
-		font-size: 0.78rem;
+	.selects span {
+		font-size: 0.75rem;
 		color: var(--muted);
-		margin-right: 0.35rem;
+		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	}
 
-	.tag-filter {
-		padding: 0.25rem 0.6rem;
-		font-size: 0.8rem;
+	select {
+		padding: 0.45rem 0.55rem;
+		border-radius: 5px;
 		border: 1px solid var(--border);
-		border-radius: 4px;
 		background: var(--card-bg);
 		color: var(--text);
-		cursor: pointer;
-		transition: all 0.15s ease;
+		font-size: 0.86rem;
 	}
 
-	.tag-filter:hover {
-		border-color: var(--link);
-	}
-
-	.tag-filter.active {
-		background: var(--brand-primary);
-		border-color: var(--brand-primary);
-		color: white;
-	}
-
-	.sort-view {
-		display: flex;
-		gap: 0.35rem;
-		justify-self: end;
-	}
-
-	.sort-toggle {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.2rem;
-		padding: 0.2rem;
-		border: 1px solid var(--border);
-		border-radius: 999px;
-		background: var(--card-bg);
-	}
-
-	.sort-toggle button {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		border: none;
-		border-radius: 999px;
-		background: transparent;
-		color: var(--muted);
-		padding: 0.35rem 0.68rem;
-		line-height: 1;
+	.results-count {
+		margin: 0 0 1rem;
 		font-size: 0.82rem;
-		cursor: pointer;
-		transition: all 0.15s ease;
+		color: var(--muted);
 	}
 
-	.sort-toggle button:hover {
+	.year-group {
+		margin-bottom: 1.7rem;
+	}
+
+	.year-group h2 {
+		margin: 0 0 0.55rem;
+		font-family: "Playfair Display", serif;
+		font-size: 1.5rem;
+		font-weight: 500;
+		line-height: 1.1;
+	}
+
+	.year-group ol {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		border-top: 1px solid var(--panel-border);
+	}
+
+	.entry {
+		display: grid;
+		grid-template-columns: 110px minmax(0, 1fr) auto;
+		gap: 0.8rem;
+		align-items: center;
+		padding: 0.8rem 0;
+		border-bottom: 1px solid var(--panel-border);
+	}
+
+	.entry-date {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.32rem;
+		font-size: 0.82rem;
+		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		color: var(--muted);
+	}
+
+	.entry-body h3 {
+		margin: 0;
+		font-family: "Playfair Display", serif;
+		font-weight: 500;
+		font-size: clamp(1.05rem, 1.6vw, 1.45rem);
+		line-height: 1.24;
+	}
+
+	.entry-body h3 a {
+		text-decoration: none;
 		color: var(--text);
 	}
 
-	.sort-toggle button.active {
-		background: var(--brand-primary);
-		color: white;
+	.entry-body h3 a:hover {
+		color: var(--link-hover);
+	}
+
+	.tags {
+		margin-top: 0.34rem;
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		color: var(--muted);
+	}
+
+	.tag {
+		font-size: 0.72rem;
+		padding: 0.14rem 0.45rem;
+		border-radius: 999px;
+		background: var(--tag-bg);
+		color: var(--muted);
+		text-decoration: none;
+	}
+
+	.tag:hover {
+		background: var(--tag-hover-bg);
+	}
+
+	.read-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.24rem;
+		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-size: 0.8rem;
+		font-weight: 600;
+		text-decoration: none;
+		color: var(--muted);
+		white-space: nowrap;
+	}
+
+	.read-link:hover {
+		color: var(--link-hover);
 	}
 
 	.no-results {
@@ -359,173 +343,18 @@
 		font-size: 0.9rem;
 	}
 
-	.results-count {
-		font-size: 0.85rem;
-		color: var(--muted);
-		margin-bottom: 0.75rem;
-	}
-
-	.category {
-		margin-bottom: 1rem;
-	}
-
-	.category-header {
-		width: 100%;
-		display: block;
-		background: var(--card-bg);
-		border: 1px solid var(--card-border);
-		border-radius: 6px;
-		padding: 0.5rem 0.75rem;
-		cursor: pointer;
-		text-align: left;
-	}
-
-	.category-header:hover {
-		border-color: var(--link);
-	}
-
-	.category-header h2 {
-		font-size: 1.1rem;
-		margin: 0;
-		display: flex;
-		align-items: center;
-		gap: 0.4rem;
-	}
-
-	.toggle-icon {
-		width: 1rem;
-		height: 1rem;
-		flex-shrink: 0;
-		color: var(--muted);
-	}
-
-	.category-icon {
-		width: 0.95rem;
-		height: 0.95rem;
-		flex-shrink: 0;
-		color: var(--muted);
-	}
-
-	.count {
-		font-weight: normal;
-		color: var(--muted);
-		font-size: 0.85rem;
-	}
-
-	.category ul {
-		list-style: none;
-		padding: 0 0 0 1.35rem;
-		margin: 0.45rem 0 0 0;
-		display: grid;
-		gap: 0.2rem;
-	}
-
-	.route {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		align-items: center;
-		gap: 0.65rem;
-		padding: 0.45rem 0;
-		border-bottom: 1px solid var(--panel-border);
-	}
-
-	.route:last-child {
-		border-bottom: none;
-	}
-
-	.route-main {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		flex-wrap: wrap;
-		min-width: 0;
-	}
-
-	.route-link {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.3rem;
-		text-decoration: none;
-		color: var(--text);
-		min-width: 0;
-		font-family: "Playfair Display", serif;
-		font-size: 1.25rem;
-	}
-
-	.route-link:hover {
-		color: var(--link-hover);
-	}
-
-	.title-arrow {
-		opacity: 0;
-		transition: opacity 0.15s ease;
-	}
-
-	.route-link:hover .title-arrow {
-		opacity: 1;
-	}
-
-	.route-meta {
-		display: flex;
-		align-items: center;
-		gap: 0.65rem;
-		flex-shrink: 0;
-	}
-
-	.tags {
-		display: flex;
-		gap: 0.2rem;
-		flex-wrap: nowrap;
-	}
-
-	.tag-icon {
-		color: var(--muted);
-		align-self: center;
-	}
-
-	.tag {
-		font-size: 0.65rem;
-		padding: 0.1rem 0.4rem;
-		border-radius: 3px;
-		background: var(--tag-bg);
-		color: var(--text);
-	}
-
-	.modified {
-		font-size: 0.75rem;
-		color: var(--muted);
-		width: 5.5rem;
-		text-align: right;
-		font-family: monospace;
-	}
-
-	@media (max-width: 700px) {
-		.filters {
+	@media (max-width: 860px) {
+		.journal-tools {
 			grid-template-columns: 1fr;
-			align-items: stretch;
 		}
 
-		.sort-view {
-			justify-self: start;
+		.entry {
+			grid-template-columns: 1fr;
+			gap: 0.45rem;
 		}
 
-		.route {
-			grid-template-columns: minmax(0, 1fr);
-		}
-
-		.route-meta {
-			width: 100%;
-			justify-content: space-between;
-		}
-	}
-
-	@media (max-width: 560px) {
-		.route-link {
-			font-size: 1.05rem;
-		}
-
-		.modified {
-			display: none;
+		.read-link {
+			width: fit-content;
 		}
 	}
 </style>
