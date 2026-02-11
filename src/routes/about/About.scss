@@ -15,9 +15,10 @@
 }
 
 .intro {
-	font-family: "Source Serif Pro", Georgia, serif;
+	font-family: var(--font-serif);
 	font-size: clamp(1.04rem, 1.08vw, 1.14rem);
 	line-height: 1.82;
+	overflow: auto;
 
 	p {
 		margin: 0 0 1rem;
@@ -34,8 +35,10 @@
 }
 
 .portrait {
-	margin: 0 0 1rem;
-	max-width: 420px;
+	float: right;
+	width: min(34%, 240px);
+	margin: 0 0 0.9rem 1rem;
+	max-width: 240px;
 
 	img {
 		width: 100%;
@@ -57,7 +60,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.35rem;
-		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: var(--font-sans);
 		font-size: 0.78rem;
 		font-weight: 500;
 		color: var(--muted);
@@ -71,7 +74,7 @@
 .section {
 	h2 {
 		margin: 0 0 0.75rem;
-		font-family: "Playfair Display", Georgia, serif;
+		font-family: var(--font-display);
 		font-size: clamp(1.3rem, 2vw, 1.65rem);
 		line-height: 1.15;
 	}
@@ -84,7 +87,7 @@
 	}
 
 	li {
-		font-family: "Source Serif Pro", Georgia, serif;
+		font-family: var(--font-serif);
 		line-height: 1.55;
 	}
 }
@@ -98,7 +101,7 @@
 
 	p {
 		margin: 0;
-		font-family: "Source Serif Pro", Georgia, serif;
+		font-family: var(--font-serif);
 		font-size: clamp(1.01rem, 1.08vw, 1.1rem);
 		line-height: 1.65;
 		max-width: 58ch;
@@ -113,7 +116,7 @@
 		border: 1px solid var(--border);
 		background: var(--card-bg);
 		color: var(--text);
-		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: var(--font-sans);
 		font-size: 0.84rem;
 		font-weight: 600;
 		text-decoration: none;
@@ -128,6 +131,13 @@
 }
 
 @media (max-width: 760px) {
+	.portrait {
+		float: none;
+		width: min(72%, 260px);
+		max-width: 260px;
+		margin: 0 auto 1rem;
+	}
+
 	.closing {
 		align-items: flex-start;
 		flex-direction: column;

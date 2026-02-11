@@ -1,11 +1,64 @@
 @import url('components/prism.scss');
 
+@font-face {
+	font-family: 'Canela Deck';
+	src: url('/fonts/CanelaDeck-Light-Trial.otf') format('opentype');
+	font-style: normal;
+	font-weight: 300;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Canela Deck';
+	src: url('/fonts/CanelaDeck-Regular-Trial.otf') format('opentype');
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Canela Deck';
+	src: url('/fonts/CanelaDeck-Medium-Trial.otf') format('opentype');
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Canela Deck';
+	src: url('/fonts/CanelaDeck-Bold-Trial.otf') format('opentype');
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+}
+
 :root {
 	/* Layout */
 	--max-width: 1060px;
 	--header-height: 120px;
 	--project-card-width: 305px;
 	--project-image-height: 230px;
+	--font-sans: 'Canela Deck', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+	--font-serif: 'Source Serif Pro', Georgia, serif;
+	--font-display: 'Playfair Display', Georgia, serif;
+	--color-white: #ffffff;
+	--color-black: #000000;
+	--color-white-60: rgba(255, 255, 255, 0.6);
+	--color-white-75: rgba(255, 255, 255, 0.75);
+	--color-white-82: rgba(255, 255, 255, 0.82);
+	--color-white-12: rgba(255, 255, 255, 0.12);
+	--color-white-10: rgba(255, 255, 255, 0.1);
+	--color-white-08: rgba(255, 255, 255, 0.08);
+	--color-white-06: rgba(255, 255, 255, 0.06);
+	--color-white-05: rgba(255, 255, 255, 0.05);
+	--color-white-04: rgba(255, 255, 255, 0.04);
+	--color-white-03: rgba(255, 255, 255, 0.03);
+	--color-white-015: rgba(255, 255, 255, 0.015);
+	--overlay-black-35: rgba(0, 0, 0, 0.35);
+	--color-warning: #f59e0b;
+	--color-violet: #8b5cf6;
+	--color-teal: #14b8a6;
+	--color-cyan: #0ea5a8;
 
 	/* Core colors */
 	--bg: #ffffff;
@@ -76,6 +129,8 @@
 	--lab-icon-hover: #4299e1;
 
 	/* Calendar Gym page */
+	--calendar-shell-bg: #0a0a0c;
+	--calendar-shell-text: #f5f5f7;
 	--calendar-body-bg: radial-gradient(circle at top left, #f8f7f4 0%, #f2f4f8 45%, #eef0f6 100%);
 	--calendar-text: #1f2937;
 	--calendar-muted: #64748b;
@@ -161,6 +216,8 @@ html.theme-system-dark,
 	--lab-icon-hover: #5fa8ff;
 
 	/* Calendar Gym page */
+	--calendar-shell-bg: #0a0a0c;
+	--calendar-shell-text: #f5f5f7;
 	--calendar-body-bg: radial-gradient(circle at top left, #0f1115 0%, #151821 45%, #1a1f2a 100%);
 	--calendar-text: var(--text);
 	--calendar-muted: #8a8a9a;
@@ -194,7 +251,7 @@ html {
 
 body {
 	background: var(--bg);
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: var(--font-sans);
 	font-size: 18px;
 	min-height: 100vh;
 	margin: 0;
@@ -254,7 +311,7 @@ textarea {
 	border: 1px solid var(--input-border);
 	border-radius: 5px;
 	color: var(--input-text);
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: var(--font-sans);
 	font-size: 18px;
 	font-weight: 300;
 	margin-bottom: 15px;
@@ -274,7 +331,7 @@ button {
 	color: var(--button-text);
 	cursor: pointer;
 	display: inline-flex;
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: var(--font-sans);
 	font-size: 1.2em;
 	font-weight: 300;
 	outline: none;

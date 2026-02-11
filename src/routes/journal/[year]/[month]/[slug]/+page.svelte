@@ -75,7 +75,7 @@
 			border-radius: 999px;
 			color: var(--muted);
 			text-decoration: none;
-			font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+			font-family: var(--font-sans);
 			font-size: 0.82rem;
 			font-weight: 500;
 			letter-spacing: 0.02em;
@@ -106,7 +106,7 @@
 			display: inline-flex;
 			align-items: center;
 			gap: 0.35rem;
-			font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+			font-family: var(--font-sans);
 			font-size: 0.75rem;
 			font-weight: 600;
 			text-transform: uppercase;
@@ -116,7 +116,7 @@
 		}
 
 		h1 {
-			font-family: "Playfair Display", Georgia, serif;
+			font-family: var(--font-display);
 			font-size: clamp(2rem, 4vw, 3.25rem);
 			line-height: 1.08;
 			font-weight: 500;
@@ -138,7 +138,7 @@
 				display: inline-flex;
 				align-items: center;
 				gap: 0.35rem;
-				font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+				font-family: var(--font-sans);
 				font-size: 0.8rem;
 				font-weight: 500;
 				letter-spacing: 0.01em;
@@ -162,7 +162,7 @@
 		}
 
 		.content {
-			font-family: "Source Serif Pro", Georgia, serif;
+			font-family: var(--font-serif);
 			font-size: clamp(1.07rem, 1.08vw, 1.18rem);
 			line-height: 1.85;
 			color: var(--text);
@@ -183,7 +183,7 @@
 		:global(.content h2),
 		:global(.content h3),
 		:global(.content h4) {
-			font-family: "Playfair Display", Georgia, serif;
+			font-family: var(--font-display);
 			letter-spacing: -0.01em;
 			line-height: 1.2;
 			margin-top: 2.4rem;

@@ -670,37 +670,37 @@
 	}
 	.login-card {
 		width: min(420px, 100%);
-		background: #0f0f11;
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: color-mix(in srgb, var(--color-black) 94%, var(--bg) 6%);
+		border: 1px solid var(--color-white-08);
 		border-radius: 16px;
 		padding: 2rem;
-		box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+		box-shadow: 0 20px 50px var(--overlay-black-35);
 	}
 	.login-title {
 		font-size: 1.5rem;
 		font-weight: 600;
-		color: #f7f5f2;
+		color: color-mix(in srgb, var(--color-white) 97%, var(--bg) 3%);
 		margin-bottom: 0.35rem;
 	}
 	.login-sub {
-		color: rgba(247, 245, 242, 0.7);
+		color: color-mix(in srgb, var(--color-white) 70%, transparent);
 		margin-bottom: 1.5rem;
 	}
 	.login-field input {
 		width: 100%;
-		background: #141416;
-		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: color-mix(in srgb, var(--color-black) 92%, var(--bg) 8%);
+		border: 1px solid var(--color-white-12);
 		border-radius: 10px;
 		padding: 0.75rem 0.85rem;
-		color: #f7f5f2;
+		color: color-mix(in srgb, var(--color-white) 97%, var(--bg) 3%);
 		outline: none;
 	}
 	.login-error {
 		margin: 0.75rem 0 1rem;
-		color: #ff8a8a;
+		color: color-mix(in srgb, var(--form-error) 72%, var(--color-white) 28%);
 	}
 	.side-item.logout {
 		margin-top: auto;
-		color: rgba(255, 255, 255, 0.6);
+		color: var(--color-white-60);
 	}
 </style>

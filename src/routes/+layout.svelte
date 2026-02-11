@@ -77,7 +77,7 @@
 			height: inherit;
 
 			logo {
-				color: white;
+				color: var(--color-white);
 				float: left;
 				height: inherit;
 				width: 220px;
@@ -91,7 +91,7 @@
 				a {
 					display: inline-block;
 					text-decoration: none;
-					color: white;
+					color: var(--color-white);
 				}
 			}
 
@@ -102,7 +102,7 @@
 
 				a {
 					display: inline-block;
-					color: white;
+					color: var(--color-white);
 					border-bottom: 3px solid transparent;
 					margin-right: 2em;
 					line-height: 2em;
@@ -111,8 +111,8 @@
 
 					&.active,
 					&.active:hover {
-						border-bottom: 3px solid white;
-						color: white;
+						border-bottom: 3px solid var(--color-white);
+						color: var(--color-white);
 						pointer-events: none;
 					}
 
@@ -121,7 +121,7 @@
 					}
 
 					&:visited {
-						color: white;
+						color: var(--color-white);
 					}
 				}
 			}
@@ -131,7 +131,7 @@
 	footer {
 		background: var(--footer-bg) url('/media/hexabump.png');
 		border-top: 1px solid var(--border);
-		color: white;
+		color: var(--color-white);
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -157,7 +157,7 @@
 		}
 
 		a {
-			color: white;
+			color: var(--color-white);
 			font-weight: 300;
 			text-decoration: none;
 			text-transform: uppercase;
@@ -167,16 +167,16 @@
 			transition: border-color 0.2s;
 
 			&:hover {
-				border-color: white;
+				border-color: var(--color-white);
 			}
 
 			&:visited {
-				color: white;
+				color: var(--color-white);
 			}
 		}
 
 		small {
-			color: rgba(255, 255, 255, 0.6);
+			color: var(--color-white-60);
 			font-size: 0.8rem;
 			font-weight: 300;
 		}
@@ -233,7 +233,7 @@
 		display: inline-flex;
 		align-items: center;
 		margin-left: 0.5em;
-		color: white;
+		color: var(--color-white);
 
 		:global(button) {
 			padding: 0;

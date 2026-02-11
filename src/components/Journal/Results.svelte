@@ -59,7 +59,7 @@
 		.back-btn {
 			color: var(--muted);
 			text-decoration: none;
-			font-family: "Source Serif Pro", serif;
+			font-family: var(--font-serif);
 
 			&:hover {
 				text-decoration: underline;
@@ -74,11 +74,11 @@
 
 	article {
 		margin-bottom: 3rem;
-		font-family: "Source Serif Pro", serif;
+		font-family: var(--font-serif);
 	}
 
 	h1 {
-		font-family: "Playfair Display", serif;
+		font-family: var(--font-display);
 		font-size: 3rem;
 		line-height: 3rem;
 		background: var(--shadow-panel);
@@ -95,7 +95,7 @@
 		font-size: 2rem;
 		margin: 0;
 		text-align: left;
-		font-family: "Playfair Display", serif;
+		font-family: var(--font-display);
 
 		a {
 			display: block;
@@ -108,7 +108,7 @@
 	}
 
 	time {
-		font-family: "Source Serif Pro", serif;
+		font-family: var(--font-serif);
 		font-size: 1rem;
 		color: var(--muted);
 	}

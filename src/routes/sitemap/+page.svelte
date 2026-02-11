@@ -294,7 +294,7 @@
 		font-size: 0.7rem;
 		font-weight: 600;
 		background: var(--form-error);
-		color: white;
+		color: var(--color-white);
 		border-radius: 3px;
 		letter-spacing: 0.05em;
 	}
@@ -380,7 +380,7 @@
 	.tag-filter.active {
 		background: var(--brand-primary);
 		border-color: var(--brand-primary);
-		color: white;
+		color: var(--color-white);
 	}
 
 	.sort-view {
@@ -420,7 +420,7 @@
 
 	.sort-toggle button.active {
 		background: var(--brand-primary);
-		color: white;
+		color: var(--color-white);
 	}
 
 	.no-results {
@@ -552,11 +552,11 @@
 		text-transform: uppercase;
 	}
 
-	.method.get { background: var(--link); color: white; }
-	.method.post { background: var(--button-bg); color: white; }
-	.method.put { background: #f59e0b; color: white; }
-	.method.delete { background: var(--form-error); color: white; }
-	.method.patch { background: #14b8a6; color: white; }
+	.method.get { background: var(--link); color: var(--color-white); }
+	.method.post { background: var(--button-bg); color: var(--color-white); }
+	.method.put { background: var(--color-warning); color: var(--color-white); }
+	.method.delete { background: var(--form-error); color: var(--color-white); }
+	.method.patch { background: var(--color-teal); color: var(--color-white); }
 
 	.route-meta {
 		display: flex;
@@ -579,13 +579,13 @@
 		color: var(--text);
 	}
 
-	.tag.ssr { background: var(--link); color: white; }
-	.tag.csr { background: #8b5cf6; color: white; }
-	.tag.dynamic { background: #f59e0b; color: white; }
-	.tag.auth { background: var(--form-error); color: white; }
-	.tag.noindex { background: var(--muted); color: white; }
-	.tag.api { background: var(--button-bg); color: white; }
-	.tag.layout { background: #0ea5a8; color: white; }
+	.tag.ssr { background: var(--link); color: var(--color-white); }
+	.tag.csr { background: var(--color-violet); color: var(--color-white); }
+	.tag.dynamic { background: var(--color-warning); color: var(--color-white); }
+	.tag.auth { background: var(--form-error); color: var(--color-white); }
+	.tag.noindex { background: var(--muted); color: var(--color-white); }
+	.tag.api { background: var(--button-bg); color: var(--color-white); }
+	.tag.layout { background: var(--color-cyan); color: var(--color-white); }
 
 	.modified {
 		font-size: 0.75rem;

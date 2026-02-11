@@ -19,12 +19,12 @@
 	min-height: 100vh;
 	display: flex;
 	flex-direction: column;
-	background: #0a0a0c;
+	background: var(--calendar-shell-bg);
 }
 
 .calendar-page {
-	font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
-	color: #f5f5f7;
+	font-family: var(--font-sans);
+	color: var(--calendar-shell-text);
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	min-height: 100vh;
@@ -101,7 +101,7 @@
 	font-weight: 700;
 	letter-spacing: -0.03em;
 	line-height: 1.08;
-	color: #f5f5f7;
+	color: var(--calendar-shell-text);
 	margin: 0 0 20px;
 }
 
@@ -144,7 +144,7 @@
 		font-size: 22px;
 		font-weight: 600;
 		letter-spacing: -0.02em;
-		color: #f5f5f7;
+		color: var(--calendar-shell-text);
 		margin: 0 0 12px;
 	}
 
@@ -204,7 +204,7 @@
 		font-size: 18px;
 		font-weight: 600;
 		letter-spacing: -0.02em;
-		color: #f5f5f7;
+		color: var(--calendar-shell-text);
 		margin: 0 0 6px;
 	}
 
@@ -227,7 +227,7 @@
 	font-family: inherit;
 	cursor: pointer;
 	background: linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #60a5fa 100%);
-	color: #fff;
+	color: var(--color-white);
 	box-shadow: 0 2px 20px rgba(100, 80, 255, 0.25);
 	transition: all 0.3s ease;
 	letter-spacing: -0.01em;
@@ -253,7 +253,7 @@
 
 	&:hover {
 		border-color: rgba(255, 255, 255, 0.24);
-		color: #f5f5f7;
+		color: var(--calendar-shell-text);
 	}
 }
 
@@ -299,7 +299,7 @@
 		font-size: 28px;
 		font-weight: 700;
 		letter-spacing: -0.02em;
-		color: #f5f5f7;
+		color: var(--calendar-shell-text);
 		margin: 0 0 8px;
 	}
 
@@ -364,22 +364,22 @@
 	}
 
 	&.google {
-		background: #fff;
+		background: var(--color-white);
 		border-color: rgba(255, 255, 255, 0.1);
-		color: #1f1f1f;
+		color: color-mix(in srgb, var(--color-black) 88%, var(--color-white) 12%);
 
 		&:hover:not(:disabled) {
-			background: #f5f5f5;
+			background: color-mix(in srgb, var(--color-white) 96%, var(--color-black) 4%);
 		}
 	}
 
 	&.apple {
-		background: #fff;
+		background: var(--color-white);
 		border-color: rgba(255, 255, 255, 0.1);
-		color: #1f1f1f;
+		color: color-mix(in srgb, var(--color-black) 88%, var(--color-white) 12%);
 
 		&:hover:not(:disabled) {
-			background: #f5f5f5;
+			background: color-mix(in srgb, var(--color-white) 96%, var(--color-black) 4%);
 		}
 	}
 }
@@ -416,7 +416,7 @@
 	&:hover {
 		background: rgba(255, 255, 255, 0.08);
 		border-color: rgba(255, 255, 255, 0.2);
-		color: #f5f5f7;
+		color: var(--calendar-shell-text);
 	}
 }
 
@@ -442,7 +442,7 @@
 	&:hover {
 		background: rgba(255, 255, 255, 0.08);
 		border-color: rgba(255, 255, 255, 0.2);
-		color: #f5f5f7;
+		color: var(--calendar-shell-text);
 	}
 }
 
@@ -450,7 +450,7 @@
 	font-size: 24px;
 	font-weight: 600;
 	letter-spacing: -0.02em;
-	color: #f5f5f7;
+	color: var(--calendar-shell-text);
 	margin: 0;
 	min-width: 200px;
 	text-align: center;
@@ -535,7 +535,7 @@
 		border-color: rgba(100, 80, 255, 0.5);
 
 		.day-num {
-			color: #fff;
+			color: var(--color-white);
 		}
 	}
 
@@ -543,7 +543,7 @@
 		cursor: pointer;
 
 		.day-num {
-			color: #f5f5f7;
+			color: var(--calendar-shell-text);
 		}
 	}
 
@@ -587,7 +587,7 @@
 		font-size: 18px;
 		font-weight: 600;
 		letter-spacing: -0.02em;
-		color: #f5f5f7;
+		color: var(--calendar-shell-text);
 		margin: 0;
 	}
 }
@@ -637,7 +637,7 @@
 .slot-time {
 	font-size: 13px;
 	font-weight: 500;
-	color: #f5f5f7;
+	color: var(--calendar-shell-text);
 	letter-spacing: -0.01em;
 }
 
@@ -683,7 +683,7 @@
 		font-size: 22px;
 		font-weight: 600;
 		letter-spacing: -0.02em;
-		color: #f5f5f7;
+		color: var(--calendar-shell-text);
 		margin: 0 0 4px;
 	}
 }
@@ -772,7 +772,7 @@
 		border-radius: 10px;
 		border: 1px solid rgba(255, 255, 255, 0.08);
 		background: rgba(255, 255, 255, 0.04);
-		color: #f5f5f7;
+		color: var(--calendar-shell-text);
 		font-size: 15px;
 		font-family: inherit;
 		outline: none;
@@ -824,7 +824,7 @@
 	&.enabled {
 		cursor: pointer;
 		background: linear-gradient(135deg, #a78bfa 0%, #818cf8 50%, #60a5fa 100%);
-		color: #fff;
+		color: var(--color-white);
 		box-shadow: 0 2px 20px rgba(100, 80, 255, 0.25);
 
 		&:hover {
@@ -969,7 +969,7 @@
 	border: 1px solid rgba(255, 255, 255, 0.12);
 	border-radius: 10px;
 	padding: 0.75rem 0.85rem;
-	color: #f5f5f7;
+	color: var(--calendar-shell-text);
 	outline: none;
 }
 
@@ -986,7 +986,7 @@
 
 	&:hover {
 		border-color: rgba(255, 255, 255, 0.24);
-		color: #f5f5f7;
+		color: var(--calendar-shell-text);
 	}
 
 	&.danger {
