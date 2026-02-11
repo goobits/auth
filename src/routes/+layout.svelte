@@ -49,6 +49,7 @@
 			<a href="/journal">Journal</a>
 			<a href="/labs">Labs</a>
 			<a href="/sitemap">Sitemap</a>
+			<span class="divider-dot" aria-hidden="true">•</span>
 			<a href="/privacy">Privacy</a>
 			<a href="/terms">Terms</a>
 			<a href="/cookies">Cookies</a>
@@ -142,7 +143,17 @@
 
 		nav {
 			display: flex;
+			align-items: center;
+			flex-wrap: wrap;
+			justify-content: center;
 			gap: 2rem;
+		}
+
+		.divider-dot {
+			opacity: 0.45;
+			font-weight: 300;
+			font-size: 0.95rem;
+			user-select: none;
 		}
 
 		a {

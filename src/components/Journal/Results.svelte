@@ -53,7 +53,7 @@
 
 <style lang="scss">
 	nav {
-		max-width: 700px;
+		max-width: var(--max-width);
 		margin: 0 auto 1rem;
 
 		.back-btn {
@@ -68,7 +68,7 @@
 	}
 
 	.posts {
-		max-width: 700px;
+		max-width: var(--max-width);
 		margin: 0 auto;
 	}
 

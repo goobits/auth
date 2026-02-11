@@ -1,4 +1,6 @@
 <script>
+	import { ArrowUpRight, CalendarDays, Tag } from '@lucide/svelte'
+	import HeroBanner from '@components/HeroBanner.svelte'
 	let { data } = $props()
 </script>
 
@@ -6,21 +8,32 @@
     <title>Journal - MIKO.ART</title>
 </svelte:head>
 
+<HeroBanner
+	title="Journal"
+	subtitle="Thoughts, process notes, and little breakthroughs."
+	icon="/media/emoji-journal.png"
+/>
 
 <div class="posts">
-    <h1>Journal</h1>
     {#each data.posts as post}
         <article>
             <h2>
-                <a href={`/${post.urlPath}`}>{post.metadata.fm.title}</a>
-                <time>{new Date(post.date).toLocaleDateString('en-US', {
-					month: 'numeric',
-					day: 'numeric',
-					year: 'numeric'
-				})}</time>
+                <a href={`/${post.urlPath}`}>
+					<span>{post.metadata.fm.title}</span>
+					<ArrowUpRight class="title-arrow" size={16} strokeWidth={2.2} />
+				</a>
+                <time>
+					<CalendarDays size={14} strokeWidth={2.2} />
+					<span>{new Date(post.date).toLocaleDateString('en-US', {
+						month: 'numeric',
+						day: 'numeric',
+						year: 'numeric'
+					})}</span>
+				</time>
             </h2>
             {#if post.metadata.fm.categories}
                 <div class="categories">
+					<Tag class="category-icon" size={13} strokeWidth={2.2} />
                     {#each post.metadata.fm.categories as category}
                         <span class="category">{category}</span>
                     {/each}
@@ -32,24 +45,13 @@
 
 <style>
 	.posts {
-		max-width: 700px;
+		max-width: var(--max-width);
 		margin: 0 auto;
 	}
 
 	article {
 		margin-bottom: 3rem;
 		font-family: "Source Serif Pro", serif;
-	}
-
-	h1 {
-		font-family: "Playfair Display", serif;
-		font-size: 3rem;
-		line-height: 3rem;
-		border-bottom: 3px solid var(--border);
-		padding-bottom: 1rem;
-		font-weight: 500;
-		margin: 0 0 2rem;
-		text-align: left;
 	}
 
     h2 {
@@ -64,10 +66,15 @@
 		font-family: "Source Serif Pro", serif;
 		font-size: 1rem;
 		color: var(--muted);
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
 	}
 
 	a {
-		display: block;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
 		text-decoration: none;
 	}
 
@@ -75,8 +82,25 @@
 		text-decoration: underline;
 	}
 
+	.title-arrow {
+		opacity: 0;
+		transition: opacity 0.15s ease;
+	}
+
+	a:hover .title-arrow {
+		opacity: 1;
+	}
+
 	.categories {
 		margin-top: 0.5rem;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.35rem;
+	}
+
+	.category-icon {
+		color: var(--muted);
 	}
 
 	.category {
@@ -85,6 +109,5 @@
 		background: var(--tag-bg);
 		padding: 0.2rem 0.6rem;
 		border-radius: 3px;
-		margin-right: 0.5rem;
 	}
 </style>

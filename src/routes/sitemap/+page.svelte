@@ -1,11 +1,27 @@
 <script>
+	import {
+		BookOpen,
+		ChevronDown,
+		ChevronRight,
+		Clock3,
+		Cpu,
+		Filter,
+		FileText,
+		House,
+		Route,
+		Search,
+		Shield,
+		Type,
+		Wrench
+	} from '@lucide/svelte'
+	import HeroBanner from '@components/HeroBanner.svelte'
+
 	const { data } = $props()
 
 	let searchQuery = $state('')
 	let selectedTags = $state([])
 	let sortBy = $state('path')
 	let collapsedCategories = $state({})
-	let viewMode = $state('detailed')
 
 	const availableTags = $derived(data.showDevDiagnostics
 		? ['SSR', 'CSR', 'Dynamic', 'Auth', 'NoIndex', 'API', 'Layout']
@@ -19,6 +35,14 @@
 		'API Routes',
 		'Utility Pages'
 	]
+	const categoryIcons = {
+		'Main Pages': House,
+		'Journal Pages': BookOpen,
+		'Journal Posts': FileText,
+		'Admin Pages': Shield,
+		'API Routes': Cpu,
+		'Utility Pages': Wrench
+	}
 
 	function getRouteTags(route) {
 		const tags = []
@@ -107,58 +131,37 @@
 	<meta name="description" content="Human-readable sitemap for MIKO.ART with public pages and journal posts." />
 </svelte:head>
 
+<HeroBanner
+	title="Sitemap"
+	subtitle="A friendly map of everything on this site."
+	icon="/media/emoji-sitemap.png"
+/>
+
 <div class="sitemap">
 	<header class="sitemap-header">
-		<h1>Sitemap</h1>
-		<p class="subtitle">Human-readable route index for MIKO.ART</p>
-		<p class="machine-link">Machine sitemap: <a href="/sitemap.xml">/sitemap.xml</a></p>
 		{#if data.showDevDiagnostics}
 			<span class="dev-badge">DEV MODE</span>
 		{/if}
 	</header>
 
-	<div class="stats">
-		<div class="stat">
-			<span class="value">{data.stats.total}</span>
-			<span class="label">Total Routes</span>
-		</div>
-		<div class="stat">
-			<span class="value">{data.stats.pages}</span>
-			<span class="label">Pages</span>
-		</div>
-		{#if data.showDevDiagnostics}
-			<div class="stat">
-				<span class="value">{data.stats.api}</span>
-				<span class="label">API Endpoints</span>
-			</div>
-		{/if}
-		<div class="stat">
-			<span class="value">{data.stats.dynamic}</span>
-			<span class="label">Dynamic</span>
-		</div>
-		<div class="stat">
-			<span class="value">{data.stats.ssr}</span>
-			<span class="label">SSR</span>
-		</div>
-		{#if data.showDevDiagnostics}
-			<div class="stat">
-				<span class="value">{data.stats.protected}</span>
-				<span class="label">Protected</span>
-			</div>
-		{/if}
-	</div>
-
 	<div class="controls">
 		<div class="search">
-			<input
-				type="text"
-				placeholder="Search routes..."
-				bind:value={searchQuery}
-			/>
+			<div class="search-field">
+				<Search class="search-icon" size={15} strokeWidth={2.2} />
+				<input
+					type="text"
+					placeholder="Search routes..."
+					bind:value={searchQuery}
+				/>
+			</div>
 		</div>
 
 		<div class="filters">
 			<div class="tag-filters">
+				<span class="filter-label">
+					<Filter size={13} strokeWidth={2.2} />
+					<span>Filters</span>
+				</span>
 				{#each availableTags as tag}
 					<button
 						class="tag-filter"
@@ -171,19 +174,38 @@
 			</div>
 
 			<div class="sort-view">
-				<select bind:value={sortBy}>
-					<option value="path">Sort by Path</option>
-					<option value="name">Sort by Name</option>
-					<option value="modified">Sort by Modified</option>
-				</select>
-
-				<button
-					class="view-toggle"
-					class:active={viewMode === 'compact'}
-					onclick={() => viewMode = viewMode === 'detailed' ? 'compact' : 'detailed'}
-				>
-					{viewMode === 'detailed' ? 'Compact' : 'Detailed'}
-				</button>
+				<div class="sort-toggle" role="tablist" aria-label="Sort routes">
+					<button
+						type="button"
+						role="tab"
+						class:active={sortBy === 'path'}
+						aria-selected={sortBy === 'path'}
+						onclick={() => sortBy = 'path'}
+					>
+						<Route size={13} strokeWidth={2.2} />
+						<span>Path</span>
+					</button>
+					<button
+						type="button"
+						role="tab"
+						class:active={sortBy === 'name'}
+						aria-selected={sortBy === 'name'}
+						onclick={() => sortBy = 'name'}
+					>
+						<Type size={13} strokeWidth={2.2} />
+						<span>Name</span>
+					</button>
+					<button
+						type="button"
+						role="tab"
+						class:active={sortBy === 'modified'}
+						aria-selected={sortBy === 'modified'}
+						onclick={() => sortBy = 'modified'}
+					>
+						<Clock3 size={13} strokeWidth={2.2} />
+						<span>Recent</span>
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -206,7 +228,12 @@
 						onclick={() => toggleCategory(category)}
 					>
 						<h2>
-							<span class="toggle-icon">{collapsedCategories[category] ? '+' : '−'}</span>
+							<svelte:component this={categoryIcons[category] || FileText} class="category-icon" size={14} strokeWidth={2.2} />
+							{#if collapsedCategories[category]}
+								<ChevronRight class="toggle-icon" size={14} strokeWidth={2.25} />
+							{:else}
+								<ChevronDown class="toggle-icon" size={14} strokeWidth={2.25} />
+							{/if}
 							{category}
 							<span class="count">({filteredGrouped[category].length})</span>
 						</h2>
@@ -215,7 +242,7 @@
 					{#if !collapsedCategories[category]}
 						<ul>
 							{#each filteredGrouped[category] as route}
-								<li class="route" class:compact={viewMode === 'compact'}>
+								<li class="route">
 									<div class="route-main">
 										{#if route.type === 'api'}
 											<span class="route-path">{route.path}</span>
@@ -230,16 +257,14 @@
 											<a href={route.path} class="route-link">{route.path}</a>
 										{/if}
 									</div>
-									{#if viewMode === 'detailed'}
-										<div class="route-meta">
-											<div class="tags">
-												{#each getRouteTags(route) as tag}
-													<span class="tag {tag.toLowerCase()}">{tag}</span>
-												{/each}
-											</div>
-											<span class="modified">{formatDate(route.lastModified)}</span>
+									<div class="route-meta">
+										<div class="tags">
+											{#each getRouteTags(route) as tag}
+												<span class="tag {tag.toLowerCase()}">{tag}</span>
+											{/each}
 										</div>
-									{/if}
+										<span class="modified">{formatDate(route.lastModified)}</span>
+									</div>
 								</li>
 							{/each}
 						</ul>
@@ -253,28 +278,13 @@
 
 <style>
 	.sitemap {
-		max-width: 900px;
+		max-width: var(--max-width);
 		margin: 0 auto;
 	}
 
 	.sitemap-header {
 		text-align: center;
 		margin-bottom: 1.5rem;
-	}
-
-	h1 {
-		font-size: 2.25rem;
-		margin-bottom: 0.25rem;
-	}
-
-	.subtitle {
-		color: var(--muted);
-		font-size: 1rem;
-	}
-
-	.machine-link {
-		margin: 0.35rem 0 0;
-		font-size: 0.95rem;
 	}
 
 	.dev-badge {
@@ -289,69 +299,67 @@
 		letter-spacing: 0.05em;
 	}
 
-	.stats {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		justify-content: center;
-		margin-bottom: 1.5rem;
-		padding: 1rem;
-		background: var(--panel-bg);
-		border-radius: 8px;
-		border: 1px solid var(--panel-border);
-	}
-
-	.stat {
-		text-align: center;
-		padding: 0.25rem 0.75rem;
-	}
-
-	.stat .value {
-		display: block;
-		font-size: 1.75rem;
-		font-weight: 700;
-		color: var(--link);
-	}
-
-	.stat .label {
-		font-size: 0.75rem;
-		color: var(--muted);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
 	.controls {
+		display: grid;
+		gap: 0.7rem;
 		margin-bottom: 1.25rem;
+	}
+
+	.search-field {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		padding: 0 0.6rem;
+		border: 1px solid var(--input-border);
+		border-radius: 5px;
+		background: var(--input-bg);
+	}
+
+	.search-icon {
+		color: var(--muted);
+		flex-shrink: 0;
 	}
 
 	.search input {
 		width: 100%;
-		padding: 0.5rem 0.75rem;
+		padding: 0.5rem 0;
 		font-size: 0.95rem;
-		border: 1px solid var(--input-border);
-		border-radius: 5px;
-		background: var(--input-bg);
+		border: none;
+		background: transparent;
 		color: var(--text);
-		margin-bottom: 0.75rem;
+		margin-bottom: 0;
 	}
 
 	.search input:focus {
 		outline: none;
+	}
+
+	.search-field:focus-within {
 		border-color: var(--link);
 	}
 
 	.filters {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.75rem;
-		justify-content: space-between;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 0.6rem;
 		align-items: center;
 	}
 
 	.tag-filters {
 		display: flex;
 		flex-wrap: wrap;
+		align-items: center;
 		gap: 0.35rem;
+	}
+
+	.filter-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		font-size: 0.78rem;
+		color: var(--muted);
+		margin-right: 0.35rem;
+		padding-right: 0.1rem;
 	}
 
 	.tag-filter {
@@ -378,29 +386,41 @@
 	.sort-view {
 		display: flex;
 		gap: 0.35rem;
+		justify-self: end;
 	}
 
-	.sort-view select {
-		padding: 0.35rem 0.5rem;
+	.sort-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.2rem;
+		padding: 0.2rem;
 		border: 1px solid var(--border);
-		border-radius: 4px;
+		border-radius: 999px;
 		background: var(--card-bg);
-		color: var(--text);
-		font-size: 0.85rem;
 	}
 
-	.view-toggle {
-		padding: 0.35rem 0.75rem;
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		background: var(--card-bg);
-		color: var(--text);
+	.sort-toggle button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		border: none;
+		border-radius: 999px;
+		background: transparent;
+		color: var(--muted);
+		padding: 0.35rem 0.68rem;
+		line-height: 1;
+		font-size: 0.82rem;
 		cursor: pointer;
-		font-size: 0.85rem;
+		transition: all 0.15s ease;
 	}
 
-	.view-toggle:hover {
-		border-color: var(--link);
+	.sort-toggle button:hover {
+		color: var(--text);
+	}
+
+	.sort-toggle button.active {
+		background: var(--brand-primary);
+		color: white;
 	}
 
 	.no-results {
@@ -454,8 +474,17 @@
 	}
 
 	.toggle-icon {
-		font-family: monospace;
 		width: 1rem;
+		height: 1rem;
+		flex-shrink: 0;
+		color: var(--muted);
+	}
+
+	.category-icon {
+		width: 0.95rem;
+		height: 0.95rem;
+		flex-shrink: 0;
+		color: var(--muted);
 	}
 
 	.count {
@@ -464,27 +493,25 @@
 		font-size: 0.85rem;
 	}
 
-	ul {
+	.category ul {
 		list-style: none;
-		padding: 0;
-		margin: 0.35rem 0 0 0;
+		padding: 0 0 0 1.35rem;
+		margin: 0.45rem 0 0 0;
+		display: grid;
+		gap: 0.2rem;
 	}
 
 	.route {
-		display: flex;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
-		justify-content: space-between;
-		gap: 0.5rem;
+		gap: 0.65rem;
 		padding: 0.4rem 0;
 		border-bottom: 1px solid var(--panel-border);
 	}
 
 	.route:last-child {
 		border-bottom: none;
-	}
-
-	.route.compact .route-meta {
-		display: none;
 	}
 
 	.route-main {
@@ -558,7 +585,7 @@
 	.tag.auth { background: var(--form-error); color: white; }
 	.tag.noindex { background: var(--muted); color: white; }
 	.tag.api { background: var(--button-bg); color: white; }
-	.tag.layout { background: var(--brand-primary); color: white; }
+	.tag.layout { background: #0ea5a8; color: white; }
 
 	.modified {
 		font-size: 0.75rem;
@@ -569,31 +596,17 @@
 	}
 
 	@media (max-width: 600px) {
-		.stats {
-			gap: 0.25rem;
-		}
-
-		.stat {
-			flex: 1 1 calc(33% - 0.25rem);
-			min-width: 70px;
-			padding: 0.25rem 0.5rem;
-		}
-
-		.stat .value {
-			font-size: 1.35rem;
-		}
-
 		.filters {
-			flex-direction: column;
+			grid-template-columns: 1fr;
 			align-items: stretch;
 		}
 
 		.sort-view {
-			justify-content: space-between;
+			justify-self: start;
 		}
 
 		.route {
-			flex-wrap: wrap;
+			grid-template-columns: minmax(0, 1fr);
 		}
 
 		.route-meta {

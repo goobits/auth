@@ -1,30 +1,40 @@
+<script>
+	import { Cookie, KeyRound, Mail, Settings2 } from '@lucide/svelte'
+	import HeroBanner from '@components/HeroBanner.svelte'
+</script>
+
 <svelte:head>
 	<title>Cookie Policy - MIKO.ART</title>
 	<meta name="description" content="Cookie policy for MIKO.ART" />
 </svelte:head>
 
+<HeroBanner
+	title="Cookie Policy"
+	subtitle="What cookies do here, and what they do not."
+	icon="/media/emoji-cookies.png"
+/>
+
 <section class="legal-page">
-	<h1>Cookie Policy</h1>
 	<p class="updated">Last updated: February 11, 2026</p>
 
 	<p>
 		This page describes how MIKO.ART uses cookies and similar browser storage.
 	</p>
 
-	<h2>What We Use Cookies For</h2>
+	<h2><Cookie size={15} strokeWidth={2.2} /> What We Use Cookies For</h2>
 	<ul>
 		<li>Authentication sessions for calendar and admin features.</li>
 		<li>Short-lived login context (for invite and redirect flow during sign-in).</li>
 		<li>Theme preferences stored in browser local storage.</li>
 	</ul>
 
-	<h2>Cookie Types on This Site</h2>
+	<h2><Cookie size={15} strokeWidth={2.2} /> Cookie Types on This Site</h2>
 	<ul>
 		<li><strong>Essential cookies</strong>: required for login/session behavior and security.</li>
 		<li><strong>Preference storage</strong>: used to remember UI theme settings.</li>
 	</ul>
 
-	<h2>Current Cookie Names</h2>
+	<h2><KeyRound size={15} strokeWidth={2.2} /> Current Cookie Names</h2>
 	<ul>
 		<li><code>csrf-token</code> for CSRF protection in authentication flows.</li>
 		<li><code>calendar_session</code> for calendar authentication sessions.</li>
@@ -37,12 +47,12 @@
 		as features evolve. This policy will be updated when material changes are made.
 	</p>
 
-	<h2>How to Manage Cookies</h2>
+	<h2><Settings2 size={15} strokeWidth={2.2} /> How to Manage Cookies</h2>
 	<p>
 		Most browsers let you block or delete cookies. Blocking essential cookies can break sign-in and booking features.
 	</p>
 
-	<h2>Contact</h2>
+	<h2><Mail size={15} strokeWidth={2.2} /> Contact</h2>
 	<p>
 		For cookie questions, email <a href="mailto:hello@miko.art">hello@miko.art</a>.
 	</p>
@@ -50,14 +60,10 @@
 
 <style>
 	.legal-page {
-		max-width: 860px;
+		max-width: var(--max-width);
 		margin: 0 auto;
 		padding: 2rem 1rem 3rem;
 		line-height: 1.7;
-	}
-
-	h1 {
-		margin-bottom: 0.25rem;
 	}
 
 	.updated {
@@ -66,6 +72,9 @@
 	}
 
 	h2 {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
 		margin-top: 1.75rem;
 		margin-bottom: 0.5rem;
 	}

@@ -51,7 +51,7 @@
 
 <style lang="scss">
 	nav {
-		max-width: 700px;
+		max-width: var(--max-width);
 		margin: 0 auto 1rem;
 
 		.back-btn {
@@ -68,7 +68,7 @@
 	article {
 		font-family: "Source Serif Pro", serif;
 		margin: 0 auto;
-		max-width: 700px;
+		max-width: var(--max-width);
 		line-height: 1.6em;
 
 		:global(h2) {

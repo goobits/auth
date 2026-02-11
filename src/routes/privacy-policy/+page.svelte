@@ -86,7 +86,7 @@
 
 <style>
 	.legal-page {
-		max-width: 860px;
+		max-width: var(--max-width);
 		margin: 0 auto;
 		padding: 2rem 1rem 3rem;
 		line-height: 1.7;

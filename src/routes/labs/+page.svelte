@@ -1,4 +1,7 @@
 <script>
+	import { ExternalLink, Folder } from '@lucide/svelte'
+	import HeroBanner from '@components/HeroBanner.svelte'
+
 	const labs = [
 		{ href: '/labs/color-galaxy', title: 'Color Galaxy' },
 		{ href: '/labs/js1k/BreathingGalaxies.html', title: 'JS1k - Breathing Galaxies' },
@@ -11,35 +14,35 @@
 		{ href: '/labs/thumbnailer', title: 'Thumbnailer' },
 		{ href: '/labs/zen-bg', title: 'Zen BG' }
 	];
+
+	function isExternalLab(href) {
+		return href.endsWith('.html')
+	}
 </script>
 
 <svelte:head>
     <title>Labs - MIKO.ART</title>
 </svelte:head>
 
-<div class="hero">
-    <h1>Labs ✨</h1>
-    <h2>Experiments through the ages.</h2>
-</div>
+<HeroBanner
+	title="Labs"
+	subtitle="Playful experiments, sketches, and odd ideas."
+	icon="/media/emoji-labs.png"
+/>
 
 <div class="listing">
     {#each labs as lab}
         <a href={lab.href} class="lab-item">
-            <svg class="folder-icon" viewBox="0 0 24 24" width="24" height="24">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-            </svg>
-            <span>{lab.title}</span>
+			<Folder class="folder-icon" size={22} strokeWidth={2.1} />
+            <span class="lab-title">{lab.title}</span>
+			{#if isExternalLab(lab.href)}
+				<ExternalLink class="external-icon" size={15} strokeWidth={2.2} />
+			{/if}
         </a>
     {/each}
 </div>
 
 <style lang="scss">
-	.hero {
-		h2 {
-			margin-bottom: 3rem;
-		}
-	}
-
 	.listing {
 		background-color: var(--lab-bg);
 		border-radius: 0 0 0.5rem 0.5rem;
@@ -63,17 +66,23 @@
 				box-shadow: 0 2px 4px var(--shadow-panel);
 
 				.folder-icon {
-					fill: var(--lab-icon-hover);
+					color: var(--lab-icon-hover);
 				}
 			}
 
 			.folder-icon {
-				fill: var(--lab-icon);
-				transition: fill 0.2s;
+				color: var(--lab-icon);
+				transition: color 0.2s;
 			}
 
-			span {
+			.lab-title {
 				font-size: 1.125rem;
+				flex: 1;
+			}
+
+			.external-icon {
+				color: var(--muted);
+				opacity: 0.75;
 			}
 		}
 	}
