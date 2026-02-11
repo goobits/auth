@@ -41,7 +41,6 @@
 		<li>Cloudflare (hosting and edge infrastructure).</li>
 		<li>Google Calendar APIs for booking and calendar event creation.</li>
 		<li>OAuth providers such as Google or Apple for login, if enabled.</li>
-		<li>Google Analytics (gtag.js) for aggregate usage analytics on the main site.</li>
 		<li>The contact form submits to the configured contact API endpoint.</li>
 	</ul>
 

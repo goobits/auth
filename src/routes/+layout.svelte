@@ -48,6 +48,7 @@
 		<nav>
 			<a href="/journal">Journal</a>
 			<a href="/labs">Labs</a>
+			<a href="/sitemap">Sitemap</a>
 			<a href="/privacy">Privacy</a>
 			<a href="/terms">Terms</a>
 			<a href="/cookies">Cookies</a>

@@ -50,7 +50,7 @@
 
 	<h2>Governing Law</h2>
 	<p>
-		These terms are governed by the laws of the State of Washington, United States, without regard to conflict of law
+		These terms are governed by the laws of the State of Oregon, United States, without regard to conflict of law
 		principles.
 	</p>
 

@@ -16,7 +16,6 @@
 		<li>Authentication sessions for calendar and admin features.</li>
 		<li>Short-lived login context (for invite and redirect flow during sign-in).</li>
 		<li>Theme preferences stored in browser local storage.</li>
-		<li>Google Analytics cookies for aggregate traffic and usage measurement.</li>
 	</ul>
 
 	<h2>Cookie Types on This Site</h2>
@@ -27,13 +26,15 @@
 
 	<h2>Current Cookie Names</h2>
 	<ul>
+		<li><code>csrf-token</code> for CSRF protection in authentication flows.</li>
 		<li><code>calendar_session</code> for calendar authentication sessions.</li>
 		<li><code>admin_session</code> for admin authentication sessions.</li>
 		<li><code>calendar_invite</code> and <code>calendar_redirect</code> for short login-flow context.</li>
 	</ul>
 
 	<p>
-		Cookie names may change as features evolve. This policy will be updated when material changes are made.
+		Some cookies (such as session cookies) appear only after login or specific auth actions. Cookie names may change
+		as features evolve. This policy will be updated when material changes are made.
 	</p>
 
 	<h2>How to Manage Cookies</h2>
