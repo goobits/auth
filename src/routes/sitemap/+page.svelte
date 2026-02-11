@@ -7,7 +7,7 @@
 	let collapsedCategories = $state({})
 	let viewMode = $state('detailed')
 
-	const availableTags = $derived(data.isDev
+	const availableTags = $derived(data.showDevDiagnostics
 		? ['SSR', 'CSR', 'Dynamic', 'Auth', 'NoIndex', 'API', 'Layout']
 		: ['SSR', 'CSR', 'Dynamic', 'Layout'])
 
@@ -104,14 +104,15 @@
 
 <svelte:head>
 	<title>Sitemap - MIKO.ART</title>
-	<meta name="description" content="Complete sitemap of MIKO.ART with all pages, journal posts, and API routes." />
+	<meta name="description" content="Human-readable sitemap for MIKO.ART with public pages and journal posts." />
 </svelte:head>
 
 <div class="sitemap">
 	<header class="sitemap-header">
 		<h1>Sitemap</h1>
-		<p class="subtitle">All pages and routes on MIKO.ART</p>
-		{#if data.isDev}
+		<p class="subtitle">Human-readable route index for MIKO.ART</p>
+		<p class="machine-link">Machine sitemap: <a href="/sitemap.xml">/sitemap.xml</a></p>
+		{#if data.showDevDiagnostics}
 			<span class="dev-badge">DEV MODE</span>
 		{/if}
 	</header>
@@ -125,7 +126,7 @@
 			<span class="value">{data.stats.pages}</span>
 			<span class="label">Pages</span>
 		</div>
-		{#if data.isDev}
+		{#if data.showDevDiagnostics}
 			<div class="stat">
 				<span class="value">{data.stats.api}</span>
 				<span class="label">API Endpoints</span>
@@ -139,7 +140,7 @@
 			<span class="value">{data.stats.ssr}</span>
 			<span class="label">SSR</span>
 		</div>
-		{#if data.isDev}
+		{#if data.showDevDiagnostics}
 			<div class="stat">
 				<span class="value">{data.stats.protected}</span>
 				<span class="label">Protected</span>
@@ -269,6 +270,11 @@
 	.subtitle {
 		color: var(--muted);
 		font-size: 1rem;
+	}
+
+	.machine-link {
+		margin: 0.35rem 0 0;
+		font-size: 0.95rem;
 	}
 
 	.dev-badge {
