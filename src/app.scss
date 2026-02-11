@@ -125,14 +125,6 @@
 	--tag-bg: #f2f2f2;
 	--tag-hover-bg: #e5e5e5;
 
-	/* Labs page */
-	--lab-bg: var(--bg);
-	--lab-item-bg: #f8fafc;
-	--lab-item-hover-bg: #edf2f7;
-	--lab-item-text: #2d3748;
-	--lab-icon: #63b3ed;
-	--lab-icon-hover: #4299e1;
-
 	/* Calendar Gym page */
 	--calendar-shell-bg: #0a0a0c;
 	--calendar-shell-text: #f5f5f7;
@@ -162,10 +154,11 @@ input,
 button,
 select,
 textarea {
-	/* Prefer subpixel anti-aliasing for crisper body text rendering */
-	-webkit-font-smoothing: subpixel-antialiased;
-	-moz-osx-font-smoothing: auto;
-	text-rendering: optimizeSpeed;
+	/* Favor readability over raw glyph rasterization speed */
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-rendering: optimizeLegibility;
+	font-kerning: normal;
 }
 
 /* Dark theme - combined selectors for @goobits/themes compatibility */
@@ -223,14 +216,6 @@ html.theme-system-dark,
 	/* Tags */
 	--tag-bg: #2a2f3a;
 	--tag-hover-bg: #3a4050;
-
-	/* Labs page */
-	--lab-bg: var(--panel-bg);
-	--lab-item-bg: var(--card-bg);
-	--lab-item-hover-bg: #252a36;
-	--lab-item-text: #e0e0e6;
-	--lab-icon: #7db8ff;
-	--lab-icon-hover: #5fa8ff;
 
 	/* Calendar Gym page */
 	--calendar-shell-bg: #0a0a0c;
@@ -320,14 +305,6 @@ html.theme-system-dark,
 	/* Tags */
 	--tag-bg: #3b2c71;
 	--tag-hover-bg: #4c3a8f;
-
-	/* Labs page */
-	--lab-bg: var(--panel-bg);
-	--lab-item-bg: var(--card-bg);
-	--lab-item-hover-bg: #322566;
-	--lab-item-text: #ece7ff;
-	--lab-icon: #84d8ff;
-	--lab-icon-hover: #b490ff;
 
 	/* Calendar Gym page */
 	--calendar-shell-bg: #0f0b20;
@@ -590,6 +567,140 @@ main {
 
 .error {
 	color: var(--status-error-text);
+}
+
+.legal-page {
+	max-width: var(--max-width);
+	margin: 0 auto;
+	padding: 2rem 1rem 3rem;
+	line-height: 1.7;
+	font-family: var(--font-serif);
+}
+
+.legal-page h2 {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	margin-top: 1.75rem;
+	margin-bottom: 0.5rem;
+	font-family: var(--font-sans);
+}
+
+.legal-page ul {
+	padding-left: 1.25rem;
+}
+
+.legal-updated {
+	opacity: 0.8;
+	margin-bottom: 1.5rem;
+}
+
+.legal-notice {
+	margin-top: 2rem;
+	opacity: 0.8;
+	font-size: 0.95rem;
+}
+
+.ui-search-field {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0 0.65rem;
+	border: 1px solid var(--input-border);
+	border-radius: 6px;
+	background: var(--input-bg);
+}
+
+.ui-search-input {
+	width: 100%;
+	padding: 0.52rem 0;
+	font-size: 0.95rem;
+	border: none;
+	background: transparent;
+	color: var(--text);
+	margin-bottom: 0;
+}
+
+.ui-search-input:focus {
+	outline: none;
+}
+
+.ui-search-icon {
+	color: var(--muted);
+	flex-shrink: 0;
+}
+
+.ui-search-field:focus-within {
+	border-color: var(--link);
+}
+
+.ui-results-count {
+	font-size: 0.82rem;
+	color: var(--muted);
+	margin: 0 0 0.95rem;
+}
+
+.ui-no-results {
+	text-align: center;
+	padding: 2rem;
+	color: var(--muted);
+}
+
+.ui-no-results button {
+	margin-top: 0.75rem;
+	padding: 0.4rem 0.75rem;
+	background: var(--button-bg);
+	color: var(--button-text);
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 0.9rem;
+}
+
+.showcase-page {
+	max-width: var(--max-width);
+	margin: 0 auto;
+	display: grid;
+	gap: 1rem;
+}
+
+.showcase-section {
+	border: 1px solid var(--panel-border);
+	border-radius: 10px;
+	background: var(--card-bg);
+	padding: 1rem;
+}
+
+.showcase-intro p {
+	margin: 0;
+	font-family: var(--font-serif);
+	font-size: 1.03rem;
+	line-height: 1.72;
+}
+
+.showcase-title {
+	margin: 0 0 0.75rem;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	font-family: var(--font-display);
+	font-size: 1.2rem;
+	font-weight: 500;
+}
+
+.pill-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.28rem;
+	text-decoration: none;
+	padding: 0.42rem 0.72rem;
+	border-radius: 999px;
+	border: 1px solid var(--border);
+	background: var(--card-bg);
+	color: var(--text);
+	font-family: var(--font-sans);
+	font-size: 0.82rem;
+	font-weight: 600;
 }
 
 .admin {

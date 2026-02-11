@@ -48,15 +48,17 @@
 
 	<footer>
 		<nav>
-			<a href="/art">Art</a>
-			<a href="/journal">Journal</a>
-			<a href="/labs">Labs</a>
-			<a href="/music">Music</a>
-			<a href="/sitemap">Sitemap</a>
-			<span class="divider-dot" aria-hidden="true">•</span>
-			<a href="/privacy">Privacy</a>
-			<a href="/terms">Terms</a>
-			<a href="/cookies">Cookies</a>
+			<span class="footer-group">
+				<a href="/journal">Journal</a>
+				<a href="/labs">Labs</a>
+				<a href="/sitemap">Sitemap</a>
+			</span>
+			<span class="divider-pipe" aria-hidden="true"></span>
+			<span class="footer-group">
+				<a href="/privacy">Privacy</a>
+				<a href="/terms">Terms</a>
+				<a href="/cookies">Cookies</a>
+			</span>
 		</nav>
 		<small>© {new Date().getFullYear()} Miko Meow™</small>
 	</footer>
@@ -149,14 +151,23 @@
 			align-items: center;
 			flex-wrap: wrap;
 			justify-content: center;
-			gap: 2rem;
+			gap: 0.8rem;
 		}
 
-		.divider-dot {
-			opacity: 0.45;
-			font-weight: 300;
-			font-size: 0.95rem;
-			user-select: none;
+		.footer-group {
+			display: inline-flex;
+			align-items: center;
+			gap: 1.1rem;
+			flex-wrap: wrap;
+			justify-content: center;
+		}
+
+		.divider-pipe {
+			display: inline-block;
+			width: 1px;
+			height: 0.95rem;
+			background: var(--color-white-60);
+			opacity: 0.55;
 		}
 
 		a {
@@ -223,7 +234,15 @@
 
 		footer {
 			nav {
-				gap: 1.5rem;
+				gap: 0.7rem;
+			}
+
+			.footer-group {
+				gap: 0.9rem;
+			}
+
+			.divider-pipe {
+				height: 0.8rem;
 			}
 
 			a {

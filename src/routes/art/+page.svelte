@@ -47,16 +47,16 @@
 	icon="/media/emoji-sparkling-heart.png"
 />
 
-<div class="art-page">
-	<section class="intro">
+<div class="art-page showcase-page">
+	<section class="intro showcase-section showcase-intro">
 		<p>
 			I explore art through code, drawing, interaction, and motion. These pieces sit at the
 			intersection of playful tools and visual storytelling.
 		</p>
 	</section>
 
-	<section class="works">
-		<h2><Palette size={17} strokeWidth={2.2} /> Selected Works</h2>
+	<section class="works showcase-section">
+		<h2 class="showcase-title"><Palette size={17} strokeWidth={2.2} /> Selected Works</h2>
 		<ul>
 			{#each works as work}
 				<li>
@@ -72,10 +72,10 @@
 		</ul>
 	</section>
 
-	<section class="closing">
-		<h2><Sparkles size={17} strokeWidth={2.2} /> Commissions & Exhibits</h2>
+	<section class="closing showcase-section">
+		<h2 class="showcase-title"><Sparkles size={17} strokeWidth={2.2} /> Commissions & Exhibits</h2>
 		<p>Interested in custom visual work, an installation, or an exhibition collaboration?</p>
-		<a href="/contact">
+		<a href="/contact" class="pill-link">
 			Start a conversation
 			<ArrowUpRight size={14} strokeWidth={2.2} />
 		</a>
@@ -83,39 +83,6 @@
 </div>
 
 <style>
-	.art-page {
-		max-width: var(--max-width);
-		margin: 0 auto;
-		display: grid;
-		gap: 1rem;
-	}
-
-	.intro,
-	.works,
-	.closing {
-		border: 1px solid var(--panel-border);
-		border-radius: 10px;
-		background: var(--card-bg);
-		padding: 1rem;
-	}
-
-	.intro p {
-		margin: 0;
-		font-family: var(--font-serif);
-		font-size: 1.03rem;
-		line-height: 1.72;
-	}
-
-	h2 {
-		margin: 0 0 0.75rem;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		font-family: var(--font-display);
-		font-size: 1.2rem;
-		font-weight: 500;
-	}
-
 	.works ul {
 		list-style: none;
 		margin: 0;
@@ -161,20 +128,5 @@
 
 	.closing p {
 		margin: 0 0 0.75rem;
-	}
-
-	.closing a {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.28rem;
-		text-decoration: none;
-		padding: 0.42rem 0.72rem;
-		border-radius: 999px;
-		border: 1px solid var(--border);
-		background: var(--card-bg);
-		color: var(--text);
-		font-family: var(--font-sans);
-		font-size: 0.82rem;
-		font-weight: 600;
 	}
 </style>

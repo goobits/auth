@@ -76,9 +76,9 @@
 
 <div class="labs">
 	<div class="tools" aria-label="Labs filters">
-		<label class="search-field" aria-label="Search labs">
+		<label class="ui-search-field" aria-label="Search labs">
 			<Search size={15} strokeWidth={2.2} style="color: var(--muted); flex-shrink: 0;" />
-			<input type="text" placeholder="Search experiments..." bind:value={searchQuery} />
+			<input class="ui-search-input" type="text" placeholder="Search experiments..." bind:value={searchQuery} />
 		</label>
 
 		<div class="control-row">
@@ -99,17 +99,18 @@
 	</div>
 
 	{#if filteredLabs.length === 0}
-		<div class="no-results">
+		<div class="ui-no-results">
 			<p>No experiments match your filters.</p>
 			<button onclick={() => { searchQuery = ''; selectedScope = 'all'; sortBy = 'title' }}>Clear Filters</button>
 		</div>
 	{:else}
-		<p class="results-count">{filteredLabs.length} experiments</p>
+		<p class="ui-results-count">{filteredLabs.length} experiments</p>
 
 		<ul class="grid">
 			{#each filteredLabs as lab, i}
 				<li>
 					<a href={lab.href} class="lab-card" style={`--card-bg:${getCardTheme(i).bg};--card-border:${getCardTheme(i).border};--card-ink:${getCardTheme(i).ink};--card-muted:${getCardTheme(i).muted};`}>
+						<div class="lab-visual" aria-hidden="true"></div>
 						<p class="card-top">
 							<span class="kind">
 								<FlaskConical size={13} strokeWidth={2.2} />
@@ -119,7 +120,7 @@
 								<ExternalLink size={14} strokeWidth={2.2} style="color: var(--card-muted);" />
 							{/if}
 						</p>
-						<h2>{lab.title}</h2>
+						<h2><span>{lab.title}</span></h2>
 						<p class="vibe">{lab.vibe}</p>
 						<p class="path">{lab.href}</p>
 						<p class="open">
@@ -143,34 +144,6 @@
 		display: grid;
 		gap: 0.7rem;
 		margin-bottom: 1rem;
-	}
-
-	.search-field {
-		display: flex;
-		align-items: center;
-		gap: 0.45rem;
-		padding: 0 0.65rem;
-		border: 1px solid var(--input-border);
-		border-radius: 6px;
-		background: var(--input-bg);
-	}
-
-	input {
-		width: 100%;
-		padding: 0.52rem 0;
-		font-size: 0.95rem;
-		border: none;
-		background: transparent;
-		color: var(--text);
-		margin-bottom: 0;
-	}
-
-	input:focus {
-		outline: none;
-	}
-
-	.search-field:focus-within {
-		border-color: var(--link);
 	}
 
 	.control-row {
@@ -224,12 +197,6 @@
 		outline: none;
 	}
 
-	.results-count {
-		font-size: 0.82rem;
-		color: var(--muted);
-		margin: 0 0 0.95rem;
-	}
-
 	.grid {
 		list-style: none;
 		margin: 0;
@@ -244,9 +211,9 @@
 		--card-surface-2: color-mix(in srgb, var(--card-bg) 76%, #f7f3ff);
 		--card-glow: color-mix(in srgb, var(--card-border) 54%, transparent);
 		display: grid;
-		grid-template-rows: auto auto auto 1fr auto auto;
-		gap: 0.52rem;
-		padding: 0.9rem;
+		grid-template-rows: 1fr auto auto auto;
+		gap: 0.5rem;
+		padding: 0.8rem 0.8rem 0.85rem;
 		aspect-ratio: 1 / 1;
 		text-decoration: none;
 		color: var(--card-ink);
@@ -258,6 +225,8 @@
 			linear-gradient(145deg, var(--card-surface-1) 0%, var(--card-surface-2) 100%);
 		box-shadow: 0 8px 18px color-mix(in srgb, var(--card-border) 34%, transparent);
 		transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+		position: relative;
+		overflow: hidden;
 	}
 
 	.lab-card:hover {
@@ -268,22 +237,34 @@
 
 	:global(html[data-theme='dark']) .lab-card,
 	:global(html.theme-system-dark) .lab-card {
-		--card-surface-1: color-mix(in srgb, var(--card-bg) 32%, #181b26);
-		--card-surface-2: color-mix(in srgb, var(--card-bg) 22%, #10131c);
-		--card-glow: color-mix(in srgb, var(--card-border) 36%, transparent);
-		--card-ink: color-mix(in srgb, white 86%, var(--card-bg));
-		--card-muted: color-mix(in srgb, white 66%, var(--card-bg));
-		border-color: color-mix(in srgb, var(--card-border) 52%, #232837);
-		box-shadow: 0 10px 20px rgba(10, 12, 18, 0.42);
+		--card-surface-1: color-mix(in srgb, var(--card-bg) 62%, #2b1750);
+		--card-surface-2: color-mix(in srgb, var(--card-bg) 52%, #1a1037);
+		--card-glow: color-mix(in srgb, var(--card-border) 68%, #6e46c7);
+		--card-ink: color-mix(in srgb, white 92%, var(--card-bg));
+		--card-muted: color-mix(in srgb, white 74%, var(--card-bg));
+		border-color: color-mix(in srgb, var(--card-border) 80%, #5f3eb3);
+		box-shadow: 0 12px 24px rgba(7, 9, 14, 0.5);
 	}
 
 	:global(html[data-theme='dark']) .lab-card:hover,
 	:global(html.theme-system-dark) .lab-card:hover {
-		border-color: color-mix(in srgb, var(--card-border) 64%, white 20%);
-		box-shadow: 0 16px 30px rgba(7, 9, 14, 0.58);
+		border-color: color-mix(in srgb, var(--card-border) 86%, #9b7dff);
+		box-shadow: 0 18px 34px rgba(6, 8, 12, 0.64);
+	}
+
+	.lab-visual {
+		grid-row: 1 / 2;
+		border-radius: 8px;
+		border: 1px solid color-mix(in srgb, var(--card-border) 70%, white);
+		background:
+			radial-gradient(85% 90% at 20% 16%, color-mix(in srgb, var(--card-bg) 75%, white) 0%, transparent 65%),
+			radial-gradient(70% 80% at 84% 86%, color-mix(in srgb, var(--card-border) 30%, transparent) 0%, transparent 70%),
+			linear-gradient(140deg, color-mix(in srgb, var(--card-bg) 72%, white), color-mix(in srgb, var(--card-bg) 66%, #ecddff));
+		box-shadow: inset 0 1px 0 color-mix(in srgb, white 50%, transparent);
 	}
 
 	.card-top {
+		grid-row: 2 / 3;
 		margin: 0;
 		display: flex;
 		justify-content: space-between;
@@ -303,26 +284,46 @@
 	}
 
 	.lab-card h2 {
+		position: absolute;
+		top: 0.72rem;
+		left: 0.72rem;
 		margin: 0;
-		font-family: var(--font-display);
-		font-size: clamp(1.05rem, 1.55vw, 1.4rem);
-		font-weight: 500;
-		line-height: 1.2;
+		font-family: var(--font-sans);
+		font-size: 1.05rem;
+		font-weight: 700;
+		line-height: 1;
+		letter-spacing: 0.01em;
+		pointer-events: none;
+	}
+
+	.lab-card h2 span {
+		display: inline-block;
+		padding: 0.46rem 0.62rem 0.44rem;
+		border-radius: 7px;
+		color: #fff;
+		background: color-mix(in srgb, #000 84%, var(--card-ink));
+		border: 1px solid color-mix(in srgb, #000 74%, var(--card-border));
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+		max-width: 11.2rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.vibe {
+		grid-row: 3 / 4;
 		margin: 0;
 		font-size: 0.9rem;
 		color: var(--card-muted);
 		font-family: var(--font-serif);
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
+		white-space: nowrap;
 		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.path {
-		margin: auto 0 0;
+		grid-row: 4 / 5;
+		margin: 0;
 		font-family: monospace;
 		font-size: 0.72rem;
 		color: var(--card-muted);
@@ -333,6 +334,7 @@
 	}
 
 	.open {
+		grid-row: 4 / 5;
 		margin: 0;
 		display: inline-flex;
 		align-items: center;
@@ -341,23 +343,14 @@
 		font-weight: 600;
 		font-family: var(--font-sans);
 		color: var(--card-ink);
+		justify-self: end;
 	}
 
-	.no-results {
-		text-align: center;
-		padding: 2rem;
-		color: var(--muted);
-	}
-
-	.no-results button {
-		margin-top: 0.75rem;
-		padding: 0.4rem 0.75rem;
-		background: var(--button-bg);
-		color: var(--button-text);
-		border: none;
-		border-radius: 4px;
-		cursor: pointer;
-		font-size: 0.9rem;
+	:global(html[data-theme='dark']) .lab-card h2 span,
+	:global(html.theme-system-dark) .lab-card h2 span {
+		background: color-mix(in srgb, #090b11 72%, var(--card-ink));
+		border-color: color-mix(in srgb, #04050a 75%, var(--card-border));
+		box-shadow: 0 3px 10px rgba(0, 0, 0, 0.34);
 	}
 
 	@media (max-width: 700px) {

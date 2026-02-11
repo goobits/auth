@@ -15,7 +15,7 @@
 />
 
 <section class="legal-page">
-	<p class="updated">Last updated: February 11, 2026</p>
+	<p class="legal-updated">Last updated: February 11, 2026</p>
 
 	<p>
 		This page describes how MIKO.ART uses cookies and similar browser storage.
@@ -57,29 +57,3 @@
 		For cookie questions, email <a href="mailto:hello@miko.art">hello@miko.art</a>.
 	</p>
 </section>
-
-<style>
-	.legal-page {
-		max-width: var(--max-width);
-		margin: 0 auto;
-		padding: 2rem 1rem 3rem;
-		line-height: 1.7;
-	}
-
-	.updated {
-		opacity: 0.8;
-		margin-bottom: 1.5rem;
-	}
-
-	h2 {
-		display: flex;
-		align-items: center;
-		gap: 0.45rem;
-		margin-top: 1.75rem;
-		margin-bottom: 0.5rem;
-	}
-
-	ul {
-		padding-left: 1.25rem;
-	}
-</style>

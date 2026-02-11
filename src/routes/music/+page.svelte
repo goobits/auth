@@ -30,16 +30,16 @@
 	subtitle="Songs, sketches, and sound experiments."
 />
 
-<div class="music-page">
-	<section class="intro">
+<div class="music-page showcase-page">
+	<section class="intro showcase-section showcase-intro">
 		<p>
 			Melody has always been part of the build process. This page is the home for tracks, demos,
 			and music-related experiments from Miko.
 		</p>
 	</section>
 
-	<section class="platforms">
-		<h2><Headphones size={17} strokeWidth={2.2} /> Listen</h2>
+	<section class="platforms showcase-section">
+		<h2 class="showcase-title"><Headphones size={17} strokeWidth={2.2} /> Listen</h2>
 		<ul>
 			{#each platforms as item}
 				<li>
@@ -53,8 +53,8 @@
 		</ul>
 	</section>
 
-	<section class="entries">
-		<h2><Disc3 size={17} strokeWidth={2.2} /> Music Entries</h2>
+	<section class="entries showcase-section">
+		<h2 class="showcase-title"><Disc3 size={17} strokeWidth={2.2} /> Music Entries</h2>
 		{#if data.musicPosts.length === 0}
 			<p class="empty">Music posts are coming soon.</p>
 		{:else}
@@ -74,48 +74,14 @@
 		{/if}
 	</section>
 
-	<section class="closing">
-		<h2><Radio size={17} strokeWidth={2.2} /> Collaborations</h2>
+	<section class="closing showcase-section">
+		<h2 class="showcase-title"><Radio size={17} strokeWidth={2.2} /> Collaborations</h2>
 		<p>If you want a custom soundtrack or music + product collaboration, reach out anytime.</p>
-		<a href="/contact">Start a conversation</a>
+		<a href="/contact" class="pill-link">Start a conversation</a>
 	</section>
 </div>
 
 <style>
-	.music-page {
-		max-width: var(--max-width);
-		margin: 0 auto;
-		display: grid;
-		gap: 1rem;
-	}
-
-	.intro,
-	.platforms,
-	.entries,
-	.closing {
-		border: 1px solid var(--panel-border);
-		border-radius: 10px;
-		background: var(--card-bg);
-		padding: 1rem;
-	}
-
-	.intro p {
-		margin: 0;
-		font-family: var(--font-serif);
-		font-size: 1.02rem;
-		line-height: 1.7;
-	}
-
-	h2 {
-		margin: 0 0 0.75rem;
-		display: inline-flex;
-		gap: 0.35rem;
-		align-items: center;
-		font-family: var(--font-display);
-		font-size: 1.2rem;
-		font-weight: 500;
-	}
-
 	.platforms ul {
 		list-style: none;
 		margin: 0;
@@ -193,19 +159,5 @@
 	.closing p {
 		margin: 0 0 0.75rem;
 		color: var(--text);
-	}
-
-	.closing a {
-		display: inline-flex;
-		align-items: center;
-		text-decoration: none;
-		padding: 0.42rem 0.72rem;
-		border-radius: 999px;
-		border: 1px solid var(--border);
-		background: var(--card-bg);
-		color: var(--text);
-		font-family: var(--font-sans);
-		font-size: 0.82rem;
-		font-weight: 600;
 	}
 </style>

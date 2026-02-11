@@ -88,9 +88,9 @@
 
 <div class="journal">
 	<div class="journal-tools" aria-label="Journal filters">
-		<label class="search-field" aria-label="Search posts">
+		<label class="ui-search-field" aria-label="Search posts">
 			<Search size={15} strokeWidth={2.2} style="color: var(--muted); flex-shrink: 0;" />
-			<input type="text" placeholder="Search posts..." bind:value={searchQuery} />
+			<input class="ui-search-input" type="text" placeholder="Search posts..." bind:value={searchQuery} />
 		</label>
 
 		<div class="selects">
@@ -115,12 +115,12 @@
 	</div>
 
 	{#if filteredPosts.length === 0}
-		<div class="no-results">
+		<div class="ui-no-results">
 			<p>No posts match your filters.</p>
 			<button onclick={() => { searchQuery = ''; selectedCategory = 'all'; sortBy = 'newest' }}>Clear Filters</button>
 		</div>
 	{:else}
-		<p class="results-count">{filteredPosts.length} entries</p>
+		<p class="ui-results-count results-count">{filteredPosts.length} entries</p>
 
 		{#each yearOrder as year}
 			<section class="year-group">
@@ -177,34 +177,6 @@
 		margin-bottom: 0.9rem;
 	}
 
-	.search-field {
-		display: flex;
-		align-items: center;
-		gap: 0.45rem;
-		padding: 0 0.65rem;
-		border: 1px solid var(--input-border);
-		border-radius: 6px;
-		background: var(--input-bg);
-	}
-
-	input {
-		width: 100%;
-		padding: 0.52rem 0;
-		font-size: 0.95rem;
-		border: none;
-		background: transparent;
-		color: var(--text);
-		margin-bottom: 0;
-	}
-
-	input:focus {
-		outline: none;
-	}
-
-	.search-field:focus-within {
-		border-color: var(--link);
-	}
-
 	.selects {
 		display: flex;
 		gap: 0.55rem;
@@ -231,9 +203,7 @@
 	}
 
 	.results-count {
-		margin: 0 0 1rem;
-		font-size: 0.82rem;
-		color: var(--muted);
+		margin-bottom: 1rem;
 	}
 
 	.year-group {
@@ -335,23 +305,6 @@
 
 	.read-link:hover {
 		color: var(--link-hover);
-	}
-
-	.no-results {
-		text-align: center;
-		padding: 2rem;
-		color: var(--muted);
-	}
-
-	.no-results button {
-		margin-top: 0.75rem;
-		padding: 0.4rem 0.75rem;
-		background: var(--button-bg);
-		color: var(--button-text);
-		border: none;
-		border-radius: 4px;
-		cursor: pointer;
-		font-size: 0.9rem;
 	}
 
 	@media (max-width: 860px) {

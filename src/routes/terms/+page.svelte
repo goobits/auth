@@ -15,7 +15,7 @@
 />
 
 <section class="legal-page">
-	<p class="updated">Last updated: February 11, 2026</p>
+	<p class="legal-updated">Last updated: February 11, 2026</p>
 
 	<p>
 		By using MIKO.ART, you agree to these terms. If you do not agree, do not use the site.
@@ -74,37 +74,5 @@
 		Questions about these terms can be sent to <a href="mailto:hello@miko.art">hello@miko.art</a>.
 	</p>
 
-	<p class="notice">This page is informational and is not legal advice.</p>
+	<p class="legal-notice">This page is informational and is not legal advice.</p>
 </section>
-
-<style>
-	.legal-page {
-		max-width: var(--max-width);
-		margin: 0 auto;
-		padding: 2rem 1rem 3rem;
-		line-height: 1.7;
-	}
-
-	.updated {
-		opacity: 0.8;
-		margin-bottom: 1.5rem;
-	}
-
-	h2 {
-		display: flex;
-		align-items: center;
-		gap: 0.45rem;
-		margin-top: 1.75rem;
-		margin-bottom: 0.5rem;
-	}
-
-	ul {
-		padding-left: 1.25rem;
-	}
-
-	.notice {
-		margin-top: 2rem;
-		opacity: 0.8;
-		font-size: 0.95rem;
-	}
-</style>

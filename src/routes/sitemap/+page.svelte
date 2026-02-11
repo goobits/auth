@@ -146,9 +146,10 @@
 
 	<div class="controls">
 		<div class="search">
-			<div class="search-field">
-				<Search class="search-icon" size={15} strokeWidth={2.2} />
+			<div class="ui-search-field">
+				<Search class="ui-search-icon" size={15} strokeWidth={2.2} />
 				<input
+					class="ui-search-input"
 					type="text"
 					placeholder="Search routes..."
 					bind:value={searchQuery}
@@ -211,12 +212,12 @@
 	</div>
 
 	{#if filteredCount === 0}
-		<div class="no-results">
+		<div class="ui-no-results">
 			<p>No routes match your filters.</p>
 			<button onclick={() => { searchQuery = ''; selectedTags = [] }}>Clear Filters</button>
 		</div>
 	{:else}
-		<div class="results-count">
+		<div class="ui-results-count results-count">
 			Showing {filteredCount} of {data.stats.total} routes
 		</div>
 
@@ -305,39 +306,6 @@
 		margin-bottom: 1.25rem;
 	}
 
-	.search-field {
-		display: flex;
-		align-items: center;
-		gap: 0.45rem;
-		padding: 0 0.6rem;
-		border: 1px solid var(--input-border);
-		border-radius: 5px;
-		background: var(--input-bg);
-	}
-
-	.search-icon {
-		color: var(--muted);
-		flex-shrink: 0;
-	}
-
-	.search input {
-		width: 100%;
-		padding: 0.5rem 0;
-		font-size: 0.95rem;
-		border: none;
-		background: transparent;
-		color: var(--text);
-		margin-bottom: 0;
-	}
-
-	.search input:focus {
-		outline: none;
-	}
-
-	.search-field:focus-within {
-		border-color: var(--link);
-	}
-
 	.filters {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;
@@ -423,26 +391,7 @@
 		color: var(--color-white);
 	}
 
-	.no-results {
-		text-align: center;
-		padding: 2rem;
-		color: var(--muted);
-	}
-
-	.no-results button {
-		margin-top: 0.75rem;
-		padding: 0.4rem 0.75rem;
-		background: var(--button-bg);
-		color: var(--button-text);
-		border: none;
-		border-radius: 4px;
-		cursor: pointer;
-		font-size: 0.9rem;
-	}
-
 	.results-count {
-		font-size: 0.85rem;
-		color: var(--muted);
 		margin-bottom: 0.75rem;
 	}
 
