@@ -33,6 +33,20 @@ function resolvePostDate(value: unknown, fallback: () => Date): Date {
 	return fallback()
 }
 
+function stripScriptTags(html: string) {
+	// Legacy journal entries can embed script tags that fail in modern CSP/runtime contexts.
+	// Remove them from rendered post HTML to avoid runtime parse errors and unsafe execution.
+	return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+}
+
+function upgradeInsecureMediaUrls(html: string) {
+	// Legacy posts include http image/media sources; upgrade to https so CSP and modern browsers allow loading.
+	return html.replace(
+		/(<(?:img|source)\b[^>]*\b(?:src|srcset)=["'])http:\/\//gi,
+		'$1https://'
+	)
+}
+
 export async function getJournalPosts() {
 	const posts: JournalPost[] = []
 	const years = readdirSync(POSTS_PATH).filter(file => !file.startsWith('.'))
@@ -90,7 +104,8 @@ export async function getPost({
 		const compiled = (await compile(mdContent, {
 			remarkPlugins: [ remarkTableOfContents ]
 		})) as MdsvexCompileResult
-		const strippedContent = (compiled?.code ?? '').replace(/{@html `(.*?)`}/gs, '$1')
+		const renderedContent = (compiled?.code ?? '').replace(/{@html `(.*?)`}/gs, '$1')
+		const strippedContent = stripScriptTags(upgradeInsecureMediaUrls(renderedContent))
 
 		// Extract date same as above
 		const dateMatch = posts[0].match(/^(\d{4})-(\d{2})-(\d{2})/)
