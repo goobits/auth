@@ -24,6 +24,10 @@
 		})
 	}
 
+	function firstCategory(post) {
+		return post.metadata.fm.categories?.[0] || ''
+	}
+
 	const availableCategories = $derived.by(() => {
 		const all = new Set()
 		for (const post of data.posts) {
@@ -130,24 +134,26 @@
 									<span>{formatDate(post.date, 'monthDay')}</span>
 								</div>
 
-								<div class="entry-body">
-									<h3>
-										<a href={`/${post.urlPath}`}>{post.metadata.fm.title}</a>
-									</h3>
-									{#if post.metadata.fm.categories?.length}
-										<div class="tags">
-											<Tag size={13} strokeWidth={2.2} />
-											{#each post.metadata.fm.categories as category}
-												<a class="tag" href={`/journal/category/${category.toLowerCase().replace(/\s+/g, '-')}`}>{category}</a>
-											{/each}
-										</div>
-									{/if}
-								</div>
+								<h3 class="entry-title">
+									<a href={`/${post.urlPath}`}>{post.metadata.fm.title}</a>
+								</h3>
 
-								<a href={`/${post.urlPath}`} class="read-link">
-									<span>Read</span>
-									<ArrowUpRight size={14} strokeWidth={2.2} />
-								</a>
+								<div class="entry-right">
+									{#if firstCategory(post)}
+										<a
+											class="tag"
+											href={`/journal/category/${firstCategory(post).toLowerCase().replace(/\s+/g, '-')}`}
+										>
+											<Tag size={13} strokeWidth={2.2} />
+											<span>{firstCategory(post)}</span>
+										</a>
+									{/if}
+
+									<a href={`/${post.urlPath}`} class="read-link">
+										<span>Read</span>
+										<ArrowUpRight size={14} strokeWidth={2.2} />
+									</a>
+								</div>
 							</article>
 						</li>
 					{/each}
@@ -217,7 +223,7 @@
 	.selects span {
 		font-size: 0.75rem;
 		color: var(--muted);
-		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: var(--font-sans);
 	}
 
 	select {
@@ -241,7 +247,7 @@
 
 	.year-group h2 {
 		margin: 0 0 0.55rem;
-		font-family: "Playfair Display", serif;
+		font-family: var(--font-display);
 		font-size: 1.5rem;
 		font-weight: 500;
 		line-height: 1.1;
@@ -268,38 +274,48 @@
 		align-items: center;
 		gap: 0.32rem;
 		font-size: 0.82rem;
-		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: var(--font-sans);
 		color: var(--muted);
 	}
 
-	.entry-body h3 {
+	.entry-title {
 		margin: 0;
-		font-family: "Playfair Display", serif;
+		min-width: 0;
+		font-family: var(--font-display);
 		font-weight: 500;
 		font-size: clamp(1.05rem, 1.6vw, 1.45rem);
 		line-height: 1.24;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
-	.entry-body h3 a {
+	.entry-title a {
 		text-decoration: none;
 		color: var(--text);
+		display: block;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
-	.entry-body h3 a:hover {
+	.entry-title a:hover {
 		color: var(--link-hover);
 	}
 
-	.tags {
-		margin-top: 0.34rem;
+	.entry-right {
 		display: flex;
 		align-items: center;
-		gap: 0.25rem;
-		color: var(--muted);
+		gap: 0.5rem;
+		white-space: nowrap;
 	}
 
 	.tag {
-		font-size: 0.72rem;
-		padding: 0.14rem 0.45rem;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		font-size: 0.74rem;
+		padding: 0.16rem 0.5rem;
 		border-radius: 999px;
 		background: var(--tag-bg);
 		color: var(--muted);
@@ -314,7 +330,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.24rem;
-		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		font-family: var(--font-sans);
 		font-size: 0.8rem;
 		font-weight: 600;
 		text-decoration: none;
@@ -351,6 +367,17 @@
 		.entry {
 			grid-template-columns: 1fr;
 			gap: 0.45rem;
+		}
+
+		.entry-title,
+		.entry-title a {
+			white-space: normal;
+			overflow: visible;
+			text-overflow: initial;
+		}
+
+		.entry-right {
+			justify-content: space-between;
 		}
 
 		.read-link {
