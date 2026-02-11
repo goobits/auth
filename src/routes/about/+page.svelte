@@ -1,90 +1,103 @@
 <script>
-    import './About.scss'
+	import './About.scss'
+	import { ArrowUpRight, BriefcaseBusiness, Music2, Paintbrush2, Sparkles } from '@lucide/svelte'
 </script>
 
 <svelte:head>
-    <title>About - MIKO.ART</title>
+	<title>About - MIKO.ART</title>
+	<meta
+		name="description"
+		content="About Miko: founder, product builder, and creative technologist behind colorful tools and experiences."
+	/>
 </svelte:head>
 
-<div class="hero">
-    <h1>Haai! I’m Miko <img src="/media/emoji-unicorn.png" height="56" width="56" style="vertical-align: top" alt="">
-    </h1>
-    <h2>Developer, designer & musician :)</h2>
+<div class="about-page">
+	<section class="about-hero">
+		<p class="kicker">
+			<Sparkles size={14} strokeWidth={2.2} />
+			<span>About</span>
+		</p>
+		<h1>Hi, I’m Miko.</h1>
+		<p class="subtitle">I build colorful software that helps people make things.</p>
+	</section>
+
+	<section class="about-grid">
+		<article class="story-card">
+			<p>
+				I’m a founder, developer, and designer focused on products where creativity and usability can live in the
+				same room. I care about software that feels expressive, but still gets out of your way.
+			</p>
+			<p>
+				I’m currently Founder and CTO at
+				<a href="https://sketch.io/" target="_blank" rel="noopener noreferrer">Sketch.IO</a>, where we make
+				<a href="https://sketchpad.com/" target="_blank" rel="noopener noreferrer">Sketchpad</a> and other design
+				tools used by students, teachers, creators, and teams around the world.
+			</p>
+			<p>
+				Before that, I co-founded Portlandia Foods (acquired in 2023) and Lyrics Freak (acquired in 2010). Across
+				all of it, the through-line has stayed the same: build useful things with personality.
+			</p>
+		</article>
+
+		<aside class="profile-card" aria-label="Miko profile">
+			<img src="/media/miko.jpg" alt="Miko" class="miko-photo" width="360" />
+			<div class="profile-meta">
+				<p><BriefcaseBusiness size={14} strokeWidth={2.2} /> Founder + CTO, Sketch.IO</p>
+				<p><Paintbrush2 size={14} strokeWidth={2.2} /> Product Design + Creative Tools</p>
+				<p><Music2 size={14} strokeWidth={2.2} /> Developer, Designer, Musician</p>
+			</div>
+		</aside>
+	</section>
+
+	<section class="panel">
+		<h2>Selected Exhibits</h2>
+		<ul>
+			<li>Art Gallery of Ontario, Illusions Exhibition</li>
+			<li>Dubai Union Metro, Art in Transit</li>
+			<li>Google I/O 2010, Darkroom</li>
+			<li>Google I/O 2012, Sketch Mobile</li>
+			<li>Google I/O 2013, Webcam FX</li>
+			<li>Mackinac State Historic Parks</li>
+			<li>Tel Aviv Museum of Modern Art</li>
+		</ul>
+	</section>
+
+	<section class="panel two-col">
+		<div>
+			<h2>Selected Clients</h2>
+			<ul>
+				<li>AAA</li>
+				<li>ABCya Games</li>
+				<li>Draw It To Know It (Medical + Biological Sciences)</li>
+				<li>Google, Made With Code</li>
+				<li>Jo Malone London</li>
+				<li>Los Alamos National Laboratory</li>
+				<li>Portland Timbers, RCTID</li>
+				<li>Scotties</li>
+				<li>Travel Portland</li>
+				<li>Upworthy</li>
+			</ul>
+		</div>
+		<div>
+			<h2>What I Build</h2>
+			<ul>
+				<li>Educational and musical creative apps</li>
+				<li>Non-destructive illustration and painting tools</li>
+				<li>Collaborative realtime creative workflows</li>
+				<li>Kiosk software for science and learning centers</li>
+				<li>Interactive experiences for sports and media campaigns</li>
+				<li>Customization tools for print and commerce</li>
+			</ul>
+		</div>
+	</section>
+
+	<section class="closing">
+		<p>
+			If you’re building something thoughtful and a little unusual, I’m always happy to connect.
+		</p>
+		<a href="/contact" class="contact-link">
+			<span>Start a conversation</span>
+			<ArrowUpRight size={15} strokeWidth={2.2} />
+		</a>
+	</section>
 </div>
-
-<img src="/media/miko.jpg" alt="Miko" class="miko" width="300"
-     style="float: right; border-radius: 5px; margin-left: 1em"/>
-<p>I’m passionate about creating colorful, creative & educational applications!</p>
-<p>Founder & CTO of <a href="https://sketch.io/" target="_blank">Sketch.IO</a> creators of
-    <a href="https://sketchpad.com/" target="_blank">Sketchpad</a> 🎨</p>
-<p>Co-Founder of <a href="https://portlandiafoods.com/" target="_blank">Portlandia Foods</a> creators of Portland
-    Ketchup 🪴 (acquired 2023)</p>
-<p>Co-Founder of <a href="https://lyricsfreak.com/" target="_blank">Lyrics Freak</a> 🎵 (acquired 2010)</p>
-<!--<p>Co-Founder of <a href="https://beheremeow.app/" target="_blank">Be Here Meow</a> 😸</p>-->
-
-<h4>Exhibits, Selected:</h4>
-<ul>
-    <li>Art Gallery Of Ontario: Illusions Exhibition</li>
-    <li>Dubai Union Metro: Art In Transit</li>
-    <li>Google IO 2010: Darkroom</li>
-    <li>Google IO 2012: Sketch Mobile</li>
-    <li>Google IO 2013: Webcam FX</li>
-    <li>Mackinac State Historic Parks</li>
-    <li>Tel Aviv Museum Of Modern Art</li>
-</ul>
-
-<h4>Clients, Selected:</h4>
-<ul>
-    <li>AAA</li>
-    <li>ABCya Games</li>
-    <li>Draw It To Know It: Medical & Biological Sciences</li>
-    <li>Google: Made With Code</li>
-    <li>Jo Malone London</li>
-    <li>Los Alamos National Laboratory</li>
-    <li>Portland Timbers: RCTID</li>
-    <li>Scotties</li>
-    <li>Travel Portland</li>
-    <li>Upworthy</li>
-</ul>
-
-<h4>Sketch.IO specializes in creating a diverse range of design tools:</h4>
-
-<ul>
-    <li><span class="bold">Annotations & Editing for Online News:</span>
-        <span>Innovative tools designed to enhance the digital news experience with user-friendly annotations and editing capabilities.</span>
-    </li>
-
-    <li><span class="bold">Colorful Educational Musical Apps:</span>
-        <span>Interactive and vibrant applications that fuse music with learning, making education both fun and engaging for all ages.</span>
-    </li>
-
-    <li><span class="bold">Kiosk Software for Science & Learning Centers:</span>
-        <span>Cutting-edge interactive kiosk software, bringing digital innovation to science and educational environments.</span>
-    </li>
-
-    <li><span class="bold">Non-Destructive Illustration & Painting Apps:</span>
-        <span>Sophisticated apps offering artists and designers the freedom to create with non-destructive editing tools.</span>
-    </li>
-
-    <li><span class="bold">Promotional Contests for Sports Teams & Companies:</span>
-        <span>Tailored contest platforms to boost engagement for sports teams and businesses, driving promotional success.</span>
-    </li>
-
-    <li><span class="bold">Realtime Collaborative Apps:</span>
-        <span>Dynamic applications enabling seamless collaboration in real-time, enhancing teamwork and productivity.</span>
-    </li>
-
-    <li><span class="bold">User-Based Product Customization for Printing:</span>
-        <span>Flexible design tools that allow users to personalize products, perfect for creating unique print-on-demand items.</span>
-    </li>
-</ul>
-
-<style>
-	ul {
-		max-width: 640px;
-	}
-
-	.bold {
-		font-weight: bold;
-	}
-</style>

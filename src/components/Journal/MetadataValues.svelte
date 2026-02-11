@@ -23,8 +23,10 @@
 
 <style lang="scss">
 	.values {
-		margin-top: 0.5rem;
-		display: inline-block;
+		display: inline-flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.25rem;
 
 		.value {
 			background: var(--tag-bg);
@@ -32,7 +34,7 @@
 			color: var(--muted);
 			display: inline-block;
 			font-size: 0.875rem;
-			margin: 0 0.25rem;
+			margin: 0;
 			padding: 0.2rem 0.6rem;
 			text-decoration: none;
 
