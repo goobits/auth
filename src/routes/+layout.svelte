@@ -32,6 +32,8 @@
 			<links>
 				<a href="/" class:active={$page.url.pathname === '/'}>Home</a>
 				<a href="/about" class:active={$page.url.pathname === '/about'}>About</a>
+				<a href="/art" class:active={$page.url.pathname === '/art'}>Art</a>
+				<a href="/music" class:active={$page.url.pathname === '/music'}>Music</a>
 				<a href="/contact" class:active={$page.url.pathname === '/contact'}>Contact</a>
 				<theme-toggle>
 					<ThemeToggle />
@@ -46,8 +48,10 @@
 
 	<footer>
 		<nav>
+			<a href="/art">Art</a>
 			<a href="/journal">Journal</a>
 			<a href="/labs">Labs</a>
+			<a href="/music">Music</a>
 			<a href="/sitemap">Sitemap</a>
 			<span class="divider-dot" aria-hidden="true">•</span>
 			<a href="/privacy">Privacy</a>
@@ -106,7 +110,6 @@
 					border-bottom: 3px solid transparent;
 					margin-right: 2em;
 					line-height: 2em;
-					transform: scaleY(1.1);
 					text-decoration: none;
 
 					&.active,

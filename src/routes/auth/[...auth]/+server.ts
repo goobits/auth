@@ -1,13 +1,34 @@
 import { getCalendarAuth, setCalendarLoginContext } from '$lib/auth/calendar.ts'
 import { redirect } from '@sveltejs/kit'
 
-function resolveLegacyProviderPath(pathname: string) {
+const AUTH_RESERVED = new Set(['auth', 'signin', 'signout', 'callback', 'logout', 'magic-link', 'passkey', 'sessions'])
+
+function resolveLegacySigninPath(pathname: string) {
 	const parts = pathname.split('/').filter(Boolean)
-	if (parts.length !== 2) return null
+	if (parts.length < 3 || parts.length > 4) return null
 	if (parts[0] !== 'auth') return null
-	const provider = parts[1]
-	if (!provider || provider === 'signin' || provider === 'signout' || provider === 'callback') return null
-	return `/auth/signin/${provider}`
+	if (parts[1] !== 'signin') return null
+	const provider = parts[2]
+	if (!provider || provider === 'signout' || provider === 'callback') return null
+	if (parts.length === 3) return `/auth/${provider}`
+	if (parts.length === 4 && parts[3] === 'callback') return `/auth/${provider}/callback`
+	return null
+}
+
+function resolveRequestedProvider(pathname: string) {
+	const parts = pathname.split('/').filter(Boolean)
+	if (parts[0] !== 'auth') return null
+	if (parts.length === 2) {
+		const provider = parts[1]
+		if (!provider || AUTH_RESERVED.has(provider)) return null
+		return provider
+	}
+	if (parts.length === 3 && parts[1] === 'signin') {
+		const provider = parts[2]
+		if (!provider || AUTH_RESERVED.has(provider)) return null
+		return provider
+	}
+	return null
 }
 
 export async function GET(event: any) {
@@ -25,11 +46,21 @@ export async function GET(event: any) {
 	}
 
 	// Backward-compatible OAuth provider route:
-	// /auth/google -> /auth/signin/google
-	const signinPath = resolveLegacyProviderPath(event.url.pathname)
-	if (signinPath) {
+	// /auth/signin/google -> /auth/google
+	const providerPath = resolveLegacySigninPath(event.url.pathname)
+	if (providerPath) {
 		const query = event.url.search || ''
-		throw redirect(302, `${signinPath}${query}`)
+		throw redirect(302, `${providerPath}${query}`)
+	}
+
+	const requestedProvider = resolveRequestedProvider(event.url.pathname)
+	if (requestedProvider) {
+		const providers = auth?.providers ?? {}
+		if (!(requestedProvider in providers)) {
+			const params = new URLSearchParams(event.url.searchParams)
+			params.set('error', `${requestedProvider}_not_enabled`)
+			throw redirect(302, `/calendar/login?${params.toString()}`)
+		}
 	}
 
 	return auth.handlers.GET(event)

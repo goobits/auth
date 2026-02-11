@@ -21,6 +21,16 @@ export const themeConfig = createThemeConfig({
 				accent: '#7fb2ff',
 				background: '#111111'
 			}
+		},
+		magic: {
+			name: 'magic',
+			displayName: 'Magic',
+			description: 'Vivid neon editorial theme',
+			preview: {
+				primary: '#f8f7ff',
+				accent: '#73f3ff',
+				background: '#150f2f'
+			}
 		}
 	}
 })

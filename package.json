@@ -10,7 +10,7 @@
 		"dev": "dotenvx run -f config/env/.env -- bash tasks/dev-server.sh start",
 		"dev:wrangler": "NODE_OPTIONS='--dns-result-order=ipv4first' dotenvx run -f config/env/.env -- wrangler dev --local",
 		"stop": "bash tasks/dev-server.sh stop",
-		"restart": "bash tasks/dev-server.sh restart",
+		"restart": "dotenvx run -f config/env/.env -- bash tasks/dev-server.sh restart",
 		"preview": "vite preview --port 3000",
 		"start": "NODE_ENV=production dotenvx run -f config/env/.env -- node build",
 		"deploy:secrets": "dotenvx run -f config/env/.env.production -- node scripts/deploy-secrets.mjs",
