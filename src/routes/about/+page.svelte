@@ -1,6 +1,63 @@
 <script>
 	import './About.scss'
-	import HeroBanner from '@components/HeroBanner.svelte'
+
+	const ventures = [
+		{
+			emoji: '🎨',
+			name: 'Sketch.IO',
+			role: 'Founder & CTO',
+			description: 'Home of Sketchpad. Creative brushes in browsers and smiles on faces since day one.',
+			href: 'https://sketch.io/'
+		},
+		{
+			emoji: '🪴',
+			name: 'Portlandia Foods',
+			role: 'Co-Founder',
+			description: 'Creators of Portland Ketchup, because condiments deserve the same love as code.',
+			href: 'https://portlandiafoods.com/',
+			badge: 'Acquired 2023'
+		},
+		{
+			emoji: '🎵',
+			name: 'Lyrics Freak',
+			role: 'Co-Founder',
+			description: "One of the internet's earliest lyrics destinations and a longtime music rabbit hole.",
+			href: 'https://lyricsfreak.com/',
+			badge: 'Acquired 2010'
+		}
+	]
+
+	const exhibits = [
+		{ title: 'Art Gallery of Ontario', detail: 'Illusions' },
+		{ title: 'Dubai Union Metro', detail: 'Art in Transit' },
+		{ title: 'Google I/O', detail: '2010, 2012, 2013' },
+		{ title: 'Mackinac State Historic Parks' },
+		{ title: 'Tel Aviv Museum of Modern Art' }
+	]
+
+	const clients = [
+		'AAA',
+		'ABCya Games',
+		'Draw It To Know It',
+		'Google, Made With Code',
+		'Jo Malone London',
+		'Los Alamos National Laboratory',
+		'Portland Timbers'
+	]
+
+	const services = [
+		{ icon: '📰', name: 'News Annotations', description: 'Intuitive markup tools for modern digital newsrooms.' },
+		{ icon: '🎹', name: 'Musical Apps', description: 'Vibrant products blending sound, interaction, and learning.' },
+		{ icon: '🔬', name: 'Kiosk Software', description: 'Interactive exhibits for science and educational spaces.' },
+		{ icon: '🖌️', name: 'Illustration Tools', description: 'Non-destructive workflows for artists and designers.' },
+		{ icon: '🏆', name: 'Promo Contests', description: 'Audience engagement platforms for teams and brands.' },
+		{ icon: '⚡', name: 'Realtime Collaboration', description: 'Build together from anywhere in real time.' },
+		{
+			icon: '🖨️',
+			name: 'Product Customizers',
+			description: 'Personalize-then-print interfaces for on-demand products.'
+		}
+	]
 </script>
 
 <svelte:head>
@@ -9,104 +66,112 @@
 		name="description"
 		content="About Miko: founder, product builder, and creative technologist behind colorful tools and experiences."
 	/>
+	<link rel="canonical" href="https://miko.art/about" />
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content="About - MIKO.ART" />
+	<meta
+		property="og:description"
+		content="Founder, product builder, and creative technologist behind colorful tools and experiences."
+	/>
+	<meta property="og:url" content="https://miko.art/about" />
+	<meta property="og:image" content="https://miko.art/media/miko.jpg" />
+	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
-<HeroBanner
-	title="Haai! I'm Miko"
-	subtitle="Developer, designer & musician :)"
-	icon="/media/emoji-unicorn.png"
-/>
+<div class="about-page about">
+	<section class="hero-row about__hero" aria-labelledby="about-title">
+		<div class="avatar-ring about__avatar-ring">
+			<div class="avatar-inner about__avatar-inner">
+				<img
+					src="/media/miko.jpg"
+					alt="Portrait of Miko"
+					width="96"
+					height="96"
+					loading="eager"
+					decoding="async"
+					fetchpriority="high"
+				/>
+			</div>
+		</div>
+		<div class="hero-copy about__hero-copy">
+			<h1 id="about-title">Haai! I'm <span class="rainbow-text about__rainbow-text">Miko</span> <span aria-hidden="true">🦄</span></h1>
+			<p>
+				Developer, designer, and musician passionate about making colorful, creative, and educational things
+				for the internet.
+			</p>
+		</div>
+	</section>
 
-<div class="about-page">
-	<article class="about-article">
-		<figure class="portrait">
-			<img src="/media/miko.jpg" alt="Miko" width="420" />
-		</figure>
+	<section class="lede about__lede">
+		<p>
+			I love it when tools disappear into the act of creating. When all that's left is imagination, flow, and
+			joy. That's what I love building. <span class="sparkle about__sparkle" aria-hidden="true">✨</span>
+		</p>
+	</section>
 
-		<section class="intro">
-			<p>
-				I’m passionate about creating colorful, creative & educational applications!
-			</p>
-			<p>
-				Founder & CTO of
-				<a href="https://sketch.io/" target="_blank" rel="noopener noreferrer">Sketch.IO</a>, where we make
-				<a href="https://sketchpad.com/" target="_blank" rel="noopener noreferrer">Sketchpad</a> 🎨
-			</p>
-			<p>
-				Co-Founder of
-				<a href="https://portlandiafoods.com/" target="_blank" rel="noopener noreferrer">Portlandia Foods</a>
-				creators of Portland Ketchup 🪴 (acquired 2023)
-			</p>
-			<p>
-				Co-Founder of <a href="https://lyricsfreak.com/" target="_blank" rel="noopener noreferrer">Lyrics Freak</a> 🎵 (acquired 2010)
-			</p>
-		</section>
+	<section class="ventures about__ventures" aria-labelledby="ventures-title">
+		<h2 id="ventures-title" class="section-label about__section-label">Building Things ✦</h2>
+		<div class="venture-grid about__venture-grid">
+			{#each ventures as venture}
+				<a href={venture.href} target="_blank" rel="noopener noreferrer" class="venture-card about__venture-card">
+					<span class="emoji about__emoji" aria-hidden="true">{venture.emoji}</span>
+					<h3>{venture.name}</h3>
+					<p class="role about__role">{venture.role}</p>
+					<p class="text about__text">{venture.description}</p>
+					{#if venture.badge}
+						<span class="badge about__badge">{venture.badge}</span>
+					{/if}
+				</a>
+			{/each}
+		</div>
+	</section>
 
-		<section class="section">
-			<h2>Exhibits, Selected</h2>
+	<section class="two-col about__columns">
+		<article class="info-card about__info-card" aria-labelledby="exhibits-title">
+			<h2 id="exhibits-title" class="section-label about__section-label">Selected Exhibits ✦</h2>
 			<ul>
-				<li>Art Gallery of Ontario, Illusions Exhibition</li>
-				<li>Dubai Union Metro, Art in Transit</li>
-				<li>Google I/O 2010, Darkroom</li>
-				<li>Google I/O 2012, Sketch Mobile</li>
-				<li>Google I/O 2013, Webcam FX</li>
-				<li>Mackinac State Historic Parks</li>
-				<li>Tel Aviv Museum of Modern Art</li>
-				<li>...you?</li>
+				{#each exhibits as exhibit}
+					<li>
+						<span>{exhibit.title}</span>
+						{#if exhibit.detail}
+							— {exhibit.detail}
+						{/if}
+					</li>
+				{/each}
+				<li class="accent about__accent"><a href="/contact">you</a>? 💫</li>
 			</ul>
-		</section>
+		</article>
 
-		<section class="section">
-			<h2>Clients, Selected</h2>
+		<article class="info-card about__info-card" aria-labelledby="clients-title">
+			<h2 id="clients-title" class="section-label about__section-label">Selected Clients ✦</h2>
 			<ul>
-				<li>AAA</li>
-				<li>ABCya Games</li>
-				<li>Draw It To Know It (Medical + Biological Sciences)</li>
-				<li>Google, Made With Code</li>
-				<li>Jo Malone London</li>
-				<li>Los Alamos National Laboratory</li>
-				<li>Portland Timbers, RCTID</li>
-				<li>Scotties</li>
-				<li>Travel Portland</li>
-				<li>Upworthy</li>
-				<li>...you?</li>
+				{#each clients as client}
+					<li>{client}</li>
+				{/each}
+				<li class="accent about__accent"><a href="/contact">you</a>? 🌈</li>
 			</ul>
-		</section>
+		</article>
+	</section>
 
-		<section class="section">
-			<h2>Sketch.IO specializes in creating a diverse range of design tools:</h2>
-			<ul>
-				<li>
-					<strong>Annotations & Editing for Online News:</strong>
-					Innovative tools designed to enhance the digital news experience with user-friendly annotations and editing capabilities.
-				</li>
-				<li>
-					<strong>Colorful Educational Musical Apps:</strong>
-					Interactive and vibrant applications that fuse music with learning, making education both fun and engaging for all ages.
-				</li>
-				<li>
-					<strong>Kiosk Software for Science & Learning Centers:</strong>
-					Cutting-edge interactive kiosk software, bringing digital innovation to science and educational environments.
-				</li>
-				<li>
-					<strong>Non-Destructive Illustration & Painting Apps:</strong>
-					Sophisticated apps offering artists and designers the freedom to create with non-destructive editing tools.
-				</li>
-				<li>
-					<strong>Promotional Contests for Sports Teams & Companies:</strong>
-					Tailored contest platforms to boost engagement for sports teams and businesses, driving promotional success.
-				</li>
-				<li>
-					<strong>Realtime Collaborative Apps:</strong>
-					Dynamic applications enabling seamless collaboration in real-time, enhancing teamwork and productivity.
-				</li>
-				<li>
-					<strong>User-Based Product Customization for Printing:</strong>
-					Flexible design tools that allow users to personalize products, perfect for creating unique print-on-demand items.
-				</li>
-			</ul>
-		</section>
+	<section class="services about__services" aria-labelledby="services-title">
+		<p class="section-label about__section-label">What I Build ✦</p>
+		<h2 id="services-title" class="services-heading about__services-heading">Sketch.IO crafts tools for people who love making things.</h2>
+		<div class="services-grid about__services-grid">
+			{#each services as service}
+				<article class="service-item about__service-item">
+					<div class="icon about__icon" aria-hidden="true">{service.icon}</div>
+					<h3>{service.name}</h3>
+					<p>{service.description}</p>
+				</article>
+			{/each}
+		</div>
+	</section>
 
-		<footer class="closing"></footer>
-	</article>
+	<section class="cta about__cta" aria-labelledby="cta-title">
+		<div class="cta-box about__cta-box">
+			<h2 id="cta-title">Let's make something magical together <span aria-hidden="true">✨</span></h2>
+			<p>A creative tool, an interactive exhibit, or a wild idea you can't quite describe yet.</p>
+			<a href="/contact">Say Haai</a>
+		</div>
+	</section>
 </div>

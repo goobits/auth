@@ -7,4 +7,8 @@
 	<title>Category: {data.category} - MIKO.ART</title>
 </svelte:head>
 
-<Results {...data} type="category" />
+<div class="journal-results journal-results--category">
+	<div class="journal-results__content">
+		<Results {...data} type="category" />
+	</div>
+</div>

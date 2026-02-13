@@ -14,8 +14,8 @@
 	icon="/media/emoji-privacy.png"
 />
 
-<section class="legal-page">
-	<p class="legal-updated">Last updated: February 11, 2026</p>
+<section class="legal-page legal legal--privacy">
+	<p class="legal-updated legal__updated">Last updated: February 11, 2026</p>
 
 	<p>
 		This policy explains what personal data MIKO.ART collects, why it is collected, and what choices you have.
@@ -91,5 +91,5 @@
 		or through <a href="/contact">/contact</a>.
 	</p>
 
-	<p class="legal-notice">This page is informational and is not legal advice.</p>
+	<p class="legal-notice legal__notice">This page is informational and is not legal advice.</p>
 </section>

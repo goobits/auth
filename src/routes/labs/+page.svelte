@@ -3,16 +3,16 @@
 	import HeroBanner from '@components/HeroBanner.svelte'
 
 	const labs = [
-		{ href: '/labs/color-galaxy', title: 'Color Galaxy', vibe: 'Generative color playground' },
+		{ href: '/labs/color-galaxy/', title: 'Color Galaxy', vibe: 'Generative color playground' },
 		{ href: '/labs/js1k/BreathingGalaxies.html', title: 'JS1k - Breathing Galaxies', vibe: 'Tiny code, cosmic motion' },
 		{ href: '/labs/js1k/Daltonize.html', title: 'JS1k - Daltonize', vibe: 'Color accessibility experiment' },
 		{ href: '/labs/js1k/MicroSketchpad.html', title: 'JS1k - Micro Sketchpad', vibe: 'Pocket-sized drawing toy' },
 		{ href: '/labs/js1k/SpectrumDJ.html', title: 'JS1k - Spectrum DJ', vibe: 'Music + visuals mashup' },
-		{ href: '/labs/midi-js', title: 'MIDI.js', vibe: 'Browser MIDI tooling' },
-		{ href: '/labs/sketch-js', title: 'Sketch.js', vibe: 'Creative coding toolkit' },
-		{ href: '/labs/sketchpad-1.0', title: 'Sketchpad v1.0', vibe: 'Early product prototype' },
-		{ href: '/labs/thumbnailer', title: 'Thumbnailer', vibe: 'Image utility experiment' },
-		{ href: '/labs/zen-bg', title: 'Zen BG', vibe: 'Ambient background generator' }
+		{ href: '/labs/midi-js/', title: 'MIDI.js', vibe: 'Browser MIDI tooling' },
+		{ href: '/labs/sketch-js/', title: 'Sketch.js', vibe: 'Creative coding toolkit' },
+		{ href: '/labs/sketchpad-1.0/', title: 'Sketchpad v1.0', vibe: 'Early product prototype' },
+		{ href: '/labs/thumbnailer/', title: 'Thumbnailer', vibe: 'Image utility experiment' },
+		{ href: '/labs/zen-bg/', title: 'Zen BG', vibe: 'Ambient background generator' }
 	]
 
 	const pastelCardThemes = [
@@ -74,21 +74,21 @@
 	icon="/media/emoji-labs.png"
 />
 
-<div class="labs">
-	<div class="tools" aria-label="Labs filters">
-		<label class="ui-search-field" aria-label="Search labs">
+<div class="labs labs-page">
+	<div class="tools labs-page__tools" aria-label="Labs filters">
+		<label class="ui-search-field labs-page__search" aria-label="Search labs">
 			<Search size={15} strokeWidth={2.2} style="color: var(--muted); flex-shrink: 0;" />
 			<input class="ui-search-input" type="text" placeholder="Search experiments..." bind:value={searchQuery} />
 		</label>
 
-		<div class="control-row">
-			<div class="chips" role="tablist" aria-label="Scope filter">
+		<div class="control-row labs-page__controls">
+			<div class="chips labs-page__chips" role="tablist" aria-label="Scope filter">
 				<button type="button" class:active={selectedScope === 'all'} onclick={() => (selectedScope = 'all')}>All</button>
 				<button type="button" class:active={selectedScope === 'internal'} onclick={() => (selectedScope = 'internal')}>Internal</button>
 				<button type="button" class:active={selectedScope === 'external'} onclick={() => (selectedScope = 'external')}>External</button>
 			</div>
 
-			<label class="sort-select">
+			<label class="sort-select labs-page__sort">
 				<ArrowUpDown size={13} strokeWidth={2.2} />
 				<select bind:value={sortBy} aria-label="Sort labs">
 					<option value="title">Name</option>
@@ -99,20 +99,20 @@
 	</div>
 
 	{#if filteredLabs.length === 0}
-		<div class="ui-no-results">
+		<div class="ui-no-results labs-page__no-results">
 			<p>No experiments match your filters.</p>
 			<button onclick={() => { searchQuery = ''; selectedScope = 'all'; sortBy = 'title' }}>Clear Filters</button>
 		</div>
 	{:else}
-		<p class="ui-results-count">{filteredLabs.length} experiments</p>
+		<p class="ui-results-count labs-page__results">{filteredLabs.length} experiments</p>
 
-		<ul class="grid">
+		<ul class="grid labs-page__grid">
 			{#each filteredLabs as lab, i}
 				<li>
-					<a href={lab.href} class="lab-card" style={`--card-bg:${getCardTheme(i).bg};--card-border:${getCardTheme(i).border};--card-ink:${getCardTheme(i).ink};--card-muted:${getCardTheme(i).muted};`}>
-						<div class="lab-visual" aria-hidden="true"></div>
-						<p class="card-top">
-							<span class="kind">
+					<a href={lab.href} class="lab-card labs-page__card" style={`--card-bg:${getCardTheme(i).bg};--card-border:${getCardTheme(i).border};--card-ink:${getCardTheme(i).ink};--card-muted:${getCardTheme(i).muted};`}>
+						<div class="lab-visual labs-page__visual" aria-hidden="true"></div>
+						<p class="card-top labs-page__card-top">
+							<span class="kind labs-page__kind">
 								<FlaskConical size={13} strokeWidth={2.2} />
 								{isExternalLab(lab.href) ? 'Demo' : 'Lab'}
 							</span>
@@ -121,9 +121,9 @@
 							{/if}
 						</p>
 						<h2><span>{lab.title}</span></h2>
-						<p class="vibe">{lab.vibe}</p>
-						<p class="path">{lab.href}</p>
-						<p class="open">
+						<p class="vibe labs-page__vibe">{lab.vibe}</p>
+						<p class="path labs-page__path">{lab.href}</p>
+						<p class="open labs-page__open">
 							<span>Open experiment</span>
 							<Sparkles size={13} strokeWidth={2.2} />
 						</p>

@@ -137,16 +137,16 @@
 	icon="/media/emoji-sitemap.png"
 />
 
-<div class="sitemap">
-	<header class="sitemap-header">
+<div class="sitemap sitemap-page">
+	<header class="sitemap-header sitemap-page__header">
 		{#if data.showDevDiagnostics}
-			<span class="dev-badge">DEV MODE</span>
+			<span class="dev-badge sitemap-page__dev-badge">DEV MODE</span>
 		{/if}
 	</header>
 
-	<div class="controls">
-		<div class="search">
-			<div class="ui-search-field">
+	<div class="controls sitemap-page__controls">
+		<div class="search sitemap-page__search">
+			<div class="ui-search-field sitemap-page__search-field">
 				<Search class="ui-search-icon" size={15} strokeWidth={2.2} />
 				<input
 					class="ui-search-input"
@@ -157,15 +157,15 @@
 			</div>
 		</div>
 
-		<div class="filters">
-			<div class="tag-filters">
-				<span class="filter-label">
+		<div class="filters sitemap-page__filters">
+			<div class="tag-filters sitemap-page__tag-filters">
+				<span class="filter-label sitemap-page__filter-label">
 					<Filter size={13} strokeWidth={2.2} />
 					<span>Filters</span>
 				</span>
 				{#each availableTags as tag}
 					<button
-						class="tag-filter"
+						class="tag-filter sitemap-page__tag-filter"
 						class:active={selectedTags.includes(tag)}
 						onclick={() => toggleTag(tag)}
 					>
@@ -174,8 +174,8 @@
 				{/each}
 			</div>
 
-			<div class="sort-view">
-				<div class="sort-toggle" role="tablist" aria-label="Sort routes">
+			<div class="sort-view sitemap-page__sort-view">
+				<div class="sort-toggle sitemap-page__sort-toggle" role="tablist" aria-label="Sort routes">
 					<button
 						type="button"
 						role="tab"
@@ -212,59 +212,64 @@
 	</div>
 
 	{#if filteredCount === 0}
-		<div class="ui-no-results">
+		<div class="ui-no-results sitemap-page__no-results">
 			<p>No routes match your filters.</p>
 			<button onclick={() => { searchQuery = ''; selectedTags = [] }}>Clear Filters</button>
 		</div>
 	{:else}
-		<div class="ui-results-count results-count">
+		<div class="ui-results-count results-count sitemap-page__results-count">
 			Showing {filteredCount} of {data.stats.total} routes
 		</div>
 
 		{#each categoryOrder as category}
-			{#if filteredGrouped[category]}
-				<section class="category">
-					<button
-						class="category-header"
-						onclick={() => toggleCategory(category)}
-					>
-						<h2>
-							<svelte:component this={categoryIcons[category] || FileText} class="category-icon" size={14} strokeWidth={2.2} />
+		{#if filteredGrouped[category]}
+			{@const CategoryIcon = categoryIcons[category] || FileText}
+			<section class="category sitemap-page__category">
+				<button
+					class="category-header sitemap-page__category-header"
+					onclick={() => toggleCategory(category)}
+				>
+					<h2>
+						<CategoryIcon class="category-icon sitemap-page__category-icon" size={14} strokeWidth={2.2} />
 							{#if collapsedCategories[category]}
-								<ChevronRight class="toggle-icon" size={14} strokeWidth={2.25} />
+								<ChevronRight class="toggle-icon sitemap-page__toggle-icon" size={14} strokeWidth={2.25} />
 							{:else}
-								<ChevronDown class="toggle-icon" size={14} strokeWidth={2.25} />
+								<ChevronDown class="toggle-icon sitemap-page__toggle-icon" size={14} strokeWidth={2.25} />
 							{/if}
 							{category}
-							<span class="count">({filteredGrouped[category].length})</span>
+							<span class="count sitemap-page__count">({filteredGrouped[category].length})</span>
 						</h2>
 					</button>
 
 					{#if !collapsedCategories[category]}
 						<ul>
 							{#each filteredGrouped[category] as route}
-								<li class="route">
-									<div class="route-main">
+								<li class="route sitemap-page__route">
+									<div class="route-main sitemap-page__route-main">
 										{#if route.type === 'api'}
-											<span class="route-path">{route.path}</span>
+											<span class="route-path sitemap-page__route-path">{route.path}</span>
 											{#if route.httpMethods?.length > 0}
-												<span class="methods">
+												<span class="methods sitemap-page__methods">
 													{#each route.httpMethods as method}
-														<span class="method {method.toLowerCase()}">{method}</span>
+														<span class="method sitemap-page__method {method.toLowerCase()}">{method}</span>
 													{/each}
 												</span>
 											{/if}
 										{:else}
-											<a href={route.path} class="route-link">{route.path}</a>
+											{#if route.isDynamic}
+												<span class="route-path sitemap-page__route-path">{route.path}</span>
+											{:else}
+												<a href={route.path} class="route-link sitemap-page__route-link">{route.path}</a>
+											{/if}
 										{/if}
 									</div>
-									<div class="route-meta">
-										<div class="tags">
+									<div class="route-meta sitemap-page__route-meta">
+										<div class="tags sitemap-page__tags">
 											{#each getRouteTags(route) as tag}
-												<span class="tag {tag.toLowerCase()}">{tag}</span>
+												<span class="tag sitemap-page__tag {tag.toLowerCase()}">{tag}</span>
 											{/each}
 										</div>
-										<span class="modified">{formatDate(route.lastModified)}</span>
+										<span class="modified sitemap-page__modified">{formatDate(route.lastModified)}</span>
 									</div>
 								</li>
 							{/each}

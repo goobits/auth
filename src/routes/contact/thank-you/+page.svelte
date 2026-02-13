@@ -2,7 +2,7 @@
     <title>Thank You - MIKO.ART</title>
 </svelte:head>
 
-<div class="hero">
+<div class="hero thank-you thank-you__hero">
     <style>
 		body {
 			background: var(--accent-bg);
@@ -24,9 +24,9 @@
 		}
     </style>
     <h1>
-        <img src="/media/contact-thank-you.svg" alt=""/>
+        <img class="thank-you__image" src="/media/contact-thank-you.svg" alt=""/>
     </h1>
-    <h2>
+    <h2 class="thank-you__message">
         Thank you for your message!<br>
         I'll get back to you as soon as possible :)
     </h2>

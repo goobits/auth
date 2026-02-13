@@ -256,24 +256,24 @@
 </svelte:head>
 
 {#if !authed}
-	<div class="admin-login">
-		<div class="login-card">
-			<div class="login-title">Admin access</div>
-			<div class="login-sub">Enter the admin passcode to continue.</div>
+	<div class="admin-login admin-page__login">
+		<div class="login-card admin-page__login-card">
+			<div class="login-title admin-page__login-title">Admin access</div>
+			<div class="login-sub admin-page__login-sub">Enter the admin passcode to continue.</div>
 			<form method="POST" action="?/login" use:enhance>
 				<input type="hidden" name="email" value="admin@miko.art" />
-				<div class="login-field">
+				<div class="login-field admin-page__login-field">
 					<input type="password" name="password" placeholder="Passcode" />
 				</div>
 				{#if form?.error}
-					<div class="login-error">{form.error}</div>
+					<div class="login-error admin-page__login-error">{form.error}</div>
 				{/if}
-				<button class="btn-sec" type="submit">Unlock</button>
+				<button class="btn-sec admin-page__unlock" type="submit">Unlock</button>
 			</form>
 		</div>
 	</div>
 {:else}
-<div class="admin-shell">
+	<div class="admin-shell admin-page">
 		<!-- Sidebar -->
 		<aside class="sidebar">
 			<div class="side-title">Manage</div>

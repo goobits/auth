@@ -34,14 +34,14 @@
     <title>Contact - MIKO.ART</title>
 </svelte:head>
 
-<div class="hero">
+<div class="hero contact-page contact-page__hero">
     <h1>Contact Miko <img src="/media/emoji-herb.png" height="56" width="56" style="vertical-align: top" alt=""></h1>
     <h2>Got a question? Drop me a line.</h2>
 </div>
 
-<contact-form>
-    <img src="/media/super-racoon.svg" style="float: right; width: 31%" alt="">
-    <form style="float: left; width: 60%" action="javascript:">
+<contact-form class="contact-page__form-shell">
+    <img class="contact-page__image" src="/media/super-racoon.svg" style="float: right; width: 31%" alt="">
+    <form class="contact-page__form" style="float: left; width: 60%" action="javascript:">
         <form-title>Your Name <span>*</span></form-title>
         <input type="text" name="name" bind:value={$yourName.value}><br>
 
@@ -51,7 +51,7 @@
         <form-title>Your Message <span>*</span></form-title>
         <textarea name="message" bind:value={$yourMessage.value}></textarea>
 
-        <contact-form-errors>
+        <contact-form-errors class="contact-page__errors">
             {#if $myForm.hasError('yourName.required')}
                 <li>Name is required</li>
             {/if}
@@ -67,9 +67,9 @@
             {/if}
         </contact-form-errors>
 
-        <button on:click={submitForm}>Send</button>
+        <button class="contact-page__submit" on:click={submitForm}>Send</button>
 
-		<p class="legal-note">
+		<p class="legal-note contact-page__legal-note">
 			By sending this form, you agree to our
 			<a href="/privacy">Privacy Policy</a>,
 			<a href="/terms">Terms of Use</a>, and

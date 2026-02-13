@@ -13,19 +13,19 @@
     <title>{data.post.metadata.fm.title} - MIKO.ART</title>
 </svelte:head>
 
-<div class="journal-post">
-	<nav>
-		<a href="/journal" class="back-btn">← Back to Journal</a>
+<div class="journal-post journal-entry">
+	<nav class="journal-entry__nav">
+		<a href="/journal" class="back-btn journal-entry__back-btn">← Back to Journal</a>
 	</nav>
 
-	<article>
-		<header class="header">
-			<p class="kicker">
+	<article class="journal-entry__article">
+		<header class="header journal-entry__header">
+			<p class="kicker journal-entry__kicker">
 				<BookOpen size={14} strokeWidth={2.2} />
 				<span>Journal Entry</span>
 			</p>
 			<h1>{data.post.metadata.fm.title}</h1>
-			<div class="metadata">
+			<div class="metadata journal-entry__metadata">
 				<time datetime={data.post.date.toISOString()}>
 					<Clock3 size={13} strokeWidth={2.2} />
 					<span>{new Date(data.post.date).toLocaleDateString('en-US', {
@@ -34,7 +34,7 @@
 						year: 'numeric'
 					})}</span>
 				</time>
-				<div class="chips">
+				<div class="chips journal-entry__chips">
 					{#if data.post.metadata.fm.categories}
 						<MetadataValues values={data.post.metadata.fm.categories} type="category" />
 					{/if}
@@ -49,11 +49,11 @@
 			<img
 				src={coverImage}
 				alt={data.post.metadata.fm.title}
-				class="cover-image"
+				class="cover-image journal-entry__cover-image"
 			/>
 		{/if}
 
-		<div class="content">
+		<div class="content journal-entry__content">
 			{@html data.post.content}
 		</div>
 	</article>

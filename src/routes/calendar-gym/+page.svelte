@@ -4,4 +4,8 @@
 	import { CALENDAR_ACTIVITIES } from '$lib/booking/activities'
 </script>
 
-<ActivityBookingPage activity={CALENDAR_ACTIVITIES.gym} />
+<div class="calendar-activity-page calendar-activity-page--gym">
+	<div class="calendar-activity-page__content">
+		<ActivityBookingPage activity={CALENDAR_ACTIVITIES.gym} />
+	</div>
+</div>

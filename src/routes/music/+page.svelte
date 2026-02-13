@@ -30,16 +30,16 @@
 	subtitle="Songs, sketches, and sound experiments."
 />
 
-<div class="music-page showcase-page">
-	<section class="intro showcase-section showcase-intro">
+<div class="music-page showcase-page music">
+	<section class="intro showcase-section showcase-intro music__intro">
 		<p>
 			Melody has always been part of the build process. This page is the home for tracks, demos,
 			and music-related experiments from Miko.
 		</p>
 	</section>
 
-	<section class="platforms showcase-section">
-		<h2 class="showcase-title"><Headphones size={17} strokeWidth={2.2} /> Listen</h2>
+	<section class="platforms showcase-section music__platforms">
+		<h2 class="showcase-title music__title"><Headphones size={17} strokeWidth={2.2} /> Listen</h2>
 		<ul>
 			{#each platforms as item}
 				<li>
@@ -53,17 +53,17 @@
 		</ul>
 	</section>
 
-	<section class="entries showcase-section">
-		<h2 class="showcase-title"><Disc3 size={17} strokeWidth={2.2} /> Music Entries</h2>
+	<section class="entries showcase-section music__entries">
+		<h2 class="showcase-title music__title"><Disc3 size={17} strokeWidth={2.2} /> Music Entries</h2>
 		{#if data.musicPosts.length === 0}
-			<p class="empty">Music posts are coming soon.</p>
+			<p class="empty music__empty">Music posts are coming soon.</p>
 		{:else}
 			<ol>
 				{#each data.musicPosts as post}
 					<li>
 						<a href={`/${post.urlPath}`}>
-							<span class="title">{post.title}</span>
-							<span class="meta">
+							<span class="title music__entry-title">{post.title}</span>
+							<span class="meta music__entry-meta">
 								<CalendarDays size={13} strokeWidth={2.2} />
 								{formatDate(post.date)}
 							</span>
@@ -74,15 +74,16 @@
 		{/if}
 	</section>
 
-	<section class="closing showcase-section">
-		<h2 class="showcase-title"><Radio size={17} strokeWidth={2.2} /> Collaborations</h2>
+	<section class="closing showcase-section music__closing">
+		<h2 class="showcase-title music__title"><Radio size={17} strokeWidth={2.2} /> Collaborations</h2>
 		<p>If you want a custom soundtrack or music + product collaboration, reach out anytime.</p>
 		<a href="/contact" class="pill-link">Start a conversation</a>
 	</section>
 </div>
 
 <style>
-	.platforms ul {
+	.platforms ul,
+	.music__platforms ul {
 		list-style: none;
 		margin: 0;
 		padding: 0;
@@ -91,14 +92,16 @@
 		gap: 0.6rem;
 	}
 
-	.platforms li {
+	.platforms li,
+	.music__platforms li {
 		border: 1px solid var(--border);
 		border-radius: 8px;
 		padding: 0.65rem 0.75rem;
 		background: color-mix(in srgb, var(--card-bg) 72%, transparent);
 	}
 
-	.platforms a {
+	.platforms a,
+	.music__platforms a {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.25rem;
@@ -108,25 +111,29 @@
 		color: var(--text);
 	}
 
-	.platforms small {
+	.platforms small,
+	.music__platforms small {
 		display: block;
 		margin-top: 0.2rem;
 		color: var(--muted);
 		font-size: 0.76rem;
 	}
 
-	.entries ol {
+	.entries ol,
+	.music__entries ol {
 		list-style: none;
 		margin: 0;
 		padding: 0;
 		border-top: 1px solid var(--panel-border);
 	}
 
-	.entries li {
+	.entries li,
+	.music__entries li {
 		border-bottom: 1px solid var(--panel-border);
 	}
 
-	.entries a {
+	.entries a,
+	.music__entries a {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -136,12 +143,14 @@
 		color: var(--text);
 	}
 
-	.entries .title {
+	.entries .title,
+	.music__entry-title {
 		font-family: var(--font-serif);
 		font-size: 1rem;
 	}
 
-	.entries .meta {
+	.entries .meta,
+	.music__entry-meta {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.25rem;
@@ -151,12 +160,14 @@
 		white-space: nowrap;
 	}
 
-	.empty {
+	.empty,
+	.music__empty {
 		margin: 0;
 		color: var(--muted);
 	}
 
-	.closing p {
+	.closing p,
+	.music__closing p {
 		margin: 0 0 0.75rem;
 		color: var(--text);
 	}

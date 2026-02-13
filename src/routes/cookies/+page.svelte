@@ -14,8 +14,8 @@
 	icon="/media/emoji-cookies.png"
 />
 
-<section class="legal-page">
-	<p class="legal-updated">Last updated: February 11, 2026</p>
+<section class="legal-page legal legal--cookies">
+	<p class="legal-updated legal__updated">Last updated: February 11, 2026</p>
 
 	<p>
 		This page describes how MIKO.ART uses cookies and similar browser storage.

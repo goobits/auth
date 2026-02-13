@@ -47,22 +47,22 @@
 	icon="/media/emoji-sparkling-heart.png"
 />
 
-<div class="art-page showcase-page">
-	<section class="intro showcase-section showcase-intro">
+<div class="art-page showcase-page art">
+	<section class="intro showcase-section showcase-intro art__intro">
 		<p>
 			I explore art through code, drawing, interaction, and motion. These pieces sit at the
 			intersection of playful tools and visual storytelling.
 		</p>
 	</section>
 
-	<section class="works showcase-section">
-		<h2 class="showcase-title"><Palette size={17} strokeWidth={2.2} /> Selected Works</h2>
+	<section class="works showcase-section art__works">
+		<h2 class="showcase-title art__title"><Palette size={17} strokeWidth={2.2} /> Selected Works</h2>
 		<ul>
 			{#each works as work}
 				<li>
-					<article>
+					<article class="art__work-card">
 						<img src={work.image} alt={work.title} loading="lazy" />
-						<div class="meta">
+						<div class="meta art__meta">
 							<h3>{work.title}</h3>
 							<p>{work.note}</p>
 						</div>
@@ -72,10 +72,10 @@
 		</ul>
 	</section>
 
-	<section class="closing showcase-section">
-		<h2 class="showcase-title"><Sparkles size={17} strokeWidth={2.2} /> Commissions & Exhibits</h2>
+	<section class="closing showcase-section art__closing">
+		<h2 class="showcase-title art__title"><Sparkles size={17} strokeWidth={2.2} /> Commissions & Exhibits</h2>
 		<p>Interested in custom visual work, an installation, or an exhibition collaboration?</p>
-		<a href="/contact" class="pill-link">
+		<a href="/contact" class="pill-link art__pill-link">
 			Start a conversation
 			<ArrowUpRight size={14} strokeWidth={2.2} />
 		</a>
@@ -83,7 +83,8 @@
 </div>
 
 <style>
-	.works ul {
+	.works ul,
+	.art__works ul {
 		list-style: none;
 		margin: 0;
 		padding: 0;
@@ -92,7 +93,8 @@
 		gap: 0.75rem;
 	}
 
-	.works article {
+	.works article,
+	.art__work-card {
 		height: 100%;
 		border: 1px solid var(--border);
 		border-radius: 8px;
@@ -102,31 +104,36 @@
 		grid-template-rows: 150px auto;
 	}
 
-	.works img {
+	.works img,
+	.art__work-card img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
 		display: block;
 	}
 
-	.meta {
+	.meta,
+	.art__meta {
 		padding: 0.65rem 0.75rem 0.75rem;
 	}
 
-	.meta h3 {
+	.meta h3,
+	.art__meta h3 {
 		margin: 0 0 0.25rem;
 		font-family: var(--font-display);
 		font-size: 1rem;
 	}
 
-	.meta p {
+	.meta p,
+	.art__meta p {
 		margin: 0;
 		color: var(--muted);
 		font-size: 0.86rem;
 		line-height: 1.45;
 	}
 
-	.closing p {
+	.closing p,
+	.art__closing p {
 		margin: 0 0 0.75rem;
 	}
 </style>

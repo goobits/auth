@@ -86,14 +86,14 @@
 	icon="/media/emoji-journal.png"
 />
 
-<div class="journal">
-	<div class="journal-tools" aria-label="Journal filters">
-		<label class="ui-search-field" aria-label="Search posts">
+<div class="journal journal-page">
+	<div class="journal-tools journal-page__tools" aria-label="Journal filters">
+		<label class="ui-search-field journal-page__search" aria-label="Search posts">
 			<Search size={15} strokeWidth={2.2} style="color: var(--muted); flex-shrink: 0;" />
 			<input class="ui-search-input" type="text" placeholder="Search posts..." bind:value={searchQuery} />
 		</label>
 
-		<div class="selects">
+		<div class="selects journal-page__selects">
 			<label>
 				<span>Category</span>
 				<select bind:value={selectedCategory}>
@@ -115,33 +115,33 @@
 	</div>
 
 	{#if filteredPosts.length === 0}
-		<div class="ui-no-results">
+		<div class="ui-no-results journal-page__no-results">
 			<p>No posts match your filters.</p>
 			<button onclick={() => { searchQuery = ''; selectedCategory = 'all'; sortBy = 'newest' }}>Clear Filters</button>
 		</div>
 	{:else}
-		<p class="ui-results-count results-count">{filteredPosts.length} entries</p>
+		<p class="ui-results-count results-count journal-page__results">{filteredPosts.length} entries</p>
 
 		{#each yearOrder as year}
-			<section class="year-group">
+			<section class="year-group journal-page__year-group">
 				<h2>{year}</h2>
 				<ol>
 					{#each groupedByYear[year] as post}
 						<li>
-							<article class="entry">
-								<div class="entry-date">
+							<article class="entry journal-page__entry">
+								<div class="entry-date journal-page__entry-date">
 									<CalendarDays size={14} strokeWidth={2.2} />
 									<span>{formatDate(post.date, 'monthDay')}</span>
 								</div>
 
-								<h3 class="entry-title">
+								<h3 class="entry-title journal-page__entry-title">
 									<a href={`/${post.urlPath}`}>{post.metadata.fm.title}</a>
 								</h3>
 
-								<div class="entry-right">
+								<div class="entry-right journal-page__entry-right">
 									{#if firstCategory(post)}
 										<a
-											class="tag"
+											class="tag journal-page__tag"
 											href={`/journal/category/${firstCategory(post).toLowerCase().replace(/\s+/g, '-')}`}
 										>
 											<Tag size={13} strokeWidth={2.2} />
@@ -149,7 +149,7 @@
 										</a>
 									{/if}
 
-									<a href={`/${post.urlPath}`} class="read-link">
+									<a href={`/${post.urlPath}`} class="read-link journal-page__read-link">
 										<span>Read</span>
 										<ArrowUpRight size={14} strokeWidth={2.2} />
 									</a>

@@ -8,4 +8,8 @@
 	<title>Tag: {data.category} - MIKO.ART</title>
 </svelte:head>
 
-<Results {...data} type="tag"/>
+<div class="journal-results journal-results--tag">
+	<div class="journal-results__content">
+		<Results {...data} type="tag"/>
+	</div>
+</div>
