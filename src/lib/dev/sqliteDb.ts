@@ -15,7 +15,8 @@ function ensureDbDir() {
 function runMigrations(db: Database.Database) {
 	db.exec(`CREATE TABLE IF NOT EXISTS migrations (name TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)`)
 	const applied = new Set(
-		db.prepare(`SELECT name FROM migrations`).all().map((row: Record<string, unknown>) => row.name as string)
+		(db.prepare(`SELECT name FROM migrations`).all() as Array<Record<string, unknown>>)
+			.map((row) => String(row['name']))
 	)
 
 	const files = fs.readdirSync(MIGRATIONS_DIR)
@@ -42,13 +43,13 @@ function wrapStatement(stmt: Database.Statement) {
 			bound = args
 			return this
 		},
-		first() {
+		async first() {
 			return stmt.get(...bound) ?? null
 		},
-		all() {
+		async all() {
 			return { results: stmt.all(...bound) }
 		},
-		run() {
+		async run() {
 			const info = stmt.run(...bound)
 			return { meta: { last_row_id: info.lastInsertRowid, changes: info.changes } }
 		}

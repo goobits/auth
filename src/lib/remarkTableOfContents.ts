@@ -1,24 +1,36 @@
+type MdText = { type: 'text'; value: string }
+type MdHeading = {
+	type: 'heading'
+	depth: number
+	children: Array<MdText | { type: string; [key: string]: unknown }>
+	data?: { hProperties?: { id?: string } }
+}
+type MdNode = MdHeading | { type: string; [key: string]: unknown }
+type MdRoot = { children: MdNode[] }
+
 /**
  * Creates a remark plugin that generates a table of contents (TOC) from markdown headings
  * @returns {import('unified').Plugin}
  */
 export function remarkTableOfContents() {
-	return (tree: any) => {
+	return (tree: MdRoot) => {
 		const headings: Array<{ depth: number; text: string; id: string }> = []
 		let tocIndex = -1
 		let tocDepth = 2 // Default depth if not specified
 		let tocLevel = 2 // Level of the TOC heading itself
 
 		// First pass: find TOC marker
-		tree.children.forEach((node: any, index: number) => {
+		tree.children.forEach((node: MdNode, index: number) => {
 			if (node.type === 'heading') {
-				const headingText = node.children[0]?.value || ''
+				const headingNode = node as MdHeading
+				const first = headingNode.children[0]
+				const headingText = first && first.type === 'text' ? (first as MdText).value : ''
 
 				// Check for new TOC format (## TOC:2)
 				const tocMatch = headingText.match(/^TOC(?::(\d+))?$/)
 				if (tocMatch) {
 					tocIndex = index
-					tocLevel = node.depth
+					tocLevel = headingNode.depth
 
 					// If a depth is specified (e.g., TOC:3), use it
 					// If just TOC with no number, use default depth
@@ -36,12 +48,12 @@ export function remarkTableOfContents() {
 				// Only collect headings that come after TOC marker
 				if (tocIndex !== -1 && index > tocIndex) {
 					const id = toId(headingText)
-					node.data = {
+					headingNode.data = {
 						hProperties: { id }
 					}
 
 					headings.push({
-						depth: node.depth,
+						depth: headingNode.depth,
 						text: headingText,
 						id
 					})

@@ -1,5 +1,6 @@
 import { getCalendarAuth, setCalendarLoginContext } from '$lib/auth/calendar.ts'
 import { redirect } from '@sveltejs/kit'
+import type { RequestHandler } from './$types'
 
 const AUTH_RESERVED = new Set(['auth', 'signin', 'signout', 'callback', 'logout', 'magic-link', 'passkey', 'sessions'])
 
@@ -31,17 +32,18 @@ function resolveRequestedProvider(pathname: string) {
 	return null
 }
 
-export async function GET(event: any) {
+export const GET: RequestHandler = async (event) => {
 	const { auth, secureCookies } = await getCalendarAuth({ event })
 
 	// Set invite/redirect cookies on signin routes (e.g. /auth/google)
 	const invite = event.url.searchParams.get('invite') || null
 	const redirectTo = event.url.searchParams.get('redirect') || null
 	if (invite || redirectTo) {
+		const context: { invite?: string; redirectTo?: string; secure: boolean } = { secure: secureCookies }
+		if (invite) context.invite = invite
+		if (redirectTo) context.redirectTo = redirectTo
 		setCalendarLoginContext(event.cookies, {
-			invite,
-			redirectTo,
-			secure: secureCookies
+			...context
 		})
 	}
 
@@ -66,7 +68,7 @@ export async function GET(event: any) {
 	return auth.handlers.GET(event)
 }
 
-export async function POST(event: any) {
+export const POST: RequestHandler = async (event) => {
 	const { auth } = await getCalendarAuth({ event })
 	return auth.handlers.POST(event)
 }

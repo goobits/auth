@@ -1,28 +1,32 @@
 import { error } from '@sveltejs/kit'
-import { getJournalPosts } from '$lib/posts'
+import { getJournalPosts, type JournalPost } from '$lib/posts'
+import type { EntryGenerator, PageServerLoad } from './$types'
 
 export const prerender = true
 export const trailingSlash = 'always'
 
-export async function entries() {
+export const entries: EntryGenerator = async () => {
 	const posts = await getJournalPosts()
 	const categories = new Set<string>()
-	for (const post of posts as any[]) {
-		const fm = (post as any).metadata?.fm || {}
-		for (const cat of (fm.categories || [])) {
+	for (const post of posts) {
+		const fm = post.metadata?.fm
+		const categoryList = Array.isArray(fm?.categories) ? fm.categories : []
+		for (const cat of categoryList) {
 			categories.add(cat)
 		}
 	}
 	return [...categories].map(slug => ({ slug }))
 }
 
-export async function load({ params }: { params: any }) {
+export const load: PageServerLoad = async ({ params }) => {
 	const { slug } = params
 	if (!slug) throw error(404)
 
 	const allPosts = await getJournalPosts()
-	const posts = (allPosts as any[]).filter(post =>
-		(post as any).metadata?.fm?.categories?.includes(slug)
+	const posts = allPosts.filter((post: JournalPost) => {
+		const categoryList = post.metadata?.fm?.categories
+		return Array.isArray(categoryList) && categoryList.includes(slug)
+	}
 	)
 
 	if (!posts.length) throw error(404)

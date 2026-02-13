@@ -138,9 +138,11 @@ function getRouteName(routePath: string) {
 
 	const parts = routePath.split('/').filter(Boolean)
 	const lastPart = parts[parts.length - 1]
+	if (!lastPart) return routePath
 	if (lastPart.startsWith('[') && lastPart.endsWith(']')) {
 		const paramName = lastPart.slice(1, -1)
-		return `${parts[parts.length - 2] || ''} (${paramName})`.trim()
+		const parent = parts[parts.length - 2] || ''
+		return `${parent} (${paramName})`.trim()
 	}
 
 	return lastPart
@@ -200,12 +202,19 @@ export async function getRouteInventory(options: RouteInventoryOptions = {}): Pr
 
 	const grouped: Record<string, RouteEntry[]> = {}
 	for (const route of allRoutes) {
-		if (!grouped[route.category]) grouped[route.category] = []
-		grouped[route.category].push(route)
+		const existing = grouped[route.category]
+		if (existing) {
+			existing.push(route)
+		} else {
+			grouped[route.category] = [route]
+		}
 	}
 
 	for (const category of Object.keys(grouped)) {
-		grouped[category].sort((a, b) => a.path.localeCompare(b.path))
+		const routesForCategory = grouped[category]
+		if (routesForCategory) {
+			routesForCategory.sort((a, b) => a.path.localeCompare(b.path))
+		}
 	}
 
 	return {

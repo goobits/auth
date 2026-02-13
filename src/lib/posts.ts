@@ -7,6 +7,13 @@ const POSTS_PATH = join(process.cwd(), 'static/journal')
 
 type Frontmatter = Record<string, unknown> & {
 	date?: string | Date
+	fm?: {
+		title?: string
+		categories?: string[]
+		tags?: string[]
+		coverImage?: string
+		[key: string]: unknown
+	}
 }
 
 type MdsvexCompileResult = {
@@ -99,8 +106,10 @@ export async function getPost({
 	try {
 		const posts = readdirSync(monthPath).filter(dir => dir.endsWith(slug))
 		if (posts.length === 0) return null
+		const postDir = posts[0]
+		if (!postDir) return null
 
-		const mdContent = readFileSync(join(monthPath, posts[0], 'index.md'), 'utf-8')
+		const mdContent = readFileSync(join(monthPath, postDir, 'index.md'), 'utf-8')
 		const compiled = (await compile(mdContent, {
 			remarkPlugins: [ remarkTableOfContents ]
 		})) as MdsvexCompileResult
@@ -108,7 +117,7 @@ export async function getPost({
 		const strippedContent = stripScriptTags(upgradeInsecureMediaUrls(renderedContent))
 
 		// Extract date same as above
-		const dateMatch = posts[0].match(/^(\d{4})-(\d{2})-(\d{2})/)
+		const dateMatch = postDir.match(/^(\d{4})-(\d{2})-(\d{2})/)
 		const fallbackDate = () =>
 			dateMatch ? new Date(`${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`) : new Date(`${year}-${month}-01`)
 		const postDate = resolvePostDate(compiled?.data?.date, fallbackDate)
@@ -117,6 +126,7 @@ export async function getPost({
 			year,
 			month,
 			slug,
+			urlPath: `journal/${year}/${month}/${slug}`,
 			content: strippedContent,
 			metadata: compiled?.data ?? {},
 			date: postDate

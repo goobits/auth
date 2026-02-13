@@ -18,6 +18,19 @@ import type { Handle } from '@sveltejs/kit'
  */
 async function handleRedirects({ event, resolve }: Parameters<Handle>[0]) {
 	const pathname = event.url.pathname.toLowerCase()
+
+	// Legacy labs are static folders with index.html files.
+	// Serve /labs/<slug> and /labs/<slug>/ directly without browser redirect.
+	const labParts = pathname.split('/').filter(Boolean)
+	const labSlug = labParts[1]
+	if (labParts.length === 2 && labParts[0] === 'labs' && labSlug && !labSlug.endsWith('.html')) {
+		const rewritten = new URL(event.url)
+		rewritten.pathname = `/labs/${labSlug}/index.html`
+		return event.fetch(rewritten.toString(), {
+			method: event.request.method
+		})
+	}
+
 	const matchingRedirect = redirects.find(redirect => {
 		if (redirect.from.includes('(.*)')) {
 			const pattern = new RegExp(redirect.from)

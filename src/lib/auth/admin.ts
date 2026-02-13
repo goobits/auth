@@ -2,8 +2,17 @@ import { dev } from '$app/environment'
 import { GoobitsAuth } from '@goobits/auth'
 import { createAdminAdapters, ensureAdminUser } from '@packages/calendar/src/admin/auth.ts'
 import { getDevDb, type D1DatabaseLike } from '$lib/dev/devDb.ts'
+import type { User } from '@goobits/auth/types'
 
-type PlatformLike = { env?: { DB?: D1DatabaseLike } } | null | undefined
+type PlatformEnv = {
+	DB?: D1DatabaseLike
+	NODE_ENV?: string
+	ADMIN_SESSION_TTL_DAYS?: string
+	ADMIN_SESSION_TTL_SECONDS?: string
+	ADMIN_PASSCODE?: string
+	[key: string]: string | D1DatabaseLike | undefined
+}
+type PlatformLike = { env?: PlatformEnv } | null | undefined
 
 async function getDb(platform: PlatformLike) {
 	if (dev) {
@@ -15,15 +24,20 @@ async function getDb(platform: PlatformLike) {
 export async function getAdminAuth({ event }: { event: { platform?: PlatformLike } }) {
 	const db = await getDb(event.platform)
 	if (!db) throw new Error('Database unavailable')
-	const env = event.platform?.env || {}
-	const secureCookies = env.NODE_ENV !== 'development'
+	const env = {
+		...Object.fromEntries(
+			Object.entries(process.env).filter(([, value]) => typeof value === 'string')
+		),
+		...(event.platform?.env ?? {})
+	} as Record<string, string | undefined>
+	const secureCookies = env['NODE_ENV'] !== 'development'
 
 	let sessionLifetimeMs = 60 * 24 * 60 * 60 * 1000
-	if (env.ADMIN_SESSION_TTL_DAYS) {
-		const days = Number.parseInt(env.ADMIN_SESSION_TTL_DAYS, 10)
+	if (env['ADMIN_SESSION_TTL_DAYS']) {
+		const days = Number.parseInt(env['ADMIN_SESSION_TTL_DAYS'], 10)
 		if (Number.isFinite(days)) sessionLifetimeMs = days * 24 * 60 * 60 * 1000
-	} else if (env.ADMIN_SESSION_TTL_SECONDS) {
-		const seconds = Number.parseInt(env.ADMIN_SESSION_TTL_SECONDS, 10)
+	} else if (env['ADMIN_SESSION_TTL_SECONDS']) {
+		const seconds = Number.parseInt(env['ADMIN_SESSION_TTL_SECONDS'], 10)
 		if (Number.isFinite(seconds)) sessionLifetimeMs = seconds * 1000
 	}
 
@@ -49,10 +63,16 @@ export async function ensureAdminAccount({
 	userAdapter,
 	env
 }: {
-	userAdapter: { getUserByEmail: (email: string) => Promise<unknown> }
+	userAdapter: {
+		getUserByEmail: (email: string) => Promise<User | null>
+		createUser: (
+			profile: { email: string; name: string; verified_email: boolean },
+			metadata: { password: string }
+		) => Promise<User>
+	}
 	env: Record<string, string | undefined>
 }) {
-	const passcode = env.ADMIN_PASSCODE || ''
+	const passcode = env['ADMIN_PASSCODE'] || ''
 	if (!passcode) {
 		throw new Error('Admin passcode not configured')
 	}

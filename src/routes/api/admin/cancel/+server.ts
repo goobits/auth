@@ -14,7 +14,6 @@ export async function POST(event: RequestEvent) {
 		if (!auth.ok) {
 			return unauthorized()
 		}
-		const db = env.DB
 
 		const body = await event.request.json().catch(() => null)
 		if (!body) {

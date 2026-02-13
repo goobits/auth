@@ -49,8 +49,8 @@ export async function hash(password: string, options: Argon2HashOptions = {}) {
 	})
 
 	if (typeof encoded === 'string') return encoded
-	if (encoded && typeof encoded === 'object' && 'encoded' in encoded) {
-		return String(encoded.encoded)
+	if (encoded && typeof encoded === 'object' && 'encoded' in (encoded as Record<string, unknown>)) {
+		return String((encoded as { encoded: unknown }).encoded)
 	}
 
 	throw new Error('Failed to generate Argon2 hash.')

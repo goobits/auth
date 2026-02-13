@@ -9,7 +9,7 @@ function isTruthy(value: string | undefined) {
 }
 
 export async function load() {
-	const showDevDiagnostics = dev && isTruthy(process.env.PUBLIC_SHOW_DEV_SITEMAP)
+	const showDevDiagnostics = dev && isTruthy(process.env['PUBLIC_SHOW_DEV_SITEMAP'])
 	const inventory = await getRouteInventory({ includeDevOnlyCategories: true })
 
 	return {

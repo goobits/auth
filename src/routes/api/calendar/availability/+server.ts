@@ -1,7 +1,8 @@
 import { onRequest } from '../../../../../functions/api/calendar/availability.ts'
 import { buildEnv } from '../_bridge.ts'
+import type { RequestHandler } from './$types'
 
-export async function GET({ request, platform }: { request: Request; platform: any }) {
+export const GET: RequestHandler = async ({ request, platform }) => {
 	const env = await buildEnv(platform)
 	return onRequest({ env, request })
 }

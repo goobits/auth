@@ -14,7 +14,7 @@ export async function GET(event: RequestEvent) {
 		// Check if Google connection exists
 		const connection = await db.prepare(
 			`SELECT provider, expires_at FROM connections WHERE provider = 'google' LIMIT 1`
-		).first()
+		).first<{ provider: string; expires_at: number | null }>()
 
 		const connected = !!connection
 		const expiresAt = connection?.expires_at || null
@@ -29,13 +29,17 @@ export async function GET(event: RequestEvent) {
 		for (const row of (settingsRes?.results ?? []) as Array<{ key: string; value: string }>) {
 			settings[row.key] = row.value
 		}
+		const envValue = (key: string, fallback: string) => {
+			const raw = env[key]
+			return typeof raw === 'string' ? raw : fallback
+		}
 
 		const rules = {
-			hoursFrom: settings.hoursFrom || env.BOOKING_HOURS_FROM || '06:00',
-			hoursTo: settings.hoursTo || env.BOOKING_HOURS_TO || '22:00',
-			buffer: parseInt(settings.buffer || env.BOOKING_BUFFER_MINUTES || '15', 10),
-			notice: parseInt(settings.notice || env.BOOKING_MIN_NOTICE_HOURS || '24', 10),
-			capacity: parseInt(settings.capacity || env.BOOKING_CAPACITY || '4', 10)
+			hoursFrom: settings['hoursFrom'] || envValue('BOOKING_HOURS_FROM', '06:00'),
+			hoursTo: settings['hoursTo'] || envValue('BOOKING_HOURS_TO', '22:00'),
+			buffer: parseInt(settings['buffer'] || envValue('BOOKING_BUFFER_MINUTES', '15'), 10),
+			notice: parseInt(settings['notice'] || envValue('BOOKING_MIN_NOTICE_HOURS', '24'), 10),
+			capacity: parseInt(settings['capacity'] || envValue('BOOKING_CAPACITY', '4'), 10)
 		}
 
 		return json({

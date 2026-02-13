@@ -1,9 +1,11 @@
 import { GoobitsAuth } from '@goobits/auth'
 import { D1SessionAdapter, D1UserAdapter } from '@goobits/auth/adapters'
 import { GoogleProvider, AppleProvider } from '@goobits/auth/providers'
+import type { OAuthProfile, OAuthTokens, RequestEventLike, User } from '@goobits/auth/types'
 import { dev } from '$app/environment'
 import { hasUserRedeemedAnyInvite, validateInvite, consumeInvite } from '@packages/calendar/src/calendar/invites.ts'
 import { redirect } from '@sveltejs/kit'
+import type { Cookies } from '@sveltejs/kit'
 import { getDevDb, type D1DatabaseLike } from '$lib/dev/devDb.ts'
 
 const INVITE_COOKIE = 'calendar_invite'
@@ -11,7 +13,22 @@ const REDIRECT_COOKIE = 'calendar_redirect'
 const INVITE_TTL_SECONDS = 600
 const SAFE_REDIRECT_PREFIXES = ['/calendar', '/calendar-gym', '/admin']
 
-type PlatformLike = { env?: { DB?: D1DatabaseLike } } | null | undefined
+type PlatformEnv = {
+	DB?: D1DatabaseLike
+	NODE_ENV?: string
+	PUBLIC_BASE_URL?: string
+	BASE_URL?: string
+	GOOGLE_CLIENT_ID?: string
+	GOOGLE_CLIENT_SECRET?: string
+	GOOGLE_REDIRECT_URI?: string
+	APPLE_CLIENT_ID?: string
+	APPLE_TEAM_ID?: string
+	APPLE_KEY_ID?: string
+	APPLE_PRIVATE_KEY?: string
+	APPLE_REDIRECT_URI?: string
+	[key: string]: string | D1DatabaseLike | undefined
+}
+type PlatformLike = { env?: PlatformEnv } | null | undefined
 
 async function getDb(platform: PlatformLike) {
 	if (dev) {
@@ -21,7 +38,7 @@ async function getDb(platform: PlatformLike) {
 }
 
 function getBaseUrl({ env, url }: { env: Record<string, string | undefined>; url: URL }) {
-	return env.PUBLIC_BASE_URL || env.BASE_URL || url?.origin || ''
+	return env['PUBLIC_BASE_URL'] || env['BASE_URL'] || url?.origin || ''
 }
 
 function normalizeRedirect(redirectTo: unknown) {
@@ -39,9 +56,14 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 	const db = await getDb(event.platform)
 	if (!db) throw new Error('Database unavailable')
 
-	const env = event.platform?.env || process.env || {}
+	const env = {
+		...Object.fromEntries(
+			Object.entries(process.env).filter(([, value]) => typeof value === 'string')
+		),
+		...(event.platform?.env ?? {})
+	} as Record<string, string | undefined>
 	const baseUrl = getBaseUrl({ env, url: event.url })
-	const secureCookies = env.NODE_ENV !== 'development'
+	const secureCookies = env['NODE_ENV'] !== 'development'
 
 	const sessionAdapter = new D1SessionAdapter(db, {
 		sessionsTable: 'calendar_sessions',
@@ -77,26 +99,29 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 		}
 	})
 
-	const providers: Record<string, { provider: InstanceType<typeof GoogleProvider> | InstanceType<typeof AppleProvider>; scopes?: string[] }> = {}
-	if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
-		providers.google = {
+	const providers: {
+		google?: { provider: InstanceType<typeof GoogleProvider>; scopes: string[] }
+		apple?: { provider: InstanceType<typeof AppleProvider> }
+	} = {}
+	if (env['GOOGLE_CLIENT_ID'] && env['GOOGLE_CLIENT_SECRET']) {
+		providers['google'] = {
 			provider: new GoogleProvider({
-				clientId: env.GOOGLE_CLIENT_ID,
-				clientSecret: env.GOOGLE_CLIENT_SECRET,
-				callbackUrl: env.GOOGLE_REDIRECT_URI || `${baseUrl}/api/calendar/oauth-callback`
+				clientId: env['GOOGLE_CLIENT_ID'],
+				clientSecret: env['GOOGLE_CLIENT_SECRET'],
+				callbackUrl: env['GOOGLE_REDIRECT_URI'] || `${baseUrl}/api/calendar/oauth-callback`
 			}),
 			scopes: ['openid', 'profile', 'email']
 		}
 	}
 
-	if (env.APPLE_CLIENT_ID && env.APPLE_TEAM_ID && env.APPLE_KEY_ID && env.APPLE_PRIVATE_KEY) {
-		providers.apple = {
+	if (env['APPLE_CLIENT_ID'] && env['APPLE_TEAM_ID'] && env['APPLE_KEY_ID'] && env['APPLE_PRIVATE_KEY']) {
+		providers['apple'] = {
 			provider: new AppleProvider({
-				clientId: env.APPLE_CLIENT_ID,
-				teamId: env.APPLE_TEAM_ID,
-				keyId: env.APPLE_KEY_ID,
-				privateKey: env.APPLE_PRIVATE_KEY,
-				callbackUrl: env.APPLE_REDIRECT_URI || `${baseUrl}/api/calendar/oauth-callback`
+				clientId: env['APPLE_CLIENT_ID'],
+				teamId: env['APPLE_TEAM_ID'],
+				keyId: env['APPLE_KEY_ID'],
+				privateKey: env['APPLE_PRIVATE_KEY'],
+				callbackUrl: env['APPLE_REDIRECT_URI'] || `${baseUrl}/api/calendar/oauth-callback`
 			})
 		}
 	}
@@ -114,7 +139,7 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 		profile: 'secure',
 		sessions: {},
 		hooks: {
-			onLogin: async (evt: any, profile: any, _tokens: any, user: any) => {
+			onLogin: async (evt: RequestEventLike, profile: OAuthProfile, _tokens: OAuthTokens | null, user?: User | null) => {
 				const invite = evt.cookies.get(INVITE_COOKIE)
 				const redirectTo = evt.cookies.get(REDIRECT_COOKIE)
 
@@ -132,19 +157,25 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 							throw redirect(302, '/calendar/login?error=invite_required')
 						}
 
-						const result = await validateInvite({ db, code: invite, email: profile.email })
-						if (!result.valid) {
-							throw redirect(302, `/calendar/login?error=invite_${result.reason}`)
-						}
+							const result = await validateInvite({ db, code: invite, email: profile.email })
+							if (!result.valid) {
+								throw redirect(302, `/calendar/login?error=invite_${result.reason}`)
+							}
+							if (!result.invite || typeof result.invite.id !== 'number') {
+								throw redirect(302, '/calendar/login?error=invite_invalid')
+							}
 
-						await consumeInvite({ db, inviteId: result.invite.id, userId: user.id })
-					}
+							await consumeInvite({ db, inviteId: result.invite.id, userId: user.id })
+						}
 
 					await db.prepare(
 						`UPDATE calendar_users SET last_login_at = strftime('%s','now') WHERE id = ?`
 					).bind(user.id).run()
 				}
 
+				if (!user) {
+					throw redirect(302, '/calendar/login?error=signin_failed')
+				}
 				const session = await sessionAdapter.createSession(user.id)
 				sessionAdapter.setSessionCookie(evt.cookies, session)
 
@@ -167,7 +198,7 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 }
 
 export function setCalendarLoginContext(
-	cookies: { set: (name: string, value: string, opts: Record<string, unknown>) => void },
+	cookies: Pick<Cookies, 'set'>,
 	{ invite, redirectTo, secure }: { invite?: string; redirectTo?: string; secure: boolean }
 ) {
 	if (invite) {
@@ -191,7 +222,7 @@ export function setCalendarLoginContext(
 	}
 }
 
-export function getCalendarRedirect(cookies: { get: (name: string) => string | undefined; delete: (name: string, opts: Record<string, unknown>) => void }) {
+export function getCalendarRedirect(cookies: Pick<Cookies, 'get' | 'delete'>) {
 	const redirectTo = cookies.get(REDIRECT_COOKIE)
 	if (redirectTo) {
 		cookies.delete(REDIRECT_COOKIE, { path: '/' })

@@ -1,3 +1,3 @@
 export function load({ locals }: { locals: Record<string, unknown> }) {
-	return { preferences: locals.themePreferences }
+	return { preferences: locals['themePreferences'] }
 }

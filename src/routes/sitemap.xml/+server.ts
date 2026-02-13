@@ -5,7 +5,7 @@ import { escapeXml, formatSitemapLastMod, resolveSiteOrigin, toAbsoluteUrl } fro
 export const prerender = true
 
 function getBaseUrl(platformEnv: Record<string, string | undefined> | undefined) {
-	return platformEnv?.PUBLIC_BASE_URL || platformEnv?.BASE_URL || process.env.PUBLIC_BASE_URL || process.env.BASE_URL
+	return platformEnv?.['PUBLIC_BASE_URL'] || platformEnv?.['BASE_URL'] || process.env['PUBLIC_BASE_URL'] || process.env['BASE_URL']
 }
 
 function getPlatformEnv(platform: unknown): Record<string, string | undefined> | undefined {
@@ -14,7 +14,7 @@ function getPlatformEnv(platform: unknown): Record<string, string | undefined> |
 
 export const GET: RequestHandler = async ({ platform, url }) => {
 	const baseUrl = getBaseUrl(getPlatformEnv(platform))
-	const origin = resolveSiteOrigin({ baseUrl, requestUrl: url })
+	const origin = resolveSiteOrigin(baseUrl ? { baseUrl, requestUrl: url } : { requestUrl: url })
 	const routes = await getPublicSitemapRoutes()
 
 	const urlEntries = routes.map(route => {
