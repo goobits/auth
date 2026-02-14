@@ -21,11 +21,13 @@
     "allowJs": false,
     "checkJs": false,
     "noEmit": true,
-    "types": ["node"],
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "allowArbitraryExtensions": true
   },
   "include": [
+    ".svelte-kit/ambient.d.ts",
+    "src/**/*.d.ts",
     "src/**/*.ts",
     "src/**/*.svelte",
     "functions/**/*.ts",

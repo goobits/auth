@@ -2,6 +2,8 @@
 	import { page } from '$app/stores'
 	import { goto } from '$app/navigation'
 	import { CALENDAR_ACTIVITY_LIST } from '$lib/booking/activities'
+	import { logoutCalendarSession } from '$lib/client/api/calendarClient'
+	import { buildCalendarLoginRedirect, shouldRedirectCalendarGuest } from '$lib/client/routing/auth'
 	import './Calendar.scss'
 
 	const { data, children } = $props()
@@ -9,10 +11,8 @@
 	// Client-side auth check - redirect to login if no user (except on login page)
 	$effect(() => {
 		const pathname = $page.url.pathname
-		const isLoginPage = pathname === '/calendar/login' || pathname === '/calendar/login/'
-		if (!data.user && !isLoginPage) {
-			const redirectTo = encodeURIComponent(pathname)
-			goto(`/calendar/login?redirect=${redirectTo}`)
+		if (shouldRedirectCalendarGuest(data.user, pathname)) {
+			goto(buildCalendarLoginRedirect(pathname))
 		}
 	})
 
@@ -22,7 +22,7 @@
 	}
 
 	async function logout() {
-		await fetch('/auth/logout', { method: 'POST' })
+		await logoutCalendarSession()
 		goto('/calendar/login')
 	}
 </script>
@@ -107,7 +107,7 @@
 		font-size: 15px;
 		font-weight: 600;
 		letter-spacing: -0.01em;
-		background: var(--gradient-rainbow, linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #a78bfa));
+		background: var(--gradient-rainbow);
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
 		background-clip: text;

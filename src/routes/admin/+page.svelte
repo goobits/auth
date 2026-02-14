@@ -1,6 +1,9 @@
 <script>
 	import { enhance } from '$app/forms'
 	import { Clock, Calendar, Check, RefreshCw, Save, ChevronRight, Loader, Users, LogOut } from '@lucide/svelte'
+	import { cancelAdminBooking, getAdminBookings, getAdminStatus, saveAdminRules } from '$lib/client/api/adminClient'
+	import { createCalendarInvite, deleteCalendarInvite, getCalendarAdminInvites, getCalendarAdminUsers, startCalendarOAuth } from '$lib/client/api/calendarClient'
+	import { handleUnauthorizedSessionError } from '$lib/client/routing/auth'
 
 	let { data, form } = $props()
 
@@ -40,12 +43,7 @@
 
 	async function loadStatus() {
 		try {
-			const res = await fetch('/api/admin/status')
-			if (res.status === 401) {
-				window.location.reload()
-				return
-			}
-			const data = await res.json()
+			const data = await getAdminStatus()
 			if (data.ok) {
 				connected = data.google?.connected ?? false
 				connectionExpired = data.google?.expired ?? false
@@ -57,6 +55,7 @@
 				}
 			}
 		} catch (err) {
+			if (handleUnauthorizedSessionError(err)) return
 			console.error('Failed to load status:', err)
 		}
 	}
@@ -65,12 +64,7 @@
 		loading = true
 		error = ''
 		try {
-			const res = await fetch('/api/admin/bookings')
-			if (res.status === 401) {
-				window.location.reload()
-				return
-			}
-			const data = await res.json()
+			const data = await getAdminBookings()
 			if (data.ok) {
 				bookings = data.bookings || []
 				stats = data.stats || { upcoming: 0, seats: 0 }
@@ -78,6 +72,7 @@
 				error = data.error?.message || 'Failed to load bookings'
 			}
 		} catch (err) {
+			if (handleUnauthorizedSessionError(err)) return
 			error = err.message || 'Failed to load bookings'
 		} finally {
 			loading = false
@@ -87,22 +82,13 @@
 	async function save() {
 		saving = true
 		try {
-			const res = await fetch('/api/admin/rules', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					hoursFrom: hours.from,
-					hoursTo: hours.to,
-					buffer,
-					notice,
-					capacity
-				})
+			const data = await saveAdminRules({
+				hoursFrom: hours.from,
+				hoursTo: hours.to,
+				buffer,
+				notice,
+				capacity
 			})
-			if (res.status === 401) {
-				window.location.reload()
-				return
-			}
-			const data = await res.json()
 			if (data.ok) {
 				saved = true
 				setTimeout(() => saved = false, 2200)
@@ -110,6 +96,7 @@
 				error = data.error?.message || 'Failed to save rules'
 			}
 		} catch (err) {
+			if (handleUnauthorizedSessionError(err)) return
 			error = err.message || 'Failed to save rules'
 		} finally {
 			saving = false
@@ -120,16 +107,7 @@
 		if (!confirm('Are you sure you want to cancel this booking?')) return
 		canceling = true
 		try {
-			const res = await fetch('/api/admin/cancel', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ bookingId })
-			})
-			if (res.status === 401) {
-				window.location.reload()
-				return
-			}
-			const data = await res.json()
+			const data = await cancelAdminBooking(bookingId)
 			if (data.ok) {
 				viewBooking = null
 				await loadBookings()
@@ -137,6 +115,7 @@
 				error = data.error?.message || 'Failed to cancel booking'
 			}
 		} catch (err) {
+			if (handleUnauthorizedSessionError(err)) return
 			error = err.message || 'Failed to cancel booking'
 		} finally {
 			canceling = false
@@ -144,17 +123,17 @@
 	}
 
 	async function reconnect() {
-		const res = await fetch('/api/calendar/oauth-start')
-		if (res.status === 401) {
-			window.location.reload()
-			return
-		}
-		const data = await res.json()
-		if (data.authUrl) {
-			window.location.href = data.authUrl
-		} else {
-			console.error('Failed to start OAuth:', data.error)
-			error = data.error?.message || 'Failed to connect to Google'
+		try {
+			const data = await startCalendarOAuth()
+			if (data.authUrl) {
+				window.location.href = data.authUrl
+			} else {
+				console.error('Failed to start OAuth:', data.error)
+				error = data.error?.message || 'Failed to connect to Google'
+			}
+		} catch (err) {
+			if (handleUnauthorizedSessionError(err)) return
+			error = err.message || 'Failed to connect to Google'
 		}
 	}
 
@@ -162,12 +141,10 @@
 		calendarLoading = true
 		calendarError = ''
 		try {
-			const [invitesRes, usersRes] = await Promise.all([
-				fetch('/api/calendar/admin/invites'),
-				fetch('/api/calendar/admin/users')
+			const [invitesData, usersData] = await Promise.all([
+				getCalendarAdminInvites(),
+				getCalendarAdminUsers()
 			])
-			const invitesData = await invitesRes.json()
-			const usersData = await usersRes.json()
 
 			if (invitesData.ok) calendarInvites = invitesData.invites || []
 			else calendarError = invitesData.error?.message || 'Failed to load invites'
@@ -175,6 +152,7 @@
 			if (usersData.ok) calendarUsers = usersData.users || []
 			else calendarError = usersData.error?.message || 'Failed to load users'
 		} catch (err) {
+			if (handleUnauthorizedSessionError(err)) return
 			calendarError = err.message || 'Failed to load members data'
 		} finally {
 			calendarLoading = false
@@ -185,16 +163,11 @@
 		creatingInvite = true
 		calendarError = ''
 		try {
-			const res = await fetch('/api/calendar/admin/invites', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					email: inviteEmail || null,
-					uses: inviteUses,
-					expiresInDays: inviteExpires
-				})
+			const data = await createCalendarInvite({
+				email: inviteEmail || null,
+				uses: inviteUses,
+				expiresInDays: inviteExpires
 			})
-			const data = await res.json()
 			if (data.ok) {
 				inviteEmail = ''
 				inviteUses = 1
@@ -204,6 +177,7 @@
 				calendarError = data.error?.message || 'Failed to create invite'
 			}
 		} catch (err) {
+			if (handleUnauthorizedSessionError(err)) return
 			calendarError = err.message || 'Failed to create invite'
 		} finally {
 			creatingInvite = false
@@ -213,16 +187,14 @@
 	async function deleteInvite(id) {
 		if (!confirm('Delete this invite?')) return
 		try {
-			const res = await fetch(`/api/calendar/admin/invites?id=${id}`, {
-				method: 'DELETE'
-			})
-			const data = await res.json()
+			const data = await deleteCalendarInvite(id)
 			if (data.ok) {
 				await loadCalendarData()
 			} else {
 				calendarError = data.error?.message || 'Failed to delete invite'
 			}
 		} catch (err) {
+			if (handleUnauthorizedSessionError(err)) return
 			calendarError = err.message || 'Failed to delete invite'
 		}
 	}
@@ -256,31 +228,31 @@
 </svelte:head>
 
 {#if !authed}
-	<div class="admin-login admin-page__login">
-		<div class="login-card admin-page__login-card">
-			<div class="login-title admin-page__login-title">Admin access</div>
-			<div class="login-sub admin-page__login-sub">Enter the admin passcode to continue.</div>
+	<div class="admin-page__login">
+		<div class="admin-page__login-card">
+			<div class="admin-page__login-title">Admin access</div>
+			<div class="admin-page__login-sub">Enter the admin passcode to continue.</div>
 			<form method="POST" action="?/login" use:enhance>
 				<input type="hidden" name="email" value="admin@miko.art" />
-				<div class="login-field admin-page__login-field">
+				<div class="admin-page__login-field">
 					<input type="password" name="password" placeholder="Passcode" />
 				</div>
 				{#if form?.error}
-					<div class="login-error admin-page__login-error">{form.error}</div>
+					<div class="admin-page__login-error">{form.error}</div>
 				{/if}
-				<button class="btn-sec admin-page__unlock" type="submit">Unlock</button>
+				<button class="admin-page__button-secondary admin-page__unlock" type="submit">Unlock</button>
 			</form>
 		</div>
 	</div>
 {:else}
-	<div class="admin-shell admin-page">
+	<div class="admin-page">
 		<!-- Sidebar -->
-		<aside class="sidebar">
-			<div class="side-title">Manage</div>
+		<aside class="admin-page__sidebar">
+			<div class="admin-page__sidebar-title">Manage</div>
 			{#each NAV as n}
 				<button
-					class="side-item"
-					class:active={tab === n.id}
+					class="admin-page__sidebar-item"
+					class:admin-page__sidebar-item--active={tab === n.id}
 					onclick={() => tab = n.id}
 				>
 					{#if n.id === 'dash'}
@@ -294,39 +266,39 @@
 				</button>
 			{/each}
 			<form method="POST" action="?/logout" use:enhance>
-				<button class="side-item logout" type="submit"><LogOut size={16} strokeWidth={1.8} /> Logout</button>
+				<button class="admin-page__sidebar-item admin-page__side-item--logout" type="submit"><LogOut size={16} strokeWidth={1.8} /> Logout</button>
 			</form>
 		</aside>
 
 		<!-- Content -->
-		<main class="admin-main">
+		<main class="admin-page__main">
 			{#if tab === 'dash'}
-				<h1 class="page-title">Dashboard</h1>
-				<p class="page-sub">Everything about your gym, at a glance.</p>
+				<h1 class="admin-page__title">Dashboard</h1>
+				<p class="admin-page__subtitle">Everything about your gym, at a glance.</p>
 
 				<!-- Stats row -->
-				<div class="stats-row">
-					<div class="stat-card">
-						<div class="stat-val">{stats.upcoming}</div>
-						<div class="stat-label">Upcoming bookings</div>
+				<div class="admin-page__stats">
+					<div class="admin-page__stat-card">
+						<div class="admin-page__stat-value">{stats.upcoming}</div>
+						<div class="admin-page__stat-label">Upcoming bookings</div>
 					</div>
-					<div class="stat-card">
-						<div class="stat-val">{stats.seats}</div>
-						<div class="stat-label">Seats reserved</div>
+					<div class="admin-page__stat-card">
+						<div class="admin-page__stat-value">{stats.seats}</div>
+						<div class="admin-page__stat-label">Seats reserved</div>
 					</div>
-					<div class="stat-card">
-						<div class="stat-val" class:synced={connected && !connectionExpired}>
+					<div class="admin-page__stat-card">
+						<div class="admin-page__stat-value" class:admin-page__stat-value--synced={connected && !connectionExpired}>
 							{#if connected && !connectionExpired}Synced{:else if connected && connectionExpired}Expired{:else}Offline{/if}
 						</div>
-						<div class="stat-label">Google Calendar</div>
+						<div class="admin-page__stat-label">Google Calendar</div>
 					</div>
 				</div>
 
 				<!-- Calendar connection -->
-				<div class="admin-section">
-					<div class="section-head">
-						<h3 class="section-title">Google Calendar</h3>
-						<span class="badge" class:connected={connected && !connectionExpired}>
+				<div class="admin-page__section">
+					<div class="admin-page__section-head">
+						<h3 class="admin-page__section-title">Google Calendar</h3>
+						<span class="admin-page__status-badge" class:admin-page__status-badge--connected={connected && !connectionExpired}>
 							{#if connected && !connectionExpired}
 								<Check size={14} strokeWidth={2.5} />
 								Connected
@@ -337,9 +309,9 @@
 							{/if}
 						</span>
 					</div>
-					<p class="section-desc">Availability and bookings stay in sync with your Google Calendar — automatically.</p>
-					<div class="btn-row">
-						<button class="btn-sec" onclick={reconnect}>
+					<p class="admin-page__section-description">Availability and bookings stay in sync with your Google Calendar — automatically.</p>
+					<div class="admin-page__button-row">
+						<button class="admin-page__button-secondary" onclick={reconnect}>
 							<RefreshCw size={14} />
 							{connected ? 'Reconnect' : 'Connect'}
 						</button>
@@ -347,53 +319,53 @@
 				</div>
 
 				<!-- Availability -->
-				<div class="admin-section">
-					<div class="section-head">
-						<h3 class="section-title">Availability rules</h3>
+				<div class="admin-page__section">
+					<div class="admin-page__section-head">
+						<h3 class="admin-page__section-title">Availability rules</h3>
 					</div>
-					<p class="section-desc">Define when friends can book, and how much runway you need between sessions.</p>
-					<div class="fields-grid">
-						<div class="fields-row">
-							<div class="field">
-								<span class="field-label">Operating hours</span>
-								<div class="time-row">
+					<p class="admin-page__section-description">Define when friends can book, and how much runway you need between sessions.</p>
+					<div class="admin-page__fields-grid">
+						<div class="admin-page__fields-row">
+							<div class="admin-page__field">
+								<span class="admin-page__field-label">Operating hours</span>
+								<div class="admin-page__time-row">
 									<input type="time" bind:value={hours.from} aria-label="Opening time" />
-									<span class="time-sep">to</span>
+									<span class="admin-page__time-separator">to</span>
 									<input type="time" bind:value={hours.to} aria-label="Closing time" />
 								</div>
 							</div>
 						</div>
-						<div class="fields-row">
-							<div class="field">
-								<label class="field-label">
+						<div class="admin-page__fields-row">
+							<div class="admin-page__field">
+								<label class="admin-page__field-label">
 									Buffer between slots
-									<div class="input-wrap">
+									<div class="admin-page__input-wrap">
 										<input type="number" min="0" bind:value={buffer} />
-										<span class="input-suffix">min</span>
+										<span class="admin-page__input-suffix">min</span>
 									</div>
 								</label>
 							</div>
-							<div class="field">
-								<label class="field-label">
+							<div class="admin-page__field">
+								<label class="admin-page__field-label">
 									Minimum notice
-									<div class="input-wrap">
+									<div class="admin-page__input-wrap">
 										<input type="number" min="1" bind:value={notice} />
-										<span class="input-suffix">hrs</span>
+										<span class="admin-page__input-suffix">hrs</span>
 									</div>
 								</label>
 							</div>
-							<div class="field">
-								<label class="field-label">
+							<div class="admin-page__field">
+								<label class="admin-page__field-label">
 									Capacity per slot
-									<div class="input-wrap">
+									<div class="admin-page__input-wrap">
 										<input type="number" min="1" bind:value={capacity} />
-										<span class="input-suffix">people</span>
+										<span class="admin-page__input-suffix">people</span>
 									</div>
 								</label>
 							</div>
 						</div>
 					</div>
-					<button class="btn-sec" onclick={save} disabled={saving}>
+					<button class="admin-page__button-secondary" onclick={save} disabled={saving}>
 						{#if saving}
 							<Loader size={12} class="spin" />
 							Saving...
@@ -405,37 +377,37 @@
 				</div>
 
 				<!-- Bookings -->
-				<div class="admin-section">
-					<div class="section-head">
-						<h3 class="section-title">Recent bookings</h3>
-						<span class="section-count">{bookings.length} total</span>
+				<div class="admin-page__section">
+					<div class="admin-page__section-head">
+						<h3 class="admin-page__section-title">Recent bookings</h3>
+						<span class="admin-page__section-count">{bookings.length} total</span>
 					</div>
 					{#if loading}
-						<p class="section-desc">Loading bookings...</p>
+						<p class="admin-page__section-description">Loading bookings...</p>
 					{:else if error}
-						<p class="section-desc" style="color: var(--form-error)">{error}</p>
-						<button class="btn-sec" onclick={loadBookings}>Retry</button>
+						<p class="admin-page__section-description" style="color: var(--form-error)">{error}</p>
+						<button class="admin-page__button-secondary" onclick={loadBookings}>Retry</button>
 					{:else if bookings.length === 0}
-						<p class="section-desc">No upcoming bookings yet.</p>
+						<p class="admin-page__section-description">No upcoming bookings yet.</p>
 					{:else}
-						<div class="bookings-list">
+						<div class="admin-page__bookings-list">
 							{#each bookings as b, i}
 								<button
-									class="booking-row"
-									class:hovered={hover === b.id}
+									class="admin-page__booking-row"
+									class:admin-page__booking-row--hovered={hover === b.id}
 									onmouseenter={() => hover = b.id}
 									onmouseleave={() => hover = null}
 									onclick={() => viewBooking = b}
 								>
-									<span class="booking-date">{b.date} · {b.time}</span>
-									<span class="booking-meta">{b.seats} {b.seats === 1 ? 'seat' : 'seats'} · {b.name}</span>
-									<span class="badge" class:confirmed={b.status === 'confirmed'} class:pending={b.status === 'pending'}>
+									<span class="admin-page__booking-date">{b.date} · {b.time}</span>
+									<span class="admin-page__booking-meta">{b.seats} {b.seats === 1 ? 'seat' : 'seats'} · {b.name}</span>
+									<span class="admin-page__status-badge" class:admin-page__status-badge--confirmed={b.status === 'confirmed'} class:admin-page__status-badge--pending={b.status === 'pending'}>
 										{b.status === 'confirmed' ? 'Confirmed' : 'Pending'}
 									</span>
-									<ChevronRight class="booking-arrow" size={14} />
+									<ChevronRight class="admin-page__booking-arrow" size={14} />
 								</button>
 								{#if i < bookings.length - 1}
-									<div class="booking-divider"></div>
+									<div class="admin-page__booking-divider"></div>
 								{/if}
 							{/each}
 						</div>
@@ -444,12 +416,12 @@
 			{/if}
 
 			{#if tab === 'cal'}
-				<h1 class="page-title">Calendar</h1>
-				<p class="page-sub">Manage your Google Calendar connection and sync preferences.</p>
-				<div class="admin-section">
-					<div class="section-head">
-						<h3 class="section-title">Google Calendar</h3>
-						<span class="badge" class:connected={connected && !connectionExpired}>
+				<h1 class="admin-page__title">Calendar</h1>
+				<p class="admin-page__subtitle">Manage your Google Calendar connection and sync preferences.</p>
+				<div class="admin-page__section">
+					<div class="admin-page__section-head">
+						<h3 class="admin-page__section-title">Google Calendar</h3>
+						<span class="admin-page__status-badge" class:admin-page__status-badge--connected={connected && !connectionExpired}>
 							{#if connected && !connectionExpired}
 								<Check size={14} strokeWidth={2.5} />
 								Connected
@@ -460,9 +432,9 @@
 							{/if}
 						</span>
 					</div>
-					<p class="section-desc">Your bookings automatically appear on your calendar. Blocked times on your calendar automatically remove availability from clients.</p>
-					<div class="btn-row">
-						<button class="btn-sec" onclick={reconnect}>
+					<p class="admin-page__section-description">Your bookings automatically appear on your calendar. Blocked times on your calendar automatically remove availability from clients.</p>
+					<div class="admin-page__button-row">
+						<button class="admin-page__button-secondary" onclick={reconnect}>
 							<RefreshCw size={14} />
 							Reconnect
 						</button>
@@ -471,49 +443,49 @@
 			{/if}
 
 			{#if tab === 'calendar-auth'}
-				<h1 class="page-title">Members</h1>
-				<p class="page-sub">Manage invite codes and users.</p>
+				<h1 class="admin-page__title">Members</h1>
+				<p class="admin-page__subtitle">Manage invite codes and users.</p>
 
 				{#if calendarError}
-					<div class="admin-section" style="background: #fee2e2; border-color: #fecaca;">
-						<p style="color: #dc2626; margin: 0;">{calendarError}</p>
+					<div class="admin-page__section" style="background: color-mix(in srgb, var(--form-error) 12%, transparent); border-color: color-mix(in srgb, var(--form-error) 30%, transparent);">
+						<p style="color: var(--status-error-text); margin: 0;">{calendarError}</p>
 					</div>
 				{/if}
 
 				<!-- Create Invite -->
-				<div class="admin-section">
-					<div class="section-head">
-						<h3 class="section-title">Create Invite</h3>
+				<div class="admin-page__section">
+					<div class="admin-page__section-head">
+						<h3 class="admin-page__section-title">Create Invite</h3>
 					</div>
-					<p class="section-desc">Generate invite codes for new members.</p>
-					<div class="fields-grid">
-						<div class="fields-row">
-							<div class="field">
-								<label class="field-label">
+					<p class="admin-page__section-description">Generate invite codes for new members.</p>
+					<div class="admin-page__fields-grid">
+						<div class="admin-page__fields-row">
+							<div class="admin-page__field">
+								<label class="admin-page__field-label">
 									Email (optional)
 									<input type="email" bind:value={inviteEmail} placeholder="user@example.com" />
 								</label>
 							</div>
-							<div class="field">
-								<label class="field-label">
+							<div class="admin-page__field">
+								<label class="admin-page__field-label">
 									Uses
-									<div class="input-wrap">
+									<div class="admin-page__input-wrap">
 										<input type="number" min="1" bind:value={inviteUses} />
 									</div>
 								</label>
 							</div>
-							<div class="field">
-								<label class="field-label">
+							<div class="admin-page__field">
+								<label class="admin-page__field-label">
 									Expires in
-									<div class="input-wrap">
+									<div class="admin-page__input-wrap">
 										<input type="number" min="1" bind:value={inviteExpires} />
-										<span class="input-suffix">days</span>
+										<span class="admin-page__input-suffix">days</span>
 									</div>
 								</label>
 							</div>
 						</div>
 					</div>
-					<button class="btn-sec" onclick={createInvite} disabled={creatingInvite}>
+					<button class="admin-page__button-secondary" onclick={createInvite} disabled={creatingInvite}>
 						{#if creatingInvite}
 							<Loader size={12} class="spin" />
 							Creating...
@@ -524,38 +496,38 @@
 				</div>
 
 				<!-- Invites List -->
-				<div class="admin-section">
-					<div class="section-head">
-						<h3 class="section-title">Invites</h3>
-						<span class="section-count">{calendarInvites.length} total</span>
+				<div class="admin-page__section">
+					<div class="admin-page__section-head">
+						<h3 class="admin-page__section-title">Invites</h3>
+						<span class="admin-page__section-count">{calendarInvites.length} total</span>
 					</div>
 					{#if calendarLoading}
-						<p class="section-desc">Loading invites...</p>
+						<p class="admin-page__section-description">Loading invites...</p>
 					{:else if calendarInvites.length === 0}
-						<p class="section-desc">No invites created yet.</p>
+						<p class="admin-page__section-description">No invites created yet.</p>
 					{:else}
-						<div class="bookings-list">
+						<div class="admin-page__bookings-list">
 							{#each calendarInvites as invite, i}
-								<div class="booking-row" style="cursor: default;">
-									<span class="booking-date">
-										<code style="background: var(--bg-muted); padding: 0.2em 0.5em; border-radius: 4px; font-size: 0.85em;">{invite.code}</code>
+								<div class="admin-page__booking-row" style="cursor: default;">
+									<span class="admin-page__booking-date">
+										<code style="background: var(--card-bg); padding: 0.2em 0.5em; border-radius: 4px; font-size: 0.85em;">{invite.code}</code>
 									</span>
-									<span class="booking-meta">
+									<span class="admin-page__booking-meta">
 										{invite.uses_remaining ?? '∞'} uses left
 										{#if invite.email}· {invite.email}{/if}
 										{#if invite.expires_at}· expires {formatDate(invite.expires_at)}{/if}
 									</span>
-									<div class="btn-row" style="gap: 0.5rem;">
-										<button class="btn-sec" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick={() => copyInviteLink(invite.code)}>
+									<div class="admin-page__button-row" style="gap: 0.5rem;">
+										<button class="admin-page__button-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick={() => copyInviteLink(invite.code)}>
 											Copy Link
 										</button>
-										<button class="btn-sec danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick={() => deleteInvite(invite.id)}>
+										<button class="admin-page__button-secondary admin-page__button-secondary--danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick={() => deleteInvite(invite.id)}>
 											Delete
 										</button>
 									</div>
 								</div>
 								{#if i < calendarInvites.length - 1}
-									<div class="booking-divider"></div>
+									<div class="admin-page__booking-divider"></div>
 								{/if}
 							{/each}
 						</div>
@@ -563,31 +535,31 @@
 				</div>
 
 				<!-- Users List -->
-				<div class="admin-section">
-					<div class="section-head">
-						<h3 class="section-title">Users</h3>
-						<span class="section-count">{calendarUsers.length} total</span>
+				<div class="admin-page__section">
+					<div class="admin-page__section-head">
+						<h3 class="admin-page__section-title">Users</h3>
+						<span class="admin-page__section-count">{calendarUsers.length} total</span>
 					</div>
 					{#if calendarLoading}
-						<p class="section-desc">Loading users...</p>
+						<p class="admin-page__section-description">Loading users...</p>
 					{:else if calendarUsers.length === 0}
-						<p class="section-desc">No users have signed up yet.</p>
+						<p class="admin-page__section-description">No users have signed up yet.</p>
 					{:else}
-						<div class="bookings-list">
+						<div class="admin-page__bookings-list">
 							{#each calendarUsers as user, i}
-								<div class="booking-row" style="cursor: default;">
-									<span class="booking-date" style="display: flex; align-items: center; gap: 0.5rem;">
+								<div class="admin-page__booking-row" style="cursor: default;">
+									<span class="admin-page__booking-date" style="display: flex; align-items: center; gap: 0.5rem;">
 										{#if user.avatar_url}
 											<img src={user.avatar_url} alt="" style="width: 24px; height: 24px; border-radius: 50%;" />
 										{/if}
 										{user.name || user.email}
 									</span>
-									<span class="booking-meta">
+									<span class="admin-page__booking-meta">
 										{user.provider || 'member'} · last login {formatDate(user.last_login_at)}
 									</span>
 								</div>
 								{#if i < calendarUsers.length - 1}
-									<div class="booking-divider"></div>
+									<div class="admin-page__booking-divider"></div>
 								{/if}
 							{/each}
 						</div>
@@ -600,45 +572,45 @@
 	<!-- Booking detail modal -->
 	{#if viewBooking}
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-		<div class="modal-overlay" role="dialog" aria-modal="true" tabindex="-1" onclick={() => viewBooking = null} onkeydown={(e) => e.key === 'Escape' && (viewBooking = null)}>
-			<div class="modal-card" role="document" onkeydown={() => {}} onclick={(e) => e.stopPropagation()}>
-				<h3 class="modal-title">Booking details</h3>
-				<p class="modal-sub">Here's what we have on file.</p>
-				<div class="modal-rows">
-					<div class="modal-row">
-						<span class="modal-label">Date</span>
-						<span class="modal-val">{viewBooking.date}</span>
+		<div class="admin-page__modal-overlay" role="dialog" aria-modal="true" tabindex="-1" onclick={() => viewBooking = null} onkeydown={(e) => e.key === 'Escape' && (viewBooking = null)}>
+			<div class="admin-page__modal-card" role="document" onkeydown={() => {}} onclick={(e) => e.stopPropagation()}>
+				<h3 class="admin-page__modal-title">Booking details</h3>
+				<p class="admin-page__modal-subtitle">Here's what we have on file.</p>
+				<div class="admin-page__modal-rows">
+					<div class="admin-page__modal-row">
+						<span class="admin-page__modal-label">Date</span>
+						<span class="admin-page__modal-value">{viewBooking.date}</span>
 					</div>
-					<div class="modal-row">
-						<span class="modal-label">Time</span>
-						<span class="modal-val">{viewBooking.time}</span>
+					<div class="admin-page__modal-row">
+						<span class="admin-page__modal-label">Time</span>
+						<span class="admin-page__modal-value">{viewBooking.time}</span>
 					</div>
-					<div class="modal-row">
-						<span class="modal-label">Guest</span>
-						<span class="modal-val">{viewBooking.name}</span>
+					<div class="admin-page__modal-row">
+						<span class="admin-page__modal-label">Guest</span>
+						<span class="admin-page__modal-value">{viewBooking.name}</span>
 					</div>
-					<div class="modal-row">
-						<span class="modal-label">Email</span>
-						<span class="modal-val">{viewBooking.email}</span>
+					<div class="admin-page__modal-row">
+						<span class="admin-page__modal-label">Email</span>
+						<span class="admin-page__modal-value">{viewBooking.email}</span>
 					</div>
-					<div class="modal-row">
-						<span class="modal-label">Seats</span>
-						<span class="modal-val">{viewBooking.seats}</span>
+					<div class="admin-page__modal-row">
+						<span class="admin-page__modal-label">Seats</span>
+						<span class="admin-page__modal-value">{viewBooking.seats}</span>
 					</div>
 					{#if viewBooking.note}
-						<div class="modal-row">
-							<span class="modal-label">Note</span>
-							<span class="modal-val">{viewBooking.note}</span>
+						<div class="admin-page__modal-row">
+							<span class="admin-page__modal-label">Note</span>
+							<span class="admin-page__modal-value">{viewBooking.note}</span>
 						</div>
 					{/if}
-					<div class="modal-row">
-						<span class="modal-label">Status</span>
-						<span class="modal-val">{viewBooking.status === 'confirmed' ? 'Confirmed' : 'Pending'}</span>
+					<div class="admin-page__modal-row">
+						<span class="admin-page__modal-label">Status</span>
+						<span class="admin-page__modal-value">{viewBooking.status === 'confirmed' ? 'Confirmed' : 'Pending'}</span>
 					</div>
 				</div>
-				<div class="modal-actions">
-					<button class="btn-pri" onclick={() => viewBooking = null}>Done</button>
-					<button class="btn-sec danger" onclick={() => cancelBooking(viewBooking.id)} disabled={canceling}>
+				<div class="admin-page__modal-actions">
+					<button class="admin-page__button-primary" onclick={() => viewBooking = null}>Done</button>
+					<button class="admin-page__button-secondary admin-page__button-secondary--danger" onclick={() => cancelBooking(viewBooking.id)} disabled={canceling}>
 						{#if canceling}
 							<Loader size={12} class="spin" />
 							Canceling...
@@ -653,7 +625,7 @@
 
 	<!-- Save toast -->
 	{#if saved}
-		<div class="toast">
+		<div class="admin-page__toast">
 			<Check size={14} strokeWidth={2.5} />
 			Rules saved successfully.
 		</div>
@@ -661,14 +633,14 @@
 {/if}
 
 <style>
-	.admin-login {
+	.admin-page__login {
 		min-height: 70vh;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		padding: 3rem 1.5rem;
 	}
-	.login-card {
+	.admin-page__login-card {
 		width: min(420px, 100%);
 		background: color-mix(in srgb, var(--color-black) 94%, var(--bg) 6%);
 		border: 1px solid var(--color-white-08);
@@ -676,17 +648,17 @@
 		padding: 2rem;
 		box-shadow: 0 20px 50px var(--overlay-black-35);
 	}
-	.login-title {
+	.admin-page__login-title {
 		font-size: 1.5rem;
 		font-weight: 600;
 		color: color-mix(in srgb, var(--color-white) 97%, var(--bg) 3%);
 		margin-bottom: 0.35rem;
 	}
-	.login-sub {
+	.admin-page__login-sub {
 		color: color-mix(in srgb, var(--color-white) 70%, transparent);
 		margin-bottom: 1.5rem;
 	}
-	.login-field input {
+	.admin-page__login-field input {
 		width: 100%;
 		background: color-mix(in srgb, var(--color-black) 92%, var(--bg) 8%);
 		border: 1px solid var(--color-white-12);
@@ -695,11 +667,11 @@
 		color: color-mix(in srgb, var(--color-white) 97%, var(--bg) 3%);
 		outline: none;
 	}
-	.login-error {
+	.admin-page__login-error {
 		margin: 0.75rem 0 1rem;
 		color: color-mix(in srgb, var(--form-error) 72%, var(--color-white) 28%);
 	}
-	.side-item.logout {
+	.admin-page__side-item--logout {
 		margin-top: auto;
 		color: var(--color-white-60);
 	}
