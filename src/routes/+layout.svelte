@@ -21,6 +21,13 @@
 			})
 		}
 	})
+
+	function isNavActive(item) {
+		const path = $page.url.pathname
+		if (item.href === '/') return path === '/'
+		if (item.matchPrefix) return path === item.href || path.startsWith(`${item.href}/`)
+		return path === item.href
+	}
 </script>
 
 <ThemeProvider config={themeConfig} serverPreferences={data.preferences}>
@@ -34,7 +41,7 @@
 				</logo>
 				<links>
 					{#each headerNavItems as item}
-						<a href={item.href} class:active={$page.url.pathname === item.href}>{item.label}</a>
+						<a href={item.href} class:active={isNavActive(item)}>{item.label}</a>
 					{/each}
 					<theme-toggle>
 						<ThemeSelect />
@@ -258,15 +265,5 @@
 		align-items: center;
 		margin-left: 0.5em;
 		color: var(--color-white);
-
-		:global(button) {
-			padding: 0;
-			background: transparent;
-		}
-
-		:global(svg) {
-			width: 24px;
-			height: 24px;
-		}
 	}
 </style>

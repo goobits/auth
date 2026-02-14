@@ -1,0 +1,118 @@
+.contact-page__layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+	gap: var(--space-8);
+	align-items: start;
+	margin-bottom: var(--space-11);
+}
+
+.contact-page__form-shell {
+	padding: var(--space-8);
+	border-radius: var(--radius-lg);
+	background: color-mix(in srgb, var(--card-bg) 70%, transparent);
+}
+
+.contact-page__form {
+	display: grid;
+	gap: var(--space-5);
+}
+
+.contact-page__field {
+	display: grid;
+	gap: var(--space-2);
+
+	span {
+		font-size: var(--font-size-sm);
+		font-weight: var(--font-weight-semibold);
+		color: var(--text);
+	}
+
+	i {
+		font-style: normal;
+		color: var(--form-error);
+	}
+
+	small {
+		color: var(--form-error);
+		font-size: var(--font-size-xs);
+	}
+}
+
+.contact-page__field input,
+.contact-page__field textarea {
+	width: 100%;
+	padding: var(--space-3) var(--space-4);
+	border: var(--border-width) solid var(--input-border);
+	border-radius: var(--radius-md);
+	background: var(--input-bg);
+	color: var(--text);
+	font: inherit;
+}
+
+.contact-page__field textarea {
+	min-height: 10rem;
+	resize: vertical;
+}
+
+.contact-page__field input:focus,
+.contact-page__field textarea:focus {
+	outline: none;
+	border-color: var(--link);
+}
+
+.contact-page__submit {
+	justify-self: start;
+	padding: var(--space-3) var(--space-6);
+	border: none;
+	border-radius: var(--radius-pill);
+	background: var(--button-bg);
+	color: var(--button-text);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	cursor: pointer;
+}
+
+.contact-page__submit:disabled {
+	opacity: 0.65;
+	cursor: not-allowed;
+}
+
+.contact-page__submit-error {
+	margin: 0;
+	color: var(--status-error-text);
+	font-size: var(--font-size-sm);
+}
+
+.contact-page__legal-note {
+	margin: 0;
+	font-size: var(--font-size-sm);
+	line-height: 1.6;
+	color: var(--muted);
+}
+
+.contact-page__legal-note a {
+	margin: 0 var(--space-1);
+}
+
+.contact-page__aside {
+	position: sticky;
+	top: calc(var(--space-10) + var(--header-height));
+}
+
+.contact-page__image {
+	width: 100%;
+	height: auto;
+	display: block;
+}
+
+@media (max-width: 860px) {
+	.contact-page__layout {
+		grid-template-columns: 1fr;
+		gap: var(--space-6);
+	}
+
+	.contact-page__aside {
+		position: static;
+		max-width: 220px;
+	}
+}

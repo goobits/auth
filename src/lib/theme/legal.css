@@ -1,0 +1,31 @@
+.legal__page {
+	max-width: var(--max-width);
+	margin: 0 auto;
+	padding: 2rem 1rem 3rem;
+	line-height: 1.7;
+	font-family: var(--font-serif);
+}
+
+.legal__page h2 {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	margin-top: 1.75rem;
+	margin-bottom: 0.5rem;
+	font-family: var(--font-sans);
+}
+
+.legal__page ul {
+	padding-left: 1.25rem;
+}
+
+.legal__updated {
+	opacity: 0.8;
+	margin-bottom: 1.5rem;
+}
+
+.legal__notice {
+	margin-top: 2rem;
+	opacity: 0.8;
+	font-size: 0.95rem;
+}

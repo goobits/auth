@@ -1,10 +1,19 @@
 <script>
 	import { ArrowUpRight, CalendarDays, Tag } from '@lucide/svelte'
 	import PageContainer from '$lib/ui/PageContainer.svelte'
-	import ResultsEmpty from '$lib/ui/ResultsEmpty.svelte'
+	import FilterableCollection from '$lib/ui/FilterableCollection.svelte'
 	import Hero from '$lib/ui/Hero.svelte'
 	import SearchToolbar from '$lib/ui/SearchToolbar.svelte'
 	import SegmentedControl from '$lib/ui/SegmentedControl.svelte'
+	import { slugify } from '$lib/utils/collections'
+	import { formatDateMonthDay } from '$lib/utils/date'
+	import {
+		filterAndSortJournalPosts,
+		getFirstCategory,
+		getJournalCategories,
+		getJournalYearOrder,
+		groupJournalPostsByYear
+	} from '$lib/viewmodels/journal'
 
 	let { data } = $props()
 
@@ -17,72 +26,10 @@
 		{ value: 'title', label: 'Title' }
 	]
 
-	function formatDate(value, mode = 'short') {
-		const d = new Date(value)
-		if (mode === 'year') return String(d.getFullYear())
-		if (mode === 'monthDay') {
-			return d.toLocaleDateString('en-US', {
-				month: 'short',
-				day: 'numeric'
-			})
-		}
-		return d.toLocaleDateString('en-US', {
-			month: 'numeric',
-			day: 'numeric',
-			year: 'numeric'
-		})
-	}
-
-	function firstCategory(post) {
-		return post.metadata.fm.categories?.[0] || ''
-	}
-
-	const availableCategories = $derived.by(() => {
-		const all = new Set()
-		for (const post of data.posts) {
-			for (const category of post.metadata.fm.categories || []) {
-				all.add(category)
-			}
-		}
-		return [...all].sort((a, b) => a.localeCompare(b))
-	})
-
-	const filteredPosts = $derived.by(() => {
-		const query = searchQuery.trim().toLowerCase()
-
-		const filtered = data.posts.filter((post) => {
-			if (selectedCategory !== 'all') {
-				const categories = post.metadata.fm.categories || []
-				if (!categories.includes(selectedCategory)) return false
-			}
-
-			if (!query) return true
-
-			const title = (post.metadata.fm.title || '').toLowerCase()
-			const path = (post.urlPath || '').toLowerCase()
-			return title.includes(query) || path.includes(query)
-		})
-
-		return filtered.sort((a, b) => {
-			if (sortBy === 'title') return a.metadata.fm.title.localeCompare(b.metadata.fm.title)
-			const aTime = new Date(a.date).getTime()
-			const bTime = new Date(b.date).getTime()
-			if (sortBy === 'oldest') return aTime - bTime
-			return bTime - aTime
-		})
-	})
-
-	const groupedByYear = $derived.by(() => {
-		const groups = {}
-		for (const post of filteredPosts) {
-			const year = formatDate(post.date, 'year')
-			if (!groups[year]) groups[year] = []
-			groups[year].push(post)
-		}
-		return groups
-	})
-
-	const yearOrder = $derived.by(() => Object.keys(groupedByYear).sort((a, b) => Number(b) - Number(a)))
+	const availableCategories = $derived(getJournalCategories(data.posts))
+	const filteredPosts = $derived(filterAndSortJournalPosts(data.posts, searchQuery, selectedCategory, sortBy))
+	const groupedByYear = $derived(groupJournalPostsByYear(filteredPosts))
+	const yearOrder = $derived(getJournalYearOrder(groupedByYear))
 </script>
 
 <svelte:head>
@@ -96,34 +43,34 @@
 />
 
 <PageContainer className="journal-page">
-	<div class="journal-page__tools" aria-label="Journal filters">
-		<SearchToolbar bind:query={searchQuery} placeholder="Search posts..." ariaLabel="Search posts">
-			<div class="journal-page__selects">
-				<label>
-					<span>Category</span>
-					<select bind:value={selectedCategory}>
-						<option value="all">All</option>
-						{#each availableCategories as category}
-							<option value={category}>{category}</option>
-						{/each}
-					</select>
-				</label>
-				<div class="journal-page__sort-control">
-					<span>Sort</span>
-					<SegmentedControl options={sortOptions} bind:value={sortBy} ariaLabel="Sort posts" />
-				</div>
+	<FilterableCollection
+		className="journal-page__collection"
+		count={filteredPosts.length}
+		countLabel="entries"
+		emptyMessage="No posts match your filters."
+		onClear={() => { searchQuery = ''; selectedCategory = 'all'; sortBy = 'newest' }}
+	>
+		{#snippet toolbar()}
+			<div class="journal-page__tools" aria-label="Journal filters">
+				<SearchToolbar bind:query={searchQuery} placeholder="Search posts..." ariaLabel="Search posts">
+					<div class="journal-page__selects">
+						<label>
+							<span>Category</span>
+							<select bind:value={selectedCategory}>
+								<option value="all">All</option>
+								{#each availableCategories as category}
+									<option value={category}>{category}</option>
+								{/each}
+							</select>
+						</label>
+						<div class="journal-page__sort-control">
+							<span>Sort</span>
+							<SegmentedControl options={sortOptions} bind:value={sortBy} ariaLabel="Sort posts" />
+						</div>
+					</div>
+				</SearchToolbar>
 			</div>
-		</SearchToolbar>
-	</div>
-
-	{#if filteredPosts.length === 0}
-		<ResultsEmpty
-			className="journal-page__no-results"
-			message="No posts match your filters."
-			onAction={() => { searchQuery = ''; selectedCategory = 'all'; sortBy = 'newest' }}
-		/>
-	{:else}
-		<p class="ui-search__results-count results-count journal-page__results">{filteredPosts.length} entries</p>
+		{/snippet}
 
 		{#each yearOrder as year}
 			<section class="year-group journal-page__year-group">
@@ -134,7 +81,7 @@
 							<article class="journal-page__entry">
 								<div class="journal-page__entry-date">
 									<CalendarDays size={14} strokeWidth={2.2} />
-									<span>{formatDate(post.date, 'monthDay')}</span>
+									<span>{formatDateMonthDay(post.date)}</span>
 								</div>
 
 								<h3 class="journal-page__entry-title">
@@ -142,13 +89,13 @@
 								</h3>
 
 								<div class="journal-page__entry-right">
-									{#if firstCategory(post)}
+									{#if getFirstCategory(post)}
 										<a
 											class="journal-page__tag"
-											href={`/journal/category/${firstCategory(post).toLowerCase().replace(/\s+/g, '-')}`}
+											href={`/journal/category/${slugify(getFirstCategory(post))}`}
 										>
 											<Tag size={13} strokeWidth={2.2} />
-											<span>{firstCategory(post)}</span>
+											<span>{getFirstCategory(post)}</span>
 										</a>
 									{/if}
 
@@ -163,7 +110,7 @@
 				</ol>
 			</section>
 		{/each}
-	{/if}
+	</FilterableCollection>
 </PageContainer>
 
 <style>
@@ -203,10 +150,6 @@
 		background: var(--card-bg);
 		color: var(--text);
 		font-size: 0.86rem;
-	}
-
-	.journal-page__results {
-		margin-bottom: 1rem;
 	}
 
 	.journal-page__year-group {

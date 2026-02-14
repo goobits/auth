@@ -1,38 +1,52 @@
-<script>
-	import './Contact.styl'
+<script lang="ts">
+	import { goto } from '$app/navigation'
 	import Hero from '$lib/ui/Hero.svelte'
-	import { form, field } from 'svelte-forms'
-	import { email, required } from 'svelte-forms/validators'
+	import { submitContact, toContactPayload } from '$lib/client/forms/contact'
+	import './Contact.scss'
 
-	const yourName = field('yourName', '', [ required() ])
-	const yourEmail = field('yourEmail', '', [ email(), required() ])
-	const yourMessage = field('yourMessage', '', [ required() ])
+	type ContactErrors = {
+		name?: string
+		email?: string
+		message?: string
+	}
 
-	const myForm = form(yourName, yourEmail, yourMessage)
+	let submitting = $state(false)
+	let submitError = $state('')
+	let values = $state({ name: '', email: '', message: '' })
+	let errors = $state<ContactErrors>({})
 
-	async function submitForm() {
-		await myForm.validate()
+	function validate() {
+		const nextErrors: ContactErrors = {}
+		if (!values.name.trim()) nextErrors.name = 'Name is required'
+		if (!values.email.trim()) nextErrors.email = 'Email is required'
+		else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) nextErrors.email = 'Email is invalid'
+		if (!values.message.trim()) nextErrors.message = 'Message is required'
+		errors = nextErrors
+		return Object.keys(nextErrors).length === 0
+	}
 
-		if ($myForm.valid) {
-			const formData = new FormData(document.querySelector('form'))
-			const data = {}
-			formData.forEach((value, key) => (data[key] = value))
-			const request = new XMLHttpRequest()
-			request.open('POST', 'https://miko.art/api/email')
-			request.send(JSON.stringify(data))
-			request.onload = function () {
-				if (request.status === 200) {
-					window.location.href = '/contact/thank-you'
-				} else {
-					alert('Something went wrong. Please try again.')
-				}
-			}
+	async function onSubmit(event: SubmitEvent) {
+		event.preventDefault()
+		submitError = ''
+		if (!validate()) return
+
+		submitting = true
+		const form = event.currentTarget as HTMLFormElement
+		const payload = toContactPayload(new FormData(form))
+		const result = await submitContact(payload)
+		submitting = false
+
+		if (result.ok) {
+			await goto('/contact/thank-you')
+			return
 		}
+
+		submitError = result.error || 'Something went wrong. Please try again.'
 	}
 </script>
 
 <svelte:head>
-    <title>Contact - MIKO.ART</title>
+	<title>Contact - MIKO.ART</title>
 </svelte:head>
 
 <Hero
@@ -43,42 +57,44 @@
 	iconSize="0.96em"
 />
 
-<contact-form class="contact-page__form-shell">
-    <img class="contact-page__image" src="/media/super-racoon.svg" style="float: right; width: 31%" alt="">
-    <form class="contact-page__form" style="float: left; width: 60%" action="javascript:">
-        <form-title>Your Name <span>*</span></form-title>
-        <input type="text" name="name" bind:value={$yourName.value}><br>
+<section class="contact-page__layout">
+	<div class="contact-page__form-shell ui-surface-card">
+		<form class="contact-page__form" onsubmit={onSubmit} novalidate>
+			<label class="contact-page__field">
+				<span>Your Name <i aria-hidden="true">*</i></span>
+				<input type="text" name="name" bind:value={values.name} autocomplete="name" />
+				{#if errors.name}<small>{errors.name}</small>{/if}
+			</label>
 
-        <form-title>Your Email <span>*</span></form-title>
-        <input type="text" name="email" bind:value={$yourEmail.value}><br>
+			<label class="contact-page__field">
+				<span>Your Email <i aria-hidden="true">*</i></span>
+				<input type="email" name="email" bind:value={values.email} autocomplete="email" />
+				{#if errors.email}<small>{errors.email}</small>{/if}
+			</label>
 
-        <form-title>Your Message <span>*</span></form-title>
-        <textarea name="message" bind:value={$yourMessage.value}></textarea>
+			<label class="contact-page__field">
+				<span>Your Message <i aria-hidden="true">*</i></span>
+				<textarea name="message" bind:value={values.message}></textarea>
+				{#if errors.message}<small>{errors.message}</small>{/if}
+			</label>
 
-        <contact-form-errors class="contact-page__errors">
-            {#if $myForm.hasError('yourName.required')}
-                <li>Name is required</li>
-            {/if}
+			{#if submitError}
+				<p class="contact-page__submit-error">{submitError}</p>
+			{/if}
 
-            {#if $myForm.hasError('yourEmail.required')}
-                <li>Email is required</li>
-            {:else if $myForm.hasError('yourEmail.not_an_email')}
-                <li>Email is invalid</li>
-            {/if}
+			<button class="contact-page__submit" type="submit" disabled={submitting}>
+				{submitting ? 'Sending…' : 'Send'}
+			</button>
 
-            {#if $myForm.hasError('yourMessage.required')}
-                <li>Message is required</li>
-            {/if}
-        </contact-form-errors>
-
-        <button class="contact-page__submit" on:click={submitForm}>Send</button>
-
-		<p class="contact-form__legal-note contact-page__legal-note">
-			By sending this form, you agree to our
-			<a href="/privacy">Privacy Policy</a>,
-			<a href="/terms">Terms of Use</a>, and
-			<a href="/cookies">Cookie Policy</a>.
-		</p>
-    </form>
-    <div style="clear: both"></div>
-</contact-form>
+			<p class="contact-page__legal-note">
+				By sending this form, you agree to our
+				<a href="/privacy">Privacy Policy</a>,
+				<a href="/terms">Terms of Use</a>, and
+				<a href="/cookies">Cookie Policy</a>.
+			</p>
+		</form>
+	</div>
+	<aside class="contact-page__aside">
+		<img class="contact-page__image" src="/media/super-racoon.svg" alt="Raccoon illustration" loading="lazy" />
+	</aside>
+</section>

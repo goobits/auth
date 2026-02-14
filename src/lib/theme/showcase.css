@@ -1,0 +1,45 @@
+.showcase__page {
+	max-width: var(--max-width);
+	margin: 0 auto;
+	display: grid;
+	gap: 1rem;
+}
+
+.showcase__section {
+	border: 1px solid var(--panel-border);
+	border-radius: 10px;
+	background: var(--card-bg);
+	padding: 1rem;
+}
+
+.showcase__intro p {
+	margin: 0;
+	font-family: var(--font-serif);
+	font-size: 1.03rem;
+	line-height: 1.72;
+}
+
+.showcase__title {
+	margin: 0 0 0.75rem;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	font-family: var(--font-display);
+	font-size: 1.2rem;
+	font-weight: 500;
+}
+
+.showcase__pill-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.28rem;
+	text-decoration: none;
+	padding: 0.42rem 0.72rem;
+	border-radius: 999px;
+	border: 1px solid var(--border);
+	background: var(--card-bg);
+	color: var(--text);
+	font-family: var(--font-sans);
+	font-size: 0.82rem;
+	font-weight: 600;
+}

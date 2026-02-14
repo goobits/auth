@@ -1,62 +1,37 @@
 <script>
 	import './About.scss'
 
-	const ventures = [
-		{
-			emoji: '🎨',
-			name: 'Sketch.IO',
-			role: 'Founder & CTO',
-			description: 'Home of Sketchpad. Creative brushes in browsers and smiles on faces since day one.',
-			href: 'https://sketch.io/'
-		},
-		{
-			emoji: '🪴',
-			name: 'Portlandia Foods',
-			role: 'Co-Founder',
-			description: 'Creators of Portland Ketchup, because condiments deserve the same love as code.',
-			href: 'https://portlandiafoods.com/',
-			badge: 'Acquired 2023'
-		},
-		{
-			emoji: '🎵',
-			name: 'Lyrics Freak',
-			role: 'Co-Founder',
-			description: "One of the internet's earliest lyrics destinations and a longtime music rabbit hole.",
-			href: 'https://lyricsfreak.com/',
-			badge: 'Acquired 2010'
-		}
-	]
-
 	const exhibits = [
-		{ title: 'Art Gallery of Ontario', detail: 'Illusions' },
-		{ title: 'Dubai Union Metro', detail: 'Art in Transit' },
-		{ title: 'Google I/O', detail: '2010, 2012, 2013' },
-		{ title: 'Mackinac State Historic Parks' },
-		{ title: 'Tel Aviv Museum of Modern Art' }
+		'Art Gallery Of Ontario: Illusions Exhibition',
+		'Dubai Union Metro: Art In Transit',
+		'Google IO 2010: Darkroom',
+		'Google IO 2012: Sketch Mobile',
+		'Google IO 2013: Webcam FX',
+		'Mackinac State Historic Parks',
+		'Tel Aviv Museum Of Modern Art'
 	]
 
 	const clients = [
 		'AAA',
 		'ABCya Games',
-		'Draw It To Know It',
-		'Google, Made With Code',
+		'Draw It To Know It: Medical & Biological Sciences',
+		'Google: Made With Code',
 		'Jo Malone London',
 		'Los Alamos National Laboratory',
-		'Portland Timbers'
+		'Portland Timbers: RCTID',
+		'Scotties',
+		'Travel Portland',
+		'Upworthy'
 	]
 
-	const services = [
-		{ icon: '📰', name: 'News Annotations', description: 'Intuitive markup tools for modern digital newsrooms.' },
-		{ icon: '🎹', name: 'Musical Apps', description: 'Vibrant products blending sound, interaction, and learning.' },
-		{ icon: '🔬', name: 'Kiosk Software', description: 'Interactive exhibits for science and educational spaces.' },
-		{ icon: '🖌️', name: 'Illustration Tools', description: 'Non-destructive workflows for artists and designers.' },
-		{ icon: '🏆', name: 'Promo Contests', description: 'Audience engagement platforms for teams and brands.' },
-		{ icon: '⚡', name: 'Realtime Collaboration', description: 'Build together from anywhere in real time.' },
-		{
-			icon: '🖨️',
-			name: 'Product Customizers',
-			description: 'Personalize-then-print interfaces for on-demand products.'
-		}
+	const offerings = [
+		'Annotations & Editing for Online News: Innovative tools designed to enhance the digital news experience with user-friendly annotations and editing capabilities.',
+		'Colorful Educational Musical Apps: Interactive and vibrant applications that fuse music with learning, making education both fun and engaging for all ages.',
+		'Kiosk Software for Science & Learning Centers: Cutting-edge interactive kiosk software, bringing digital innovation to science and educational environments.',
+		'Non-Destructive Illustration & Painting Apps: Sophisticated apps offering artists and designers the freedom to create with non-destructive editing tools.',
+		'Promotional Contests for Sports Teams & Companies: Tailored contest platforms to boost engagement for sports teams and businesses, driving promotional success.',
+		'Realtime Collaborative Apps: Dynamic applications enabling seamless collaboration in real-time, enhancing teamwork and productivity.',
+		'User-Based Product Customization for Printing: Flexible design tools that allow users to personalize products, perfect for creating unique print-on-demand items.'
 	]
 </script>
 
@@ -64,114 +39,68 @@
 	<title>About - MIKO.ART</title>
 	<meta
 		name="description"
-		content="About Miko: founder, product builder, and creative technologist behind colorful tools and experiences."
+		content="Developer, designer, and musician building colorful, creative, and educational applications."
 	/>
 	<link rel="canonical" href="https://miko.art/about" />
-	<meta property="og:type" content="website" />
-	<meta property="og:title" content="About - MIKO.ART" />
-	<meta
-		property="og:description"
-		content="Founder, product builder, and creative technologist behind colorful tools and experiences."
-	/>
-	<meta property="og:url" content="https://miko.art/about" />
-	<meta property="og:image" content="https://miko.art/media/miko.jpg" />
-	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
-<div class="about">
-	<section class="about__hero" aria-labelledby="about-title">
-		<div class="about__avatar-ring">
-			<div class="about__avatar-inner">
-				<img
-					src="/media/miko.jpg"
-					alt="Portrait of Miko"
-					width="96"
-					height="96"
-					loading="eager"
-					decoding="async"
-					fetchpriority="high"
-				/>
-			</div>
-		</div>
-		<div class="about__hero-copy">
-			<h1 id="about-title">Haai! I'm <span class="about__rainbow-text">Miko</span> <span aria-hidden="true">🦄</span></h1>
-			<p>
-				Developer, designer, and musician passionate about making colorful, creative, and educational things
-				for the internet.
-			</p>
+<div class="about-page">
+	<section class="about-page__hero" aria-labelledby="about-title">
+		<div class="about-page__intro-copy">
+			<h1 id="about-title">Haai! I'm Miko <span aria-hidden="true">🦄</span></h1>
+			<p class="about-page__tagline">Developer, designer & musician :)</p>
 		</div>
 	</section>
 
-	<section class="about__lede">
+	<section class="about-page__intro">
+		<figure class="about-page__photo-inset">
+			<img src="/media/miko.jpg" alt="Portrait of Miko" width="240" height="240" loading="eager" />
+		</figure>
 		<p>
-			I love it when tools disappear into the act of creating. When all that's left is imagination, flow, and
-			joy. That's what I love building. <span class="about__sparkle" aria-hidden="true">✨</span>
+			I'm passionate about creating colorful, creative & educational applications.
+		</p>
+		<p>
+			Founder & CTO of <a href="https://sketch.io" target="_blank" rel="noreferrer noopener">Sketch.IO</a>
+			creators of Sketchpad 🎨
+		</p>
+		<p>
+			Co-Founder of Portlandia Foods creators of Portland Ketchup 🪴
+			<span class="about-page__muted">(acquired 2023)</span>
+		</p>
+		<p>
+			Co-Founder of Lyrics Freak 🎵
+			<span class="about-page__muted">(acquired 2010)</span>
 		</p>
 	</section>
 
-	<section class="about__ventures" aria-labelledby="ventures-title">
-		<h2 id="ventures-title" class="about__section-label">Building Things ✦</h2>
-		<div class="about__venture-grid">
-			{#each ventures as venture}
-				<a href={venture.href} target="_blank" rel="noopener noreferrer" class="about__venture-card">
-					<span class="about__emoji" aria-hidden="true">{venture.emoji}</span>
-					<h3>{venture.name}</h3>
-					<p class="about__role">{venture.role}</p>
-					<p class="about__text">{venture.description}</p>
-					{#if venture.badge}
-						<span class="about__badge">{venture.badge}</span>
-					{/if}
-				</a>
-			{/each}
-		</div>
-	</section>
-
-	<section class="about__columns">
-		<article class="about__info-card" aria-labelledby="exhibits-title">
-			<h2 id="exhibits-title" class="about__section-label">Selected Exhibits ✦</h2>
+	<section class="about-page__columns">
+		<article>
+			<h2>Exhibits, Selected</h2>
 			<ul>
 				{#each exhibits as exhibit}
-					<li>
-						<span>{exhibit.title}</span>
-						{#if exhibit.detail}
-							— {exhibit.detail}
-						{/if}
-					</li>
+					<li>{exhibit}</li>
 				{/each}
-				<li class="about__accent"><a href="/contact">you</a>? 💫</li>
+				<li class="about-page__you"><a href="/contact">you</a>?</li>
 			</ul>
 		</article>
 
-		<article class="about__info-card" aria-labelledby="clients-title">
-			<h2 id="clients-title" class="about__section-label">Selected Clients ✦</h2>
+		<article>
+			<h2>Clients, Selected</h2>
 			<ul>
 				{#each clients as client}
 					<li>{client}</li>
 				{/each}
-				<li class="about__accent"><a href="/contact">you</a>? 🌈</li>
+				<li class="about-page__you"><a href="/contact">you</a>?</li>
 			</ul>
 		</article>
 	</section>
 
-	<section class="about__services" aria-labelledby="services-title">
-		<p class="about__section-label">What I Build ✦</p>
-		<h2 id="services-title" class="about__services-heading">Sketch.IO crafts tools for people who love making things.</h2>
-		<div class="about__services-grid">
-			{#each services as service}
-				<article class="about__service-item">
-					<div class="about__icon" aria-hidden="true">{service.icon}</div>
-					<h3>{service.name}</h3>
-					<p>{service.description}</p>
-				</article>
+	<section class="about-page__offerings" aria-labelledby="offerings-title">
+		<h2 id="offerings-title">Sketch.IO specializes in creating a diverse range of design tools:</h2>
+		<ul>
+			{#each offerings as item}
+				<li>{item}</li>
 			{/each}
-		</div>
-	</section>
-
-	<section class="about__cta" aria-labelledby="cta-title">
-		<div class="about__cta-box">
-			<h2 id="cta-title">Let's make something magical together <span aria-hidden="true">✨</span></h2>
-			<p>A creative tool, an interactive exhibit, or a wild idea you can't quite describe yet.</p>
-			<a href="/contact">Say Haai</a>
-		</div>
+		</ul>
 	</section>
 </div>

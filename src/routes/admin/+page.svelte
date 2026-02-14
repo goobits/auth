@@ -1,17 +1,32 @@
 <script>
 	import { enhance } from '$app/forms'
 	import { Clock, Calendar, Check, RefreshCw, Save, ChevronRight, Loader, Users, LogOut } from '@lucide/svelte'
-	import { cancelAdminBooking, getAdminBookings, getAdminStatus, saveAdminRules } from '$lib/client/api/adminClient'
-	import { createCalendarInvite, deleteCalendarInvite, getCalendarAdminInvites, getCalendarAdminUsers, startCalendarOAuth } from '$lib/client/api/calendarClient'
 	import { handleUnauthorizedSessionError } from '$lib/client/routing/auth'
+	import {
+		ADMIN_NAV,
+		DEFAULT_ADMIN_RULES,
+		DEFAULT_ADMIN_STATS,
+		DEFAULT_INVITE_DRAFT,
+		beginCalendarOAuth,
+		buildInviteLink,
+		fetchAdminBookings,
+		fetchAdminStatus,
+		fetchCalendarMembersData,
+		formatAdminDate,
+		getApiErrorMessage,
+		persistAdminRules,
+		persistInvite,
+		removeAdminBooking,
+		removeInvite
+	} from '$lib/viewmodels/admin'
 
 	let { data, form } = $props()
 
 	let tab = $state('dash')
-	let hours = $state({ from: '06:00', to: '22:00' })
-	let buffer = $state(15)
-	let notice = $state(24)
-	let capacity = $state(4)
+	let hours = $state(DEFAULT_ADMIN_RULES.hours)
+	let buffer = $state(DEFAULT_ADMIN_RULES.buffer)
+	let notice = $state(DEFAULT_ADMIN_RULES.notice)
+	let capacity = $state(DEFAULT_ADMIN_RULES.capacity)
 	let saved = $state(false)
 	let saving = $state(false)
 	let canceling = $state(false)
@@ -20,7 +35,7 @@
 	let connected = $state(false)
 	let connectionExpired = $state(false)
 	let bookings = $state([])
-	let stats = $state({ upcoming: 0, seats: 0 })
+	let stats = $state(DEFAULT_ADMIN_STATS)
 	let loading = $state(true)
 	let error = $state('')
 	let authed = $derived(!!data.user)
@@ -31,19 +46,13 @@
 	let calendarLoading = $state(false)
 	let calendarError = $state('')
 	let inviteEmail = $state('')
-	let inviteUses = $state(1)
-	let inviteExpires = $state(7)
+	let inviteUses = $state(DEFAULT_INVITE_DRAFT.uses)
+	let inviteExpires = $state(DEFAULT_INVITE_DRAFT.expiresInDays)
 	let creatingInvite = $state(false)
-
-	const NAV = [
-		{ label: 'Dashboard', id: 'dash' },
-		{ label: 'Settings', id: 'cal' },
-		{ label: 'Members', id: 'calendar-auth' }
-	]
 
 	async function loadStatus() {
 		try {
-			const data = await getAdminStatus()
+			const data = await fetchAdminStatus()
 			if (data.ok) {
 				connected = data.google?.connected ?? false
 				connectionExpired = data.google?.expired ?? false
@@ -64,12 +73,12 @@
 		loading = true
 		error = ''
 		try {
-			const data = await getAdminBookings()
+			const data = await fetchAdminBookings()
 			if (data.ok) {
 				bookings = data.bookings || []
-				stats = data.stats || { upcoming: 0, seats: 0 }
+				stats = data.stats || DEFAULT_ADMIN_STATS
 			} else {
-				error = data.error?.message || 'Failed to load bookings'
+				error = getApiErrorMessage(data, 'Failed to load bookings')
 			}
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
@@ -82,18 +91,12 @@
 	async function save() {
 		saving = true
 		try {
-			const data = await saveAdminRules({
-				hoursFrom: hours.from,
-				hoursTo: hours.to,
-				buffer,
-				notice,
-				capacity
-			})
+			const data = await persistAdminRules({ hours: { ...hours }, buffer, notice, capacity })
 			if (data.ok) {
 				saved = true
 				setTimeout(() => saved = false, 2200)
 			} else {
-				error = data.error?.message || 'Failed to save rules'
+				error = getApiErrorMessage(data, 'Failed to save rules')
 			}
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
@@ -107,12 +110,12 @@
 		if (!confirm('Are you sure you want to cancel this booking?')) return
 		canceling = true
 		try {
-			const data = await cancelAdminBooking(bookingId)
+			const data = await removeAdminBooking(bookingId)
 			if (data.ok) {
 				viewBooking = null
 				await loadBookings()
 			} else {
-				error = data.error?.message || 'Failed to cancel booking'
+				error = getApiErrorMessage(data, 'Failed to cancel booking')
 			}
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
@@ -124,12 +127,12 @@
 
 	async function reconnect() {
 		try {
-			const data = await startCalendarOAuth()
+			const data = await beginCalendarOAuth()
 			if (data.authUrl) {
 				window.location.href = data.authUrl
 			} else {
 				console.error('Failed to start OAuth:', data.error)
-				error = data.error?.message || 'Failed to connect to Google'
+				error = getApiErrorMessage(data, 'Failed to connect to Google')
 			}
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
@@ -141,16 +144,13 @@
 		calendarLoading = true
 		calendarError = ''
 		try {
-			const [invitesData, usersData] = await Promise.all([
-				getCalendarAdminInvites(),
-				getCalendarAdminUsers()
-			])
+			const { invitesData, usersData } = await fetchCalendarMembersData()
 
 			if (invitesData.ok) calendarInvites = invitesData.invites || []
-			else calendarError = invitesData.error?.message || 'Failed to load invites'
+			else calendarError = getApiErrorMessage(invitesData, 'Failed to load invites')
 
 			if (usersData.ok) calendarUsers = usersData.users || []
-			else calendarError = usersData.error?.message || 'Failed to load users'
+			else calendarError = getApiErrorMessage(usersData, 'Failed to load users')
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
 			calendarError = err.message || 'Failed to load members data'
@@ -163,18 +163,18 @@
 		creatingInvite = true
 		calendarError = ''
 		try {
-			const data = await createCalendarInvite({
+			const data = await persistInvite({
 				email: inviteEmail || null,
 				uses: inviteUses,
 				expiresInDays: inviteExpires
 			})
 			if (data.ok) {
 				inviteEmail = ''
-				inviteUses = 1
-				inviteExpires = 7
+				inviteUses = DEFAULT_INVITE_DRAFT.uses
+				inviteExpires = DEFAULT_INVITE_DRAFT.expiresInDays
 				await loadCalendarData()
 			} else {
-				calendarError = data.error?.message || 'Failed to create invite'
+				calendarError = getApiErrorMessage(data, 'Failed to create invite')
 			}
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
@@ -187,11 +187,11 @@
 	async function deleteInvite(id) {
 		if (!confirm('Delete this invite?')) return
 		try {
-			const data = await deleteCalendarInvite(id)
+			const data = await removeInvite(id)
 			if (data.ok) {
 				await loadCalendarData()
 			} else {
-				calendarError = data.error?.message || 'Failed to delete invite'
+				calendarError = getApiErrorMessage(data, 'Failed to delete invite')
 			}
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
@@ -200,13 +200,8 @@
 	}
 
 	function copyInviteLink(code) {
-		const url = `${window.location.origin}/calendar/login?invite=${code}`
+		const url = buildInviteLink(window.location.origin, code)
 		navigator.clipboard.writeText(url)
-	}
-
-	function formatDate(timestamp) {
-		if (!timestamp) return 'Never'
-		return new Date(timestamp * 1000).toLocaleDateString()
 	}
 
 	$effect(() => {
@@ -249,7 +244,7 @@
 		<!-- Sidebar -->
 		<aside class="admin-page__sidebar">
 			<div class="admin-page__sidebar-title">Manage</div>
-			{#each NAV as n}
+			{#each ADMIN_NAV as n}
 				<button
 					class="admin-page__sidebar-item"
 					class:admin-page__sidebar-item--active={tab === n.id}
@@ -385,7 +380,7 @@
 					{#if loading}
 						<p class="admin-page__section-description">Loading bookings...</p>
 					{:else if error}
-						<p class="admin-page__section-description" style="color: var(--form-error)">{error}</p>
+						<p class="admin-page__section-description admin-page__section-description--error">{error}</p>
 						<button class="admin-page__button-secondary" onclick={loadBookings}>Retry</button>
 					{:else if bookings.length === 0}
 						<p class="admin-page__section-description">No upcoming bookings yet.</p>
@@ -447,8 +442,8 @@
 				<p class="admin-page__subtitle">Manage invite codes and users.</p>
 
 				{#if calendarError}
-					<div class="admin-page__section" style="background: color-mix(in srgb, var(--form-error) 12%, transparent); border-color: color-mix(in srgb, var(--form-error) 30%, transparent);">
-						<p style="color: var(--status-error-text); margin: 0;">{calendarError}</p>
+					<div class="admin-page__section admin-page__section--error">
+						<p class="admin-page__calendar-error">{calendarError}</p>
 					</div>
 				{/if}
 
@@ -508,20 +503,20 @@
 					{:else}
 						<div class="admin-page__bookings-list">
 							{#each calendarInvites as invite, i}
-								<div class="admin-page__booking-row" style="cursor: default;">
+								<div class="admin-page__booking-row admin-page__booking-row--static">
 									<span class="admin-page__booking-date">
-										<code style="background: var(--card-bg); padding: 0.2em 0.5em; border-radius: 4px; font-size: 0.85em;">{invite.code}</code>
+										<code class="admin-page__invite-code">{invite.code}</code>
 									</span>
 									<span class="admin-page__booking-meta">
 										{invite.uses_remaining ?? '∞'} uses left
 										{#if invite.email}· {invite.email}{/if}
-										{#if invite.expires_at}· expires {formatDate(invite.expires_at)}{/if}
+										{#if invite.expires_at}· expires {formatAdminDate(invite.expires_at)}{/if}
 									</span>
-									<div class="admin-page__button-row" style="gap: 0.5rem;">
-										<button class="admin-page__button-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick={() => copyInviteLink(invite.code)}>
+									<div class="admin-page__button-row admin-page__button-row--compact">
+										<button class="admin-page__button-secondary admin-page__button-secondary--compact" onclick={() => copyInviteLink(invite.code)}>
 											Copy Link
 										</button>
-										<button class="admin-page__button-secondary admin-page__button-secondary--danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick={() => deleteInvite(invite.id)}>
+										<button class="admin-page__button-secondary admin-page__button-secondary--danger admin-page__button-secondary--compact" onclick={() => deleteInvite(invite.id)}>
 											Delete
 										</button>
 									</div>
@@ -547,15 +542,15 @@
 					{:else}
 						<div class="admin-page__bookings-list">
 							{#each calendarUsers as user, i}
-								<div class="admin-page__booking-row" style="cursor: default;">
-									<span class="admin-page__booking-date" style="display: flex; align-items: center; gap: 0.5rem;">
+								<div class="admin-page__booking-row admin-page__booking-row--static">
+									<span class="admin-page__booking-date admin-page__booking-date--with-avatar">
 										{#if user.avatar_url}
-											<img src={user.avatar_url} alt="" style="width: 24px; height: 24px; border-radius: 50%;" />
+											<img src={user.avatar_url} alt="" class="admin-page__booking-avatar" />
 										{/if}
 										{user.name || user.email}
 									</span>
 									<span class="admin-page__booking-meta">
-										{user.provider || 'member'} · last login {formatDate(user.last_login_at)}
+										{user.provider || 'member'} · last login {formatAdminDate(user.last_login_at)}
 									</span>
 								</div>
 								{#if i < calendarUsers.length - 1}
@@ -624,55 +619,10 @@
 	{/if}
 
 	<!-- Save toast -->
-	{#if saved}
+{#if saved}
 		<div class="admin-page__toast">
 			<Check size={14} strokeWidth={2.5} />
 			Rules saved successfully.
 		</div>
 	{/if}
 {/if}
-
-<style>
-	.admin-page__login {
-		min-height: 70vh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 3rem 1.5rem;
-	}
-	.admin-page__login-card {
-		width: min(420px, 100%);
-		background: color-mix(in srgb, var(--color-black) 94%, var(--bg) 6%);
-		border: 1px solid var(--color-white-08);
-		border-radius: 16px;
-		padding: 2rem;
-		box-shadow: 0 20px 50px var(--overlay-black-35);
-	}
-	.admin-page__login-title {
-		font-size: 1.5rem;
-		font-weight: 600;
-		color: color-mix(in srgb, var(--color-white) 97%, var(--bg) 3%);
-		margin-bottom: 0.35rem;
-	}
-	.admin-page__login-sub {
-		color: color-mix(in srgb, var(--color-white) 70%, transparent);
-		margin-bottom: 1.5rem;
-	}
-	.admin-page__login-field input {
-		width: 100%;
-		background: color-mix(in srgb, var(--color-black) 92%, var(--bg) 8%);
-		border: 1px solid var(--color-white-12);
-		border-radius: 10px;
-		padding: 0.75rem 0.85rem;
-		color: color-mix(in srgb, var(--color-white) 97%, var(--bg) 3%);
-		outline: none;
-	}
-	.admin-page__login-error {
-		margin: 0.75rem 0 1rem;
-		color: color-mix(in srgb, var(--form-error) 72%, var(--color-white) 28%);
-	}
-	.admin-page__side-item--logout {
-		margin-top: auto;
-		color: var(--color-white-60);
-	}
-</style>

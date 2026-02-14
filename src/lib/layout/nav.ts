@@ -1,14 +1,16 @@
 export type NavItem = {
 	href: string
 	label: string
+	matchPrefix?: boolean
 }
 
 export const headerNavItems: NavItem[] = [
-	{ href: '/', label: 'Home' },
+	{ href: '/art', label: 'Art', matchPrefix: true },
+	{ href: '/music', label: 'Music', matchPrefix: true },
 	{ href: '/about', label: 'About' },
-	{ href: '/art', label: 'Art' },
-	{ href: '/music', label: 'Music' },
-	{ href: '/contact', label: 'Contact' }
+	{ href: '/journal', label: 'Journal', matchPrefix: true },
+	{ href: '/labs', label: 'Labs', matchPrefix: true },
+	{ href: '/contact', label: 'Contact', matchPrefix: true }
 ]
 
 export const footerPrimaryItems: NavItem[] = [

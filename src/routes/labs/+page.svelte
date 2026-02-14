@@ -1,24 +1,12 @@
 <script>
 	import { ArrowUpDown, ExternalLink, FlaskConical, Sparkles } from '@lucide/svelte'
 	import FilterChipGroup from '$lib/ui/FilterChipGroup.svelte'
+	import FilterableCollection from '$lib/ui/FilterableCollection.svelte'
 	import PageContainer from '$lib/ui/PageContainer.svelte'
-	import ResultsEmpty from '$lib/ui/ResultsEmpty.svelte'
 	import SegmentedControl from '$lib/ui/SegmentedControl.svelte'
 	import Hero from '$lib/ui/Hero.svelte'
 	import SearchToolbar from '$lib/ui/SearchToolbar.svelte'
-
-	const labs = [
-		{ href: '/labs/color-galaxy/', title: 'Color Galaxy', vibe: 'Generative color playground' },
-		{ href: '/labs/js1k/BreathingGalaxies.html', title: 'JS1k - Breathing Galaxies', vibe: 'Tiny code, cosmic motion' },
-		{ href: '/labs/js1k/Daltonize.html', title: 'JS1k - Daltonize', vibe: 'Color accessibility experiment' },
-		{ href: '/labs/js1k/MicroSketchpad.html', title: 'JS1k - Micro Sketchpad', vibe: 'Pocket-sized drawing toy' },
-		{ href: '/labs/js1k/SpectrumDJ.html', title: 'JS1k - Spectrum DJ', vibe: 'Music + visuals mashup' },
-		{ href: '/labs/midi-js/', title: 'MIDI.js', vibe: 'Browser MIDI tooling' },
-		{ href: '/labs/sketch-js/', title: 'Sketch.js', vibe: 'Creative coding toolkit' },
-		{ href: '/labs/sketchpad-1.0/', title: 'Sketchpad v1.0', vibe: 'Early product prototype' },
-		{ href: '/labs/thumbnailer/', title: 'Thumbnailer', vibe: 'Image utility experiment' },
-		{ href: '/labs/zen-bg/', title: 'Zen BG', vibe: 'Ambient background generator' }
-	]
+	import { filterAndSortLabs, isExternalLab, labsCatalog } from '$lib/viewmodels/labs'
 
 	const pastelCardThemes = [
 		{ bg: '#ffdfe8', border: '#f5b9cb', ink: '#4f2332', muted: '#74404f' },
@@ -30,10 +18,6 @@
 		{ bg: '#ece2ff', border: '#d2bdf8', ink: '#3d2b5f', muted: '#5e4784' },
 		{ bg: '#ffe2f6', border: '#efbde0', ink: '#552949', muted: '#7a4a6f' }
 	]
-
-	function isExternalLab(href) {
-		return href.endsWith('.html')
-	}
 
 	let searchQuery = $state('')
 	let selectedScope = $state('all')
@@ -52,30 +36,7 @@
 		return pastelCardThemes[i % pastelCardThemes.length]
 	}
 
-	function matchesScope(lab) {
-		if (selectedScope === 'external') return isExternalLab(lab.href)
-		if (selectedScope === 'internal') return !isExternalLab(lab.href)
-		return true
-	}
-
-	const filteredLabs = $derived.by(() => {
-		const query = searchQuery.trim().toLowerCase()
-
-		const filtered = labs.filter((lab) => {
-			if (!matchesScope(lab)) return false
-			if (!query) return true
-			return (
-				lab.title.toLowerCase().includes(query) ||
-				lab.href.toLowerCase().includes(query) ||
-				lab.vibe.toLowerCase().includes(query)
-			)
-		})
-
-		return filtered.sort((a, b) => {
-			if (sortBy === 'path') return a.href.localeCompare(b.href)
-			return a.title.localeCompare(b.title)
-		})
-	})
+	const filteredLabs = $derived(filterAndSortLabs(labsCatalog, searchQuery, selectedScope, sortBy))
 </script>
 
 <svelte:head>
@@ -89,33 +50,31 @@
 />
 
 <PageContainer className="labs-page">
-	<div class="labs-page__tools" aria-label="Labs filters">
-		<SearchToolbar bind:query={searchQuery} placeholder="Search experiments..." ariaLabel="Search labs">
-			<div class="labs-page__controls">
-				<FilterChipGroup
-					className="labs-page__chips"
-					items={scopeOptions}
-					bind:value={selectedScope}
-					ariaLabel="Scope filter"
-				/>
+	<FilterableCollection
+		count={filteredLabs.length}
+		countLabel="experiments"
+		emptyMessage="No experiments match your filters."
+		onClear={() => { searchQuery = ''; selectedScope = 'all'; sortBy = 'title' }}
+	>
+		{#snippet toolbar()}
+			<div class="labs-page__tools" aria-label="Labs filters">
+				<SearchToolbar bind:query={searchQuery} placeholder="Search experiments..." ariaLabel="Search labs">
+					<div class="labs-page__controls">
+						<FilterChipGroup
+							className="labs-page__chips"
+							items={scopeOptions}
+							bind:value={selectedScope}
+							ariaLabel="Scope filter"
+						/>
 
-				<div class="labs-page__sort">
-					<ArrowUpDown size={13} strokeWidth={2.2} />
-					<SegmentedControl options={sortOptions} bind:value={sortBy} ariaLabel="Sort labs" />
-				</div>
+						<div class="labs-page__sort">
+							<ArrowUpDown size={13} strokeWidth={2.2} />
+							<SegmentedControl options={sortOptions} bind:value={sortBy} ariaLabel="Sort labs" />
+						</div>
+					</div>
+				</SearchToolbar>
 			</div>
-		</SearchToolbar>
-	</div>
-
-	{#if filteredLabs.length === 0}
-		<ResultsEmpty
-			className="labs-page__no-results"
-			message="No experiments match your filters."
-			onAction={() => { searchQuery = ''; selectedScope = 'all'; sortBy = 'title' }}
-		/>
-	{:else}
-		<p class="ui-search__results-count labs-page__results">{filteredLabs.length} experiments</p>
-
+		{/snippet}
 		<ul class="labs-page__grid">
 			{#each filteredLabs as lab, i}
 				<li>
@@ -127,7 +86,9 @@
 								{isExternalLab(lab.href) ? 'Demo' : 'Lab'}
 							</span>
 							{#if isExternalLab(lab.href)}
-								<ExternalLink size={14} strokeWidth={2.2} style="color: var(--card-muted);" />
+								<span class="labs-page__external-icon">
+									<ExternalLink size={14} strokeWidth={2.2} />
+								</span>
 							{/if}
 						</p>
 						<h2><span>{lab.title}</span></h2>
@@ -141,7 +102,7 @@
 				</li>
 			{/each}
 		</ul>
-	{/if}
+	</FilterableCollection>
 </PageContainer>
 
 <style>
@@ -252,6 +213,10 @@
 		letter-spacing: 0.03em;
 		text-transform: uppercase;
 		font-family: var(--font-sans);
+		color: var(--card-muted);
+	}
+
+	.labs-page__external-icon {
 		color: var(--card-muted);
 	}
 

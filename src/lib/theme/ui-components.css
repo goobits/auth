@@ -1,0 +1,119 @@
+.ui-search__field {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: 0 var(--space-3);
+	border: var(--border-width) solid var(--input-border);
+	border-radius: var(--radius-md);
+	background: var(--input-bg);
+}
+
+.ui-search-toolbar__controls {
+	display: contents;
+}
+
+.ui-page-container {
+	max-width: var(--max-width);
+	margin: 0 auto;
+}
+
+.ui-chip-group {
+	display: inline-flex;
+	gap: var(--space-1);
+	flex-wrap: wrap;
+}
+
+.ui-chip-group button {
+	padding: var(--space-1) var(--space-3);
+	font-size: var(--font-size-sm);
+	border: var(--border-width) solid var(--border);
+	border-radius: var(--radius-pill);
+	background: var(--card-bg);
+	color: var(--text);
+	cursor: pointer;
+}
+
+.ui-chip-group button.active {
+	background: var(--brand-primary);
+	color: var(--color-white);
+	border-color: var(--brand-primary);
+}
+
+.ui-segmented {
+	display: inline-flex;
+	align-items: center;
+	border: var(--border-width) solid var(--border);
+	border-radius: var(--radius-md);
+	background: var(--card-bg);
+	overflow: hidden;
+}
+
+.ui-segmented button {
+	border: none;
+	border-right: var(--border-width) solid var(--border);
+	background: transparent;
+	color: var(--muted);
+	font-size: var(--font-size-sm);
+	padding: var(--space-1) var(--space-3);
+}
+
+.ui-segmented button:last-child {
+	border-right: none;
+}
+
+.ui-segmented button.active {
+	background: color-mix(in srgb, var(--brand-primary) 14%, var(--card-bg));
+	color: var(--text);
+}
+
+.ui-search__input {
+	width: 100%;
+	padding: var(--space-3) 0;
+	font-size: var(--font-size-base);
+	border: none;
+	background: transparent;
+	color: var(--text);
+	margin-bottom: 0;
+}
+
+.ui-search__input:focus {
+	outline: none;
+}
+
+.ui-search__icon {
+	color: var(--muted);
+	flex-shrink: 0;
+}
+
+.ui-search__field:focus-within {
+	border-color: var(--link);
+}
+
+.ui-search__results-count {
+	font-size: var(--font-size-sm);
+	color: var(--muted);
+	margin: 0 0 var(--space-4);
+}
+
+.ui-search__empty {
+	text-align: center;
+	padding: var(--space-8);
+	color: var(--muted);
+}
+
+.ui-search__empty button {
+	margin-top: var(--space-3);
+	padding: var(--space-2) var(--space-4);
+	background: var(--button-bg);
+	color: var(--button-text);
+	border: none;
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+	font-size: var(--font-size-base);
+}
+
+.ui-surface-card {
+	border: var(--border-width) solid var(--border);
+	border-radius: var(--radius-md);
+	background: color-mix(in srgb, var(--card-bg) 72%, transparent);
+}

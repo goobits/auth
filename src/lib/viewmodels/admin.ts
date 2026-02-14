@@ -1,0 +1,121 @@
+import { cancelAdminBooking, getAdminBookings, getAdminStatus, saveAdminRules, type AdminRulesInput } from '$lib/client/api/adminClient'
+import {
+	createCalendarInvite,
+	deleteCalendarInvite,
+	getCalendarAdminInvites,
+	getCalendarAdminUsers,
+	startCalendarOAuth,
+	type CreateInviteInput
+} from '$lib/client/api/calendarClient'
+
+export type AdminTabId = 'dash' | 'cal' | 'calendar-auth'
+
+export type AdminNavItem = {
+	label: string
+	id: AdminTabId
+}
+
+export type AdminHours = {
+	from: string
+	to: string
+}
+
+export type AdminBookingStats = {
+	upcoming: number
+	seats: number
+}
+
+export type AdminRulesState = {
+	hours: AdminHours
+	buffer: number
+	notice: number
+	capacity: number
+}
+
+export const ADMIN_NAV: AdminNavItem[] = [
+	{ label: 'Dashboard', id: 'dash' },
+	{ label: 'Settings', id: 'cal' },
+	{ label: 'Members', id: 'calendar-auth' }
+]
+
+export const DEFAULT_ADMIN_RULES: AdminRulesState = {
+	hours: { from: '06:00', to: '22:00' },
+	buffer: 15,
+	notice: 24,
+	capacity: 4
+}
+
+export const DEFAULT_ADMIN_STATS: AdminBookingStats = {
+	upcoming: 0,
+	seats: 0
+}
+
+export const DEFAULT_INVITE_DRAFT: CreateInviteInput = {
+	email: null,
+	uses: 1,
+	expiresInDays: 7
+}
+
+export function formatAdminDate(timestamp?: number | null) {
+	if (!timestamp) return 'Never'
+	return new Date(timestamp * 1000).toLocaleDateString()
+}
+
+export function buildInviteLink(origin: string, code: string) {
+	return `${origin}/calendar/login?invite=${code}`
+}
+
+export function normalizeRulesInput(state: AdminRulesState): AdminRulesInput {
+	return {
+		hoursFrom: state.hours.from,
+		hoursTo: state.hours.to,
+		buffer: state.buffer,
+		notice: state.notice,
+		capacity: state.capacity
+	}
+}
+
+export async function fetchAdminStatus() {
+	return getAdminStatus()
+}
+
+export async function fetchAdminBookings() {
+	return getAdminBookings()
+}
+
+export async function persistAdminRules(state: AdminRulesState) {
+	return saveAdminRules(normalizeRulesInput(state))
+}
+
+export async function removeAdminBooking(bookingId: string) {
+	return cancelAdminBooking(bookingId)
+}
+
+export async function beginCalendarOAuth() {
+	return startCalendarOAuth()
+}
+
+export async function fetchCalendarMembersData() {
+	const [invitesData, usersData] = await Promise.all([getCalendarAdminInvites(), getCalendarAdminUsers()])
+	return { invitesData, usersData }
+}
+
+export async function persistInvite(input: CreateInviteInput) {
+	return createCalendarInvite(input)
+}
+
+export async function removeInvite(id: string) {
+	return deleteCalendarInvite(id)
+}
+
+export function getApiErrorMessage(data: unknown, fallback: string) {
+	if (
+		typeof data === 'object' &&
+		data !== null &&
+		'error' in data &&
+		typeof (data as { error?: { message?: unknown } }).error?.message === 'string'
+	) {
+		return (data as { error: { message: string } }).error.message
+	}
+	return fallback
+}

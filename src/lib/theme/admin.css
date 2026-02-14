@@ -1,0 +1,31 @@
+.admin-console {
+	display: grid;
+	gap: 2rem;
+}
+
+.admin-console__grid {
+	display: grid;
+	gap: 1rem;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	margin-top: 1.5rem;
+}
+
+.admin-console__card-surface {
+	border: 1px solid var(--card-border);
+	border-radius: 12px;
+	padding: 1.25rem;
+	background: var(--card-bg);
+}
+
+.admin-console__card {
+	display: grid;
+	gap: 0.4rem;
+	text-decoration: none;
+	color: inherit;
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-console__card:hover {
+	transform: translateY(-2px);
+	box-shadow: var(--shadow-card) 0 12px 24px;
+}

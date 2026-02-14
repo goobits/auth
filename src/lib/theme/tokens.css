@@ -5,4 +5,54 @@
 	--ui-card-border: 1px solid var(--panel-border);
 	--ui-card-background: var(--panel-bg);
 	--ui-hero-glow: radial-gradient(circle, rgba(167, 139, 250, 0.28) 0%, rgba(96, 165, 250, 0) 68%);
+
+	/* spacing scale */
+	--space-1: 0.25rem;
+	--space-2: 0.5rem;
+	--space-3: 0.75rem;
+	--space-4: 1rem;
+	--space-5: 1.25rem;
+	--space-6: 1.5rem;
+	--space-7: 1.75rem;
+	--space-8: 2rem;
+	--space-9: 2.25rem;
+	--space-10: 2.5rem;
+	--space-11: 2.75rem;
+	--space-12: 3rem;
+
+	/* radius scale */
+	--radius-sm: 4px;
+	--radius-md: 8px;
+	--radius-lg: 12px;
+	--radius-xl: 16px;
+	--radius-pill: 999px;
+
+	/* type scale */
+	--font-size-xs: 0.75rem;
+	--font-size-sm: 0.875rem;
+	--font-size-base: 1rem;
+	--font-size-lg: 1.0625rem;
+	--font-size-xl: 1.2rem;
+
+	--font-weight-medium: 500;
+	--font-weight-semibold: 600;
+	--font-weight-bold: 700;
+
+	--border-width: 1px;
+	--max-width-readable: 980px;
+
+	--hero-max-width: 700px;
+	--hero-margin-bottom: 2.2rem;
+	--hero-title-margin-bottom: 0.9rem;
+	--hero-eyebrow-margin-bottom: 0.85rem;
+	--hero-subtitle-max-width: 56ch;
+	--hero-icon-size: 0.85em;
+	--hero-icon-offset-y: -0.08em;
+	--hero-icon-gap: 0.35rem;
+
+	--calendar-nav-height: 50px;
+	--calendar-nav-inner-gap: 20px;
+	--calendar-nav-link-gap: 6px;
+	--calendar-nav-link-padding: 6px 11px;
+	--calendar-nav-inner-width: calc(100% - 2em);
 }

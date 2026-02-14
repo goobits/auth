@@ -13,7 +13,7 @@
                 src="/media/emoji-sparkling-heart.png"
                 height="40"
                 width="40"
-                style="vertical-align: top"
+                class="home__hero-heart"
                 alt=""
         />
     </h2>
@@ -40,3 +40,9 @@
 <!--        </a>-->
 <!--    {/each}-->
 <!--</projects>-->
+
+<style>
+	.home__hero-heart {
+		vertical-align: top;
+	}
+</style>

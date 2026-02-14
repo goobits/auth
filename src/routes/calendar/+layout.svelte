@@ -8,7 +8,6 @@
 
 	const { data, children } = $props()
 
-	// Client-side auth check - redirect to login if no user (except on login page)
 	$effect(() => {
 		const pathname = $page.url.pathname
 		if (shouldRedirectCalendarGuest(data.user, pathname)) {
@@ -33,10 +32,7 @@
 			<a href="/calendar" class="calendar-shell__brand">Members</a>
 			<div class="calendar-shell__links">
 				{#each CALENDAR_ACTIVITY_LIST as item}
-					<a
-						href={item.href}
-						class:active={isActive(item.href)}
-					>
+					<a href={item.href} class:active={isActive(item.href)}>
 						{item.label}
 					</a>
 				{/each}
@@ -82,7 +78,7 @@
 
 	.calendar-shell__nav {
 		background: var(--color-white-015);
-		border-bottom: 1px solid var(--color-white-05);
+		border-bottom: var(--border-width) solid var(--color-white-05);
 		width: 100%;
 		position: sticky;
 		top: 0;
@@ -94,18 +90,18 @@
 	.calendar-shell__nav-inner {
 		max-width: var(--max-width, 1060px);
 		margin: 0 auto;
-		width: calc(100% - 2em);
-		height: 50px;
+		width: var(--calendar-nav-inner-width);
+		height: var(--calendar-nav-height);
 		display: flex;
 		align-items: center;
-		gap: 20px;
+		gap: var(--calendar-nav-inner-gap);
 	}
 
 	.calendar-shell__brand {
 		display: inline-flex;
 		align-items: center;
 		font-size: 15px;
-		font-weight: 600;
+		font-weight: var(--font-weight-semibold);
 		letter-spacing: -0.01em;
 		background: var(--gradient-rainbow);
 		-webkit-background-clip: text;
@@ -116,7 +112,7 @@
 
 	.calendar-shell__links {
 		display: flex;
-		gap: 6px;
+		gap: var(--calendar-nav-link-gap);
 		flex: 1;
 		align-items: center;
 		min-width: 0;
@@ -128,9 +124,9 @@
 		color: color-mix(in srgb, var(--color-white) 52%, transparent);
 		text-decoration: none;
 		font-size: 13px;
-		font-weight: 500;
-		padding: 6px 11px;
-		border-radius: 999px;
+		font-weight: var(--font-weight-medium);
+		padding: var(--calendar-nav-link-padding);
+		border-radius: var(--radius-pill);
 		transition: all 0.16s ease;
 	}
 
@@ -144,38 +140,34 @@
 		background: color-mix(in srgb, var(--color-white) 7.5%, transparent);
 	}
 
-	.calendar-shell__links a + a {
-		margin-left: 6px;
-	}
-
 	.calendar-shell__user {
 		display: flex;
 		align-items: center;
-		gap: 10px;
+		gap: var(--space-3);
 	}
 
 	.calendar-shell__avatar {
 		width: 24px;
 		height: 24px;
 		border-radius: 50%;
-		border: 1px solid var(--color-white-12);
+		border: var(--border-width) solid var(--color-white-12);
 	}
 
 	.calendar-shell__name {
 		color: color-mix(in srgb, var(--color-white) 60%, transparent);
 		font-size: 12px;
-		font-weight: 500;
+		font-weight: var(--font-weight-medium);
 	}
 
 	.calendar-shell__logout {
 		background: transparent;
-		border: 1px solid var(--color-white-10);
+		border: var(--border-width) solid var(--color-white-10);
 		color: color-mix(in srgb, var(--color-white) 54%, transparent);
-		padding: 5px 10px;
-		border-radius: 999px;
+		padding: var(--space-1) var(--space-3);
+		border-radius: var(--radius-pill);
 		cursor: pointer;
 		font-size: 12px;
-		font-weight: 500;
+		font-weight: var(--font-weight-medium);
 		transition: all 0.2s ease;
 	}
 
@@ -191,8 +183,8 @@
 
 	@media (max-width: 700px) {
 		.calendar-shell__nav-inner {
-			padding: 10px 14px;
-			gap: 12px;
+			padding: var(--space-3) var(--space-4);
+			gap: var(--space-3);
 			height: auto;
 			min-height: 48px;
 			flex-wrap: wrap;
@@ -202,13 +194,13 @@
 			order: 3;
 			width: 100%;
 			overflow-x: auto;
-			padding-bottom: 2px;
-			gap: 4px;
+			padding-bottom: var(--space-1);
+			gap: var(--space-1);
 		}
 
 		.calendar-shell__links a {
 			font-size: 12px;
-			padding: 5px 9px;
+			padding: var(--space-1) var(--space-2);
 			white-space: nowrap;
 		}
 

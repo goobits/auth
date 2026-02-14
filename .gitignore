@@ -28,3 +28,4 @@ tasks/
 temp/
 test-results/
 vm.yaml
+.artifacts/
