@@ -1,6 +1,6 @@
 <script>
 	import { Cookie, KeyRound, Mail, Settings2 } from '@lucide/svelte'
-	import HeroBanner from '@components/HeroBanner.svelte'
+	import LegalPage from '$lib/ui/LegalPage.svelte'
 </script>
 
 <svelte:head>
@@ -8,14 +8,13 @@
 	<meta name="description" content="Cookie policy for MIKO.ART" />
 </svelte:head>
 
-<HeroBanner
+<LegalPage
 	title="Cookie Policy"
 	subtitle="What cookies do here, and what they do not."
 	icon="/media/emoji-cookies.png"
-/>
-
-<section class="legal-page legal legal--cookies">
-	<p class="legal-updated legal__updated">Last updated: February 11, 2026</p>
+	updatedAt="February 11, 2026"
+	className="legal--cookies"
+>
 
 	<p>
 		This page describes how MIKO.ART uses cookies and similar browser storage.
@@ -56,4 +55,4 @@
 	<p>
 		For cookie questions, email <a href="mailto:hello@miko.art">hello@miko.art</a>.
 	</p>
-</section>
+</LegalPage>

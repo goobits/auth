@@ -1,5 +1,6 @@
 <script>
 	import './Contact.styl'
+	import Hero from '$lib/ui/Hero.svelte'
 	import { form, field } from 'svelte-forms'
 	import { email, required } from 'svelte-forms/validators'
 
@@ -34,10 +35,13 @@
     <title>Contact - MIKO.ART</title>
 </svelte:head>
 
-<div class="hero contact-page contact-page__hero">
-    <h1>Contact Miko <img src="/media/emoji-herb.png" height="56" width="56" style="vertical-align: top" alt=""></h1>
-    <h2>Got a question? Drop me a line.</h2>
-</div>
+<Hero
+	className="contact-page contact-page__hero"
+	title="Contact Miko"
+	subtitle="Got a question? Drop me a line."
+	icon="/media/emoji-herb.png"
+	iconSize="0.96em"
+/>
 
 <contact-form class="contact-page__form-shell">
     <img class="contact-page__image" src="/media/super-racoon.svg" style="float: right; width: 31%" alt="">
@@ -69,7 +73,7 @@
 
         <button class="contact-page__submit" on:click={submitForm}>Send</button>
 
-		<p class="legal-note contact-page__legal-note">
+		<p class="contact-form__legal-note contact-page__legal-note">
 			By sending this form, you agree to our
 			<a href="/privacy">Privacy Policy</a>,
 			<a href="/terms">Terms of Use</a>, and

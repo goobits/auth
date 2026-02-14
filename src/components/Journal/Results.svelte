@@ -20,12 +20,12 @@
 </svelte:head>
 
 {#if showBackButton}
-    <nav>
-        <a href="/journal" class="back-btn">← Back</a>
+    <nav class="journal-results__nav">
+        <a href="/journal" class="journal-results__back-link">← Back</a>
     </nav>
 {/if}
 
-<div class="posts">
+<div class="journal-results">
     <h1>
         {formatValue(category)}
     </h1>
@@ -52,22 +52,22 @@
 </div>
 
 <style lang="scss">
-	nav {
+	.journal-results__nav {
 		max-width: var(--max-width);
 		margin: 0 auto 1rem;
+	}
 
-		.back-btn {
-			color: var(--muted);
-			text-decoration: none;
-			font-family: var(--font-serif);
+	.journal-results__back-link {
+		color: var(--muted);
+		text-decoration: none;
+		font-family: var(--font-serif);
 
-			&:hover {
-				text-decoration: underline;
-			}
+		&:hover {
+			text-decoration: underline;
 		}
 	}
 
-	.posts {
+	.journal-results {
 		max-width: var(--max-width);
 		margin: 0 auto;
 	}

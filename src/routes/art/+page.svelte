@@ -1,6 +1,8 @@
 <script>
-	import { ArrowUpRight, Palette, Sparkles } from '@lucide/svelte'
-	import HeroBanner from '@components/HeroBanner.svelte'
+	import { Palette, Sparkles } from '@lucide/svelte'
+	import ConversationCta from '$lib/ui/ConversationCta.svelte'
+	import Hero from '$lib/ui/Hero.svelte'
+	import ShowcaseSection from '$lib/ui/ShowcaseSection.svelte'
 
 	const works = [
 		{
@@ -41,28 +43,30 @@
 	<meta name="description" content="Art by Miko: visual experiments, color systems, and interactive works." />
 </svelte:head>
 
-<HeroBanner
+<Hero
 	title="Art"
 	subtitle="Visual worlds, color studies, and interactive pieces."
 	icon="/media/emoji-sparkling-heart.png"
 />
 
-<div class="art-page showcase-page art">
-	<section class="intro showcase-section showcase-intro art__intro">
+<div class="art showcase__page">
+	<section class="showcase__section showcase__intro art__intro">
 		<p>
 			I explore art through code, drawing, interaction, and motion. These pieces sit at the
 			intersection of playful tools and visual storytelling.
 		</p>
 	</section>
 
-	<section class="works showcase-section art__works">
-		<h2 class="showcase-title art__title"><Palette size={17} strokeWidth={2.2} /> Selected Works</h2>
+	<ShowcaseSection className="art__works" titleClassName="art__title" title="Selected Works">
+		{#snippet icon()}
+			<Palette size={17} strokeWidth={2.2} />
+		{/snippet}
 		<ul>
 			{#each works as work}
 				<li>
 					<article class="art__work-card">
 						<img src={work.image} alt={work.title} loading="lazy" />
-						<div class="meta art__meta">
+						<div class="art__meta">
 							<h3>{work.title}</h3>
 							<p>{work.note}</p>
 						</div>
@@ -70,21 +74,19 @@
 				</li>
 			{/each}
 		</ul>
-	</section>
+	</ShowcaseSection>
 
-	<section class="closing showcase-section art__closing">
-		<h2 class="showcase-title art__title"><Sparkles size={17} strokeWidth={2.2} /> Commissions & Exhibits</h2>
+	<ShowcaseSection className="art__closing" titleClassName="art__title" title="Commissions & Exhibits">
+		{#snippet icon()}
+			<Sparkles size={17} strokeWidth={2.2} />
+		{/snippet}
 		<p>Interested in custom visual work, an installation, or an exhibition collaboration?</p>
-		<a href="/contact" class="pill-link art__pill-link">
-			Start a conversation
-			<ArrowUpRight size={14} strokeWidth={2.2} />
-		</a>
-	</section>
+		<ConversationCta className="art__pill-link" />
+	</ShowcaseSection>
 </div>
 
 <style>
-	.works ul,
-	.art__works ul {
+	:global(.art__works ul) {
 		list-style: none;
 		margin: 0;
 		padding: 0;
@@ -93,7 +95,6 @@
 		gap: 0.75rem;
 	}
 
-	.works article,
 	.art__work-card {
 		height: 100%;
 		border: 1px solid var(--border);
@@ -104,7 +105,6 @@
 		grid-template-rows: 150px auto;
 	}
 
-	.works img,
 	.art__work-card img {
 		width: 100%;
 		height: 100%;
@@ -112,19 +112,16 @@
 		display: block;
 	}
 
-	.meta,
 	.art__meta {
 		padding: 0.65rem 0.75rem 0.75rem;
 	}
 
-	.meta h3,
 	.art__meta h3 {
 		margin: 0 0 0.25rem;
 		font-family: var(--font-display);
 		font-size: 1rem;
 	}
 
-	.meta p,
 	.art__meta p {
 		margin: 0;
 		color: var(--muted);
@@ -132,8 +129,7 @@
 		line-height: 1.45;
 	}
 
-	.closing p,
-	.art__closing p {
+	:global(.art__closing p) {
 		margin: 0 0 0.75rem;
 	}
 </style>

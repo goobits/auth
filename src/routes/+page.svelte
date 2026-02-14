@@ -1,12 +1,12 @@
 <script>
-	import { apps, art } from './_projects.ts'
+	import { apps } from './_projects.ts'
 </script>
 
 <svelte:head>
     <title>Code & Design - MIKO.ART</title>
 </svelte:head>
 
-<div class="hero home home__hero">
+<div class="home home__hero">
     <h1>MAKE, LEARN&hellip; PLAY!</h1>
     <h2>APPS CRAFTED WITH
         <img
@@ -20,8 +20,8 @@
 </div>
 
 <projects class="home__projects">
-    {#each apps as { id, description, title, url }, i}
-        <a class="project home__project" href="{url}">
+    {#each apps as { id, description, title, url }}
+        <a class="home__project" href="{url}">
             <project-image style="background-image: url('/media/project-{id}.png')"></project-image>
             <project-description>{description}</project-description>
             <project-title><span>{title}</span></project-title>

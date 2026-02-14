@@ -1,0 +1,8 @@
+:root {
+	--ui-section-space: 1rem;
+	--ui-card-radius: 18px;
+	--ui-card-padding: 1rem;
+	--ui-card-border: 1px solid var(--panel-border);
+	--ui-card-background: var(--panel-bg);
+	--ui-hero-glow: radial-gradient(circle, rgba(167, 139, 250, 0.28) 0%, rgba(96, 165, 250, 0) 68%);
+}

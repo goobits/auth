@@ -20,8 +20,7 @@ http://prismjs.com/download.html#themes=prism&languages=markup+css+clike+javascr
 
 /* Scrollbars */
 
-:root
-{
+.code-theme {
 	--background: #282A36;
 	--comment:    #6272A4;
 	--foreground: #F8F8F2;
@@ -64,7 +63,6 @@ http://prismjs.com/download.html#themes=prism&languages=markup+css+clike+javascr
 	--purple-40:     #BD93F966;
 	--red-40:        #FF555566;
 	--yellow-40:     #F1FA8C66;
-}
 
 pre::-webkit-scrollbar
 {
@@ -289,7 +287,7 @@ pre[class*="language-"]
 	height: 300px !important;
 }
 
-.limit-300
+.limit-400
 {
 	height: 400px !important;
 }
@@ -581,4 +579,5 @@ pre[class*="language-"]
 .highlight-line-remove
 {
 	background-color: var(--red-30);
+}
 }

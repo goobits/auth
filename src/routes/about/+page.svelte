@@ -78,10 +78,10 @@
 	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
-<div class="about-page about">
-	<section class="hero-row about__hero" aria-labelledby="about-title">
-		<div class="avatar-ring about__avatar-ring">
-			<div class="avatar-inner about__avatar-inner">
+<div class="about">
+	<section class="about__hero" aria-labelledby="about-title">
+		<div class="about__avatar-ring">
+			<div class="about__avatar-inner">
 				<img
 					src="/media/miko.jpg"
 					alt="Portrait of Miko"
@@ -93,8 +93,8 @@
 				/>
 			</div>
 		</div>
-		<div class="hero-copy about__hero-copy">
-			<h1 id="about-title">Haai! I'm <span class="rainbow-text about__rainbow-text">Miko</span> <span aria-hidden="true">🦄</span></h1>
+		<div class="about__hero-copy">
+			<h1 id="about-title">Haai! I'm <span class="about__rainbow-text">Miko</span> <span aria-hidden="true">🦄</span></h1>
 			<p>
 				Developer, designer, and musician passionate about making colorful, creative, and educational things
 				for the internet.
@@ -102,33 +102,33 @@
 		</div>
 	</section>
 
-	<section class="lede about__lede">
+	<section class="about__lede">
 		<p>
 			I love it when tools disappear into the act of creating. When all that's left is imagination, flow, and
-			joy. That's what I love building. <span class="sparkle about__sparkle" aria-hidden="true">✨</span>
+			joy. That's what I love building. <span class="about__sparkle" aria-hidden="true">✨</span>
 		</p>
 	</section>
 
-	<section class="ventures about__ventures" aria-labelledby="ventures-title">
-		<h2 id="ventures-title" class="section-label about__section-label">Building Things ✦</h2>
-		<div class="venture-grid about__venture-grid">
+	<section class="about__ventures" aria-labelledby="ventures-title">
+		<h2 id="ventures-title" class="about__section-label">Building Things ✦</h2>
+		<div class="about__venture-grid">
 			{#each ventures as venture}
-				<a href={venture.href} target="_blank" rel="noopener noreferrer" class="venture-card about__venture-card">
-					<span class="emoji about__emoji" aria-hidden="true">{venture.emoji}</span>
+				<a href={venture.href} target="_blank" rel="noopener noreferrer" class="about__venture-card">
+					<span class="about__emoji" aria-hidden="true">{venture.emoji}</span>
 					<h3>{venture.name}</h3>
-					<p class="role about__role">{venture.role}</p>
-					<p class="text about__text">{venture.description}</p>
+					<p class="about__role">{venture.role}</p>
+					<p class="about__text">{venture.description}</p>
 					{#if venture.badge}
-						<span class="badge about__badge">{venture.badge}</span>
+						<span class="about__badge">{venture.badge}</span>
 					{/if}
 				</a>
 			{/each}
 		</div>
 	</section>
 
-	<section class="two-col about__columns">
-		<article class="info-card about__info-card" aria-labelledby="exhibits-title">
-			<h2 id="exhibits-title" class="section-label about__section-label">Selected Exhibits ✦</h2>
+	<section class="about__columns">
+		<article class="about__info-card" aria-labelledby="exhibits-title">
+			<h2 id="exhibits-title" class="about__section-label">Selected Exhibits ✦</h2>
 			<ul>
 				{#each exhibits as exhibit}
 					<li>
@@ -138,28 +138,28 @@
 						{/if}
 					</li>
 				{/each}
-				<li class="accent about__accent"><a href="/contact">you</a>? 💫</li>
+				<li class="about__accent"><a href="/contact">you</a>? 💫</li>
 			</ul>
 		</article>
 
-		<article class="info-card about__info-card" aria-labelledby="clients-title">
-			<h2 id="clients-title" class="section-label about__section-label">Selected Clients ✦</h2>
+		<article class="about__info-card" aria-labelledby="clients-title">
+			<h2 id="clients-title" class="about__section-label">Selected Clients ✦</h2>
 			<ul>
 				{#each clients as client}
 					<li>{client}</li>
 				{/each}
-				<li class="accent about__accent"><a href="/contact">you</a>? 🌈</li>
+				<li class="about__accent"><a href="/contact">you</a>? 🌈</li>
 			</ul>
 		</article>
 	</section>
 
-	<section class="services about__services" aria-labelledby="services-title">
-		<p class="section-label about__section-label">What I Build ✦</p>
-		<h2 id="services-title" class="services-heading about__services-heading">Sketch.IO crafts tools for people who love making things.</h2>
-		<div class="services-grid about__services-grid">
+	<section class="about__services" aria-labelledby="services-title">
+		<p class="about__section-label">What I Build ✦</p>
+		<h2 id="services-title" class="about__services-heading">Sketch.IO crafts tools for people who love making things.</h2>
+		<div class="about__services-grid">
 			{#each services as service}
-				<article class="service-item about__service-item">
-					<div class="icon about__icon" aria-hidden="true">{service.icon}</div>
+				<article class="about__service-item">
+					<div class="about__icon" aria-hidden="true">{service.icon}</div>
 					<h3>{service.name}</h3>
 					<p>{service.description}</p>
 				</article>
@@ -167,8 +167,8 @@
 		</div>
 	</section>
 
-	<section class="cta about__cta" aria-labelledby="cta-title">
-		<div class="cta-box about__cta-box">
+	<section class="about__cta" aria-labelledby="cta-title">
+		<div class="about__cta-box">
 			<h2 id="cta-title">Let's make something magical together <span aria-hidden="true">✨</span></h2>
 			<p>A creative tool, an interactive exhibit, or a wild idea you can't quite describe yet.</p>
 			<a href="/contact">Say Haai</a>

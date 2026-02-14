@@ -3,18 +3,19 @@
 		BookOpen,
 		ChevronDown,
 		ChevronRight,
-		Clock3,
 		Cpu,
 		Filter,
 		FileText,
 		House,
-		Route,
-		Search,
 		Shield,
-		Type,
 		Wrench
 	} from '@lucide/svelte'
-	import HeroBanner from '@components/HeroBanner.svelte'
+	import FilterChipGroup from '$lib/ui/FilterChipGroup.svelte'
+	import Hero from '$lib/ui/Hero.svelte'
+	import PageContainer from '$lib/ui/PageContainer.svelte'
+	import ResultsEmpty from '$lib/ui/ResultsEmpty.svelte'
+	import SearchToolbar from '$lib/ui/SearchToolbar.svelte'
+	import SegmentedControl from '$lib/ui/SegmentedControl.svelte'
 
 	const { data } = $props()
 
@@ -22,6 +23,11 @@
 	let selectedTags = $state([])
 	let sortBy = $state('path')
 	let collapsedCategories = $state({})
+	const sortOptions = [
+		{ value: 'path', label: 'Path' },
+		{ value: 'name', label: 'Name' },
+		{ value: 'modified', label: 'Recent' }
+	]
 
 	const availableTags = $derived(data.showDevDiagnostics
 		? ['SSR', 'CSR', 'Dynamic', 'Auth', 'NoIndex', 'API', 'Layout']
@@ -93,14 +99,6 @@
 		collapsedCategories[category] = !collapsedCategories[category]
 	}
 
-	function toggleTag(tag) {
-		if (selectedTags.includes(tag)) {
-			selectedTags = selectedTags.filter(t => t !== tag)
-		} else {
-			selectedTags = [...selectedTags, tag]
-		}
-	}
-
 	function formatDate(isoString) {
 		const d = new Date(isoString)
 		const mm = String(d.getMonth() + 1).padStart(2, '0')
@@ -131,145 +129,108 @@
 	<meta name="description" content="Human-readable sitemap for MIKO.ART with public pages and journal posts." />
 </svelte:head>
 
-<HeroBanner
+<Hero
 	title="Sitemap"
 	subtitle="A friendly map of everything on this site."
 	icon="/media/emoji-sitemap.png"
 />
 
-<div class="sitemap sitemap-page">
-	<header class="sitemap-header sitemap-page__header">
+<PageContainer className="sitemap-page">
+	<header class="sitemap-page__header">
 		{#if data.showDevDiagnostics}
-			<span class="dev-badge sitemap-page__dev-badge">DEV MODE</span>
+			<span class="sitemap-page__dev-badge">DEV MODE</span>
 		{/if}
 	</header>
 
-	<div class="controls sitemap-page__controls">
-		<div class="search sitemap-page__search">
-			<div class="ui-search-field sitemap-page__search-field">
-				<Search class="ui-search-icon" size={15} strokeWidth={2.2} />
-				<input
-					class="ui-search-input"
-					type="text"
-					placeholder="Search routes..."
-					bind:value={searchQuery}
-				/>
-			</div>
-		</div>
+	<div class="sitemap-page__controls">
+		<SearchToolbar bind:query={searchQuery} placeholder="Search routes..." ariaLabel="Search routes">
+			<div class="sitemap-page__filters">
+				<div class="sitemap-page__tag-filters">
+					<span class="sitemap-page__filter-label">
+						<Filter size={13} strokeWidth={2.2} />
+						<span>Filters</span>
+					</span>
+					<FilterChipGroup
+						className="sitemap-page__tag-filter-group"
+						items={availableTags}
+						bind:selected={selectedTags}
+						multiple={true}
+						ariaLabel="Sitemap filters"
+					/>
+				</div>
 
-		<div class="filters sitemap-page__filters">
-			<div class="tag-filters sitemap-page__tag-filters">
-				<span class="filter-label sitemap-page__filter-label">
-					<Filter size={13} strokeWidth={2.2} />
-					<span>Filters</span>
-				</span>
-				{#each availableTags as tag}
-					<button
-						class="tag-filter sitemap-page__tag-filter"
-						class:active={selectedTags.includes(tag)}
-						onclick={() => toggleTag(tag)}
-					>
-						{tag}
-					</button>
-				{/each}
-			</div>
-
-			<div class="sort-view sitemap-page__sort-view">
-				<div class="sort-toggle sitemap-page__sort-toggle" role="tablist" aria-label="Sort routes">
-					<button
-						type="button"
-						role="tab"
-						class:active={sortBy === 'path'}
-						aria-selected={sortBy === 'path'}
-						onclick={() => sortBy = 'path'}
-					>
-						<Route size={13} strokeWidth={2.2} />
-						<span>Path</span>
-					</button>
-					<button
-						type="button"
-						role="tab"
-						class:active={sortBy === 'name'}
-						aria-selected={sortBy === 'name'}
-						onclick={() => sortBy = 'name'}
-					>
-						<Type size={13} strokeWidth={2.2} />
-						<span>Name</span>
-					</button>
-					<button
-						type="button"
-						role="tab"
-						class:active={sortBy === 'modified'}
-						aria-selected={sortBy === 'modified'}
-						onclick={() => sortBy = 'modified'}
-					>
-						<Clock3 size={13} strokeWidth={2.2} />
-						<span>Recent</span>
-					</button>
+				<div class="sitemap-page__sort-view">
+					<SegmentedControl
+						className="sitemap-page__sort-toggle"
+						options={sortOptions}
+						bind:value={sortBy}
+						ariaLabel="Sort routes"
+					/>
 				</div>
 			</div>
-		</div>
+		</SearchToolbar>
 	</div>
 
 	{#if filteredCount === 0}
-		<div class="ui-no-results sitemap-page__no-results">
-			<p>No routes match your filters.</p>
-			<button onclick={() => { searchQuery = ''; selectedTags = [] }}>Clear Filters</button>
-		</div>
+		<ResultsEmpty
+			className="sitemap-page__no-results"
+			message="No routes match your filters."
+			onAction={() => { searchQuery = ''; selectedTags = [] }}
+		/>
 	{:else}
-		<div class="ui-results-count results-count sitemap-page__results-count">
+		<div class="sitemap-page__results-count">
 			Showing {filteredCount} of {data.stats.total} routes
 		</div>
 
 		{#each categoryOrder as category}
 		{#if filteredGrouped[category]}
 			{@const CategoryIcon = categoryIcons[category] || FileText}
-			<section class="category sitemap-page__category">
+			<section class="sitemap-page__category">
 				<button
-					class="category-header sitemap-page__category-header"
+					class="sitemap-page__category-header"
 					onclick={() => toggleCategory(category)}
 				>
 					<h2>
-						<CategoryIcon class="category-icon sitemap-page__category-icon" size={14} strokeWidth={2.2} />
+						<CategoryIcon class="sitemap-page__category-icon" size={14} strokeWidth={2.2} />
 							{#if collapsedCategories[category]}
-								<ChevronRight class="toggle-icon sitemap-page__toggle-icon" size={14} strokeWidth={2.25} />
+								<ChevronRight class="sitemap-page__toggle-icon" size={14} strokeWidth={2.25} />
 							{:else}
-								<ChevronDown class="toggle-icon sitemap-page__toggle-icon" size={14} strokeWidth={2.25} />
+								<ChevronDown class="sitemap-page__toggle-icon" size={14} strokeWidth={2.25} />
 							{/if}
 							{category}
-							<span class="count sitemap-page__count">({filteredGrouped[category].length})</span>
+							<span class="sitemap-page__count">({filteredGrouped[category].length})</span>
 						</h2>
 					</button>
 
 					{#if !collapsedCategories[category]}
 						<ul>
 							{#each filteredGrouped[category] as route}
-								<li class="route sitemap-page__route">
-									<div class="route-main sitemap-page__route-main">
+								<li class="sitemap-page__route">
+									<div class="sitemap-page__route-main">
 										{#if route.type === 'api'}
-											<span class="route-path sitemap-page__route-path">{route.path}</span>
+											<span class="sitemap-page__route-path">{route.path}</span>
 											{#if route.httpMethods?.length > 0}
-												<span class="methods sitemap-page__methods">
+												<span class="sitemap-page__methods">
 													{#each route.httpMethods as method}
-														<span class="method sitemap-page__method {method.toLowerCase()}">{method}</span>
+														<span class="sitemap-page__method {method.toLowerCase()}">{method}</span>
 													{/each}
 												</span>
 											{/if}
 										{:else}
 											{#if route.isDynamic}
-												<span class="route-path sitemap-page__route-path">{route.path}</span>
+												<span class="sitemap-page__route-path">{route.path}</span>
 											{:else}
-												<a href={route.path} class="route-link sitemap-page__route-link">{route.path}</a>
+												<a href={route.path} class="sitemap-page__route-link">{route.path}</a>
 											{/if}
 										{/if}
 									</div>
-									<div class="route-meta sitemap-page__route-meta">
-										<div class="tags sitemap-page__tags">
+									<div class="sitemap-page__route-meta">
+										<div class="sitemap-page__tags">
 											{#each getRouteTags(route) as tag}
-												<span class="tag sitemap-page__tag {tag.toLowerCase()}">{tag}</span>
+												<span class="sitemap-page__tag {tag.toLowerCase()}">{tag}</span>
 											{/each}
 										</div>
-										<span class="modified sitemap-page__modified">{formatDate(route.lastModified)}</span>
+										<span class="sitemap-page__modified">{formatDate(route.lastModified)}</span>
 									</div>
 								</li>
 							{/each}
@@ -280,20 +241,15 @@
 		{/each}
 	{/if}
 
-</div>
+</PageContainer>
 
 <style>
-	.sitemap {
-		max-width: var(--max-width);
-		margin: 0 auto;
-	}
-
-	.sitemap-header {
+	.sitemap-page__header {
 		text-align: center;
 		margin-bottom: 1.5rem;
 	}
 
-	.dev-badge {
+	.sitemap-page__dev-badge {
 		display: inline-block;
 		margin-top: 0.5rem;
 		padding: 0.2rem 0.6rem;
@@ -305,27 +261,31 @@
 		letter-spacing: 0.05em;
 	}
 
-	.controls {
+	.sitemap-page__controls {
 		display: grid;
 		gap: 0.7rem;
 		margin-bottom: 1.25rem;
 	}
 
-	.filters {
+	.sitemap-page__filters {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;
 		gap: 0.6rem;
 		align-items: center;
 	}
 
-	.tag-filters {
+	.sitemap-page__tag-filters {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 0.35rem;
 	}
 
-	.filter-label {
+	.sitemap-page__tag-filter-group {
+		display: inline-flex;
+	}
+
+	.sitemap-page__filter-label {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
@@ -335,76 +295,25 @@
 		padding-right: 0.1rem;
 	}
 
-	.tag-filter {
-		padding: 0.25rem 0.6rem;
-		font-size: 0.8rem;
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		background: var(--card-bg);
-		color: var(--text);
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.tag-filter:hover {
-		border-color: var(--link);
-	}
-
-	.tag-filter.active {
-		background: var(--brand-primary);
-		border-color: var(--brand-primary);
-		color: var(--color-white);
-	}
-
-	.sort-view {
+	.sitemap-page__sort-view {
 		display: flex;
 		gap: 0.35rem;
 		justify-self: end;
 	}
 
-	.sort-toggle {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.2rem;
-		padding: 0.2rem;
-		border: 1px solid var(--border);
-		border-radius: 999px;
-		background: var(--card-bg);
+	.sitemap-page__sort-toggle {
+		flex-shrink: 0;
 	}
 
-	.sort-toggle button {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		border: none;
-		border-radius: 999px;
-		background: transparent;
-		color: var(--muted);
-		padding: 0.35rem 0.68rem;
-		line-height: 1;
-		font-size: 0.82rem;
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.sort-toggle button:hover {
-		color: var(--text);
-	}
-
-	.sort-toggle button.active {
-		background: var(--brand-primary);
-		color: var(--color-white);
-	}
-
-	.results-count {
+	.sitemap-page__results-count {
 		margin-bottom: 0.75rem;
 	}
 
-	.category {
+	.sitemap-page__category {
 		margin-bottom: 1rem;
 	}
 
-	.category-header {
+	.sitemap-page__category-header {
 		width: 100%;
 		display: block;
 		background: var(--card-bg);
@@ -415,11 +324,11 @@
 		text-align: left;
 	}
 
-	.category-header:hover {
+	.sitemap-page__category-header:hover {
 		border-color: var(--link);
 	}
 
-	.category-header h2 {
+	.sitemap-page__category-header h2 {
 		font-size: 1.1rem;
 		margin: 0;
 		display: flex;
@@ -427,27 +336,27 @@
 		gap: 0.4rem;
 	}
 
-	.toggle-icon {
+	.sitemap-page__toggle-icon {
 		width: 1rem;
 		height: 1rem;
 		flex-shrink: 0;
 		color: var(--muted);
 	}
 
-	.category-icon {
+	.sitemap-page__category-icon {
 		width: 0.95rem;
 		height: 0.95rem;
 		flex-shrink: 0;
 		color: var(--muted);
 	}
 
-	.count {
+	.sitemap-page__count {
 		font-weight: normal;
 		color: var(--muted);
 		font-size: 0.85rem;
 	}
 
-	.category ul {
+	.sitemap-page__category ul {
 		list-style: none;
 		padding: 0 0 0 1.35rem;
 		margin: 0.45rem 0 0 0;
@@ -455,7 +364,7 @@
 		gap: 0.2rem;
 	}
 
-	.route {
+	.sitemap-page__route {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
@@ -464,11 +373,11 @@
 		border-bottom: 1px solid var(--panel-border);
 	}
 
-	.route:last-child {
+	.sitemap-page__route:last-child {
 		border-bottom: none;
 	}
 
-	.route-main {
+	.sitemap-page__route-main {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
@@ -476,29 +385,29 @@
 		min-width: 0;
 	}
 
-	.route-link {
+	.sitemap-page__route-link {
 		font-family: monospace;
 		font-size: 0.85rem;
 		text-decoration: none;
 		color: var(--text);
 	}
 
-	.route-link:hover {
+	.sitemap-page__route-link:hover {
 		color: var(--link-hover);
 	}
 
-	.route-path {
+	.sitemap-page__route-path {
 		font-family: monospace;
 		font-size: 0.85rem;
 		color: var(--text);
 	}
 
-	.methods {
+	.sitemap-page__methods {
 		display: flex;
 		gap: 0.2rem;
 	}
 
-	.method {
+	.sitemap-page__method {
 		font-size: 0.65rem;
 		font-weight: 600;
 		padding: 0.1rem 0.35rem;
@@ -506,26 +415,26 @@
 		text-transform: uppercase;
 	}
 
-	.method.get { background: var(--link); color: var(--color-white); }
-	.method.post { background: var(--button-bg); color: var(--color-white); }
-	.method.put { background: var(--color-warning); color: var(--color-white); }
-	.method.delete { background: var(--form-error); color: var(--color-white); }
-	.method.patch { background: var(--color-teal); color: var(--color-white); }
+	.sitemap-page__method.get { background: var(--link); color: var(--color-white); }
+	.sitemap-page__method.post { background: var(--button-bg); color: var(--color-white); }
+	.sitemap-page__method.put { background: var(--color-warning); color: var(--color-white); }
+	.sitemap-page__method.delete { background: var(--form-error); color: var(--color-white); }
+	.sitemap-page__method.patch { background: var(--color-teal); color: var(--color-white); }
 
-	.route-meta {
+	.sitemap-page__route-meta {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 		flex-shrink: 0;
 	}
 
-	.tags {
+	.sitemap-page__tags {
 		display: flex;
 		gap: 0.2rem;
 		flex-wrap: nowrap;
 	}
 
-	.tag {
+	.sitemap-page__tag {
 		font-size: 0.65rem;
 		padding: 0.1rem 0.4rem;
 		border-radius: 3px;
@@ -533,15 +442,15 @@
 		color: var(--text);
 	}
 
-	.tag.ssr { background: var(--link); color: var(--color-white); }
-	.tag.csr { background: var(--color-violet); color: var(--color-white); }
-	.tag.dynamic { background: var(--color-warning); color: var(--color-white); }
-	.tag.auth { background: var(--form-error); color: var(--color-white); }
-	.tag.noindex { background: var(--muted); color: var(--color-white); }
-	.tag.api { background: var(--button-bg); color: var(--color-white); }
-	.tag.layout { background: var(--color-cyan); color: var(--color-white); }
+	.sitemap-page__tag.ssr { background: var(--link); color: var(--color-white); }
+	.sitemap-page__tag.csr { background: var(--color-violet); color: var(--color-white); }
+	.sitemap-page__tag.dynamic { background: var(--color-warning); color: var(--color-white); }
+	.sitemap-page__tag.auth { background: var(--form-error); color: var(--color-white); }
+	.sitemap-page__tag.noindex { background: var(--muted); color: var(--color-white); }
+	.sitemap-page__tag.api { background: var(--button-bg); color: var(--color-white); }
+	.sitemap-page__tag.layout { background: var(--color-cyan); color: var(--color-white); }
 
-	.modified {
+	.sitemap-page__modified {
 		font-size: 0.75rem;
 		color: var(--muted);
 		width: 5.5rem;
@@ -550,25 +459,25 @@
 	}
 
 	@media (max-width: 600px) {
-		.filters {
+		.sitemap-page__filters {
 			grid-template-columns: 1fr;
 			align-items: stretch;
 		}
 
-		.sort-view {
+		.sitemap-page__sort-view {
 			justify-self: start;
 		}
 
-		.route {
+		.sitemap-page__route {
 			grid-template-columns: minmax(0, 1fr);
 		}
 
-		.route-meta {
+		.sitemap-page__route-meta {
 			width: 100%;
 			justify-content: flex-end;
 		}
 
-		.modified {
+		.sitemap-page__modified {
 			display: none;
 		}
 	}

@@ -1,12 +1,21 @@
 <script>
-	import { ArrowUpRight, CalendarDays, Search, Tag } from '@lucide/svelte'
-	import HeroBanner from '@components/HeroBanner.svelte'
+	import { ArrowUpRight, CalendarDays, Tag } from '@lucide/svelte'
+	import PageContainer from '$lib/ui/PageContainer.svelte'
+	import ResultsEmpty from '$lib/ui/ResultsEmpty.svelte'
+	import Hero from '$lib/ui/Hero.svelte'
+	import SearchToolbar from '$lib/ui/SearchToolbar.svelte'
+	import SegmentedControl from '$lib/ui/SegmentedControl.svelte'
 
 	let { data } = $props()
 
 	let searchQuery = $state('')
 	let selectedCategory = $state('all')
 	let sortBy = $state('newest')
+	const sortOptions = [
+		{ value: 'newest', label: 'Newest' },
+		{ value: 'oldest', label: 'Oldest' },
+		{ value: 'title', label: 'Title' }
+	]
 
 	function formatDate(value, mode = 'short') {
 		const d = new Date(value)
@@ -80,47 +89,41 @@
 	<title>Journal - MIKO.ART</title>
 </svelte:head>
 
-<HeroBanner
+<Hero
 	title="Journal"
 	subtitle="Thoughts, process notes, and little breakthroughs."
 	icon="/media/emoji-journal.png"
 />
 
-<div class="journal journal-page">
-	<div class="journal-tools journal-page__tools" aria-label="Journal filters">
-		<label class="ui-search-field journal-page__search" aria-label="Search posts">
-			<Search size={15} strokeWidth={2.2} style="color: var(--muted); flex-shrink: 0;" />
-			<input class="ui-search-input" type="text" placeholder="Search posts..." bind:value={searchQuery} />
-		</label>
-
-		<div class="selects journal-page__selects">
-			<label>
-				<span>Category</span>
-				<select bind:value={selectedCategory}>
-					<option value="all">All</option>
-					{#each availableCategories as category}
-						<option value={category}>{category}</option>
-					{/each}
-				</select>
-			</label>
-			<label>
-				<span>Sort</span>
-				<select bind:value={sortBy}>
-					<option value="newest">Newest</option>
-					<option value="oldest">Oldest</option>
-					<option value="title">Title</option>
-				</select>
-			</label>
-		</div>
+<PageContainer className="journal-page">
+	<div class="journal-page__tools" aria-label="Journal filters">
+		<SearchToolbar bind:query={searchQuery} placeholder="Search posts..." ariaLabel="Search posts">
+			<div class="journal-page__selects">
+				<label>
+					<span>Category</span>
+					<select bind:value={selectedCategory}>
+						<option value="all">All</option>
+						{#each availableCategories as category}
+							<option value={category}>{category}</option>
+						{/each}
+					</select>
+				</label>
+				<div class="journal-page__sort-control">
+					<span>Sort</span>
+					<SegmentedControl options={sortOptions} bind:value={sortBy} ariaLabel="Sort posts" />
+				</div>
+			</div>
+		</SearchToolbar>
 	</div>
 
 	{#if filteredPosts.length === 0}
-		<div class="ui-no-results journal-page__no-results">
-			<p>No posts match your filters.</p>
-			<button onclick={() => { searchQuery = ''; selectedCategory = 'all'; sortBy = 'newest' }}>Clear Filters</button>
-		</div>
+		<ResultsEmpty
+			className="journal-page__no-results"
+			message="No posts match your filters."
+			onAction={() => { searchQuery = ''; selectedCategory = 'all'; sortBy = 'newest' }}
+		/>
 	{:else}
-		<p class="ui-results-count results-count journal-page__results">{filteredPosts.length} entries</p>
+		<p class="ui-search__results-count results-count journal-page__results">{filteredPosts.length} entries</p>
 
 		{#each yearOrder as year}
 			<section class="year-group journal-page__year-group">
@@ -128,20 +131,20 @@
 				<ol>
 					{#each groupedByYear[year] as post}
 						<li>
-							<article class="entry journal-page__entry">
-								<div class="entry-date journal-page__entry-date">
+							<article class="journal-page__entry">
+								<div class="journal-page__entry-date">
 									<CalendarDays size={14} strokeWidth={2.2} />
 									<span>{formatDate(post.date, 'monthDay')}</span>
 								</div>
 
-								<h3 class="entry-title journal-page__entry-title">
+								<h3 class="journal-page__entry-title">
 									<a href={`/${post.urlPath}`}>{post.metadata.fm.title}</a>
 								</h3>
 
-								<div class="entry-right journal-page__entry-right">
+								<div class="journal-page__entry-right">
 									{#if firstCategory(post)}
 										<a
-											class="tag journal-page__tag"
+											class="journal-page__tag"
 											href={`/journal/category/${firstCategory(post).toLowerCase().replace(/\s+/g, '-')}`}
 										>
 											<Tag size={13} strokeWidth={2.2} />
@@ -149,7 +152,7 @@
 										</a>
 									{/if}
 
-									<a href={`/${post.urlPath}`} class="read-link journal-page__read-link">
+									<a href={`/${post.urlPath}`} class="journal-page__read-link">
 										<span>Read</span>
 										<ArrowUpRight size={14} strokeWidth={2.2} />
 									</a>
@@ -161,15 +164,10 @@
 			</section>
 		{/each}
 	{/if}
-</div>
+</PageContainer>
 
 <style>
-	.journal {
-		max-width: var(--max-width);
-		margin: 0 auto;
-	}
-
-	.journal-tools {
+	.journal-page__tools {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;
 		gap: 0.8rem;
@@ -177,17 +175,22 @@
 		margin-bottom: 0.9rem;
 	}
 
-	.selects {
+	.journal-page__selects {
 		display: flex;
 		gap: 0.55rem;
 	}
 
-	.selects label {
+	.journal-page__selects label {
 		display: grid;
 		gap: 0.25rem;
 	}
 
-	.selects span {
+	.journal-page__sort-control {
+		display: grid;
+		gap: 0.25rem;
+	}
+
+	.journal-page__selects span {
 		font-size: 0.75rem;
 		color: var(--muted);
 		font-family: var(--font-sans);
@@ -202,15 +205,15 @@
 		font-size: 0.86rem;
 	}
 
-	.results-count {
+	.journal-page__results {
 		margin-bottom: 1rem;
 	}
 
-	.year-group {
+	.journal-page__year-group {
 		margin-bottom: 1.7rem;
 	}
 
-	.year-group h2 {
+	.journal-page__year-group h2 {
 		margin: 0 0 0.55rem;
 		font-family: var(--font-display);
 		font-size: 1.5rem;
@@ -218,14 +221,14 @@
 		line-height: 1.1;
 	}
 
-	.year-group ol {
+	.journal-page__year-group ol {
 		margin: 0;
 		padding: 0;
 		list-style: none;
 		border-top: 1px solid var(--panel-border);
 	}
 
-	.entry {
+	.journal-page__entry {
 		display: grid;
 		grid-template-columns: 110px minmax(0, 1fr) auto;
 		gap: 0.8rem;
@@ -234,7 +237,7 @@
 		border-bottom: 1px solid var(--panel-border);
 	}
 
-	.entry-date {
+	.journal-page__entry-date {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.32rem;
@@ -243,7 +246,7 @@
 		color: var(--muted);
 	}
 
-	.entry-title {
+	.journal-page__entry-title {
 		margin: 0;
 		min-width: 0;
 		font-family: var(--font-display);
@@ -255,7 +258,7 @@
 		text-overflow: ellipsis;
 	}
 
-	.entry-title a {
+	.journal-page__entry-title a {
 		text-decoration: none;
 		color: var(--text);
 		display: block;
@@ -264,18 +267,18 @@
 		text-overflow: ellipsis;
 	}
 
-	.entry-title a:hover {
+	.journal-page__entry-title a:hover {
 		color: var(--link-hover);
 	}
 
-	.entry-right {
+	.journal-page__entry-right {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 		white-space: nowrap;
 	}
 
-	.tag {
+	.journal-page__tag {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.25rem;
@@ -287,11 +290,11 @@
 		text-decoration: none;
 	}
 
-	.tag:hover {
+	.journal-page__tag:hover {
 		background: var(--tag-hover-bg);
 	}
 
-	.read-link {
+	.journal-page__read-link {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.24rem;
@@ -303,32 +306,32 @@
 		white-space: nowrap;
 	}
 
-	.read-link:hover {
+	.journal-page__read-link:hover {
 		color: var(--link-hover);
 	}
 
 	@media (max-width: 860px) {
-		.journal-tools {
+		.journal-page__tools {
 			grid-template-columns: 1fr;
 		}
 
-		.entry {
+		.journal-page__entry {
 			grid-template-columns: 1fr;
 			gap: 0.45rem;
 		}
 
-		.entry-title,
-		.entry-title a {
+		.journal-page__entry-title,
+		.journal-page__entry-title a {
 			white-space: normal;
 			overflow: visible;
 			text-overflow: initial;
 		}
 
-		.entry-right {
+		.journal-page__entry-right {
 			justify-content: space-between;
 		}
 
-		.read-link {
+		.journal-page__read-link {
 			width: fit-content;
 		}
 	}

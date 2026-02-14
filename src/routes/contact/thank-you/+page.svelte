@@ -2,7 +2,7 @@
     <title>Thank You - MIKO.ART</title>
 </svelte:head>
 
-<div class="hero thank-you thank-you__hero">
+<div class="home__hero thank-you thank-you__hero">
     <style>
 		body {
 			background: var(--accent-bg);

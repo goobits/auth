@@ -1,10 +1,12 @@
 <script>
 	import '../app.scss'
 	import '@goobits/themes/themes/bundle.css'
-	import { ThemeProvider, ThemeToggle } from '@goobits/themes/svelte'
+	import { ThemeProvider } from '@goobits/themes/svelte'
 	import { themeConfig } from '$lib/config/theme.js'
 	import { onMount } from 'svelte'
 	import { page } from '$app/stores'
+	import ThemeSelect from '$lib/ui/ThemeSelect.svelte'
+	import { footerLegalItems, footerPrimaryItems, headerNavItems } from '$lib/layout/nav'
 
 	const { data, children } = $props()
 
@@ -22,46 +24,46 @@
 </script>
 
 <ThemeProvider config={themeConfig} serverPreferences={data.preferences}>
-	<header>
-		<center>
-			<logo>
-				<a href="/">
-					<img src="/media/logo.svg" alt="logo" />
-				</a>
-			</logo>
-			<links>
-				<a href="/" class:active={$page.url.pathname === '/'}>Home</a>
-				<a href="/about" class:active={$page.url.pathname === '/about'}>About</a>
-				<a href="/art" class:active={$page.url.pathname === '/art'}>Art</a>
-				<a href="/music" class:active={$page.url.pathname === '/music'}>Music</a>
-				<a href="/contact" class:active={$page.url.pathname === '/contact'}>Contact</a>
-				<theme-toggle>
-					<ThemeToggle />
-				</theme-toggle>
-			</links>
-		</center>
-	</header>
+	<div class="code-theme">
+		<header>
+			<center>
+				<logo>
+					<a href="/">
+						<img src="/media/logo.svg" alt="logo" />
+					</a>
+				</logo>
+				<links>
+					{#each headerNavItems as item}
+						<a href={item.href} class:active={$page.url.pathname === item.href}>{item.label}</a>
+					{/each}
+					<theme-toggle>
+						<ThemeSelect />
+					</theme-toggle>
+				</links>
+			</center>
+		</header>
 
-	<main>
-		{@render children()}
-	</main>
+		<main>
+			{@render children()}
+		</main>
 
-	<footer>
-		<nav>
-			<span class="footer-group">
-				<a href="/journal">Journal</a>
-				<a href="/labs">Labs</a>
-				<a href="/sitemap">Sitemap</a>
-			</span>
-			<span class="divider-pipe" aria-hidden="true"></span>
-			<span class="footer-group">
-				<a href="/privacy">Privacy</a>
-				<a href="/terms">Terms</a>
-				<a href="/cookies">Cookies</a>
-			</span>
-		</nav>
-		<small>© {new Date().getFullYear()} Miko Meow™</small>
-	</footer>
+		<footer>
+			<nav>
+				<span class="layout-footer__group">
+					{#each footerPrimaryItems as item}
+						<a href={item.href}>{item.label}</a>
+					{/each}
+				</span>
+				<span class="layout-footer__divider" aria-hidden="true"></span>
+				<span class="layout-footer__group">
+					{#each footerLegalItems as item}
+						<a href={item.href}>{item.label}</a>
+					{/each}
+				</span>
+			</nav>
+			<small>© {new Date().getFullYear()} Miko Meow™</small>
+		</footer>
+	</div>
 </ThemeProvider>
 
 <style>
@@ -154,7 +156,7 @@
 			gap: 0.8rem;
 		}
 
-		.footer-group {
+		.layout-footer__group {
 			display: inline-flex;
 			align-items: center;
 			gap: 1.1rem;
@@ -162,7 +164,7 @@
 			justify-content: center;
 		}
 
-		.divider-pipe {
+		.layout-footer__divider {
 			display: inline-block;
 			width: 1px;
 			height: 0.95rem;
@@ -237,11 +239,11 @@
 				gap: 0.7rem;
 			}
 
-			.footer-group {
+			.layout-footer__group {
 				gap: 0.9rem;
 			}
 
-			.divider-pipe {
+			.layout-footer__divider {
 				height: 0.8rem;
 			}
 

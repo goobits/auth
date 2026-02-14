@@ -1,4 +1,7 @@
 @import url('components/prism.scss');
+@import './lib/theme/tokens.css';
+@import './lib/theme/modes.css';
+@import './lib/theme/typography.css';
 
 @font-face {
 	font-family: 'Canela Deck';
@@ -53,7 +56,10 @@
 	--color-white-05: rgba(255, 255, 255, 0.05);
 	--color-white-04: rgba(255, 255, 255, 0.04);
 	--color-white-03: rgba(255, 255, 255, 0.03);
+	--color-white-02: rgba(255, 255, 255, 0.02);
 	--color-white-015: rgba(255, 255, 255, 0.015);
+	--color-white-20: rgba(255, 255, 255, 0.2);
+	--color-white-24: rgba(255, 255, 255, 0.24);
 	--overlay-black-35: rgba(0, 0, 0, 0.35);
 	--color-warning: #f59e0b;
 	--color-violet: #8b5cf6;
@@ -356,6 +362,38 @@ body {
 	flex-direction: column;
 }
 
+.ui-section {
+	margin-bottom: var(--ui-section-space);
+}
+
+.ui-card {
+	background: var(--ui-card-background);
+	border: var(--ui-card-border);
+	border-radius: var(--ui-card-radius);
+	padding: var(--ui-card-padding);
+}
+
+.ui-hero {
+	position: relative;
+}
+
+.ui-hero__glow {
+	position: absolute;
+	inset: -12% auto auto 50%;
+	width: min(780px, 100%);
+	height: 260px;
+	transform: translateX(-50%);
+	background: var(--ui-hero-glow);
+	filter: blur(24px);
+	pointer-events: none;
+	z-index: 0;
+}
+
+.ui-hero > *:not(.ui-hero__glow) {
+	position: relative;
+	z-index: 1;
+}
+
 /* ThemeProvider wrapper - sticky footer layout */
 body > div[style="display: contents"] > div {
 	display: flex;
@@ -458,7 +496,7 @@ main {
 	padding: 0 1em;
 	width: calc(100% - 40px);
 
-	.hero {
+	.home__hero {
 		margin-top: 2rem;
 
 		h1 {
@@ -491,7 +529,7 @@ main {
 		grid-template-columns: repeat(auto-fit, var(--project-card-width));
 		justify-content: center;
 
-		.project {
+		.home__project {
 			background: transparent;
 			color: var(--project-text);
 			cursor: pointer;
@@ -561,15 +599,15 @@ main {
 	}
 }
 
-.muted {
+.u-text-muted {
 	color: var(--muted);
 }
 
-.error {
+.u-text-error {
 	color: var(--status-error-text);
 }
 
-.legal-page {
+.legal__page {
 	max-width: var(--max-width);
 	margin: 0 auto;
 	padding: 2rem 1rem 3rem;
@@ -577,7 +615,7 @@ main {
 	font-family: var(--font-serif);
 }
 
-.legal-page h2 {
+.legal__page h2 {
 	display: flex;
 	align-items: center;
 	gap: 0.45rem;
@@ -586,22 +624,22 @@ main {
 	font-family: var(--font-sans);
 }
 
-.legal-page ul {
+.legal__page ul {
 	padding-left: 1.25rem;
 }
 
-.legal-updated {
+.legal__updated {
 	opacity: 0.8;
 	margin-bottom: 1.5rem;
 }
 
-.legal-notice {
+.legal__notice {
 	margin-top: 2rem;
 	opacity: 0.8;
 	font-size: 0.95rem;
 }
 
-.ui-search-field {
+.ui-search__field {
 	display: flex;
 	align-items: center;
 	gap: 0.45rem;
@@ -611,7 +649,65 @@ main {
 	background: var(--input-bg);
 }
 
-.ui-search-input {
+.ui-search-toolbar__controls {
+	display: contents;
+}
+
+.ui-page-container {
+	max-width: var(--max-width);
+	margin: 0 auto;
+}
+
+.ui-chip-group {
+	display: inline-flex;
+	gap: 0.35rem;
+	flex-wrap: wrap;
+}
+
+.ui-chip-group button {
+	padding: 0.25rem 0.62rem;
+	font-size: 0.8rem;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: var(--card-bg);
+	color: var(--text);
+	cursor: pointer;
+}
+
+.ui-chip-group button.active {
+	background: var(--brand-primary);
+	color: var(--color-white);
+	border-color: var(--brand-primary);
+}
+
+.ui-segmented {
+	display: inline-flex;
+	align-items: center;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--card-bg);
+	overflow: hidden;
+}
+
+.ui-segmented button {
+	border: none;
+	border-right: 1px solid var(--border);
+	background: transparent;
+	color: var(--muted);
+	font-size: 0.8rem;
+	padding: 0.35rem 0.6rem;
+}
+
+.ui-segmented button:last-child {
+	border-right: none;
+}
+
+.ui-segmented button.active {
+	background: color-mix(in srgb, var(--brand-primary) 14%, var(--card-bg));
+	color: var(--text);
+}
+
+.ui-search__input {
 	width: 100%;
 	padding: 0.52rem 0;
 	font-size: 0.95rem;
@@ -621,32 +717,32 @@ main {
 	margin-bottom: 0;
 }
 
-.ui-search-input:focus {
+.ui-search__input:focus {
 	outline: none;
 }
 
-.ui-search-icon {
+.ui-search__icon {
 	color: var(--muted);
 	flex-shrink: 0;
 }
 
-.ui-search-field:focus-within {
+.ui-search__field:focus-within {
 	border-color: var(--link);
 }
 
-.ui-results-count {
+.ui-search__results-count {
 	font-size: 0.82rem;
 	color: var(--muted);
 	margin: 0 0 0.95rem;
 }
 
-.ui-no-results {
+.ui-search__empty {
 	text-align: center;
 	padding: 2rem;
 	color: var(--muted);
 }
 
-.ui-no-results button {
+.ui-search__empty button {
 	margin-top: 0.75rem;
 	padding: 0.4rem 0.75rem;
 	background: var(--button-bg);
@@ -657,28 +753,28 @@ main {
 	font-size: 0.9rem;
 }
 
-.showcase-page {
+.showcase__page {
 	max-width: var(--max-width);
 	margin: 0 auto;
 	display: grid;
 	gap: 1rem;
 }
 
-.showcase-section {
+.showcase__section {
 	border: 1px solid var(--panel-border);
 	border-radius: 10px;
 	background: var(--card-bg);
 	padding: 1rem;
 }
 
-.showcase-intro p {
+.showcase__intro p {
 	margin: 0;
 	font-family: var(--font-serif);
 	font-size: 1.03rem;
 	line-height: 1.72;
 }
 
-.showcase-title {
+.showcase__title {
 	margin: 0 0 0.75rem;
 	display: inline-flex;
 	align-items: center;
@@ -688,7 +784,7 @@ main {
 	font-weight: 500;
 }
 
-.pill-link {
+.showcase__pill-link {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.28rem;
@@ -703,65 +799,26 @@ main {
 	font-weight: 600;
 }
 
-.admin {
+.admin-console {
 	display: grid;
 	gap: 2rem;
 }
 
-.admin-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 1rem;
-	flex-wrap: wrap;
-}
-
-.admin-nav {
-	display: flex;
-	gap: 0.75rem;
-	flex-wrap: wrap;
-}
-
-.admin-nav a {
-	border-radius: 999px;
-	padding: 0.25rem 0.9rem;
-	border: 1px solid var(--panel-border);
-	background: var(--panel-bg);
-	color: var(--header-bg);
-	text-decoration: none;
-	font-weight: 500;
-}
-
-.admin-nav a.active {
-	background: var(--header-bg);
-	color: var(--button-text);
-	border-color: var(--header-bg);
-	pointer-events: none;
-}
-
-.admin-panel {
-	border: none;
-	border-radius: 0;
-	padding: 0;
-	background: transparent;
-	overflow: visible;
-}
-
-.admin-grid {
+.admin-console__grid {
 	display: grid;
 	gap: 1rem;
 	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 	margin-top: 1.5rem;
 }
 
-.card {
+.admin-console__card-surface {
 	border: 1px solid var(--card-border);
 	border-radius: 12px;
 	padding: 1.25rem;
 	background: var(--card-bg);
 }
 
-.admin-card {
+.admin-console__card {
 	display: grid;
 	gap: 0.4rem;
 	text-decoration: none;
@@ -769,96 +826,9 @@ main {
 	transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.admin-card:hover {
+.admin-console__card:hover {
 	transform: translateY(-2px);
 	box-shadow: var(--shadow-card) 0 12px 24px;
-}
-
-.admin-card-link {
-	color: var(--header-bg);
-	font-weight: 500;
-}
-
-.admin-dashboard {
-	display: grid;
-	gap: 2rem;
-}
-
-.admin-block {
-	border: 1px solid var(--panel-border);
-	border-radius: 12px;
-	padding: 1.5rem;
-	background: var(--panel-bg);
-}
-
-.admin-block header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 1rem;
-	margin-bottom: 0.75rem;
-}
-
-.status-chip {
-	border-radius: 999px;
-	padding: 0.15rem 0.75rem;
-	font-size: 0.85rem;
-	font-weight: 600;
-}
-
-.status-chip.connected {
-	background: var(--status-success-bg);
-	color: var(--status-success-text);
-}
-
-.admin-actions {
-	display: flex;
-	gap: 0.75rem;
-	flex-wrap: wrap;
-	margin-top: 1rem;
-}
-
-.button-link {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	padding: 0.5em 1em;
-	border-radius: 5px;
-	border: 1px solid var(--panel-border);
-	color: var(--header-bg);
-	text-decoration: none;
-	background: var(--panel-bg);
-}
-
-.admin-inline {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-}
-
-.booking-list {
-	list-style: none;
-	padding: 0;
-	margin: 0 0 1rem;
-	display: grid;
-	gap: 0.75rem;
-}
-
-.booking-list li {
-	display: grid;
-	grid-template-columns: 1fr auto auto;
-	gap: 1rem;
-	align-items: center;
-	border: 1px solid var(--card-border);
-	border-radius: 10px;
-	padding: 0.75rem 1rem;
-	background: var(--card-bg);
-}
-
-@media (max-width: 720px) {
-	.booking-list li {
-		grid-template-columns: 1fr;
-	}
 }
 
 @media (max-width: 700px) {

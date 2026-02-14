@@ -1,6 +1,11 @@
 <script>
-	import { ArrowUpDown, ExternalLink, FlaskConical, Search, Sparkles } from '@lucide/svelte'
-	import HeroBanner from '@components/HeroBanner.svelte'
+	import { ArrowUpDown, ExternalLink, FlaskConical, Sparkles } from '@lucide/svelte'
+	import FilterChipGroup from '$lib/ui/FilterChipGroup.svelte'
+	import PageContainer from '$lib/ui/PageContainer.svelte'
+	import ResultsEmpty from '$lib/ui/ResultsEmpty.svelte'
+	import SegmentedControl from '$lib/ui/SegmentedControl.svelte'
+	import Hero from '$lib/ui/Hero.svelte'
+	import SearchToolbar from '$lib/ui/SearchToolbar.svelte'
 
 	const labs = [
 		{ href: '/labs/color-galaxy/', title: 'Color Galaxy', vibe: 'Generative color playground' },
@@ -33,6 +38,15 @@
 	let searchQuery = $state('')
 	let selectedScope = $state('all')
 	let sortBy = $state('title')
+	const scopeOptions = [
+		{ value: 'all', label: 'All' },
+		{ value: 'internal', label: 'Internal' },
+		{ value: 'external', label: 'External' }
+	]
+	const sortOptions = [
+		{ value: 'title', label: 'Name' },
+		{ value: 'path', label: 'Path' }
+	]
 
 	function getCardTheme(i) {
 		return pastelCardThemes[i % pastelCardThemes.length]
@@ -68,51 +82,47 @@
 	<title>Labs - MIKO.ART</title>
 </svelte:head>
 
-<HeroBanner
+<Hero
 	title="Labs"
 	subtitle="Playful experiments, sketches, and odd ideas."
 	icon="/media/emoji-labs.png"
 />
 
-<div class="labs labs-page">
-	<div class="tools labs-page__tools" aria-label="Labs filters">
-		<label class="ui-search-field labs-page__search" aria-label="Search labs">
-			<Search size={15} strokeWidth={2.2} style="color: var(--muted); flex-shrink: 0;" />
-			<input class="ui-search-input" type="text" placeholder="Search experiments..." bind:value={searchQuery} />
-		</label>
+<PageContainer className="labs-page">
+	<div class="labs-page__tools" aria-label="Labs filters">
+		<SearchToolbar bind:query={searchQuery} placeholder="Search experiments..." ariaLabel="Search labs">
+			<div class="labs-page__controls">
+				<FilterChipGroup
+					className="labs-page__chips"
+					items={scopeOptions}
+					bind:value={selectedScope}
+					ariaLabel="Scope filter"
+				/>
 
-		<div class="control-row labs-page__controls">
-			<div class="chips labs-page__chips" role="tablist" aria-label="Scope filter">
-				<button type="button" class:active={selectedScope === 'all'} onclick={() => (selectedScope = 'all')}>All</button>
-				<button type="button" class:active={selectedScope === 'internal'} onclick={() => (selectedScope = 'internal')}>Internal</button>
-				<button type="button" class:active={selectedScope === 'external'} onclick={() => (selectedScope = 'external')}>External</button>
+				<div class="labs-page__sort">
+					<ArrowUpDown size={13} strokeWidth={2.2} />
+					<SegmentedControl options={sortOptions} bind:value={sortBy} ariaLabel="Sort labs" />
+				</div>
 			</div>
-
-			<label class="sort-select labs-page__sort">
-				<ArrowUpDown size={13} strokeWidth={2.2} />
-				<select bind:value={sortBy} aria-label="Sort labs">
-					<option value="title">Name</option>
-					<option value="path">Path</option>
-				</select>
-			</label>
-		</div>
+		</SearchToolbar>
 	</div>
 
 	{#if filteredLabs.length === 0}
-		<div class="ui-no-results labs-page__no-results">
-			<p>No experiments match your filters.</p>
-			<button onclick={() => { searchQuery = ''; selectedScope = 'all'; sortBy = 'title' }}>Clear Filters</button>
-		</div>
+		<ResultsEmpty
+			className="labs-page__no-results"
+			message="No experiments match your filters."
+			onAction={() => { searchQuery = ''; selectedScope = 'all'; sortBy = 'title' }}
+		/>
 	{:else}
-		<p class="ui-results-count labs-page__results">{filteredLabs.length} experiments</p>
+		<p class="ui-search__results-count labs-page__results">{filteredLabs.length} experiments</p>
 
-		<ul class="grid labs-page__grid">
+		<ul class="labs-page__grid">
 			{#each filteredLabs as lab, i}
 				<li>
-					<a href={lab.href} class="lab-card labs-page__card" style={`--card-bg:${getCardTheme(i).bg};--card-border:${getCardTheme(i).border};--card-ink:${getCardTheme(i).ink};--card-muted:${getCardTheme(i).muted};`}>
-						<div class="lab-visual labs-page__visual" aria-hidden="true"></div>
-						<p class="card-top labs-page__card-top">
-							<span class="kind labs-page__kind">
+					<a href={lab.href} class="labs-page__card" style={`--card-bg:${getCardTheme(i).bg};--card-border:${getCardTheme(i).border};--card-ink:${getCardTheme(i).ink};--card-muted:${getCardTheme(i).muted};`}>
+						<div class="labs-page__visual" aria-hidden="true"></div>
+						<p class="labs-page__card-top">
+							<span class="labs-page__kind">
 								<FlaskConical size={13} strokeWidth={2.2} />
 								{isExternalLab(lab.href) ? 'Demo' : 'Lab'}
 							</span>
@@ -121,9 +131,9 @@
 							{/if}
 						</p>
 						<h2><span>{lab.title}</span></h2>
-						<p class="vibe labs-page__vibe">{lab.vibe}</p>
-						<p class="path labs-page__path">{lab.href}</p>
-						<p class="open labs-page__open">
+						<p class="labs-page__vibe">{lab.vibe}</p>
+						<p class="labs-page__path">{lab.href}</p>
+						<p class="labs-page__open">
 							<span>Open experiment</span>
 							<Sparkles size={13} strokeWidth={2.2} />
 						</p>
@@ -132,72 +142,30 @@
 			{/each}
 		</ul>
 	{/if}
-</div>
+</PageContainer>
 
 <style>
-	.labs {
-		max-width: var(--max-width);
-		margin: 0 auto;
-	}
-
-	.tools {
+	.labs-page__tools {
 		display: grid;
 		gap: 0.7rem;
 		margin-bottom: 1rem;
 	}
 
-	.control-row {
+	.labs-page__controls {
 		display: flex;
 		justify-content: space-between;
 		gap: 0.7rem;
 		align-items: center;
 	}
 
-	.chips {
-		display: inline-flex;
-		gap: 0.35rem;
-		flex-wrap: wrap;
-	}
-
-	.chips button {
-		padding: 0.25rem 0.62rem;
-		font-size: 0.8rem;
-		border: 1px solid var(--border);
-		border-radius: 999px;
-		background: var(--card-bg);
-		color: var(--text);
-		cursor: pointer;
-	}
-
-	.chips button.active {
-		background: var(--brand-primary);
-		color: var(--color-white);
-		border-color: var(--brand-primary);
-	}
-
-	.sort-select {
+	.labs-page__sort {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.35rem;
-		border: 1px solid var(--border);
-		border-radius: 6px;
-		padding: 0.3rem 0.45rem;
-		background: var(--card-bg);
 		color: var(--muted);
 	}
 
-	select {
-		border: none;
-		background: transparent;
-		color: var(--text);
-		font-size: 0.85rem;
-	}
-
-	select:focus {
-		outline: none;
-	}
-
-	.grid {
+	.labs-page__grid {
 		list-style: none;
 		margin: 0;
 		padding: 0;
@@ -206,9 +174,9 @@
 		gap: 0.9rem;
 	}
 
-	.lab-card {
+	.labs-page__card {
 		--card-surface-1: color-mix(in srgb, var(--card-bg) 88%, white);
-		--card-surface-2: color-mix(in srgb, var(--card-bg) 76%, #f7f3ff);
+		--card-surface-2: color-mix(in srgb, var(--card-bg) 76%, var(--color-white));
 		--card-glow: color-mix(in srgb, var(--card-border) 54%, transparent);
 		display: grid;
 		grid-template-rows: 1fr auto auto auto;
@@ -229,41 +197,45 @@
 		overflow: hidden;
 	}
 
-	.lab-card:hover {
+	.labs-page__card:hover {
 		transform: translateY(-2px);
 		border-color: color-mix(in srgb, var(--card-border) 82%, var(--card-ink));
 		box-shadow: 0 14px 26px color-mix(in srgb, var(--card-border) 48%, transparent);
 	}
 
-	:global(html[data-theme='dark']) .lab-card,
-	:global(html.theme-system-dark) .lab-card {
-		--card-surface-1: color-mix(in srgb, var(--card-bg) 62%, #2b1750);
-		--card-surface-2: color-mix(in srgb, var(--card-bg) 52%, #1a1037);
-		--card-glow: color-mix(in srgb, var(--card-border) 68%, #6e46c7);
-		--card-ink: color-mix(in srgb, white 92%, var(--card-bg));
-		--card-muted: color-mix(in srgb, white 74%, var(--card-bg));
-		border-color: color-mix(in srgb, var(--card-border) 80%, #5f3eb3);
-		box-shadow: 0 12px 24px rgba(7, 9, 14, 0.5);
+	:global(html[data-theme='dark']) .labs-page__card,
+	:global(html.theme-system-dark) .labs-page__card {
+		--card-surface-1: color-mix(in srgb, var(--card-bg) 62%, var(--accent-bg));
+		--card-surface-2: color-mix(in srgb, var(--card-bg) 52%, var(--brand-dark));
+		--card-glow: color-mix(in srgb, var(--card-border) 68%, var(--color-violet));
+		--card-ink: color-mix(in srgb, var(--color-white) 92%, var(--card-bg));
+		--card-muted: color-mix(in srgb, var(--color-white) 74%, var(--card-bg));
+		border-color: color-mix(in srgb, var(--card-border) 80%, var(--calendar-slot-selected-bg));
+		box-shadow: 0 12px 24px color-mix(in srgb, var(--color-black) 50%, transparent);
 	}
 
-	:global(html[data-theme='dark']) .lab-card:hover,
-	:global(html.theme-system-dark) .lab-card:hover {
-		border-color: color-mix(in srgb, var(--card-border) 86%, #9b7dff);
-		box-shadow: 0 18px 34px rgba(6, 8, 12, 0.64);
+	:global(html[data-theme='dark']) .labs-page__card:hover,
+	:global(html.theme-system-dark) .labs-page__card:hover {
+		border-color: color-mix(in srgb, var(--card-border) 86%, var(--color-violet));
+		box-shadow: 0 18px 34px color-mix(in srgb, var(--color-black) 64%, transparent);
 	}
 
-	.lab-visual {
+	.labs-page__visual {
 		grid-row: 1 / 2;
 		border-radius: 8px;
-		border: 1px solid color-mix(in srgb, var(--card-border) 70%, white);
+		border: 1px solid color-mix(in srgb, var(--card-border) 70%, var(--color-white));
 		background:
-			radial-gradient(85% 90% at 20% 16%, color-mix(in srgb, var(--card-bg) 75%, white) 0%, transparent 65%),
+			radial-gradient(85% 90% at 20% 16%, color-mix(in srgb, var(--card-bg) 75%, var(--color-white)) 0%, transparent 65%),
 			radial-gradient(70% 80% at 84% 86%, color-mix(in srgb, var(--card-border) 30%, transparent) 0%, transparent 70%),
-			linear-gradient(140deg, color-mix(in srgb, var(--card-bg) 72%, white), color-mix(in srgb, var(--card-bg) 66%, #ecddff));
-		box-shadow: inset 0 1px 0 color-mix(in srgb, white 50%, transparent);
+			linear-gradient(
+				140deg,
+				color-mix(in srgb, var(--card-bg) 72%, var(--color-white)),
+				color-mix(in srgb, var(--card-bg) 66%, var(--color-white))
+			);
+		box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-white) 50%, transparent);
 	}
 
-	.card-top {
+	.labs-page__card-top {
 		grid-row: 2 / 3;
 		margin: 0;
 		display: flex;
@@ -271,7 +243,7 @@
 		align-items: center;
 	}
 
-	.kind {
+	.labs-page__kind {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.28rem;
@@ -283,7 +255,7 @@
 		color: var(--card-muted);
 	}
 
-	.lab-card h2 {
+	.labs-page__card h2 {
 		position: absolute;
 		top: 0.72rem;
 		left: 0.72rem;
@@ -296,21 +268,21 @@
 		pointer-events: none;
 	}
 
-	.lab-card h2 span {
+	.labs-page__card h2 span {
 		display: inline-block;
 		padding: 0.46rem 0.62rem 0.44rem;
 		border-radius: 7px;
-		color: #fff;
-		background: color-mix(in srgb, #000 84%, var(--card-ink));
-		border: 1px solid color-mix(in srgb, #000 74%, var(--card-border));
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+		color: var(--color-white);
+		background: color-mix(in srgb, var(--color-black) 84%, var(--card-ink));
+		border: 1px solid color-mix(in srgb, var(--color-black) 74%, var(--card-border));
+		box-shadow: 0 2px 8px color-mix(in srgb, var(--color-black) 22%, transparent);
 		max-width: 11.2rem;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 
-	.vibe {
+	.labs-page__vibe {
 		grid-row: 3 / 4;
 		margin: 0;
 		font-size: 0.9rem;
@@ -321,7 +293,7 @@
 		text-overflow: ellipsis;
 	}
 
-	.path {
+	.labs-page__path {
 		grid-row: 4 / 5;
 		margin: 0;
 		font-family: monospace;
@@ -333,7 +305,7 @@
 		text-overflow: ellipsis;
 	}
 
-	.open {
+	.labs-page__open {
 		grid-row: 4 / 5;
 		margin: 0;
 		display: inline-flex;
@@ -346,20 +318,20 @@
 		justify-self: end;
 	}
 
-	:global(html[data-theme='dark']) .lab-card h2 span,
-	:global(html.theme-system-dark) .lab-card h2 span {
-		background: color-mix(in srgb, #090b11 72%, var(--card-ink));
-		border-color: color-mix(in srgb, #04050a 75%, var(--card-border));
-		box-shadow: 0 3px 10px rgba(0, 0, 0, 0.34);
+	:global(html[data-theme='dark']) .labs-page__card h2 span,
+	:global(html.theme-system-dark) .labs-page__card h2 span {
+		background: color-mix(in srgb, var(--color-black) 72%, var(--card-ink));
+		border-color: color-mix(in srgb, var(--color-black) 75%, var(--card-border));
+		box-shadow: 0 3px 10px color-mix(in srgb, var(--color-black) 34%, transparent);
 	}
 
 	@media (max-width: 700px) {
-		.control-row {
+		.labs-page__controls {
 			align-items: stretch;
 			flex-direction: column;
 		}
 
-		.sort-select {
+		.labs-page__sort {
 			width: fit-content;
 		}
 	}

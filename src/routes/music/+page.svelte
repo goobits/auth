@@ -1,6 +1,8 @@
 <script>
-	import { ArrowUpRight, CalendarDays, Disc3, Headphones, Radio } from '@lucide/svelte'
-	import HeroBanner from '@components/HeroBanner.svelte'
+	import { CalendarDays, Disc3, Headphones, Radio } from '@lucide/svelte'
+	import ConversationCta from '$lib/ui/ConversationCta.svelte'
+	import Hero from '$lib/ui/Hero.svelte'
+	import ShowcaseSection from '$lib/ui/ShowcaseSection.svelte'
 
 	const { data } = $props()
 
@@ -25,36 +27,39 @@
 	<meta name="description" content="Music by Miko: songs, audio experiments, and listening links." />
 </svelte:head>
 
-<HeroBanner
+<Hero
 	title="Music"
 	subtitle="Songs, sketches, and sound experiments."
 />
 
-<div class="music-page showcase-page music">
-	<section class="intro showcase-section showcase-intro music__intro">
+<div class="music showcase__page">
+	<section class="showcase__section showcase__intro music__intro">
 		<p>
 			Melody has always been part of the build process. This page is the home for tracks, demos,
 			and music-related experiments from Miko.
 		</p>
 	</section>
 
-	<section class="platforms showcase-section music__platforms">
-		<h2 class="showcase-title music__title"><Headphones size={17} strokeWidth={2.2} /> Listen</h2>
+	<ShowcaseSection className="music__platforms" titleClassName="music__title" title="Listen">
+		{#snippet icon()}
+			<Headphones size={17} strokeWidth={2.2} />
+		{/snippet}
 		<ul>
 			{#each platforms as item}
 				<li>
 					<a href={item.href}>
 						<span>{item.label}</span>
-						<ArrowUpRight size={14} strokeWidth={2.2} />
 					</a>
 					<small>{item.note}</small>
 				</li>
 			{/each}
 		</ul>
-	</section>
+	</ShowcaseSection>
 
-	<section class="entries showcase-section music__entries">
-		<h2 class="showcase-title music__title"><Disc3 size={17} strokeWidth={2.2} /> Music Entries</h2>
+	<ShowcaseSection className="music__entries" titleClassName="music__title" title="Music Entries">
+		{#snippet icon()}
+			<Disc3 size={17} strokeWidth={2.2} />
+		{/snippet}
 		{#if data.musicPosts.length === 0}
 			<p class="empty music__empty">Music posts are coming soon.</p>
 		{:else}
@@ -72,18 +77,19 @@
 				{/each}
 			</ol>
 		{/if}
-	</section>
+	</ShowcaseSection>
 
-	<section class="closing showcase-section music__closing">
-		<h2 class="showcase-title music__title"><Radio size={17} strokeWidth={2.2} /> Collaborations</h2>
+	<ShowcaseSection className="music__closing" titleClassName="music__title" title="Collaborations">
+		{#snippet icon()}
+			<Radio size={17} strokeWidth={2.2} />
+		{/snippet}
 		<p>If you want a custom soundtrack or music + product collaboration, reach out anytime.</p>
-		<a href="/contact" class="pill-link">Start a conversation</a>
-	</section>
+		<ConversationCta withIcon={false} />
+	</ShowcaseSection>
 </div>
 
 <style>
-	.platforms ul,
-	.music__platforms ul {
+	:global(.music__platforms ul) {
 		list-style: none;
 		margin: 0;
 		padding: 0;
@@ -92,16 +98,14 @@
 		gap: 0.6rem;
 	}
 
-	.platforms li,
-	.music__platforms li {
+	:global(.music__platforms li) {
 		border: 1px solid var(--border);
 		border-radius: 8px;
 		padding: 0.65rem 0.75rem;
 		background: color-mix(in srgb, var(--card-bg) 72%, transparent);
 	}
 
-	.platforms a,
-	.music__platforms a {
+	:global(.music__platforms a) {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.25rem;
@@ -111,29 +115,25 @@
 		color: var(--text);
 	}
 
-	.platforms small,
-	.music__platforms small {
+	:global(.music__platforms small) {
 		display: block;
 		margin-top: 0.2rem;
 		color: var(--muted);
 		font-size: 0.76rem;
 	}
 
-	.entries ol,
-	.music__entries ol {
+	:global(.music__entries ol) {
 		list-style: none;
 		margin: 0;
 		padding: 0;
 		border-top: 1px solid var(--panel-border);
 	}
 
-	.entries li,
-	.music__entries li {
+	:global(.music__entries li) {
 		border-bottom: 1px solid var(--panel-border);
 	}
 
-	.entries a,
-	.music__entries a {
+	:global(.music__entries a) {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -143,13 +143,11 @@
 		color: var(--text);
 	}
 
-	.entries .title,
 	.music__entry-title {
 		font-family: var(--font-serif);
 		font-size: 1rem;
 	}
 
-	.entries .meta,
 	.music__entry-meta {
 		display: inline-flex;
 		align-items: center;
@@ -160,14 +158,12 @@
 		white-space: nowrap;
 	}
 
-	.empty,
 	.music__empty {
 		margin: 0;
 		color: var(--muted);
 	}
 
-	.closing p,
-	.music__closing p {
+	:global(.music__closing p) {
 		margin: 0 0 0.75rem;
 		color: var(--text);
 	}

@@ -13,22 +13,22 @@
 	}
 </script>
 
-<div class="values">
+<div class="metadata-values">
     {#each values as value}
         <a href={`/journal/${type}/${slugifyValue(value)}`}>
-            <span class="value">{formatValue(value)}</span>
+            <span class="metadata-values__value">{formatValue(value)}</span>
         </a>
     {/each}
 </div>
 
 <style lang="scss">
-	.values {
+	.metadata-values {
 		display: inline-flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 0.25rem;
 
-		.value {
+		.metadata-values__value {
 			background: var(--tag-bg);
 			border-radius: 3px;
 			color: var(--muted);

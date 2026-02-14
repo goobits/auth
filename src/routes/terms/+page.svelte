@@ -1,6 +1,6 @@
 <script>
 	import { CalendarDays, Copyright, Gavel, Globe, Mail, RefreshCw, Scale, TriangleAlert } from '@lucide/svelte'
-	import HeroBanner from '@components/HeroBanner.svelte'
+	import LegalPage from '$lib/ui/LegalPage.svelte'
 </script>
 
 <svelte:head>
@@ -8,14 +8,14 @@
 	<meta name="description" content="Terms of use for MIKO.ART" />
 </svelte:head>
 
-<HeroBanner
+<LegalPage
 	title="Terms of Use"
 	subtitle="A quick guide to using this site smoothly."
 	icon="/media/emoji-terms.png"
-/>
-
-<section class="legal-page legal legal--terms">
-	<p class="legal-updated legal__updated">Last updated: February 11, 2026</p>
+	updatedAt="February 11, 2026"
+	className="legal--terms"
+	showNotice={true}
+>
 
 	<p>
 		By using MIKO.ART, you agree to these terms. If you do not agree, do not use the site.
@@ -73,6 +73,4 @@
 	<p>
 		Questions about these terms can be sent to <a href="mailto:hello@miko.art">hello@miko.art</a>.
 	</p>
-
-	<p class="legal-notice legal__notice">This page is informational and is not legal advice.</p>
-</section>
+</LegalPage>

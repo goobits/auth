@@ -1,6 +1,6 @@
 <script>
 	import { Archive, Baby, Cookie, Database, Globe, Mail, RefreshCw, ShieldCheck, UserCheck } from '@lucide/svelte'
-	import HeroBanner from '@components/HeroBanner.svelte'
+	import LegalPage from '$lib/ui/LegalPage.svelte'
 </script>
 
 <svelte:head>
@@ -8,14 +8,14 @@
 	<meta name="description" content="Privacy policy for MIKO.ART" />
 </svelte:head>
 
-<HeroBanner
+<LegalPage
 	title="Privacy Policy"
 	subtitle="What I collect, why, and how it is protected."
 	icon="/media/emoji-privacy.png"
-/>
-
-<section class="legal-page legal legal--privacy">
-	<p class="legal-updated legal__updated">Last updated: February 11, 2026</p>
+	updatedAt="February 11, 2026"
+	className="legal--privacy"
+	showNotice={true}
+>
 
 	<p>
 		This policy explains what personal data MIKO.ART collects, why it is collected, and what choices you have.
@@ -90,6 +90,4 @@
 		<a href="mailto:hello@miko.art">hello@miko.art</a>
 		or through <a href="/contact">/contact</a>.
 	</p>
-
-	<p class="legal-notice legal__notice">This page is informational and is not legal advice.</p>
-</section>
+</LegalPage>

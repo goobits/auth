@@ -1,48 +1,16 @@
+@use '../../lib/styles/primitives' as ui;
+
 // Admin Dashboard - Grid-based layout with theme variables
 
 $grid-unit: 8px;
 
-.admin-root {
+.admin-page {
 	font-family: var(--font-sans);
 	background: var(--bg);
 	color: var(--text);
 	line-height: 1.4;
 	-webkit-font-smoothing: antialiased;
 	overflow: visible;
-}
-
-// Admin header
-.admin-header {
-	display: flex;
-	align-items: center;
-	gap: $grid-unit;
-	padding: $grid-unit * 2;
-	border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
-}
-
-.admin-title {
-	font-size: 16px;
-	font-weight: 600;
-	line-height: 1.3;
-	margin: 0;
-	background: var(--gradient-rainbow);
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
-	background-clip: text;
-}
-
-.admin-badge {
-	font-size: 10px;
-	font-weight: 600;
-	letter-spacing: 0.04em;
-	text-transform: uppercase;
-	color: var(--muted);
-	background: var(--tag-bg);
-	padding: 2px 6px;
-	border-radius: 3px;
-}
-
-.admin-shell {
 	display: grid;
 	grid-template-columns: 160px 1fr;
 	gap: 0;
@@ -50,13 +18,13 @@ $grid-unit: 8px;
 }
 
 // Sidebar
-.sidebar {
+.admin-page__sidebar {
 	padding: $grid-unit * 3 $grid-unit * 2;
 	border-right: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 	align-self: stretch;
 }
 
-.side-title {
+.admin-page__sidebar-title {
 	font-size: 10px;
 	font-weight: 600;
 	letter-spacing: 0.06em;
@@ -65,7 +33,7 @@ $grid-unit: 8px;
 	margin-bottom: $grid-unit;
 }
 
-.side-item {
+.admin-page__sidebar-item {
 	display: grid;
 	grid-template-columns: 16px 1fr;
 	align-items: center;
@@ -88,7 +56,7 @@ $grid-unit: 8px;
 		background: var(--card-bg);
 	}
 
-	&.active {
+	&.admin-page__sidebar-item--active {
 		color: var(--text);
 		background: var(--card-bg);
 		border-left: 2px solid var(--brand-primary);
@@ -101,21 +69,21 @@ $grid-unit: 8px;
 		color: var(--muted);
 	}
 
-	&.active svg,
+	&.admin-page__sidebar-item--active svg,
 	&:hover svg {
 		color: var(--text);
 	}
 }
 
 // Main content
-.admin-main {
+.admin-page__main {
 	display: grid;
 	gap: 0;
 	align-content: start;
 	padding: $grid-unit * 3 $grid-unit * 2;
 }
 
-.page-title {
+.admin-page__title {
 	font-size: 22px;
 	font-weight: 700;
 	line-height: 1.2;
@@ -124,7 +92,7 @@ $grid-unit: 8px;
 	margin: 0;
 }
 
-.page-sub {
+.admin-page__subtitle {
 	font-size: 13px;
 	line-height: 1.4;
 	color: var(--muted);
@@ -132,35 +100,33 @@ $grid-unit: 8px;
 }
 
 // Stats row
-.stats-row {
+.admin-page__stats {
 	display: grid;
 	grid-template-columns: repeat(3, auto);
 	gap: $grid-unit * 4;
 	margin-bottom: $grid-unit * 2;
 }
 
-.stat-card {
+.admin-page__stat-card {
 	display: grid;
 	gap: 2px;
-	padding: $grid-unit * 1.5;
-	background: var(--card-bg);
-	border-radius: 6px;
+	@include ui.surface-card(6px, $grid-unit * 1.5, var(--card-bg), transparent);
 	border-left: 3px solid var(--brand-primary);
 }
 
-.stat-val {
+.admin-page__stat-value {
 	font-size: 20px;
 	font-weight: 700;
 	line-height: 1.2;
 	letter-spacing: -0.02em;
 	color: var(--text);
 
-	&.synced {
+	&.admin-page__stat-value--synced {
 		color: var(--status-success-text);
 	}
 }
 
-.stat-label {
+.admin-page__stat-label {
 	font-size: 11px;
 	line-height: 1.4;
 	color: var(--muted);
@@ -168,21 +134,21 @@ $grid-unit: 8px;
 }
 
 // Sections
-.admin-section {
+.admin-page__section {
 	display: grid;
 	gap: $grid-unit;
 	border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 	padding: $grid-unit * 2 0;
 }
 
-.section-head {
+.admin-page__section-head {
 	display: grid;
 	grid-template-columns: 1fr auto;
 	align-items: center;
 	gap: $grid-unit;
 }
 
-.section-title {
+.admin-page__section-title {
 	font-size: 14px;
 	font-weight: 600;
 	line-height: 1.4;
@@ -201,21 +167,21 @@ $grid-unit: 8px;
 	}
 }
 
-.section-desc {
+.admin-page__section-description {
 	font-size: 12px;
 	line-height: 1.5;
 	color: var(--muted);
 	margin: 0;
 }
 
-.section-count {
+.admin-page__section-count {
 	font-size: 11px;
 	line-height: 1.4;
 	color: var(--muted);
 }
 
 // Badges
-.badge {
+.admin-page__status-badge {
 	display: inline-grid;
 	grid-template-columns: auto auto;
 	align-items: center;
@@ -225,15 +191,15 @@ $grid-unit: 8px;
 	line-height: 1.4;
 	color: var(--muted);
 
-	&.connected {
+	&.admin-page__status-badge--connected {
 		color: var(--status-success-text);
 	}
 
-	&.confirmed {
+	&.admin-page__status-badge--confirmed {
 		color: var(--status-success-text);
 	}
 
-	&.pending {
+	&.admin-page__status-badge--pending {
 		color: var(--color-warning);
 	}
 
@@ -244,7 +210,7 @@ $grid-unit: 8px;
 }
 
 // Buttons
-.btn-row {
+.admin-page__button-row {
 	display: grid;
 	grid-auto-flow: column;
 	grid-auto-columns: max-content;
@@ -252,7 +218,7 @@ $grid-unit: 8px;
 	margin-top: $grid-unit;
 }
 
-.btn-sec {
+.admin-page__button-secondary {
 	display: inline-grid;
 	grid-template-columns: auto auto;
 	align-items: center;
@@ -275,7 +241,7 @@ $grid-unit: 8px;
 		border-color: var(--brand-primary);
 	}
 
-	&.danger {
+	&.admin-page__button-secondary--danger {
 		color: var(--status-error-text);
 		border-color: var(--status-error-text);
 
@@ -290,22 +256,15 @@ $grid-unit: 8px;
 	}
 }
 
-.btn-pri {
+.admin-page__button-primary {
+	@include ui.button-primary(4px, 6px 12px);
 	display: inline-grid;
 	grid-template-columns: auto;
 	align-items: center;
 	gap: 4px;
-	padding: 6px 12px;
-	border-radius: 4px;
-	border: 1px solid var(--brand-primary);
-	background: var(--brand-primary);
-	color: var(--color-white);
 	font-size: 12px;
 	font-weight: 500;
 	line-height: 1.4;
-	cursor: pointer;
-	font-family: inherit;
-	transition: all 0.15s;
 
 	&:hover {
 		background: var(--brand-dark);
@@ -314,13 +273,13 @@ $grid-unit: 8px;
 }
 
 // Form fields
-.fields-grid {
+.admin-page__fields-grid {
 	display: grid;
 	gap: $grid-unit * 1.5;
 	margin: $grid-unit 0;
 }
 
-.fields-row {
+.admin-page__fields-row {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
 	gap: $grid-unit * 2;
@@ -330,36 +289,36 @@ $grid-unit: 8px;
 	}
 }
 
-.field {
+.admin-page__field {
 	display: grid;
 	gap: 4px;
 }
 
-.field-label {
+.admin-page__field-label {
 	font-size: 11px;
 	font-weight: 500;
 	line-height: 1.4;
 	color: var(--muted);
 }
 
-.time-row {
+.admin-page__time-row {
 	display: grid;
 	grid-template-columns: 1fr auto 1fr;
 	align-items: center;
 	gap: $grid-unit;
 }
 
-.time-sep {
+.admin-page__time-separator {
 	font-size: 11px;
 	line-height: 1.4;
 	color: var(--muted);
 }
 
-.input-wrap {
+.admin-page__input-wrap {
 	position: relative;
 }
 
-.input-suffix {
+.admin-page__input-suffix {
 	position: absolute;
 	right: 8px;
 	top: 50%;
@@ -372,21 +331,13 @@ $grid-unit: 8px;
 
 input[type="time"],
 input[type="number"] {
-	width: 100%;
-	padding: 6px 8px;
-	border-radius: 4px;
-	border: 1px solid var(--border);
-	background: var(--input-bg);
+	@include ui.input-control(4px, 6px 8px, var(--input-bg), var(--border));
 	color: var(--text);
 	font-size: 12px;
 	line-height: 1.4;
-	font-family: inherit;
-	outline: none;
 	outline-offset: 0;
 	transition: border-color 0.15s;
-	box-sizing: border-box;
 	-webkit-appearance: none;
-	margin: 0;
 	color-scheme: light dark;
 
 	&:focus {
@@ -406,13 +357,13 @@ input[type="number"] {
 }
 
 // Bookings list
-.bookings-list {
+.admin-page__bookings-list {
 	display: grid;
 	gap: 0;
 	margin-top: $grid-unit;
 }
 
-.booking-row {
+.admin-page__booking-row {
 	display: grid;
 	grid-template-columns: auto 1fr auto auto;
 	align-items: center;
@@ -428,7 +379,7 @@ input[type="number"] {
 	color: var(--text);
 
 	&:hover,
-	&.hovered {
+	&.admin-page__booking-row--hovered {
 		background: var(--tag-bg);
 		margin: 0 (-$grid-unit);
 		padding: $grid-unit;
@@ -437,12 +388,12 @@ input[type="number"] {
 	}
 }
 
-.booking-divider {
+.admin-page__booking-divider {
 	height: 1px;
 	background: color-mix(in srgb, var(--border) 50%, transparent);
 }
 
-.booking-date {
+.admin-page__booking-date {
 	font-size: 12px;
 	font-weight: 500;
 	line-height: 1.4;
@@ -450,13 +401,13 @@ input[type="number"] {
 	white-space: nowrap;
 }
 
-.booking-meta {
+.admin-page__booking-meta {
 	font-size: 12px;
 	line-height: 1.4;
 	color: var(--muted);
 }
 
-.booking-arrow {
+.admin-page__booking-arrow {
 	color: var(--muted);
 
 	svg {
@@ -466,29 +417,23 @@ input[type="number"] {
 }
 
 // Modal
-.modal-overlay {
-	position: fixed;
-	inset: 0;
-	background: color-mix(in srgb, var(--color-black) 50%, transparent);
+.admin-page__modal-overlay {
+	@include ui.modal-overlay(50%, 200);
 	backdrop-filter: blur(4px);
 	display: grid;
 	place-items: center;
-	z-index: 200;
 	padding: $grid-unit * 2;
 }
 
-.modal-card {
+.admin-page__modal-card {
 	display: grid;
 	gap: $grid-unit;
-	background: var(--panel-bg);
-	border: 1px solid var(--panel-border);
-	border-radius: 8px;
-	padding: $grid-unit * 2;
+	@include ui.modal-card(8px, $grid-unit * 2, var(--panel-bg), var(--panel-border));
 	max-width: 320px;
 	width: 100%;
 }
 
-.modal-title {
+.admin-page__modal-title {
 	font-size: 15px;
 	font-weight: 600;
 	line-height: 1.3;
@@ -496,20 +441,20 @@ input[type="number"] {
 	color: var(--text);
 }
 
-.modal-sub {
+.admin-page__modal-subtitle {
 	font-size: 12px;
 	line-height: 1.4;
 	color: var(--muted);
 	margin: 0;
 }
 
-.modal-rows {
+.admin-page__modal-rows {
 	display: grid;
 	gap: 0;
 	margin: $grid-unit 0;
 }
 
-.modal-row {
+.admin-page__modal-row {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: $grid-unit;
@@ -517,13 +462,13 @@ input[type="number"] {
 	border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 }
 
-.modal-label {
+.admin-page__modal-label {
 	font-size: 11px;
 	line-height: 1.4;
 	color: var(--muted);
 }
 
-.modal-val {
+.admin-page__modal-value {
 	font-size: 12px;
 	font-weight: 500;
 	line-height: 1.4;
@@ -531,7 +476,7 @@ input[type="number"] {
 	text-align: right;
 }
 
-.modal-actions {
+.admin-page__modal-actions {
 	display: grid;
 	grid-auto-flow: column;
 	grid-auto-columns: max-content;
@@ -539,7 +484,7 @@ input[type="number"] {
 }
 
 // Toast
-.toast {
+.admin-page__toast {
 	position: fixed;
 	bottom: $grid-unit * 3;
 	left: 50%;
@@ -577,12 +522,12 @@ button:disabled {
 
 // Responsive
 @media (max-width: 600px) {
-	.admin-shell {
+	.admin-page {
 		grid-template-columns: 1fr;
 		gap: 0;
 	}
 
-	.sidebar {
+	.admin-page__sidebar {
 		display: grid;
 		grid-auto-flow: column;
 		grid-auto-columns: max-content;
@@ -594,28 +539,28 @@ button:disabled {
 		overflow-x: auto;
 	}
 
-	.side-title {
+	.admin-page__sidebar-title {
 		display: none;
 	}
 
-	.side-item {
+	.admin-page__sidebar-item {
 		white-space: nowrap;
 	}
 
-	.admin-main {
+	.admin-page__main {
 		padding: $grid-unit * 2;
 		max-width: none;
 	}
 
-	.stats-row {
+	.admin-page__stats {
 		gap: $grid-unit * 2;
 	}
 
-	.stat-val {
+	.admin-page__stat-value {
 		font-size: 18px;
 	}
 
-	.fields-row {
+	.admin-page__fields-row {
 		grid-template-columns: 1fr;
 
 		&:first-child {
@@ -623,11 +568,11 @@ button:disabled {
 		}
 	}
 
-	.booking-row {
+	.admin-page__booking-row {
 		grid-template-columns: 1fr auto auto;
 
 		&:hover,
-		&.hovered {
+		&.admin-page__booking-row--hovered {
 			margin: 0;
 			padding: $grid-unit 0;
 			width: 100%;
@@ -635,7 +580,7 @@ button:disabled {
 		}
 	}
 
-	.booking-date {
+	.admin-page__booking-date {
 		grid-column: 1 / -1;
 	}
 }

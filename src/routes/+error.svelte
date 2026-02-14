@@ -2,7 +2,7 @@
     <title>404 - MIKO.ART</title>
 </svelte:head>
 
-<div class="error-container">
+<div class="error-page__container">
     <a href="/">
         <img
                 src="/media/404-cat.svg"
@@ -12,7 +12,7 @@
 </div>
 
 <style>
-	.error-container {
+	.error-page__container {
 		align-items: center;
 		display: flex;
 		justify-content: center;

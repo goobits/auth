@@ -1,0 +1,11 @@
+.ui-prose {
+	font-family: var(--font-serif);
+	line-height: 1.75;
+}
+
+.ui-prose h1,
+.ui-prose h2,
+.ui-prose h3,
+.ui-prose h4 {
+	font-family: var(--font-display);
+}
