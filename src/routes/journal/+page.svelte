@@ -42,13 +42,15 @@
 			subtitle="Thoughts, process notes, and little breakthroughs."
 		/>
 
-		<section class="journal-page__toolbar" aria-label="Journal filters">
-			<label class="journal-page__search" aria-label="Search posts">
-				<Search class="journal-page__search-icon" size={15} strokeWidth={2.2} />
-				<input
-					class="journal-page__search-input"
-					type="text"
-					placeholder="Search posts..."
+			<section class="journal-page__toolbar" aria-label="Journal filters">
+				<label class="journal-page__search" aria-label="Search posts">
+					<span class="journal-page__search-icon" aria-hidden="true">
+						<Search size={15} strokeWidth={2.2} />
+					</span>
+					<input
+						class="journal-page__search-input"
+						type="text"
+						placeholder="Search posts..."
 					bind:value={searchQuery}
 				/>
 			</label>
@@ -332,8 +334,6 @@
 	}
 
 	@media (max-width: 860px) {
-		.journal-page__toolbar { }
-
 		.journal-page__row {
 			grid-template-columns: 1fr;
 			gap: 0.45rem;

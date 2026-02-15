@@ -263,8 +263,4 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-
-	@media (max-width: 860px) {
-		.labs-page__toolbar { }
-	}
 </style>
