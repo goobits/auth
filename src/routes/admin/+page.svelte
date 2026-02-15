@@ -7,18 +7,19 @@
 		DEFAULT_ADMIN_RULES,
 		DEFAULT_ADMIN_STATS,
 		DEFAULT_INVITE_DRAFT,
-		beginCalendarOAuth,
-		buildInviteLink,
-		fetchAdminBookings,
-		fetchAdminStatus,
-		fetchCalendarMembersData,
-		formatAdminDate,
-		getApiErrorMessage,
-		persistAdminRules,
-		persistInvite,
-		removeAdminBooking,
-		removeInvite
+		formatAdminDate
 	} from '$lib/viewmodels/admin'
+	import {
+		cancelDashboardBooking,
+		createInviteShareLink,
+		createMemberInvite,
+		deleteMemberInvite,
+		getCalendarReconnectUrl,
+		loadDashboardBookings,
+		loadDashboardStatus,
+		loadMembersData,
+		saveDashboardRules
+	} from '$lib/viewmodels/admin-dashboard'
 
 	let { data, form } = $props()
 
@@ -52,16 +53,14 @@
 
 	async function loadStatus() {
 		try {
-			const data = await fetchAdminStatus()
-			if (data.ok) {
-				connected = data.google?.connected ?? false
-				connectionExpired = data.google?.expired ?? false
-				if (data.rules) {
-					hours = { from: data.rules.hoursFrom, to: data.rules.hoursTo }
-					buffer = data.rules.buffer
-					notice = data.rules.notice
-					capacity = data.rules.capacity
-				}
+			const dashboardStatus = await loadDashboardStatus()
+			connected = dashboardStatus.connected
+			connectionExpired = dashboardStatus.connectionExpired
+			if (dashboardStatus.rules) {
+				hours = { from: dashboardStatus.rules.hoursFrom, to: dashboardStatus.rules.hoursTo }
+				buffer = dashboardStatus.rules.buffer
+				notice = dashboardStatus.rules.notice
+				capacity = dashboardStatus.rules.capacity
 			}
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
@@ -73,16 +72,13 @@
 		loading = true
 		error = ''
 		try {
-			const data = await fetchAdminBookings()
-			if (data.ok) {
-				bookings = data.bookings || []
-				stats = data.stats || DEFAULT_ADMIN_STATS
-			} else {
-				error = getApiErrorMessage(data, 'Failed to load bookings')
-			}
+			const dashboardBookings = await loadDashboardBookings()
+			bookings = dashboardBookings.bookings
+			stats = dashboardBookings.stats || DEFAULT_ADMIN_STATS
+			error = dashboardBookings.error
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
-			error = err.message || 'Failed to load bookings'
+			error = err instanceof Error ? err.message : 'Failed to load bookings'
 		} finally {
 			loading = false
 		}
@@ -91,16 +87,16 @@
 	async function save() {
 		saving = true
 		try {
-			const data = await persistAdminRules({ hours: { ...hours }, buffer, notice, capacity })
-			if (data.ok) {
+			const saveResult = await saveDashboardRules({ hours: { ...hours }, buffer, notice, capacity })
+			if (saveResult.ok) {
 				saved = true
 				setTimeout(() => saved = false, 2200)
 			} else {
-				error = getApiErrorMessage(data, 'Failed to save rules')
+				error = saveResult.error
 			}
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
-			error = err.message || 'Failed to save rules'
+			error = err instanceof Error ? err.message : 'Failed to save rules'
 		} finally {
 			saving = false
 		}
@@ -110,16 +106,16 @@
 		if (!confirm('Are you sure you want to cancel this booking?')) return
 		canceling = true
 		try {
-			const data = await removeAdminBooking(bookingId)
-			if (data.ok) {
+			const cancellationResult = await cancelDashboardBooking(bookingId)
+			if (cancellationResult.ok) {
 				viewBooking = null
 				await loadBookings()
 			} else {
-				error = getApiErrorMessage(data, 'Failed to cancel booking')
+				error = cancellationResult.error
 			}
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
-			error = err.message || 'Failed to cancel booking'
+			error = err instanceof Error ? err.message : 'Failed to cancel booking'
 		} finally {
 			canceling = false
 		}
@@ -127,16 +123,15 @@
 
 	async function reconnect() {
 		try {
-			const data = await beginCalendarOAuth()
-			if (data.authUrl) {
-				window.location.href = data.authUrl
+			const reconnectResult = await getCalendarReconnectUrl()
+			if (reconnectResult.ok) {
+				window.location.href = reconnectResult.authUrl
 			} else {
-				console.error('Failed to start OAuth:', data.error)
-				error = getApiErrorMessage(data, 'Failed to connect to Google')
+				error = reconnectResult.error
 			}
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
-			error = err.message || 'Failed to connect to Google'
+			error = err instanceof Error ? err.message : 'Failed to connect to Google'
 		}
 	}
 
@@ -144,16 +139,13 @@
 		calendarLoading = true
 		calendarError = ''
 		try {
-			const { invitesData, usersData } = await fetchCalendarMembersData()
-
-			if (invitesData.ok) calendarInvites = invitesData.invites || []
-			else calendarError = getApiErrorMessage(invitesData, 'Failed to load invites')
-
-			if (usersData.ok) calendarUsers = usersData.users || []
-			else calendarError = getApiErrorMessage(usersData, 'Failed to load users')
+			const membersData = await loadMembersData()
+			calendarInvites = membersData.invites
+			calendarUsers = membersData.users
+			calendarError = membersData.error
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
-			calendarError = err.message || 'Failed to load members data'
+			calendarError = err instanceof Error ? err.message : 'Failed to load members data'
 		} finally {
 			calendarLoading = false
 		}
@@ -163,22 +155,22 @@
 		creatingInvite = true
 		calendarError = ''
 		try {
-			const data = await persistInvite({
+			const inviteResult = await createMemberInvite({
 				email: inviteEmail || null,
 				uses: inviteUses,
 				expiresInDays: inviteExpires
 			})
-			if (data.ok) {
+			if (inviteResult.ok) {
 				inviteEmail = ''
 				inviteUses = DEFAULT_INVITE_DRAFT.uses
 				inviteExpires = DEFAULT_INVITE_DRAFT.expiresInDays
 				await loadCalendarData()
 			} else {
-				calendarError = getApiErrorMessage(data, 'Failed to create invite')
+				calendarError = inviteResult.error
 			}
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
-			calendarError = err.message || 'Failed to create invite'
+			calendarError = err instanceof Error ? err.message : 'Failed to create invite'
 		} finally {
 			creatingInvite = false
 		}
@@ -187,20 +179,20 @@
 	async function deleteInvite(id) {
 		if (!confirm('Delete this invite?')) return
 		try {
-			const data = await removeInvite(id)
-			if (data.ok) {
+			const inviteDeletion = await deleteMemberInvite(id)
+			if (inviteDeletion.ok) {
 				await loadCalendarData()
 			} else {
-				calendarError = getApiErrorMessage(data, 'Failed to delete invite')
+				calendarError = inviteDeletion.error
 			}
 		} catch (err) {
 			if (handleUnauthorizedSessionError(err)) return
-			calendarError = err.message || 'Failed to delete invite'
+			calendarError = err instanceof Error ? err.message : 'Failed to delete invite'
 		}
 	}
 
 	function copyInviteLink(code) {
-		const url = buildInviteLink(window.location.origin, code)
+		const url = createInviteShareLink(window.location.origin, code)
 		navigator.clipboard.writeText(url)
 	}
 

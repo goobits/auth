@@ -1,6 +1,17 @@
 import { getAdminMe } from '$lib/client/api/adminClient'
 import { startCalendarOAuth } from '$lib/client/api/calendarClient'
 import { isCalendarConnectedFromParams, scheduleCalendarConnectedRedirect } from '$lib/client/routing/calendarState'
+import { SvelteURLSearchParams } from 'svelte/reactivity'
+
+function hasAuthenticatedFlag(value) {
+	return typeof value === 'object' && value !== null && 'authenticated' in value
+}
+
+function hasAuthUrl(value) {
+	if (typeof value !== 'object' || value === null || !('authUrl' in value)) return false
+	const authUrl = value.authUrl
+	return typeof authUrl === 'string' && authUrl.length > 0
+}
 
 export function createAdminCalendarConnectionController() {
 	let authUrl = $state('')
@@ -14,7 +25,7 @@ export function createAdminCalendarConnectionController() {
 		authChecking = true
 		try {
 			const data = await getAdminMe()
-			authed = !!data.authenticated
+			authed = hasAuthenticatedFlag(data) ? Boolean(data.authenticated) : false
 		} catch {
 			authed = false
 		} finally {
@@ -30,6 +41,9 @@ export function createAdminCalendarConnectionController() {
 				throw new Error('Admin session required. Please log in at /admin.')
 			}
 			const data = await startCalendarOAuth()
+			if (!hasAuthUrl(data)) {
+				throw new Error('OAuth start response missing auth URL.')
+			}
 			authUrl = data.authUrl
 			window.location.href = authUrl
 		} catch (err) {
@@ -39,8 +53,7 @@ export function createAdminCalendarConnectionController() {
 
 	function init() {
 		if (typeof window === 'undefined') return
-		// eslint-disable-next-line svelte/prefer-svelte-reactivity
-		const params = new URLSearchParams(window.location.search)
+		const params = new SvelteURLSearchParams(window.location.search)
 		if (isCalendarConnectedFromParams(params)) {
 			status = 'Connected! Redirecting you to Rainbow Gym...'
 			connected = true

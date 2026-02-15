@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores'
+	import { CALENDAR_ACTIVITY_LIST } from '$lib/booking/activities'
 	import { getProviderErrorMessage, type CalendarProviderName } from '$lib/auth/ui/providers'
 	import { buildProviderLoginHref } from '$lib/auth/ui/redirects'
 	import '../Calendar.scss'
@@ -19,6 +20,16 @@
 	const redirectTo = $page.url.searchParams.get('redirect') || '/calendar'
 	const verifiedStatus = $page.url.searchParams.get('verified') || ''
 	let inviteInput = $state(inviteCode)
+
+	function resolveTargetActivity(path: string) {
+		const pathname = path.split('?')[0]?.replace(/\/+$/, '') || ''
+		if (pathname === '/calendar-gym') {
+			return CALENDAR_ACTIVITY_LIST.find((item) => item.slug === 'gym') ?? null
+		}
+		return CALENDAR_ACTIVITY_LIST.find((item) => item.href === pathname) ?? null
+	}
+
+	const targetActivity = resolveTargetActivity(redirectTo)
 
 	async function loginWith(provider: CalendarProviderName, codeOverride?: string) {
 		loading = true
@@ -66,9 +77,15 @@
 <div class="calendar-page calendar-login">
 	<div class="calendar-login__center">
 		<section class="calendar-login__card" aria-label="Members sign in">
-			<p class="calendar-login__label">Members</p>
-			<h1 class="calendar-login__title">Welcome back ✨</h1>
-			<p class="calendar-login__subtitle">Sign in to access activities and events.</p>
+			<p class="calendar-login__label">{targetActivity ? targetActivity.eyebrow : 'Members'}</p>
+			<h1 class="calendar-login__title">
+				{targetActivity ? `${targetActivity.label} ${targetActivity.icon}` : 'Welcome back ✨'}
+			</h1>
+			<p class="calendar-login__subtitle">
+				{targetActivity
+					? `${targetActivity.heroSubtitle} Sign in to continue.`
+					: 'Sign in to access activities and events.'}
+			</p>
 
 			{#if error}
 				<div class="calendar-page__error-message calendar-login__error">{error}</div>
