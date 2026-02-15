@@ -26,7 +26,7 @@ pnpm dev:wrangler
 
 ```bash
 # Production build (auto version bump)
-pnpm build
+pnpm build:patch
 
 # Preview production build (port 3000)
 pnpm preview
@@ -44,12 +44,12 @@ Pluggable authentication for SvelteKit — OAuth 2.0 (PKCE), Argon2id password h
 
 ```bash
 # Auth package has its own test suite
-cd repos/auth
-pnpm test           # Unit tests (vitest)
-pnpm test:watch     # Watch mode
-pnpm test:ui        # Vitest UI
-pnpm typecheck      # TypeScript validation
-```
+	cd repos/auth
+	pnpm test           # Unit tests (vitest)
+	pnpm test:watch     # Watch mode
+	pnpm test:ui        # Vitest UI
+	pnpm check:types    # TypeScript validation
+	```
 
 ## ⚙️ Configuration
 
@@ -79,9 +79,12 @@ Defined in `svelte.config.js`:
 pnpm dev              # Vite dev server (port 3610)
 pnpm dev:wrangler     # Dev with Cloudflare D1 runtime
 pnpm build            # Production build
+pnpm build:patch      # Patch bump + build
 pnpm preview          # Preview build (port 3000)
-pnpm stop             # Stop dev server
-pnpm restart          # Restart dev server
+pnpm dev:stop         # Stop dev server
+pnpm dev:restart      # Restart dev server
+pnpm check            # Types + svelte-check + lint + circular deps
+pnpm test             # Full e2e suite
 pnpm deploy:secrets   # Push production secrets only (no site deploy)
 pnpm deploy:prod      # Build + Cloudflare Pages deploy (standard)
 pnpm deploy:prod:full # Secrets + build + Cloudflare Pages deploy
