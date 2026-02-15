@@ -1,4 +1,5 @@
 @use '../../../lib/styles/primitives' as ui;
+@use './vars' as *;
 
 // Modal
 .admin-page__modal-overlay {

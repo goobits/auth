@@ -1,7 +1,3 @@
-@use '../../lib/styles/primitives' as ui;
-
-$grid-unit: 8px;
-
 @use './styles/layout';
 @use './styles/sections';
 @use './styles/controls-and-list';
