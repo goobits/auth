@@ -15,6 +15,8 @@
 
 	let tab = $state('dash')
 	let authed = $derived(!!data.user)
+	// `form` is only populated for non-redirect action responses.
+	// Successful login redirects, so we shouldn't rely on `form.success` here.
 
 	const dashboard = createAdminDashboardController({ onUnauthorized: handleUnauthorizedSessionError })
 	const members = createAdminMembersController({ onUnauthorized: handleUnauthorizedSessionError })

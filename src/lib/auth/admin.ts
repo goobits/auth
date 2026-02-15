@@ -30,7 +30,11 @@ export async function getAdminAuth({ event }: { event: { platform?: PlatformLike
 		),
 		...(event.platform?.env ?? {})
 	} as Record<string, string | undefined>
-	const secureCookies = env['NODE_ENV'] !== 'development'
+	// Browsers will not persist `Secure` cookies over plain http (e.g. localhost dev),
+	// which makes admin login appear to "work" server-side but never stick client-side.
+	const url = (event as unknown as { url?: URL }).url
+	const isHttps = url?.protocol === 'https:'
+	const secureCookies = !dev && isHttps
 
 	let sessionLifetimeMs = 60 * 24 * 60 * 60 * 1000
 	if (env['ADMIN_SESSION_TTL_DAYS']) {

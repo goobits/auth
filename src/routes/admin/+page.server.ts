@@ -23,7 +23,7 @@ export const actions: Actions = {
 		await ensureAdminAccount({ userAdapter, env })
 		type CredentialsInput = Parameters<typeof credentialsProvider.authenticate>[0]
 
-		return createSigninHandler({
+		return await createSigninHandler({
 			credentialsProvider: {
 				authenticate: async ({ email, password, userAdapter: adapter }: { email: string; password: string; userAdapter: unknown }) => {
 					const result = await credentialsProvider.authenticate({

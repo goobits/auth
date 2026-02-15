@@ -21,6 +21,7 @@
 		"check:circular": "pnpm exec madge --circular --extensions ts,js,svelte src functions packages repos serverless",
 		"test": "pnpm run e2e",
 		"e2e": "pnpm run e2e:links && pnpm run e2e:sitemap && pnpm run e2e:auth && pnpm run e2e:visual && pnpm run e2e:layout:cls && pnpm run e2e:layout:drift",
+		"e2e:admin": "node e2e/admin-login-smoke.mjs",
 		"e2e:auth": "node e2e/auth-register-smoke.mjs",
 		"e2e:layout:cls": "node e2e/layout-shift.mjs",
 		"e2e:layout:drift": "node e2e/layout-drift.mjs",
