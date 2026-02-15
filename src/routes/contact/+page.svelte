@@ -15,20 +15,20 @@
 	let submitting = $state(false)
 	let submitError = $state('')
 	let values = $state({ name: '', email: '', message: '' })
-	let errors = $state<ContactErrors>({})
+		let errors = $state<ContactErrors>({})
 
-	const contextFrom = $derived($page.url.searchParams.get('from')?.trim() || '')
-	const contextTopic = $derived($page.url.searchParams.get('topic')?.trim() || '')
-	const contextLabel = $derived(() => {
-		const parts = [contextFrom, contextTopic].filter(Boolean)
-		return parts.length ? parts.join(' / ') : ''
-	})
-	const messagePlaceholder = $derived(() => {
-		if (contextFrom === 'music' && contextTopic) return 'Tell me what you need and include any links...'
-		if (contextFrom === 'art') return 'Tell me about the piece, timeline, and any reference links...'
-		if (contextFrom === 'about' && contextTopic) return 'Tell me a bit about your project and what you are looking for...'
-		return 'Tell me about your project…'
-	})
+		const contextFrom = $derived($page.url.searchParams.get('from')?.trim() || '')
+		const contextTopic = $derived($page.url.searchParams.get('topic')?.trim() || '')
+		const contextLabel = $derived.by(() => {
+			const parts = [contextFrom, contextTopic].filter(Boolean)
+			return parts.length ? parts.join(' / ') : ''
+		})
+		const messagePlaceholder = $derived.by(() => {
+			if (contextFrom === 'music' && contextTopic) return 'Tell me what you need and include any links...'
+			if (contextFrom === 'art') return 'Tell me about the piece, timeline, and any reference links...'
+			if (contextFrom === 'about' && contextTopic) return 'Tell me a bit about your project and what you are looking for...'
+			return 'Tell me about your project…'
+		})
 
 	function validate() {
 		const nextErrors: ContactErrors = {}
