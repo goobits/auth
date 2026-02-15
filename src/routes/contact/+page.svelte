@@ -114,11 +114,11 @@
 				</p>
 			</section>
 			<section class="contact-page__aside-section">
-				<p class="contact-page__aside-label">Elsewhere</p>
-				<nav class="contact-page__aside-links" aria-label="Social profiles">
-					<a href="https://github.com" target="_blank" rel="noreferrer noopener">GitHub ↗</a>
-				</nav>
-			</section>
+					<p class="contact-page__aside-label">Elsewhere</p>
+					<nav class="contact-page__aside-links" aria-label="Social profiles">
+						<a href="https://github.com/mudcube" target="_blank" rel="noreferrer noopener">GitHub ↗</a>
+					</nav>
+				</section>
 			<div class="contact-page__raccoon-wrap">
 				<img class="contact-page__image" src="/media/super-racoon.svg" alt="Raccoon illustration" loading="lazy" />
 			</div>

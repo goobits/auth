@@ -167,15 +167,10 @@
 		opacity: 1;
 	}
 
-	&__raccoon-wrap {
-		margin-top: 3rem;
-		opacity: 0.12;
-		transition: opacity 0.4s ease;
-	}
-
-	&__raccoon-wrap:hover {
-		opacity: 0.24;
-	}
+		&__raccoon-wrap {
+			margin-top: 3rem;
+			opacity: 1;
+		}
 
 	&__image {
 		width: 11.25rem;
