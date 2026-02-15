@@ -41,6 +41,10 @@
 	text-decoration: none;
 }
 
+.home__project:visited {
+	color: var(--project-text);
+}
+
 .home__project:hover {
 	color: var(--project-text);
 }
