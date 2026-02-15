@@ -68,40 +68,99 @@ $grid-unit: 0.5rem;
 	padding: 3rem 1.5rem;
 }
 
-.admin-page__login-card {
-	width: min(26.25rem, 100%);
-	background: color-mix(in srgb, var(--color-black) 94%, var(--bg) 6%);
-	border: 1px solid var(--color-white-08);
-	border-radius: var(--radius-xl);
-	padding: 2rem;
-	box-shadow: 0 1.25rem 3.125rem var(--overlay-black-35);
-}
-
-.admin-page__login-title {
-	font-size: 1.5rem;
-	font-weight: var(--font-weight-semibold);
-	color: color-mix(in srgb, var(--color-white) 97%, var(--bg) 3%);
-	margin-bottom: 0.35rem;
-}
-
-.admin-page__login-sub {
-	color: color-mix(in srgb, var(--color-white) 70%, transparent);
-	margin-bottom: 1.5rem;
-}
-
-.admin-page__login-field input {
+.admin-login {
 	width: 100%;
-	background: color-mix(in srgb, var(--color-black) 92%, var(--bg) 8%);
-	border: 1px solid var(--color-white-12);
-	border-radius: var(--radius-md);
-	padding: 0.75rem 0.85rem;
-	color: color-mix(in srgb, var(--color-white) 97%, var(--bg) 3%);
-	outline: none;
+	max-width: 21.25rem;
+	text-align: center;
 }
 
-.admin-page__login-error {
-	margin: 0.75rem 0 1rem;
-	color: color-mix(in srgb, var(--form-error) 72%, var(--color-white) 28%);
+.admin-login__label {
+	font-size: 0.8125rem;
+	font-weight: var(--font-weight-medium);
+	color: color-mix(in srgb, var(--muted) 92%, var(--text));
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	margin-bottom: 1rem;
+}
+
+.admin-login__title {
+	font-family: var(--font-display);
+	font-weight: 300;
+	font-size: 2.25rem;
+	letter-spacing: -0.025em;
+	line-height: 1.15;
+	margin: 0 0 0.5rem;
+	color: var(--text);
+}
+
+.admin-login__subtitle {
+	margin: 0 0 2.5rem;
+	font-size: 0.9375rem;
+	line-height: 1.5;
+	color: color-mix(in srgb, var(--muted) 92%, var(--text));
+}
+
+.admin-login__row {
+	display: flex;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+.admin-login__passcode {
+	flex: 1;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+	font-size: 0.875rem;
+	color: var(--text);
+	background: transparent;
+	border: 1.5px solid var(--input-border);
+	border-radius: var(--radius-pill);
+	padding: 0.75rem 1.25rem;
+	outline: none;
+	letter-spacing: 0.12em;
+	text-align: center;
+	transition: border-color 0.25s ease;
+}
+
+.admin-login__passcode:focus {
+	border-color: var(--text);
+}
+
+.admin-login__passcode::placeholder {
+	font-family: var(--font-sans);
+	letter-spacing: 0;
+	color: color-mix(in srgb, var(--muted) 90%, var(--text));
+	font-size: 0.8125rem;
+}
+
+.admin-login__unlock {
+	font-family: var(--font-sans);
+	font-size: 0.875rem;
+	font-weight: var(--font-weight-medium);
+	color: var(--bg);
+	background: var(--text);
+	border: none;
+	padding: 0.75rem 1.75rem;
+	border-radius: var(--radius-pill);
+	cursor: pointer;
+	transition: opacity 0.25s ease;
+	white-space: nowrap;
+}
+
+.admin-login__unlock:hover {
+	opacity: 0.82;
+}
+
+.admin-login__error {
+	margin: 0 0 1rem;
+	font-size: var(--font-size-sm);
+	color: color-mix(in srgb, var(--form-error) 72%, var(--text));
+}
+
+.admin-login__hint {
+	margin: 0;
+	font-size: var(--font-size-xs);
+	color: color-mix(in srgb, var(--muted) 92%, var(--text));
+	line-height: 1.5;
 }
 
 .admin-page__sidebar-item--logout {

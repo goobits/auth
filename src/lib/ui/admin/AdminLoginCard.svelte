@@ -4,18 +4,22 @@
 </script>
 
 <div class="admin-page__login">
-	<div class="admin-page__login-card">
-		<div class="admin-page__login-title">Admin access</div>
-		<div class="admin-page__login-sub">Enter the admin passcode to continue.</div>
-		<form method="POST" action="?/login" use:enhance>
+	<div class="admin-login" aria-label="Admin login">
+		<div class="admin-login__label">Admin</div>
+		<h1 class="admin-login__title">Control room 🔐</h1>
+		<p class="admin-login__subtitle">Bookings, invites, and calendar management.</p>
+
+		<form class="admin-login__form" method="POST" action="?/login" use:enhance>
 			<input type="hidden" name="email" value="admin@miko.art" />
-			<div class="admin-page__login-field">
-				<input class="admin-page__input" type="password" name="password" placeholder="Passcode" />
+			<div class="admin-login__row">
+				<input class="admin-login__passcode" type="password" name="password" placeholder="Passcode" />
+				<button class="admin-login__unlock" type="submit">Unlock</button>
 			</div>
 			{#if form?.error}
-				<div class="admin-page__login-error">{form.error}</div>
+				<p class="admin-login__error" role="status">{form.error}</p>
 			{/if}
-			<button class="admin-page__button-secondary admin-page__unlock" type="submit">Unlock</button>
 		</form>
+
+		<p class="admin-login__hint">Authorized access only.</p>
 	</div>
 </div>
