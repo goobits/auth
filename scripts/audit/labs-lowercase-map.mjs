@@ -16,7 +16,7 @@ async function walk(dir) {
   }
   for (const entry of entries) {
     const full = path.join(dir, entry.name)
-    out.push(full)
+    out.push({ full, isDirectory: entry.isDirectory() })
     if (entry.isDirectory()) out.push(...(await walk(full)))
   }
   return out
@@ -28,9 +28,11 @@ function toPosix(v) {
 
 async function run() {
   const entries = await walk(LABS_ROOT)
-  const relativeEntries = entries.map((entry) => path.relative(LABS_ROOT, entry))
-  const existingSet = new Set(relativeEntries.map((entry) => entry.split(path.sep).join('/')))
-  const uppercaseEntries = relativeEntries.filter((entry) => /[A-Z]/.test(path.basename(entry)))
+  const relativeDirectories = entries
+    .filter((entry) => entry.isDirectory)
+    .map((entry) => path.relative(LABS_ROOT, entry.full))
+  const existingSet = new Set(relativeDirectories.map((entry) => entry.split(path.sep).join('/')))
+  const uppercaseEntries = relativeDirectories.filter((entry) => /[A-Z]/.test(path.basename(entry)))
 
   const collisions = []
   const renameCandidates = []
@@ -49,7 +51,7 @@ async function run() {
   }
 
   const lines = [
-    `Uppercase entries found: ${uppercaseEntries.length}`,
+    `Uppercase directories found: ${uppercaseEntries.length}`,
     `Safe rename candidates: ${renameCandidates.length}`,
     `Collision targets: ${collisions.length}`,
     '',
@@ -71,7 +73,7 @@ async function run() {
   await fs.writeFile(REPORT_PATH, `${lines.join('\n')}\n`, 'utf8')
 
   console.log(`Report written: ${toPosix(path.relative(ROOT, REPORT_PATH))}`)
-  console.log(`Uppercase entries: ${uppercaseEntries.length}`)
+  console.log(`Uppercase directories: ${uppercaseEntries.length}`)
   console.log(`Safe candidates: ${renameCandidates.length}`)
   console.log(`Collision targets: ${collisions.length}`)
 }

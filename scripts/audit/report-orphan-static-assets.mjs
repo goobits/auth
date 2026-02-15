@@ -7,6 +7,8 @@ const STATIC_DIR = path.join(ROOT, 'static')
 const SEARCH_DIRS = [path.join(ROOT, 'src'), path.join(ROOT, 'static')]
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif', '.ico'])
 const REPORT_PATH = path.join(ROOT, 'docs', 'unused-image-candidates.txt')
+const RELATIVE_IMAGE_RE = /["'`(]((?:\.\.?\/)?[^"'`\s)]+\.(?:png|jpe?g|gif|webp|svg|avif|ico))(?:[?#][^"'`\s)]*)?["'`)]/gi
+const ABSOLUTE_IMAGE_RE = /\/static\/[\w./-]+\.(?:png|jpe?g|gif|webp|svg|avif|ico)|\/[\w./-]+\.(?:png|jpe?g|gif|webp|svg|avif|ico)/gi
 
 async function walk(dir) {
   const files = []
@@ -32,6 +34,13 @@ function toPosix(filePath) {
   return filePath.replaceAll('\\\\', '/')
 }
 
+function normalizeRef(match) {
+  const clean = match.replace(/[?#].*$/, '')
+  if (clean.startsWith('/static/')) return clean.slice('/static/'.length)
+  if (clean.startsWith('/')) return clean.slice(1)
+  return clean
+}
+
 async function run() {
   const staticFiles = await walk(STATIC_DIR)
   const images = staticFiles.filter((file) => IMAGE_EXTS.has(path.extname(file).toLowerCase()))
@@ -53,10 +62,20 @@ async function run() {
       continue
     }
 
-    const matches = content.match(/\/static\/[\w./-]+|\/[\w./-]+\.(?:png|jpe?g|gif|webp|svg|avif|ico)/gi) || []
-    for (const match of matches) {
-      const normalized = match.startsWith('/static/') ? match.slice('/static/'.length) : match.slice(1)
-      referenced.add(normalized)
+    const absoluteMatches = content.match(ABSOLUTE_IMAGE_RE) || []
+    for (const match of absoluteMatches) {
+      referenced.add(normalizeRef(match))
+    }
+
+    const relativeMatches = [...content.matchAll(RELATIVE_IMAGE_RE)]
+    for (const relativeMatch of relativeMatches) {
+      const rawRef = relativeMatch[1]
+      if (!rawRef) continue
+      const normalizedRef = normalizeRef(rawRef)
+      const resolved = path.resolve(path.dirname(sourceFile), normalizedRef)
+      if (!resolved.startsWith(STATIC_DIR)) continue
+      const staticRelative = toPosix(path.relative(STATIC_DIR, resolved))
+      referenced.add(staticRelative)
     }
   }
 
