@@ -5,9 +5,26 @@ import { runRegisterAntiAbuse } from '$lib/server/antiabuse'
 import { registerUser } from '$lib/server/auth/register'
 import { dev } from '$app/environment'
 
-function getClientIp(request: Request, getClientAddress?: () => string) {
-	const forwarded = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for')
-	if (forwarded) return forwarded.split(',')[0]?.trim() || 'unknown'
+function getClientIp(
+	request: Request,
+	{
+		env,
+		getClientAddress
+	}: {
+		env: Record<string, string | undefined>
+		getClientAddress?: () => string
+	}
+) {
+	const cloudflareIp = request.headers.get('cf-connecting-ip')?.trim()
+	if (cloudflareIp) return cloudflareIp
+
+	// Only trust XFF when explicitly enabled (for non-Cloudflare deployments).
+	if (env['RATE_LIMIT_TRUST_XFF'] === 'true') {
+		const forwarded = request.headers.get('x-forwarded-for')
+		const firstForwarded = forwarded?.split(',')[0]?.trim()
+		if (firstForwarded) return firstForwarded
+	}
+
 	if (getClientAddress) return getClientAddress()
 	return 'unknown'
 }
@@ -41,20 +58,20 @@ export const actions: Actions = {
 		const email = String(formData.get('email') || '').trim()
 		const password = String(formData.get('password') || '')
 		const honeypot = String(formData.get('website') || '')
-		const startedAtMs = Number.parseInt(String(formData.get('started_at') || '0'), 10)
-		const turnstileToken = String(formData.get('cf-turnstile-response') || '').trim()
-		const deviceId = String(formData.get('device_id') || '').trim()
+			const startedAtMs = Number.parseInt(String(formData.get('started_at') || '0'), 10)
+			const turnstileToken = String(formData.get('cf-turnstile-response') || '').trim()
+			const deviceId = String(formData.get('device_id') || '').trim()
 
-		const antiAbuse = await runRegisterAntiAbuse({
-			email,
-			ip: getClientIp(event.request, event.getClientAddress),
-			asn: getAsn(event.request),
-			deviceId,
-			honeypot,
-			startedAtMs,
-			turnstileToken,
-			env
-		})
+			const antiAbuse = await runRegisterAntiAbuse({
+				email,
+				ip: getClientIp(event.request, { env, getClientAddress: event.getClientAddress }),
+				asn: getAsn(event.request),
+				deviceId,
+				honeypot,
+				startedAtMs,
+				turnstileToken,
+				env
+			})
 
 		if (!antiAbuse.ok) {
 			return fail(400, {
