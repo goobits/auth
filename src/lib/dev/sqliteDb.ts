@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import Database from 'better-sqlite3'
+import type { D1DatabaseLike, D1PreparedStatement } from './devDb'
 
 const DB_PATH = path.join(process.cwd(), '.dev', 'db.sqlite')
 const MIGRATIONS_DIR = path.join(process.cwd(), 'packages', 'calendar', 'migrations')
@@ -36,27 +37,30 @@ function runMigrations(db: Database.Database) {
 	run()
 }
 
-function wrapStatement(stmt: Database.Statement) {
+function wrapStatement(stmt: Database.Statement): D1PreparedStatement {
 	let bound: unknown[] = []
-	return {
+	const statement: D1PreparedStatement = {
 		bind(...args: unknown[]) {
 			bound = args
-			return this
+			return statement
 		},
-		async first() {
-			return stmt.get(...bound) ?? null
+		async first<T = Record<string, unknown>>() {
+			return (stmt.get(...bound) as T | undefined) ?? null
 		},
-		async all() {
-			return { results: stmt.all(...bound) }
+		async all<T = Record<string, unknown>>() {
+			return { results: stmt.all(...bound) as T[] }
 		},
 		async run() {
 			const info = stmt.run(...bound)
-			return { meta: { last_row_id: info.lastInsertRowid, changes: info.changes } }
+			// D1 exposes `last_row_id` as a number. better-sqlite3 types allow bigint.
+			// In dev we coerce to number for API compatibility.
+			return { meta: { last_row_id: Number(info.lastInsertRowid), changes: info.changes } }
 		}
 	}
+	return statement
 }
 
-export function createSqliteDb() {
+export function createSqliteDb(): D1DatabaseLike {
 	ensureDbDir()
 	const db = new Database(DB_PATH)
 	runMigrations(db)
