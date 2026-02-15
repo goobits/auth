@@ -121,7 +121,9 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 	_generateSessionId(): string {
 		const bytes = new Uint8Array(20);
 		crypto.getRandomValues(bytes);
-		return encodeBase64url(bytes);
+		// Cookie values are not reliably percent-decoded by all runtimes. Avoid '=' padding
+		// so we never emit values that need encoding like `%3D`.
+		return encodeBase64url(bytes).replace(/=+$/g, "");
 	}
 
 	async createSession(
