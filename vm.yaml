@@ -1,0 +1,31 @@
+version: '2.0'
+provider: docker
+os: auto
+project:
+  hostname: dev.pdxdinorun-com.local
+  name: pdxdinorun-com
+  workspace_path: /workspace
+vm:
+  box: '@vibe-box'
+  cpus: 6
+  gui: false
+  memory: 8192
+  port_binding: 127.0.0.1
+  swap: 2048
+  swappiness: 60
+  timezone: auto
+  user: developer
+ports:
+  _range: [3580, 3589]
+terminal:
+  emoji: 🚀
+  show_git_branch: true
+  show_timestamp: false
+  theme: dracula
+  username: pdxdinorun-com-dev
+host_sync:
+  git_config: true
+  ai_tools: true
+networking:
+  networks:
+  - spacebase
