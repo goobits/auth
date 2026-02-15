@@ -18,6 +18,7 @@
 			<div class="layout-footer__brand">
 				<a href="/" class="layout-footer__brand-link">Miko</a>
 				<p class="layout-footer__tagline">Developer, designer &amp; musician 🦄</p>
+				<small class="layout-footer__copyright">© {year} Miko Meow™</small>
 			</div>
 
 			<div class="layout-footer__columns" aria-label="Footer links">
@@ -49,17 +50,17 @@
 						</ul>
 					</div>
 				{/if}
-			</div>
-		</div>
 
-		<div class="layout-footer__bottom">
-			<small class="layout-footer__copyright">© {year} Miko Meow™</small>
-			<nav class="layout-footer__bottom-links" aria-label="Legal links">
-				{#each legalItems as item}
-					<a href={item.href} class="layout-footer__bottom-link">{item.label}</a>
-				{/each}
-				<a href="/sitemap" class="layout-footer__bottom-link">Sitemap</a>
-			</nav>
+				<div class="layout-footer__col">
+					<h3>Legal</h3>
+					<ul>
+						{#each legalItems as item}
+							<li><a class="layout-footer__col-link" href={item.href}>{item.label}</a></li>
+						{/each}
+						<li><a class="layout-footer__col-link" href="/sitemap">Sitemap</a></li>
+					</ul>
+				</div>
+			</div>
 		</div>
 	</div>
 </footer>
