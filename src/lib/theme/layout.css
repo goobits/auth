@@ -4,7 +4,7 @@
 	box-shadow: none;
 	display: flex;
 	align-items: center;
-	font-family: var(--font-sans);
+	font-family: var(--font-ui-sans, var(--font-sans));
 	min-height: var(--header-height);
 	height: auto;
 	padding: var(--layout-logo-padding-y, 1rem) 0;
@@ -71,7 +71,7 @@
 	line-height: 2em;
 	text-decoration: none;
 	font-size: 0.9rem;
-	font-family: var(--font-sans);
+	font-family: inherit;
 }
 
 .layout-header__nav-link--active,
@@ -94,11 +94,11 @@
 	align-items: center;
 	color: var(--color-white);
 	margin-left: 1.5rem;
-	font-family: var(--font-sans);
+	font-family: inherit;
 }
 
 .layout-header__theme :where(button, select, input) {
-	font-family: var(--font-sans);
+	font-family: inherit;
 }
 
 .layout-footer {

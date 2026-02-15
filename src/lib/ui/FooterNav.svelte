@@ -23,7 +23,7 @@
 
 			<div class="layout-footer__columns" aria-label="Footer links">
 				<div class="layout-footer__col">
-					<h3>More</h3>
+					<h3>Explore</h3>
 					<ul>
 						{#each primaryItems as item}
 							<li><a class="layout-footer__col-link" href={item.href}>{item.label}</a></li>

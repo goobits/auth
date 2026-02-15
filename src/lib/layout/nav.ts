@@ -14,8 +14,7 @@ export const headerNavItems: NavItem[] = [
 
 export const footerPrimaryItems: NavItem[] = [
 	{ href: '/journal', label: 'Journal' },
-	{ href: '/labs', label: 'Labs' },
-	{ href: '/contact?from=footer', label: 'Contact' }
+	{ href: '/labs', label: 'Labs' }
 ]
 
 export const footerLegalItems: NavItem[] = [
@@ -25,6 +24,8 @@ export const footerLegalItems: NavItem[] = [
 ]
 
 export const footerElsewhereItems: NavItem[] = [
+	{ href: 'https://beheremeow.app', label: 'BeHereMeow', external: true },
+	{ href: 'https://colorpiano.com', label: 'ColorPiano', external: true },
 	{ href: 'https://github.com/mudcube', label: 'GitHub', external: true },
 	{ href: 'https://sketch.io', label: 'Sketch.IO', external: true }
 ]
