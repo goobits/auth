@@ -8,7 +8,7 @@ export const headerNavItems: NavItem[] = [
 	{ href: '/art', label: 'Art', matchPrefix: true },
 	{ href: '/music', label: 'Music', matchPrefix: true },
 	{ href: '/about', label: 'About' },
-	{ href: '/contact', label: 'Contact', matchPrefix: true }
+	{ href: '/contact?from=topbar', label: 'Contact', matchPrefix: true }
 ]
 
 export const footerPrimaryItems: NavItem[] = [

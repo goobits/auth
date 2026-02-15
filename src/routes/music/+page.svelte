@@ -8,10 +8,10 @@
 	const { data } = $props()
 
 	const platforms = [
-		{ label: 'Spotify', href: '/contact', icon: 'S' },
-		{ label: 'Apple Music', href: '/contact', icon: 'A' },
-		{ label: 'YouTube Music', href: '/contact', icon: 'Y' },
-		{ label: 'SoundCloud', href: '/contact', icon: 'SC' }
+		{ label: 'Spotify', href: '/contact?from=music&topic=spotify', icon: 'S' },
+		{ label: 'Apple Music', href: '/contact?from=music&topic=apple_music', icon: 'A' },
+		{ label: 'YouTube Music', href: '/contact?from=music&topic=youtube_music', icon: 'Y' },
+		{ label: 'SoundCloud', href: '/contact?from=music&topic=soundcloud', icon: 'SC' }
 	]
 
 	const fallbackEntries = [
@@ -77,15 +77,15 @@
 			</ol>
 		</section>
 
-		<PageClosing
-			className="music-page__closing"
-			label="Collaborations"
-			title="Need a custom soundtrack or audio collaboration?"
-			copy="Original music for a product, visual project, or interactive experience. Reach out anytime."
-			href="/contact"
-			linkLabel="Start a conversation"
-			maxWidth="27.5rem"
-		/>
+			<PageClosing
+				className="music-page__closing"
+				label="Collaborations"
+				title="Need a custom soundtrack or audio collaboration?"
+				copy="Original music for a product, visual project, or interactive experience. Reach out anytime."
+				href="/contact?from=music&topic=collaboration"
+				linkLabel="Start a conversation"
+				maxWidth="27.5rem"
+			/>
 	</div>
 </PageShell>
 

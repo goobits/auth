@@ -86,16 +86,16 @@
 		{/each}
 	</section>
 
-	<PageClosing
-		className="art-page__closing"
-		label="Commissions & Exhibits"
-		title="Interested in working together?"
-		copy="Custom visual work, installations, or exhibition collaborations. Let&apos;s talk about what you have in mind."
-		href="/contact"
-		linkLabel="Get in touch"
-		maxWidth="31.25rem"
-	/>
-</PageShell>
+		<PageClosing
+			className="art-page__closing"
+			label="Commissions & Exhibits"
+			title="Interested in working together?"
+			copy="Custom visual work, installations, or exhibition collaborations. Let&apos;s talk about what you have in mind."
+			href="/contact?from=art&topic=commissions_exhibits"
+			linkLabel="Get in touch"
+			maxWidth="31.25rem"
+		/>
+	</PageShell>
 
 <style lang="scss">
 	:global(.art-page) {
