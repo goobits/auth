@@ -40,7 +40,7 @@
 										class="layout-footer__col-link"
 										href={item.href}
 										target={item.external ? '_blank' : undefined}
-										rel={item.external ? 'noreferrer noopener' : undefined}
+										rel={item.external ? 'noreferrer noopener nofollow' : undefined}
 									>
 										{item.label}{item.external ? ' ↗' : ''}
 									</a>

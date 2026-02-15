@@ -75,13 +75,21 @@
 
 	<section class="about-page__intro">
 		<figure class="about-page__photo">
-			<img src="/media/miko.jpg" alt="Portrait of Miko" width="160" height="160" loading="eager" />
+			<img
+				src="/media/miko.jpg"
+				alt="Portrait of Miko"
+				width="160"
+				height="160"
+				loading="eager"
+				decoding="async"
+				fetchpriority="high"
+			/>
 		</figure>
 		<div class="about-page__bio">
 			<p>I'm passionate about creating colorful, creative & educational applications.</p>
 			<p>
 				Founder & CTO of
-				<strong><a href="https://sketch.io" target="_blank" rel="noreferrer noopener">Sketch.IO</a></strong>,
+				<strong><a href="https://sketch.io" target="_blank" rel="noreferrer noopener nofollow">Sketch.IO</a></strong>,
 				creators of Sketchpad 🎨
 			</p>
 			<p>
@@ -99,23 +107,23 @@
 		<article>
 			<h2>Exhibits, Selected</h2>
 			<ul>
-					{#each exhibits as exhibit}
-						<li>{exhibit}</li>
-					{/each}
-					<li class="about-page__you"><a href="/contact?from=about&topic=venue">Your venue? →</a></li>
-				</ul>
-			</article>
+				{#each exhibits as exhibit}
+					<li>{exhibit}</li>
+				{/each}
+				<li class="about-page__you"><a href="/contact?from=about&topic=venue">Your venue? →</a></li>
+			</ul>
+		</article>
 
 		<article>
 			<h2>Clients, Selected</h2>
 			<ul>
-					{#each clients as client}
-						<li>{client}</li>
-					{/each}
-					<li class="about-page__you"><a href="/contact?from=about&topic=company">Your company? →</a></li>
-				</ul>
-			</article>
-		</section>
+				{#each clients as client}
+					<li>{client}</li>
+				{/each}
+				<li class="about-page__you"><a href="/contact?from=about&topic=company">Your company? →</a></li>
+			</ul>
+		</article>
+	</section>
 
 	<section class="about-page__specialties" aria-labelledby="offerings-title">
 		<div class="about-page__divider"></div>

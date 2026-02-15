@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { browser } from '$app/environment'
-	import { page } from '$app/stores'
 	import { goto } from '$app/navigation'
 	import { ChevronRight } from '@lucide/svelte'
 	import Hero from '$lib/ui/Hero.svelte'
 	import PageShell from '$lib/ui/PageShell.svelte'
 	import { submitContact, toContactPayload } from '$lib/client/forms/contact'
+
+	let { data } = $props()
 
 	type ContactErrors = {
 		name?: string
@@ -16,20 +16,20 @@
 	let submitting = $state(false)
 	let submitError = $state('')
 	let values = $state({ name: '', email: '', message: '' })
-		let errors = $state<ContactErrors>({})
+	let errors = $state<ContactErrors>({})
 
-		const contextFrom = $derived(browser ? $page.url.searchParams.get('from')?.trim() || '' : '')
-		const contextTopic = $derived(browser ? $page.url.searchParams.get('topic')?.trim() || '' : '')
-		const contextLabel = $derived.by(() => {
-			const parts = [contextFrom, contextTopic].filter(Boolean)
-			return parts.length ? parts.join(' / ') : ''
-		})
-		const messagePlaceholder = $derived.by(() => {
-			if (contextFrom === 'music' && contextTopic) return 'Tell me what you need and include any links...'
-			if (contextFrom === 'art') return 'Tell me about the piece, timeline, and any reference links...'
-			if (contextFrom === 'about' && contextTopic) return 'Tell me a bit about your project and what you are looking for...'
-			return 'Tell me about your project…'
-		})
+	const contextFrom = $derived((data?.contextFrom || '').trim())
+	const contextTopic = $derived((data?.contextTopic || '').trim())
+	const contextLabel = $derived.by(() => {
+		const parts = [contextFrom, contextTopic].filter(Boolean)
+		return parts.length ? parts.join(' / ') : ''
+	})
+	const messagePlaceholder = $derived.by(() => {
+		if (contextFrom === 'music' && contextTopic) return 'Tell me what you need and include any links...'
+		if (contextFrom === 'art') return 'Tell me about the piece, timeline, and any reference links...'
+		if (contextFrom === 'about' && contextTopic) return 'Tell me a bit about your project and what you are looking for...'
+		return 'Tell me about your project…'
+	})
 
 	function validate() {
 		const nextErrors: ContactErrors = {}
@@ -82,51 +82,51 @@
 				{#if contextLabel}
 					<p class="contact-page__context">Context: {contextLabel}</p>
 				{/if}
-			<label class="contact-page__field">
-				<span>Name <i aria-hidden="true">*</i></span>
-				<input
-					type="text"
-					name="name"
-					bind:value={values.name}
-					autocomplete="name"
-					placeholder="What should I call you?"
-				/>
-				{#if errors.name}<small>{errors.name}</small>{/if}
-			</label>
+				<label class="contact-page__field">
+					<span>Name <i aria-hidden="true">*</i></span>
+					<input
+						type="text"
+						name="name"
+						bind:value={values.name}
+						autocomplete="name"
+						placeholder="What should I call you?"
+					/>
+					{#if errors.name}<small>{errors.name}</small>{/if}
+				</label>
 
-			<label class="contact-page__field">
-				<span>Email <i aria-hidden="true">*</i></span>
-				<input
-					type="email"
-					name="email"
-					bind:value={values.email}
-					autocomplete="email"
-					placeholder="you@email.com"
-				/>
-				{#if errors.email}<small>{errors.email}</small>{/if}
-			</label>
+				<label class="contact-page__field">
+					<span>Email <i aria-hidden="true">*</i></span>
+					<input
+						type="email"
+						name="email"
+						bind:value={values.email}
+						autocomplete="email"
+						placeholder="you@email.com"
+					/>
+					{#if errors.email}<small>{errors.email}</small>{/if}
+				</label>
 
-			<label class="contact-page__field">
-				<span>Message <i aria-hidden="true">*</i></span>
-				<textarea name="message" bind:value={values.message} placeholder={messagePlaceholder}></textarea>
-				{#if errors.message}<small>{errors.message}</small>{/if}
-			</label>
+				<label class="contact-page__field">
+					<span>Message <i aria-hidden="true">*</i></span>
+					<textarea name="message" bind:value={values.message} placeholder={messagePlaceholder}></textarea>
+					{#if errors.message}<small>{errors.message}</small>{/if}
+				</label>
 
-			{#if submitError}
-				<p class="contact-page__submit-error">{submitError}</p>
-			{/if}
-
-			<button class="contact-page__submit" type="submit" disabled={submitting}>
-				{submitting ? 'Sending…' : 'Send message'}
-				{#if !submitting}
-					<ChevronRight class="contact-page__submit-icon" size={18} strokeWidth={2.4} aria-hidden="true" />
+				{#if submitError}
+					<p class="contact-page__submit-error">{submitError}</p>
 				{/if}
-			</button>
 
-			<p class="contact-page__legal-note">
-				By sending this form you agree to our <a href="/privacy">Privacy Policy</a>, <a href="/terms">Terms</a>,
-				and <a href="/cookies">Cookie Policy</a>.
-			</p>
+				<button class="contact-page__submit" type="submit" disabled={submitting}>
+					{submitting ? 'Sending…' : 'Send message'}
+					{#if !submitting}
+						<ChevronRight class="contact-page__submit-icon" size={18} strokeWidth={2.4} aria-hidden="true" />
+					{/if}
+				</button>
+
+				<p class="contact-page__legal-note">
+					By sending this form you agree to our <a href="/privacy">Privacy Policy</a>, <a href="/terms">Terms</a>,
+					and <a href="/cookies">Cookie Policy</a>.
+				</p>
 			</form>
 		</div>
 		<aside class="contact-page__aside">
@@ -137,13 +137,21 @@
 				</p>
 			</section>
 			<section class="contact-page__aside-section">
-					<p class="contact-page__aside-label">Elsewhere</p>
-					<nav class="contact-page__aside-links" aria-label="Social profiles">
-						<a href="https://github.com/mudcube" target="_blank" rel="noreferrer noopener">GitHub ↗</a>
-					</nav>
-				</section>
+				<p class="contact-page__aside-label">Elsewhere</p>
+				<nav class="contact-page__aside-links" aria-label="Social profiles">
+					<a href="https://github.com/mudcube" target="_blank" rel="noreferrer noopener nofollow">GitHub ↗</a>
+				</nav>
+			</section>
 			<div class="contact-page__raccoon-wrap">
-				<img class="contact-page__image" src="/media/super-racoon.svg" alt="Raccoon illustration" loading="lazy" />
+				<img
+					class="contact-page__image"
+					src="/media/super-racoon.svg"
+					alt="Raccoon illustration"
+					width="180"
+					height="180"
+					loading="lazy"
+					decoding="async"
+				/>
 			</div>
 		</aside>
 	</section>

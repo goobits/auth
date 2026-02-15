@@ -1,6 +1,5 @@
-.contact-page .ui-hero {
-	max-width: 31.25rem;
-	margin-bottom: var(--space-9);
+.ui-page-shell.contact-page {
+	--hero-max-width: 31.25rem;
 }
 
 .contact-page__layout {
