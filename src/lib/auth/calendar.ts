@@ -12,6 +12,7 @@ const INVITE_COOKIE = 'calendar_invite'
 const REDIRECT_COOKIE = 'calendar_redirect'
 const INVITE_TTL_SECONDS = 600
 const SAFE_REDIRECT_PREFIXES = ['/calendar', '/calendar-gym', '/admin']
+const INVITE_BYPASS_DOMAIN = '@miko.art'
 
 type PlatformEnv = {
 	DB?: D1DatabaseLike
@@ -157,11 +158,14 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 
 				if (user) {
 					const hasRedeemed = await hasUserRedeemedAnyInvite({ db, userId: user.id })
+					const normalizedEmail = (profile.email || '').trim().toLowerCase()
+					const canBypassInvite = normalizedEmail.endsWith(INVITE_BYPASS_DOMAIN)
 					if (!hasRedeemed) {
-						if (!invite) {
+						if (!canBypassInvite && !invite) {
 							throw redirect(302, '/calendar/login?error=invite_required')
 						}
 
+						if (!canBypassInvite) {
 							const result = await validateInvite({ db, code: invite, email: profile.email })
 							if (!result.valid) {
 								throw redirect(302, `/calendar/login?error=invite_${result.reason}`)
@@ -172,6 +176,7 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 
 							await consumeInvite({ db, inviteId: result.invite.id, userId: user.id })
 						}
+					}
 
 					await db.prepare(
 						`UPDATE calendar_users SET last_login_at = strftime('%s','now') WHERE id = ?`
@@ -195,6 +200,17 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 				}
 
 				return { userId: user.id }
+			},
+			onError: async (_evt: RequestEventLike, error: unknown) => {
+				const isRedirect = (
+					typeof error === 'object' &&
+					error !== null &&
+					'status' in error &&
+					'location' in error &&
+					typeof (error as { status?: unknown }).status === 'number'
+				)
+				if (isRedirect) return
+				console.error('[calendar auth] oauth callback error', error)
 			}
 		}
 	})
