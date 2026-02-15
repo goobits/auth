@@ -27,13 +27,14 @@
 	--radius-xl: 16px;
 	--radius-pill: 999px;
 
-	/* type scale */
-	--font-size-xs: 0.75rem;
-	--font-size-sm: 0.875rem;
-	--font-size-base: 1rem;
-	--font-size-lg: 1.0625rem;
-	--font-size-body: 1.125rem;
-	--font-size-xl: 1.2rem;
+		/* type scale */
+		/* Slightly larger for readability, especially for older adults. */
+		--font-size-xs: 0.8125rem;
+		--font-size-sm: 0.9375rem;
+		--font-size-base: 1.0625rem;
+		--font-size-lg: 1.125rem;
+		--font-size-body: 1.1875rem;
+		--font-size-xl: 1.25rem;
 
 	--font-weight-medium: 500;
 	--font-weight-semibold: 600;
