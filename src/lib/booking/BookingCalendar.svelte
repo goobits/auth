@@ -433,11 +433,11 @@
 			</div>
 			<h2>You're all set.</h2>
 			<p class="calendar-page__success-time">{formatFullDay(selectedSlot.start)} at {formatTime(selectedSlot.start)}</p>
-			<p class="calendar-page__success-email">A confirmation is on its way to {email}.</p>
-			{#if eventLink}
-				<p class="calendar-page__success-link"><a href={eventLink} target="_blank" rel="noreferrer">View in Google Calendar</a></p>
-			{/if}
-			{#if cancelToken}
+				<p class="calendar-page__success-email">A confirmation is on its way to {email}.</p>
+				{#if eventLink}
+					<p class="calendar-page__success-link"><a href={eventLink} target="_blank" rel="noreferrer noopener">View in Google Calendar</a></p>
+				{/if}
+				{#if cancelToken}
 				<div class="calendar-page__cancel-box">
 					<p class="calendar-page__cancel-title">Need to cancel later?</p>
 					<p class="calendar-page__cancel-subtitle">Save this cancel code or copy your private cancel link. If you don't get the calendar email, use the link below.</p>
