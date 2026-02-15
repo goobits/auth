@@ -67,6 +67,16 @@ $grid-unit: 0.5rem;
 	border-radius: var(--radius-pill);
 }
 
+.admin-shell__main {
+	max-width: var(--max-width, 1060px);
+	margin: 0 auto;
+	padding: var(--space-8) var(--space-4) var(--space-10);
+}
+
+.admin-shell__content {
+	margin-top: var(--space-7);
+}
+
 .admin-page {
 	font-family: var(--font-sans);
 	background: var(--bg);
@@ -78,8 +88,6 @@ $grid-unit: 0.5rem;
 	grid-template-columns: 10rem 1fr;
 	gap: 0;
 	width: 100%;
-	max-width: var(--max-width, 1060px);
-	margin: 0 auto;
 }
 
 .admin-page__login {
