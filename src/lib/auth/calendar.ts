@@ -110,7 +110,7 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 			provider: new GoogleProvider({
 				clientId: env['GOOGLE_CLIENT_ID'],
 				clientSecret: env['GOOGLE_CLIENT_SECRET'],
-				callbackUrl: env['GOOGLE_AUTH_REDIRECT_URI'] || env['GOOGLE_REDIRECT_URI'] || `${baseUrl}/auth/google/callback`
+				callbackUrl: env['GOOGLE_AUTH_REDIRECT_URI'] || `${baseUrl}/auth/google/callback`
 			}),
 			scopes: ['openid', 'profile', 'email']
 		}
@@ -123,7 +123,7 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 				teamId: env['APPLE_TEAM_ID'],
 				keyId: env['APPLE_KEY_ID'],
 				privateKey: env['APPLE_PRIVATE_KEY'],
-				callbackUrl: env['APPLE_AUTH_REDIRECT_URI'] || env['APPLE_REDIRECT_URI'] || `${baseUrl}/auth/apple/callback`
+				callbackUrl: env['APPLE_AUTH_REDIRECT_URI'] || `${baseUrl}/auth/apple/callback`
 			})
 		}
 	}
@@ -132,6 +132,9 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 		adapter: {
 			session: sessionAdapter,
 			user: userAdapter
+		},
+		cookies: {
+			secure: secureCookies
 		},
 		providers,
 		urls: {

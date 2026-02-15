@@ -65,7 +65,7 @@
 			<SectionLabel text="Entries" className="music-page__section-label" />
 			<ol class="ui-entry-list">
 				{#each getEntries() as entry, idx}
-					<li>
+					<li class="ui-entry-list__item">
 						<a href={entry.href} class="music-page__entry-link ui-entry-list__row">
 							<span class="music-page__entry-num ui-entry-list__num">{String(idx + 1).padStart(2, '0')}</span>
 							<span class="music-page__entry-title ui-entry-list__title">{entry.title}</span>

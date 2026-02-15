@@ -15,7 +15,7 @@
 
 <section class="sitemap-page__category">
 	<button class="sitemap-page__category-header" onclick={onToggle}>
-		<h2>
+		<h2 class="sitemap-page__category-title">
 			{#if Icon}
 				<Icon class="sitemap-page__category-icon" size={14} strokeWidth={2.2} />
 			{/if}

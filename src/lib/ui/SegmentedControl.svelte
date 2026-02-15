@@ -24,7 +24,8 @@
 		<button
 			type="button"
 			role="tab"
-			class:active={value === option.value}
+			class="ui-segmented__button"
+			class:ui-segmented__button--active={value === option.value}
 			aria-selected={value === option.value}
 			onclick={() => (value = option.value)}
 		>

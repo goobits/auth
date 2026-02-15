@@ -33,13 +33,13 @@
 	align-items: center;
 }
 
-.layout-header__logo a {
+.layout-header__logo-link {
 	display: inline-flex;
 	align-items: center;
 	text-decoration: none;
 }
 
-.layout-header__logo img {
+.layout-header__logo-image {
 	display: inline-block;
 	width: var(--layout-logo-width);
 	height: auto;
@@ -58,7 +58,7 @@
 	flex: 1;
 }
 
-.layout-header__nav a {
+.layout-header__nav-link {
 	display: inline-block;
 	color: var(--color-white);
 	border-bottom: 0.125rem solid transparent;
@@ -67,18 +67,18 @@
 	font-size: 0.9rem;
 }
 
-.layout-header__nav a.active,
-.layout-header__nav a.active:hover {
+.layout-header__nav-link--active,
+.layout-header__nav-link--active:hover {
 	border-bottom-color: var(--color-white);
 	color: var(--color-white);
 	pointer-events: none;
 }
 
-.layout-header__nav a:hover {
+.layout-header__nav-link:hover {
 	border-bottom-color: var(--link-hover);
 }
 
-.layout-header__nav a:visited {
+.layout-header__nav-link:visited {
 	color: var(--color-white);
 }
 
@@ -103,7 +103,7 @@
 	width: 100vw;
 }
 
-.layout-footer nav {
+.layout-footer__nav {
 	display: flex;
 	align-items: center;
 	flex-wrap: wrap;
@@ -130,7 +130,7 @@
 	opacity: 0.55;
 }
 
-.layout-footer a {
+.layout-footer__link {
 	color: var(--color-white);
 	font-weight: 300;
 	text-decoration: none;
@@ -141,15 +141,15 @@
 	transition: border-color 0.2s;
 }
 
-.layout-footer a:hover {
+.layout-footer__link:hover {
 	border-color: var(--color-white);
 }
 
-.layout-footer a:visited {
+.layout-footer__link:visited {
 	color: var(--color-white);
 }
 
-.layout-footer small {
+.layout-footer__copyright {
 	color: var(--color-white-60);
 	font-size: 0.8rem;
 	font-weight: 300;
@@ -190,11 +190,11 @@
 }
 
 @media (max-width: 43.75em) {
-	.layout-header__nav a {
+	.layout-header__nav-link {
 		font-size: 0.82rem;
 	}
 
-	.layout-footer nav {
+	.layout-footer__nav {
 		gap: 0.7rem;
 	}
 
@@ -206,7 +206,7 @@
 		height: 0.8rem;
 	}
 
-	.layout-footer a {
+	.layout-footer__link {
 		font-size: 0.85rem;
 	}
 }
@@ -270,7 +270,7 @@
 	transition: opacity 0.2s;
 }
 
-.ui-entry-list li:last-child .ui-entry-list__row {
+.ui-entry-list__item:last-child .ui-entry-list__row {
 	border-bottom: var(--border-width) solid color-mix(in srgb, var(--border) 70%, transparent);
 }
 

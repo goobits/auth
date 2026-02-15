@@ -55,17 +55,17 @@
 			<input type="text" name="website" tabindex="-1" autocomplete="off" />
 		</label>
 
-		<label>
-			<span>Name</span>
-			<input name="name" type="text" required value={form?.name || ''} autocomplete="name" />
+		<label class="register-page__field">
+			<span class="register-page__field-label">Name</span>
+			<input class="register-page__field-input" name="name" type="text" required value={form?.name || ''} autocomplete="name" />
 		</label>
-		<label>
-			<span>Email</span>
-			<input name="email" type="email" required value={form?.email || ''} autocomplete="email" />
+		<label class="register-page__field">
+			<span class="register-page__field-label">Email</span>
+			<input class="register-page__field-input" name="email" type="email" required value={form?.email || ''} autocomplete="email" />
 		</label>
-		<label>
-			<span>Password</span>
-			<input name="password" type="password" required minlength="10" autocomplete="new-password" />
+		<label class="register-page__field">
+			<span class="register-page__field-label">Password</span>
+			<input class="register-page__field-input" name="password" type="password" required minlength="10" autocomplete="new-password" />
 		</label>
 
 		{#if data.turnstileSiteKey}
@@ -76,7 +76,7 @@
 			<p class="register-page__error">{form.error}</p>
 		{/if}
 
-		<button type="submit">Create account</button>
+		<button type="submit" class="register-page__submit">Create account</button>
 	</form>
 </section>
 
@@ -91,17 +91,17 @@
 		gap: var(--space-4);
 	}
 
-	.register-page__form label {
+	.register-page__field {
 		display: grid;
 		gap: var(--space-2);
 	}
 
-	.register-page__form span {
+	.register-page__field-label {
 		font-size: var(--font-size-sm);
 		color: var(--muted);
 	}
 
-	.register-page__form input {
+	.register-page__field-input {
 		padding: var(--space-3) var(--space-4);
 		border: var(--border-width) solid var(--input-border);
 		border-radius: var(--radius-md);
@@ -123,7 +123,7 @@
 		color: var(--status-error-text);
 	}
 
-	.register-page__form button {
+	.register-page__submit {
 		justify-self: start;
 		padding: var(--space-3) var(--space-6);
 		border: none;

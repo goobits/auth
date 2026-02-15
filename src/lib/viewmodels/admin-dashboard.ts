@@ -13,8 +13,26 @@ import {
 	type AdminRulesState
 } from '$lib/viewmodels/admin'
 
+type StatusResponse = {
+	google?: { connected?: boolean, expired?: boolean }
+	rules?: {
+		hoursFrom: string
+		hoursTo: string
+		buffer: number
+		notice: number
+		capacity: number
+	}
+}
+
+type DashboardStats = typeof DEFAULT_ADMIN_STATS
+type BookingsResponse = { ok?: boolean, bookings?: unknown[], stats?: DashboardStats, error?: unknown }
+type InvitesResponse = { ok?: boolean, invites?: unknown[], error?: unknown }
+type UsersResponse = { ok?: boolean, users?: unknown[], error?: unknown }
+type InviteMutationResponse = { ok?: boolean, error?: unknown }
+type OAuthReconnectResponse = { authUrl?: string, error?: unknown }
+
 export async function loadDashboardStatus() {
-	const data = await fetchAdminStatus()
+	const data = await fetchAdminStatus() as StatusResponse
 	return {
 		connected: data.google?.connected ?? false,
 		connectionExpired: data.google?.expired ?? false,
@@ -23,7 +41,7 @@ export async function loadDashboardStatus() {
 }
 
 export async function loadDashboardBookings() {
-	const data = await fetchAdminBookings()
+	const data = await fetchAdminBookings() as BookingsResponse
 	if (!data.ok) {
 		return {
 			error: getApiErrorMessage(data, 'Failed to load bookings'),
@@ -40,7 +58,7 @@ export async function loadDashboardBookings() {
 }
 
 export async function saveDashboardRules(input: AdminRulesState) {
-	const data = await persistAdminRules(input)
+	const data = await persistAdminRules(input) as InviteMutationResponse
 	if (!data.ok) {
 		return { ok: false, error: getApiErrorMessage(data, 'Failed to save rules') }
 	}
@@ -48,7 +66,7 @@ export async function saveDashboardRules(input: AdminRulesState) {
 }
 
 export async function cancelDashboardBooking(bookingId: string) {
-	const data = await removeAdminBooking(bookingId)
+	const data = await removeAdminBooking(bookingId) as InviteMutationResponse
 	if (!data.ok) {
 		return { ok: false, error: getApiErrorMessage(data, 'Failed to cancel booking') }
 	}
@@ -56,7 +74,10 @@ export async function cancelDashboardBooking(bookingId: string) {
 }
 
 export async function loadMembersData() {
-	const { invitesData, usersData } = await fetchCalendarMembersData()
+	const { invitesData, usersData } = await fetchCalendarMembersData() as {
+		invitesData: InvitesResponse
+		usersData: UsersResponse
+	}
 
 	return {
 		invites: invitesData.ok ? invitesData.invites || [] : [],
@@ -70,7 +91,7 @@ export async function loadMembersData() {
 }
 
 export async function createMemberInvite(input: { email: string | null, uses: number, expiresInDays: number }) {
-	const data = await persistInvite(input)
+	const data = await persistInvite(input) as InviteMutationResponse
 	if (!data.ok) {
 		return { ok: false, error: getApiErrorMessage(data, 'Failed to create invite') }
 	}
@@ -78,7 +99,7 @@ export async function createMemberInvite(input: { email: string | null, uses: nu
 }
 
 export async function deleteMemberInvite(id: string) {
-	const data = await removeInvite(id)
+	const data = await removeInvite(id) as InviteMutationResponse
 	if (!data.ok) {
 		return { ok: false, error: getApiErrorMessage(data, 'Failed to delete invite') }
 	}
@@ -86,7 +107,7 @@ export async function deleteMemberInvite(id: string) {
 }
 
 export async function getCalendarReconnectUrl() {
-	const data = await beginCalendarOAuth()
+	const data = await beginCalendarOAuth() as OAuthReconnectResponse
 	if (!data.authUrl) {
 		return { ok: false, authUrl: '', error: getApiErrorMessage(data, 'Failed to connect to Google') }
 	}

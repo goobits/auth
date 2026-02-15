@@ -32,6 +32,22 @@ function resolveRequestedProvider(pathname: string) {
 	return null
 }
 
+function resolveCallbackProvider(pathname: string) {
+	const parts = pathname.split('/').filter(Boolean)
+	if (parts[0] !== 'auth') return null
+	if (parts.length === 3 && parts[2] === 'callback') {
+		const provider = parts[1]
+		if (!provider || AUTH_RESERVED.has(provider)) return null
+		return provider
+	}
+	if (parts.length === 3 && parts[1] === 'callback') {
+		const provider = parts[2]
+		if (!provider || AUTH_RESERVED.has(provider)) return null
+		return provider
+	}
+	return null
+}
+
 export const GET: RequestHandler = async (event) => {
 	const { auth, secureCookies } = await getCalendarAuth({ event })
 
@@ -61,6 +77,27 @@ export const GET: RequestHandler = async (event) => {
 		if (!(requestedProvider in providers)) {
 			const params = new URLSearchParams(event.url.searchParams)
 			params.set('error', `${requestedProvider}_not_enabled`)
+			throw redirect(302, `/calendar/login?${params.toString()}`)
+		}
+	}
+
+	const callbackProvider = resolveCallbackProvider(event.url.pathname)
+	if (callbackProvider) {
+		const callbackState = event.url.searchParams.get('state')
+		const callbackCode = event.url.searchParams.get('code')
+		const storedState = event.cookies.get(`${callbackProvider}_oauth_state`) || null
+		const storedCodeVerifier = event.cookies.get(`${callbackProvider}_oauth_code_verifier`) || null
+
+		const validCallbackParams = Boolean(
+			callbackCode &&
+			callbackState &&
+			storedState &&
+			storedCodeVerifier &&
+			callbackState === storedState
+		)
+		if (!validCallbackParams) {
+			const params = new URLSearchParams()
+			params.set('error', 'oauth_state_invalid')
 			throw redirect(302, `/calendar/login?${params.toString()}`)
 		}
 	}

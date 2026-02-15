@@ -10,18 +10,18 @@
 </script>
 
 <footer class="layout-footer">
-	<nav>
+	<nav class="layout-footer__nav">
 		<span class="layout-footer__group">
 			{#each primaryItems as item}
-				<a href={item.href}>{item.label}</a>
+				<a href={item.href} class="layout-footer__link">{item.label}</a>
 			{/each}
 		</span>
 		<span class="layout-footer__divider" aria-hidden="true"></span>
 		<span class="layout-footer__group">
 			{#each legalItems as item}
-				<a href={item.href}>{item.label}</a>
+				<a href={item.href} class="layout-footer__link">{item.label}</a>
 			{/each}
 		</span>
 	</nav>
-	<small>© {new Date().getFullYear()} Miko Meow™</small>
+	<small class="layout-footer__copyright">© {new Date().getFullYear()} Miko Meow™</small>
 </footer>

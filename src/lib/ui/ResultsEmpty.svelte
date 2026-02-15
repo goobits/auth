@@ -17,6 +17,6 @@
 <div class={`ui-search__empty ${className}`.trim()}>
 	<p>{message}</p>
 	{#if onAction}
-		<button onclick={onAction}>{actionLabel}</button>
+		<button class="ui-search__empty-action" onclick={onAction}>{actionLabel}</button>
 	{/if}
 </div>

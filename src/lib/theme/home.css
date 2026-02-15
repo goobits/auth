@@ -2,7 +2,7 @@
 	margin-top: 2rem;
 }
 
-.home__hero h1 {
+.home__hero-title {
 	color: var(--text);
 	font-size: 3.25em;
 	font-weight: 900;
@@ -13,7 +13,7 @@
 	text-shadow: 1px 1px 1px var(--hero-shadow);
 }
 
-.home__hero h2 {
+.home__hero-subtitle {
 	color: var(--text);
 	font-size: 2.25em;
 	font-weight: 300;
@@ -25,14 +25,14 @@
 	white-space: nowrap;
 }
 
-projects.home__projects {
+.home__projects {
 	display: grid;
 	grid-gap: 0 1em;
 	grid-template-columns: repeat(auto-fit, var(--project-card-width));
 	justify-content: center;
 }
 
-projects.home__projects .home__project {
+.home__project {
 	background: transparent;
 	color: var(--project-text);
 	cursor: pointer;
@@ -41,25 +41,25 @@ projects.home__projects .home__project {
 	text-decoration: none;
 }
 
-projects.home__projects .home__project:hover {
+.home__project:hover {
 	color: var(--project-text);
 }
 
-projects.home__projects .home__project:hover project-image {
+.home__project:hover .home__project-image {
 	box-shadow: var(--shadow-strong) 0px 4px 8px -2px, var(--shadow-soft) 0px 0px 0px 1px;
 }
 
-projects.home__projects .home__project:hover span {
+.home__project:hover .home__project-title-text {
 	background: var(--project-hover-bg);
 	color: var(--project-hover-text);
 	text-decoration: underline;
 }
 
-projects.home__projects .home__project:nth-child(3n) {
+.home__project:nth-child(3n) {
 	margin-right: 0;
 }
 
-projects.home__projects .home__project project-image {
+.home__project-image {
 	background: var(--project-image-bg);
 	background-repeat: no-repeat;
 	background-size: cover;
@@ -71,7 +71,7 @@ projects.home__projects .home__project project-image {
 	transition: all 0.15s ease-in-out;
 }
 
-projects.home__projects .home__project project-description {
+.home__project-description {
 	display: block;
 	font-weight: 300;
 	line-height: 1.5em;
@@ -79,7 +79,7 @@ projects.home__projects .home__project project-description {
 	text-align: center;
 }
 
-projects.home__projects .home__project project-title {
+.home__project-title {
 	height: 2em;
 	left: 0;
 	line-height: 2em;
@@ -90,7 +90,7 @@ projects.home__projects .home__project project-title {
 	top: -0.75em;
 }
 
-projects.home__projects .home__project project-title span {
+.home__project-title-text {
 	background: var(--project-title-bg);
 	border: 1px solid var(--project-title-border);
 	border-radius: var(--radius-sm);
@@ -101,11 +101,11 @@ projects.home__projects .home__project project-title span {
 }
 
 @media (max-width: 43.75em) {
-	.home__hero h1 {
+	.home__hero-title {
 		font-size: 8vw;
 	}
 
-	.home__hero h2 {
+	.home__hero-subtitle {
 		font-size: 5vw;
 	}
 }

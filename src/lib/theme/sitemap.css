@@ -17,7 +17,7 @@
 	border-color: var(--link);
 }
 
-.sitemap-page__category-header h2 {
+.sitemap-page__category-title {
 	font-size: 1.1rem;
 	margin: 0;
 	display: flex;

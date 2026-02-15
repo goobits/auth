@@ -14,7 +14,8 @@ export default tseslint.config(
 			'software/**',
 			'coverage/**',
 			'test-results/**',
-			'repos/auth/__tests__/**'
+			'repos/auth/__tests__/**',
+			'**/*.svelte.ts'
 		]
 	},
 	js.configs.recommended,

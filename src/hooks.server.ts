@@ -120,7 +120,7 @@ function setIfMissing(headers: Headers, key: string, value: string) {
 }
 
 const securityHeadersHandle: Handle = async ({ event, resolve }) => {
-	const response = await resolve(event)
+	let response = await resolve(event)
 
 	const url = event.url
 	const isHttps = url?.protocol === 'https:'
@@ -138,14 +138,27 @@ const securityHeadersHandle: Handle = async ({ event, resolve }) => {
 		"font-src 'self' data: https:"
 	].join('; ')
 
-	setIfMissing(response.headers, 'Content-Security-Policy', csp)
-	setIfMissing(response.headers, 'Referrer-Policy', 'strict-origin-when-cross-origin')
-	setIfMissing(response.headers, 'X-Content-Type-Options', 'nosniff')
-	setIfMissing(response.headers, 'X-Frame-Options', 'DENY')
-	setIfMissing(response.headers, 'Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+	const applySecurityHeaders = (target: Response) => {
+		setIfMissing(target.headers, 'Content-Security-Policy', csp)
+		setIfMissing(target.headers, 'Referrer-Policy', 'strict-origin-when-cross-origin')
+		setIfMissing(target.headers, 'X-Content-Type-Options', 'nosniff')
+		setIfMissing(target.headers, 'X-Frame-Options', 'DENY')
+		setIfMissing(target.headers, 'Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+		if (isHttps) {
+			setIfMissing(target.headers, 'Strict-Transport-Security', 'max-age=15552000; includeSubDomains')
+		}
+	}
 
-	if (isHttps) {
-		setIfMissing(response.headers, 'Strict-Transport-Security', 'max-age=15552000; includeSubDomains')
+	try {
+		applySecurityHeaders(response)
+	} catch (error) {
+		// Redirect responses can expose immutable headers in some runtimes.
+		// Clone into a mutable response so global headers can still be applied.
+		if (!(error instanceof TypeError) || !String(error.message).includes('immutable')) {
+			throw error
+		}
+		response = new Response(response.body, response)
+		applySecurityHeaders(response)
 	}
 
 	return response

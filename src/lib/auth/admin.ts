@@ -52,6 +52,9 @@ export async function getAdminAuth({ event }: { event: { platform?: PlatformLike
 			session: adapters.sessionAdapter,
 			user: adapters.userAdapter
 		},
+		cookies: {
+			secure: secureCookies
+		},
 		providers: {},
 		profile: 'strict'
 	})

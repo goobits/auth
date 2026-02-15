@@ -27,13 +27,19 @@
 	<div class="layout-header__inner">
 		<div class="layout-header__left">
 			<div class="layout-header__logo">
-				<a href="/">
-					<img src="/media/logo.svg" alt="logo" />
+				<a href="/" class="layout-header__logo-link">
+					<img src="/media/logo.svg" alt="logo" class="layout-header__logo-image" />
 				</a>
 			</div>
 			<nav class="layout-header__nav">
 				{#each items as item}
-					<a href={item.href} class:active={isActive(item)}>{item.label}</a>
+					<a
+						href={item.href}
+						class="layout-header__nav-link"
+						class:layout-header__nav-link--active={isActive(item)}
+					>
+						{item.label}
+					</a>
 				{/each}
 			</nav>
 		</div>

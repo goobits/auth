@@ -33,7 +33,11 @@
 			<a href="/calendar" class="calendar-shell__brand">Members</a>
 			<div class="calendar-shell__links">
 				{#each headerLinks as item}
-					<a href={item.href} class:active={isActive(item.href)}>
+					<a
+						href={item.href}
+						class="calendar-shell__link"
+						class:calendar-shell__link--active={isActive(item.href)}
+					>
 						{item.label}
 					</a>
 				{/each}
@@ -106,7 +110,7 @@
 		min-width: 0;
 	}
 
-	.calendar-shell__links a {
+	.calendar-shell__link {
 		display: inline-flex;
 		align-items: center;
 		color: color-mix(in srgb, var(--color-white) 52%, transparent);
@@ -118,12 +122,12 @@
 		transition: all 0.16s ease;
 	}
 
-	.calendar-shell__links a:hover {
+	.calendar-shell__link:hover {
 		color: color-mix(in srgb, var(--color-white) 78%, transparent);
 		background: color-mix(in srgb, var(--color-white) 3.5%, transparent);
 	}
 
-	.calendar-shell__links a.active {
+	.calendar-shell__link--active {
 		color: var(--color-white);
 		background: color-mix(in srgb, var(--color-white) 7.5%, transparent);
 		text-decoration: underline;
@@ -188,7 +192,7 @@
 			gap: var(--space-1);
 		}
 
-		.calendar-shell__links a {
+		.calendar-shell__link {
 			font-size: 12px;
 			padding: var(--space-1) var(--space-2);
 			white-space: nowrap;

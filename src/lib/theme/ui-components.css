@@ -23,7 +23,7 @@
 	flex-wrap: wrap;
 }
 
-.ui-chip-group button {
+.ui-chip-group__button {
 	padding: var(--space-1) var(--space-3);
 	font-size: var(--font-size-sm);
 	border: var(--border-width) solid var(--border);
@@ -33,7 +33,7 @@
 	cursor: pointer;
 }
 
-.ui-chip-group button.active {
+.ui-chip-group__button--active {
 	background: var(--brand-primary);
 	color: var(--color-white);
 	border-color: var(--brand-primary);
@@ -48,7 +48,7 @@
 	overflow: hidden;
 }
 
-.ui-segmented button {
+.ui-segmented__button {
 	border: none;
 	border-right: var(--border-width) solid var(--border);
 	background: transparent;
@@ -57,11 +57,11 @@
 	padding: var(--space-1) var(--space-3);
 }
 
-.ui-segmented button:last-child {
+.ui-segmented__button:last-child {
 	border-right: none;
 }
 
-.ui-segmented button.active {
+.ui-segmented__button--active {
 	background: color-mix(in srgb, var(--brand-primary) 14%, var(--card-bg));
 	color: var(--text);
 }
@@ -101,7 +101,7 @@
 	color: var(--muted);
 }
 
-.ui-search__empty button {
+.ui-search__empty-action {
 	margin-top: var(--space-3);
 	padding: var(--space-2) var(--space-4);
 	background: var(--button-bg);

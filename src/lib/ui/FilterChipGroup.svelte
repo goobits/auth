@@ -46,6 +46,13 @@
 
 <div class={`ui-chip-group ${className}`.trim()} role="tablist" aria-label={ariaLabel}>
 	{#each items as item}
-		<button type="button" class:active={isActive(item)} onclick={() => toggle(item)}>{getItemLabel(item)}</button>
+		<button
+			type="button"
+			class="ui-chip-group__button"
+			class:ui-chip-group__button--active={isActive(item)}
+			onclick={() => toggle(item)}
+		>
+			{getItemLabel(item)}
+		</button>
 	{/each}
 </div>

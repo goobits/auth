@@ -15,14 +15,14 @@
 	letter-spacing: 0.01em;
 }
 
-.legal__page p {
+.legal__copy {
 	font-size: 0.95rem;
 	line-height: 1.75;
 	color: color-mix(in srgb, var(--muted) 92%, var(--text));
 	margin: 0 0 var(--space-5);
 }
 
-.legal__page h2 {
+.legal__section-title {
 	font-family: var(--font-serif);
 	font-weight: 400;
 	font-size: 1.25rem;
@@ -33,13 +33,17 @@
 	line-height: 1.3;
 }
 
-.legal__page ul {
+.legal__section-title--compact {
+	margin-top: 0;
+}
+
+.legal__list {
 	list-style: none;
 	margin: 0 0 var(--space-5);
 	padding: 0;
 }
 
-.legal__page li {
+.legal__list-item {
 	font-size: 0.95rem;
 	line-height: 1.75;
 	color: color-mix(in srgb, var(--muted) 92%, var(--text));
@@ -47,7 +51,7 @@
 	position: relative;
 }
 
-.legal__page li::before {
+.legal__list-item::before {
 	content: '';
 	position: absolute;
 	left: 0;
@@ -58,12 +62,12 @@
 	background: color-mix(in srgb, var(--muted) 65%, var(--text));
 }
 
-.legal__page strong {
+.legal__strong {
 	font-weight: var(--font-weight-medium);
 	color: var(--text);
 }
 
-.legal__page code {
+.legal__inline-code {
 	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 	font-size: 0.82rem;
 	background: color-mix(in srgb, var(--text) 4%, var(--bg));
@@ -79,7 +83,7 @@
 	border-collapse: collapse;
 }
 
-.legal__cookie-table th {
+.legal__cookie-header {
 	font-size: 0.6875rem;
 	font-weight: var(--font-weight-medium);
 	letter-spacing: 0.06em;
@@ -90,7 +94,7 @@
 	font-family: var(--font-sans);
 }
 
-.legal__cookie-table td {
+.legal__cookie-cell {
 	font-size: 0.875rem;
 	color: color-mix(in srgb, var(--muted) 92%, var(--text));
 	padding: 0.625rem var(--space-6) 0.625rem 0;
@@ -99,11 +103,11 @@
 	line-height: 1.6;
 }
 
-.legal__cookie-table td:first-child {
+.legal__cookie-cell--name {
 	white-space: nowrap;
 }
 
-.legal__cookie-table td code {
+.legal__cookie-cell .legal__inline-code {
 	font-size: 0.78rem;
 }
 
@@ -111,10 +115,6 @@
 	margin-top: var(--space-11);
 	padding-top: var(--space-10);
 	border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-}
-
-.legal__contact-block h2 {
-	margin-top: 0;
 }
 
 .legal__notice {
@@ -129,7 +129,7 @@
 		padding-top: var(--space-6);
 	}
 
-	.legal__cookie-table td {
+	.legal__cookie-cell {
 		font-size: 0.8125rem;
 		padding: 0.5rem var(--space-4) 0.5rem 0;
 	}

@@ -3,13 +3,13 @@ import { startCalendarOAuth } from '$lib/client/api/calendarClient'
 import { isCalendarConnectedFromParams, scheduleCalendarConnectedRedirect } from '$lib/client/routing/calendarState'
 import { SvelteURLSearchParams } from 'svelte/reactivity'
 
-function hasAuthenticatedFlag(value) {
+function hasAuthenticatedFlag(value: unknown): value is { authenticated?: unknown } {
 	return typeof value === 'object' && value !== null && 'authenticated' in value
 }
 
-function hasAuthUrl(value) {
+function hasAuthUrl(value: unknown): value is { authUrl: string } {
 	if (typeof value !== 'object' || value === null || !('authUrl' in value)) return false
-	const authUrl = value.authUrl
+	const authUrl = (value as { authUrl?: unknown }).authUrl
 	return typeof authUrl === 'string' && authUrl.length > 0
 }
 
