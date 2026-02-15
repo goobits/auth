@@ -22,6 +22,7 @@
 		"e2e:visual": "node e2e/visual-snapshots.mjs",
 		"e2e:auth": "node e2e/auth-register-smoke.mjs",
 		"e2e:cls": "node e2e/layout-shift.mjs",
+		"e2e:drift": "node e2e/layout-drift.mjs",
 		"start": "dotenvx run -f config/env/.env -- bash scripts/dev/dev-server.sh start",
 		"start:prod": "NODE_ENV=production dotenvx run -f config/env/.env -- node build",
 		"deploy:secrets": "dotenvx run -f config/env/.env.production -- node scripts/deploy-secrets.mjs",
