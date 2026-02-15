@@ -15,6 +15,9 @@ type CreateBookingParams = {
 export async function loadAvailabilityForMonth(currentMonth: Date) {
 	const { start, end } = getMonthRange(currentMonth)
 	const data = await getCalendarAvailability(start.toISOString(), end.toISOString())
+	if (data.error) {
+		throw new Error(data.error.message)
+	}
 	return data.slots
 }
 

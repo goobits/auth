@@ -30,8 +30,14 @@ const CalendarAvailabilitySlotSchema = z.object({
 	remaining: z.number()
 })
 
+const CalendarAvailabilityErrorSchema = z.object({
+	code: z.string(),
+	message: z.string()
+})
+
 const CalendarAvailabilityResponseSchema = z.object({
-	slots: z.array(CalendarAvailabilitySlotSchema)
+	slots: z.array(CalendarAvailabilitySlotSchema),
+	error: CalendarAvailabilityErrorSchema.optional()
 })
 
 const CalendarBookingResponseSchema = z.object({
