@@ -20,6 +20,7 @@
 
 	const inviteCode = $page.url.searchParams.get('invite') || ''
 	const redirectTo = $page.url.searchParams.get('redirect') || '/calendar'
+	const verifiedStatus = $page.url.searchParams.get('verified') || ''
 
 	async function loginWith(provider: CalendarProviderName) {
 		loading = true
@@ -53,6 +54,16 @@
 		<Card className="calendar-page__login-card calendar-login__card">
 			{#if error}
 				<div class="calendar-page__error-message calendar-login__error">{error}</div>
+			{/if}
+
+			{#if verifiedStatus === '1'}
+				<div class="calendar-page__invite-notice calendar-login__invite-notice">
+					Email verified. You can sign in now.
+				</div>
+			{:else if verifiedStatus && verifiedStatus !== '1'}
+				<div class="calendar-page__error-message calendar-login__error">
+					Verification link is invalid or expired.
+				</div>
 			{/if}
 
 			{#if inviteCode}

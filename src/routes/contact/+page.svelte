@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation'
 	import Hero from '$lib/ui/Hero.svelte'
+	import PageShell from '$lib/ui/PageShell.svelte'
 	import { submitContact, toContactPayload } from '$lib/client/forms/contact'
 	import './Contact.scss'
 
@@ -49,17 +50,18 @@
 	<title>Contact - MIKO.ART</title>
 </svelte:head>
 
-<Hero
-	className="contact-page contact-page__hero"
-	title="Contact Miko"
-	subtitle="Got a question? Drop me a line."
-	icon="/media/emoji-herb.png"
-	iconSize="0.96em"
-/>
+<PageShell className="contact-page">
+	<Hero
+		className="contact-page__hero"
+		eyebrow="Contact"
+		title="Contact Miko"
+		subtitle="Got a question? Drop me a line."
+		compact
+	/>
 
-<section class="contact-page__layout">
-	<div class="contact-page__form-shell ui-surface-card">
-		<form class="contact-page__form" onsubmit={onSubmit} novalidate>
+	<section class="contact-page__layout">
+		<div class="contact-page__form-shell ui-surface-card">
+			<form class="contact-page__form" onsubmit={onSubmit} novalidate>
 			<label class="contact-page__field">
 				<span>Your Name <i aria-hidden="true">*</i></span>
 				<input type="text" name="name" bind:value={values.name} autocomplete="name" />
@@ -92,9 +94,10 @@
 				<a href="/terms">Terms of Use</a>, and
 				<a href="/cookies">Cookie Policy</a>.
 			</p>
-		</form>
-	</div>
-	<aside class="contact-page__aside">
-		<img class="contact-page__image" src="/media/super-racoon.svg" alt="Raccoon illustration" loading="lazy" />
-	</aside>
-</section>
+			</form>
+		</div>
+		<aside class="contact-page__aside">
+			<img class="contact-page__image" src="/media/super-racoon.svg" alt="Raccoon illustration" loading="lazy" />
+		</aside>
+	</section>
+</PageShell>

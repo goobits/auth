@@ -1,36 +1,62 @@
 <script>
 	import Hero from '$lib/ui/Hero.svelte'
+	import PageClosing from '$lib/ui/PageClosing.svelte'
+	import PageShell from '$lib/ui/PageShell.svelte'
 
 	const works = [
 		{
-			title: 'Color Sphere',
-			image: '/media/project-color-sphere.png',
-			note: 'Chromatic studies and immersive color systems.'
+			title: 'Portland Ketchup Summer Tee',
+			category: 'T-shirt design',
+			image: '/media/stubs/product-stub-1.svg',
+			note: 'Playful bottle mascot system and back-print layout for a seasonal apparel drop.'
 		},
 		{
-			title: 'Sand Art',
-			image: '/media/project-sand-art.png',
-			note: 'Organic texture experiments and playful simulation.'
+			title: 'Late-Night Fries Club Shirt',
+			category: 'T-shirt design',
+			image: '/media/stubs/product-stub-2.svg',
+			note: 'Bold one-color graphic concept built for high-contrast screen printing.'
 		},
 		{
-			title: 'Color Piano',
-			image: '/media/project-color-piano.png',
-			note: 'Synesthetic visuals shaped by musical harmony.'
+			title: 'Ketchup & Friends Sticker Set',
+			category: 'Merch',
+			image: '/media/stubs/product-stub-3.svg',
+			note: 'Character-led sticker sheet ideas with alternate expressions and mini slogans.'
 		},
 		{
-			title: 'Zendala',
-			image: '/media/project-zendala.png',
-			note: 'Meditative geometry, symmetry, and rhythm.'
+			title: 'Hot Dog Cart Label Refresh',
+			category: 'Packaging',
+			image: '/media/stubs/product-stub-4.svg',
+			note: 'Retro-inspired label direction balancing shelf readability with playful voice.'
 		},
 		{
-			title: 'Sketchpad',
-			image: '/media/project-sketchpad.png',
-			note: 'Digital illustration systems for expressive making.'
+			title: 'Funny Condiment Pin Collection',
+			category: 'Accessories',
+			image: '/media/stubs/product-stub-5.svg',
+			note: 'Enamel pin concepts featuring cheeky micro-copy and icon-forward silhouettes.'
 		},
 		{
-			title: 'Be Here Meow',
-			image: '/media/project-be-here-meow.png',
-			note: 'Character-driven artwork with warmth and wit.'
+			title: 'Weekend Market Tote Series',
+			category: 'Soft goods',
+			image: '/media/stubs/product-stub-6.svg',
+			note: 'Reusable tote family with modular lockups for events, popups, and collabs.'
+		},
+		{
+			title: 'Snackline Poster Pack',
+			category: 'Print',
+			image: '/media/stubs/product-stub-7.svg',
+			note: 'Whimsical promotional posters designed as companion pieces to apparel launches.'
+		},
+		{
+			title: 'Pickle Parade Apron',
+			category: 'Kitchenware',
+			image: '/media/stubs/product-stub-8.svg',
+			note: 'Front-pocket print layout with oversized character art and punchy typography.'
+		},
+		{
+			title: 'Festival Booth Sign Kit',
+			category: 'Brand system',
+			image: '/media/stubs/product-stub-9.svg',
+			note: 'Coordinated signage concepts tying merch, menu boards, and giveaway cards together.'
 		}
 	]
 </script>
@@ -40,11 +66,11 @@
 	<meta name="description" content="Art by Miko: visual experiments, color systems, and interactive works." />
 </svelte:head>
 
-<div class="art-page">
+<PageShell className="art-page">
 	<Hero
 		eyebrow="Art"
-		title="Visual worlds, color studies, and interactive pieces."
-		subtitle="I explore art through code, drawing, interaction, and motion. These pieces sit at the intersection of playful tools and visual storytelling."
+		title="Product design, playful merch, and weirdly fun ideas."
+		subtitle="A working gallery of t-shirt concepts, Portland Ketchup experiments, packaging directions, and other product-ready visuals."
 	/>
 
 	<section class="art-page__works" aria-label="Selected works">
@@ -53,35 +79,29 @@
 				<div class="art-page__image-wrap">
 					<img src={work.image} alt={work.title} loading="lazy" />
 				</div>
+				<p class="art-page__work-type">{work.category}</p>
 				<h2>{work.title}</h2>
 				<p>{work.note}</p>
 			</article>
 		{/each}
 	</section>
 
-	<section class="art-page__closing" aria-label="Commissions and exhibits">
-		<div class="art-page__divider"></div>
-		<p class="art-page__label">Commissions & Exhibits</p>
-		<h2>Interested in working together?</h2>
-		<p class="art-page__closing-copy">
-			Custom visual work, installations, or exhibition collaborations. Let&apos;s talk about what
-			you have in mind.
-		</p>
-		<a href="/contact" class="art-page__contact-link">Get in touch</a>
-	</section>
-</div>
+	<PageClosing
+		className="art-page__closing"
+		label="Commissions & Exhibits"
+		title="Interested in working together?"
+		copy="Custom visual work, installations, or exhibition collaborations. Let&apos;s talk about what you have in mind."
+		href="/contact"
+		linkLabel="Get in touch"
+		maxWidth="31.25rem"
+	/>
+</PageShell>
 
 <style lang="scss">
-	.art-page {
-		max-width: 980px;
-		margin: 0 auto;
-		padding: 3.1rem 1.25rem 5.25rem;
-	}
-
 	.art-page__works {
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 2.8rem 2.25rem;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 2.4rem 1.5rem;
 		margin-bottom: 4.25rem;
 	}
 
@@ -120,6 +140,15 @@
 		color: var(--text);
 	}
 
+	.art-page__work-type {
+		margin: 0 0 0.2rem;
+		font-size: 0.7rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
 	.art-page__work p {
 		margin: 0;
 		color: var(--muted);
@@ -127,52 +156,13 @@
 		line-height: 1.52;
 	}
 
-	.art-page__closing {
-		max-width: 500px;
-	}
-
-	.art-page__divider {
-		height: 1px;
-		background: color-mix(in srgb, var(--border) 55%, transparent);
-		margin-bottom: 2.9rem;
-	}
-
-	.art-page__closing h2 {
-		margin: 0 0 0.6rem;
-		font-family: var(--font-serif);
-		font-size: clamp(1.55rem, 3.2vw, 1.95rem);
-		font-weight: 500;
-		line-height: 1.28;
-		letter-spacing: -0.02em;
-	}
-
-	.art-page__closing-copy {
-		margin: 0 0 1.3rem;
-		font-size: 0.95rem;
-		line-height: 1.65;
-		color: var(--muted);
-	}
-
-	.art-page__contact-link {
-		display: inline-block;
-		font-size: 0.95rem;
-		font-weight: 500;
-		color: var(--text);
-		text-decoration: none;
-		border-bottom: 1px solid currentColor;
-		padding-bottom: 0.15rem;
-		transition: opacity 0.2s ease;
-	}
-
-	.art-page__contact-link:hover {
-		opacity: 0.65;
+	@media (max-width: 980px) {
+		.art-page__works {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
 	}
 
 	@media (max-width: 760px) {
-		.art-page {
-			padding-top: 2.4rem;
-		}
-
 		.art-page__works {
 			grid-template-columns: 1fr;
 			gap: 2.2rem;

@@ -1,4 +1,6 @@
 <script>
+	import Hero from '$lib/ui/Hero.svelte'
+	import PageShell from '$lib/ui/PageShell.svelte'
 	import './About.scss'
 
 	const exhibits = [
@@ -24,14 +26,35 @@
 		'Upworthy'
 	]
 
-	const offerings = [
-		'Annotations & Editing for Online News: Innovative tools designed to enhance the digital news experience with user-friendly annotations and editing capabilities.',
-		'Colorful Educational Musical Apps: Interactive and vibrant applications that fuse music with learning, making education both fun and engaging for all ages.',
-		'Kiosk Software for Science & Learning Centers: Cutting-edge interactive kiosk software, bringing digital innovation to science and educational environments.',
-		'Non-Destructive Illustration & Painting Apps: Sophisticated apps offering artists and designers the freedom to create with non-destructive editing tools.',
-		'Promotional Contests for Sports Teams & Companies: Tailored contest platforms to boost engagement for sports teams and businesses, driving promotional success.',
-		'Realtime Collaborative Apps: Dynamic applications enabling seamless collaboration in real-time, enhancing teamwork and productivity.',
-		'User-Based Product Customization for Printing: Flexible design tools that allow users to personalize products, perfect for creating unique print-on-demand items.'
+	const specialties = [
+		{
+			title: 'News Annotation & Editing',
+			description: 'Tools for enhancing digital news experiences with user-friendly markup and editing.'
+		},
+		{
+			title: 'Educational Music Apps',
+			description: 'Interactive applications that fuse music with learning across all ages.'
+		},
+		{
+			title: 'Kiosk Software',
+			description: 'Interactive installations for science centers and educational environments.'
+		},
+		{
+			title: 'Illustration & Painting',
+			description: 'Non-destructive editing tools and workflows for artists and designers.'
+		},
+		{
+			title: 'Promotional Contests',
+			description: 'Tailored contest platforms for sports teams and businesses.'
+		},
+		{
+			title: 'Realtime Collaboration',
+			description: 'Applications enabling seamless teamwork and shared creation.'
+		},
+		{
+			title: 'Product Customization',
+			description: 'Design tools for personalized print-on-demand products.'
+		}
 	]
 </script>
 
@@ -44,33 +67,33 @@
 	<link rel="canonical" href="https://miko.art/about" />
 </svelte:head>
 
-<div class="about-page">
-	<section class="about-page__hero" aria-labelledby="about-title">
-		<div class="about-page__intro-copy">
-			<h1 id="about-title">Haai! I'm Miko <span aria-hidden="true">🦄</span></h1>
-			<p class="about-page__tagline">Developer, designer & musician :)</p>
-		</div>
-	</section>
+<PageShell className="about-page">
+	<Hero
+		eyebrow="About"
+		title="Haai! I'm Miko 🦄"
+		subtitle="Developer, designer & musician"
+	/>
 
 	<section class="about-page__intro">
-		<figure class="about-page__photo-inset">
-			<img src="/media/miko.jpg" alt="Portrait of Miko" width="240" height="240" loading="eager" />
+		<figure class="about-page__photo">
+			<img src="/media/miko.jpg" alt="Portrait of Miko" width="160" height="160" loading="eager" />
 		</figure>
-		<p>
-			I'm passionate about creating colorful, creative & educational applications.
-		</p>
-		<p>
-			Founder & CTO of <a href="https://sketch.io" target="_blank" rel="noreferrer noopener">Sketch.IO</a>
-			creators of Sketchpad 🎨
-		</p>
-		<p>
-			Co-Founder of Portlandia Foods creators of Portland Ketchup 🪴
-			<span class="about-page__muted">(acquired 2023)</span>
-		</p>
-		<p>
-			Co-Founder of Lyrics Freak 🎵
-			<span class="about-page__muted">(acquired 2010)</span>
-		</p>
+		<div class="about-page__bio">
+			<p>I'm passionate about creating colorful, creative & educational applications.</p>
+			<p>
+				Founder & CTO of
+				<strong><a href="https://sketch.io" target="_blank" rel="noreferrer noopener">Sketch.IO</a></strong>,
+				creators of Sketchpad 🎨
+			</p>
+			<p>
+				Co-Founder of <strong>Portlandia Foods</strong>, creators of Portland Ketchup 🪴
+				<span class="about-page__acquired">Acquired 2023</span>
+			</p>
+			<p>
+				Co-Founder of <strong>Lyrics Freak</strong> 🎵
+				<span class="about-page__acquired">Acquired 2010</span>
+			</p>
+		</div>
 	</section>
 
 	<section class="about-page__columns">
@@ -80,7 +103,7 @@
 				{#each exhibits as exhibit}
 					<li>{exhibit}</li>
 				{/each}
-				<li class="about-page__you"><a href="/contact">you</a>?</li>
+				<li class="about-page__you"><a href="/contact">Your venue? →</a></li>
 			</ul>
 		</article>
 
@@ -90,17 +113,21 @@
 				{#each clients as client}
 					<li>{client}</li>
 				{/each}
-				<li class="about-page__you"><a href="/contact">you</a>?</li>
+				<li class="about-page__you"><a href="/contact">Your company? →</a></li>
 			</ul>
 		</article>
 	</section>
 
-	<section class="about-page__offerings" aria-labelledby="offerings-title">
-		<h2 id="offerings-title">Sketch.IO specializes in creating a diverse range of design tools:</h2>
-		<ul>
-			{#each offerings as item}
-				<li>{item}</li>
+	<section class="about-page__specialties" aria-labelledby="offerings-title">
+		<div class="about-page__divider"></div>
+		<h2 id="offerings-title">Sketch.IO specializes in design tools across industries</h2>
+		<div class="about-page__specialties-grid">
+			{#each specialties as specialty}
+				<article class="about-page__specialty-item">
+					<h3>{specialty.title}</h3>
+					<p>{specialty.description}</p>
+				</article>
 			{/each}
-		</ul>
+		</div>
 	</section>
-</div>
+</PageShell>

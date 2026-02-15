@@ -138,6 +138,8 @@
 	.calendar-shell__links a.active {
 		color: var(--color-white);
 		background: color-mix(in srgb, var(--color-white) 7.5%, transparent);
+		text-decoration: underline;
+		text-underline-offset: 0.22em;
 	}
 
 	.calendar-shell__user {

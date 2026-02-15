@@ -1,15 +1,11 @@
 <script lang="ts">
 	import { useTheme } from '@goobits/themes/svelte'
 
-	const theme = useTheme()
-
 	type ThemePreset = 'light' | 'dark' | 'magic'
 
-	const presets: Array<{ id: ThemePreset; label: string }> = [
-		{ id: 'light', label: 'Light' },
-		{ id: 'dark', label: 'Dark' },
-		{ id: 'magic', label: 'Magic' }
-	]
+	const theme = useTheme()
+	let rootEl: HTMLDivElement | null = null
+	let menuOpen = $state(false)
 
 	const activePreset = $derived.by<ThemePreset>(() => {
 		if (theme.scheme === 'magic') return 'magic'
@@ -25,51 +21,195 @@
 		theme.setScheme('default')
 		theme.setTheme(preset)
 	}
+
+	function toggleMenu() {
+		menuOpen = !menuOpen
+	}
+
+	function closeMenu() {
+		menuOpen = false
+	}
+
+	function chooseTheme(preset: ThemePreset) {
+		applyPreset(preset)
+		closeMenu()
+	}
+
+	function onWindowClick(event: MouseEvent) {
+		if (!menuOpen || !rootEl) return
+		const target = event.target
+		if (target instanceof Node && !rootEl.contains(target)) {
+			closeMenu()
+		}
+	}
+
+	function onWindowKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape') closeMenu()
+	}
 </script>
 
-<span class="ui-theme-select" role="group" aria-label="Theme">
-	{#each presets as preset}
-		<button
-			type="button"
-			class="ui-theme-select__option"
-			class:ui-theme-select__option--active={activePreset === preset.id}
-			aria-pressed={activePreset === preset.id}
-			onclick={() => applyPreset(preset.id)}
-		>
-			{preset.label}
-		</button>
-	{/each}
-</span>
+<svelte:window onclick={onWindowClick} onkeydown={onWindowKeydown} />
+
+<div class="ui-theme-select" bind:this={rootEl}>
+	<button
+		type="button"
+		class="ui-theme-select__trigger"
+		onclick={toggleMenu}
+		aria-haspopup="menu"
+		aria-expanded={menuOpen}
+		aria-label="Change theme"
+		title="Theme"
+	>
+		<span class="ui-theme-select__icon" aria-hidden="true">
+			{#if activePreset === 'light'}
+				<svg viewBox="0 0 16 16">
+					<circle cx="8" cy="8" r="3.1" fill="none" stroke="currentColor" stroke-width="1.4" />
+					<path d="M8 1.6v1.7M8 12.7v1.7M1.6 8h1.7M12.7 8h1.7M3.3 3.3l1.2 1.2M11.5 11.5l1.2 1.2M3.3 12.7l1.2-1.2M11.5 4.5l1.2-1.2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+				</svg>
+			{:else if activePreset === 'dark'}
+				<svg viewBox="0 0 16 16">
+					<path d="M13.2 10.4A5.6 5.6 0 0 1 5.6 2.8a5.6 5.6 0 1 0 7.6 7.6z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+				</svg>
+			{:else}
+				<svg viewBox="0 0 16 16">
+					<path d="M8 1.8l1.2 3.2L12.4 6 9.2 7.1 8 10.3 6.8 7.1 3.6 6l3.2-1z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" />
+					<path d="M12 10.1l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" />
+				</svg>
+			{/if}
+		</span>
+		<svg viewBox="0 0 10 6" aria-hidden="true" class="ui-theme-select__chevron" class:open={menuOpen}>
+			<path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+		</svg>
+	</button>
+
+	{#if menuOpen}
+		<div class="ui-theme-select__menu" role="menu" aria-label="Theme options">
+			<button
+				type="button"
+				class="ui-theme-select__option"
+				class:active={activePreset === 'light'}
+				onclick={() => chooseTheme('light')}
+				role="menuitemradio"
+				aria-checked={activePreset === 'light'}
+			>
+				Light
+			</button>
+			<button
+				type="button"
+				class="ui-theme-select__option"
+				class:active={activePreset === 'dark'}
+				onclick={() => chooseTheme('dark')}
+				role="menuitemradio"
+				aria-checked={activePreset === 'dark'}
+			>
+				Dark
+			</button>
+			<button
+				type="button"
+				class="ui-theme-select__option"
+				class:active={activePreset === 'magic'}
+				onclick={() => chooseTheme('magic')}
+				role="menuitemradio"
+				aria-checked={activePreset === 'magic'}
+			>
+				Magic
+			</button>
+		</div>
+	{/if}
+</div>
 
 <style>
 	.ui-theme-select {
+		position: relative;
 		display: inline-flex;
 		align-items: center;
-		gap: 0.25rem;
+		z-index: 120;
+	}
+
+	.ui-theme-select__trigger {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.32rem;
+		background: color-mix(in srgb, var(--color-white) 8%, transparent);
+		border: 1px solid color-mix(in srgb, var(--color-white) 30%, transparent);
+		border-radius: 999px;
+		color: var(--color-white);
+		cursor: pointer;
+		font-family: var(--font-sans);
+		font-size: 0.74rem;
+		font-weight: 500;
+		line-height: 0;
+		min-height: 1.55rem;
+		padding: 0.26rem 0.5rem;
+		vertical-align: middle;
+	}
+
+	.ui-theme-select__trigger:focus-visible {
+		outline: 2px solid color-mix(in srgb, var(--color-white) 64%, transparent);
+		outline-offset: 2px;
+	}
+
+	.ui-theme-select__icon {
+		display: block;
+		width: 0.82rem;
+		height: 0.82rem;
+	}
+
+	.ui-theme-select__icon svg {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	.ui-theme-select__chevron {
+		display: block;
+		width: 0.48rem;
+		height: 0.38rem;
+		opacity: 0.88;
+		transition: transform 0.18s ease;
+	}
+
+	.ui-theme-select__chevron.open {
+		transform: rotate(180deg);
+	}
+
+	.ui-theme-select__menu {
+		position: absolute;
+		top: calc(100% + 0.45rem);
+		right: 0;
+		min-width: 6.4rem;
+		padding: 0.25rem;
+		border-radius: 0.62rem;
+		background: var(--panel-bg);
+		border: 1px solid var(--panel-border);
+		box-shadow: 0 14px 28px color-mix(in srgb, #000 20%, transparent);
+		z-index: 130;
 	}
 
 	.ui-theme-select__option {
-		border: 1px solid color-mix(in srgb, var(--color-white) 28%, transparent);
-		background: color-mix(in srgb, var(--color-white) 6%, transparent);
-		color: var(--color-white);
-		border-radius: 999px;
-		padding: 0.14rem 0.52rem;
-		font-size: 0.68rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
+		display: block;
+		width: 100%;
+		text-align: left;
+		background: transparent;
+		border: 0;
+		border-radius: 0.45rem;
+		color: var(--text);
 		cursor: pointer;
 		font-family: var(--font-sans);
-		line-height: 1.4;
-		transition: all 0.16s ease;
+		font-size: 0.8rem;
+		font-weight: 500;
+		padding: 0.4rem 0.52rem;
 	}
 
-	.ui-theme-select__option:hover {
-		border-color: color-mix(in srgb, var(--color-white) 46%, transparent);
+	.ui-theme-select__option:hover,
+	.ui-theme-select__option:focus-visible {
+		background: color-mix(in srgb, var(--text) 11%, transparent);
+		outline: none;
 	}
 
-	.ui-theme-select__option--active {
-		background: color-mix(in srgb, var(--color-white) 22%, transparent);
-		border-color: color-mix(in srgb, var(--color-white) 60%, transparent);
+	.ui-theme-select__option.active {
+		background: color-mix(in srgb, var(--link) 24%, transparent);
+		color: var(--text);
 	}
 </style>

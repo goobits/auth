@@ -8,8 +8,6 @@ export const headerNavItems: NavItem[] = [
 	{ href: '/art', label: 'Art', matchPrefix: true },
 	{ href: '/music', label: 'Music', matchPrefix: true },
 	{ href: '/about', label: 'About' },
-	{ href: '/journal', label: 'Journal', matchPrefix: true },
-	{ href: '/labs', label: 'Labs', matchPrefix: true },
 	{ href: '/contact', label: 'Contact', matchPrefix: true }
 ]
 

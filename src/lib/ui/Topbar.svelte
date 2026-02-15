@@ -4,15 +4,41 @@
 
 	type TopbarProps = {
 		items: NavItem[]
-		activePath: string
+		currentPath: string
 	}
 
-	const { items, activePath }: TopbarProps = $props()
+	const { items, currentPath }: TopbarProps = $props()
+
+	function normalizePath(path: string) {
+		if (!path || path === '/') return '/'
+		return path.endsWith('/') ? path.slice(0, -1) : path
+	}
+
+	function isActive(item: NavItem) {
+		const path = normalizePath(currentPath)
+		const href = normalizePath(item.href)
+		if (href === '/') return path === '/'
+		if (item.matchPrefix) return path === href || path.startsWith(`${href}/`)
+		return path === href
+	}
 </script>
 
-{#each items as item}
-	<a href={item.href} class:active={activePath === item.href}>{item.label}</a>
-{/each}
-<theme-toggle>
-	<ThemeSelect />
-</theme-toggle>
+<header class="layout-header">
+	<div class="layout-header__inner">
+		<div class="layout-header__left">
+			<div class="layout-header__logo">
+				<a href="/">
+					<img src="/media/logo.svg" alt="logo" />
+				</a>
+			</div>
+			<nav class="layout-header__nav">
+				{#each items as item}
+					<a href={item.href} class:active={isActive(item)}>{item.label}</a>
+				{/each}
+			</nav>
+		</div>
+		<div class="layout-header__theme">
+			<ThemeSelect />
+		</div>
+	</div>
+</header>

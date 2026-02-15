@@ -2,6 +2,7 @@
 @import './lib/theme/tokens.css';
 @import './lib/theme/modes.css';
 @import './lib/theme/typography.css';
+@import './lib/theme/layout.css';
 @import './lib/theme/ui-components.css';
 @import './lib/theme/legal.css';
 @import './lib/theme/showcase.css';
@@ -43,7 +44,7 @@
 :root {
 	/* Layout */
 	--max-width: 1060px;
-	--header-height: 120px;
+	--header-height: 104px;
 	--project-card-width: 305px;
 	--project-image-height: 230px;
 	--font-sans: 'Canela Deck', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -500,8 +501,8 @@ main {
 	line-height: 1.5em;
 	margin: 0 auto;
 	max-width: var(--max-width);
-	padding: 0 1em;
-	width: calc(100% - 40px);
+	padding: 0;
+	width: 100%;
 
 	.home__hero {
 		margin-top: 2rem;
