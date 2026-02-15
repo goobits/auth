@@ -15,7 +15,7 @@
 </script>
 
 <div class="admin-root">
-	<ShellNav brandLabel="Rainbow Gym" brandHref="/admin" currentPath={$page.url.pathname}>
+	<ShellNav currentPath={$page.url.pathname}>
 		{#snippet right()}
 			<span class="shell-nav__badge">Admin</span>
 		{/snippet}

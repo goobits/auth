@@ -9,8 +9,8 @@
 
 	type ShellNavProps = {
 		homeHref?: string
-		brandLabel: string
-		brandHref: string
+		brandLabel?: string
+		brandHref?: string
 		links?: ShellNavLink[]
 		currentPath: string
 		right?: Snippet
@@ -29,7 +29,9 @@
 		<a href={homeHref} class="shell-nav__home" aria-label="Home">
 			<img src="/media/logo.svg" alt="MIKO.ART" class="shell-nav__home-logo" />
 		</a>
-		<a href={brandHref} class="shell-nav__brand">{brandLabel}</a>
+		{#if brandLabel && brandHref}
+			<a href={brandHref} class="shell-nav__brand">{brandLabel}</a>
+		{/if}
 
 		{#if links.length > 0}
 			<div class="shell-nav__links">
