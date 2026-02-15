@@ -1,0 +1,148 @@
+// Main content
+.admin-page__main {
+	display: grid;
+	gap: 0;
+	align-content: start;
+	padding: $grid-unit * 3 $grid-unit * 2;
+}
+
+.admin-page__title {
+	font-size: 22px;
+	font-weight: 700;
+	line-height: 1.2;
+	letter-spacing: -0.02em;
+	color: var(--text);
+	margin: 0;
+}
+
+.admin-page__subtitle {
+	font-size: 13px;
+	line-height: 1.4;
+	color: var(--muted);
+	margin: calc($grid-unit / 2) 0 $grid-unit * 2 0;
+}
+
+// Stats row
+.admin-page__stats {
+	display: grid;
+	grid-template-columns: repeat(3, auto);
+	gap: $grid-unit * 4;
+	margin-bottom: $grid-unit * 2;
+}
+
+.admin-page__stat-card {
+	display: grid;
+	gap: 2px;
+	@include ui.surface-card(6px, $grid-unit * 1.5, var(--card-bg), transparent);
+	border-left: 3px solid var(--brand-primary);
+}
+
+.admin-page__stat-value {
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1.2;
+	letter-spacing: -0.02em;
+	color: var(--text);
+
+	&.admin-page__stat-value--synced {
+		color: var(--status-success-text);
+	}
+}
+
+.admin-page__stat-label {
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--muted);
+	font-weight: 500;
+}
+
+// Sections
+.admin-page__section {
+	display: grid;
+	gap: $grid-unit;
+	border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+	padding: $grid-unit * 2 0;
+}
+
+.admin-page__section-head {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	align-items: center;
+	gap: $grid-unit;
+}
+
+.admin-page__section-title {
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.4;
+	color: var(--text);
+	margin: 0;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+
+	&::before {
+		content: '';
+		width: 3px;
+		height: 14px;
+		background: var(--brand-primary);
+		border-radius: 2px;
+	}
+}
+
+.admin-page__section-description {
+	font-size: 12px;
+	line-height: 1.5;
+	color: var(--muted);
+	margin: 0;
+}
+
+.admin-page__section-description--error {
+	color: var(--form-error);
+}
+
+.admin-page__section--error {
+	background: color-mix(in srgb, var(--form-error) 12%, transparent);
+	border-color: color-mix(in srgb, var(--form-error) 30%, transparent);
+}
+
+.admin-page__calendar-error {
+	color: var(--status-error-text);
+	margin: 0;
+}
+
+.admin-page__section-count {
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--muted);
+}
+
+// Badges
+.admin-page__status-badge {
+	display: inline-grid;
+	grid-template-columns: auto auto;
+	align-items: center;
+	gap: 4px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.4;
+	color: var(--muted);
+
+	&.admin-page__status-badge--connected {
+		color: var(--status-success-text);
+	}
+
+	&.admin-page__status-badge--confirmed {
+		color: var(--status-success-text);
+	}
+
+	&.admin-page__status-badge--pending {
+		color: var(--color-warning);
+	}
+
+	svg {
+		width: 12px;
+		height: 12px;
+	}
+}
+

@@ -9,16 +9,24 @@
 	import { footerLegalItems, footerPrimaryItems, headerNavItems } from '$lib/layout/nav'
 
 	const { data, children } = $props()
+
+	const isCalendarRoute = $derived(
+		$page.url.pathname.startsWith('/calendar') || $page.url.pathname.startsWith('/calendar-gym')
+	)
 </script>
 
 <ThemeProvider config={themeConfig} serverPreferences={data.preferences}>
 	<div class="code-theme">
-		<Topbar items={headerNavItems} currentPath={$page.url.pathname} />
-
-		<main>
+		{#if isCalendarRoute}
 			{@render children()}
-		</main>
+		{:else}
+			<Topbar items={headerNavItems} currentPath={$page.url.pathname} />
 
-		<FooterNav primaryItems={footerPrimaryItems} legalItems={footerLegalItems} />
+			<main>
+				{@render children()}
+			</main>
+
+			<FooterNav primaryItems={footerPrimaryItems} legalItems={footerLegalItems} />
+		{/if}
 	</div>
 </ThemeProvider>

@@ -98,10 +98,22 @@
 </PageShell>
 
 <style lang="scss">
+	:global(.art-page) {
+		--art-grid-gap-row: 2.4rem;
+		--art-grid-gap-col: 1.5rem;
+		--art-image-radius: 11px;
+		--art-image-margin: 0.9rem;
+		--art-title-font: 1.03rem;
+		--art-title-margin: 0 0 0.2rem;
+		--art-type-font: 0.7rem;
+		--art-copy-font: 0.9rem;
+		--art-mobile-gap: 2.2rem;
+	}
+
 	.art-page__works {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 2.4rem 1.5rem;
+		gap: var(--art-grid-gap-row) var(--art-grid-gap-col);
 		margin-bottom: 4.25rem;
 	}
 
@@ -111,9 +123,9 @@
 
 	.art-page__image-wrap {
 		aspect-ratio: 4 / 3;
-		border-radius: 11px;
+		border-radius: var(--art-image-radius);
 		overflow: hidden;
-		margin-bottom: 0.9rem;
+		margin-bottom: var(--art-image-margin);
 		background: color-mix(in srgb, var(--card-bg) 85%, var(--bg));
 	}
 
@@ -132,17 +144,17 @@
 	}
 
 	.art-page__work h2 {
-		margin: 0 0 0.2rem;
+		margin: var(--art-title-margin);
 		font-family: var(--font-display);
-		font-size: 1.03rem;
+		font-size: var(--art-title-font);
 		font-weight: 600;
 		letter-spacing: -0.01em;
 		color: var(--text);
 	}
 
 	.art-page__work-type {
-		margin: 0 0 0.2rem;
-		font-size: 0.7rem;
+		margin: var(--art-title-margin);
+		font-size: var(--art-type-font);
 		font-weight: 600;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -152,7 +164,7 @@
 	.art-page__work p {
 		margin: 0;
 		color: var(--muted);
-		font-size: 0.9rem;
+		font-size: var(--art-copy-font);
 		line-height: 1.52;
 	}
 
@@ -165,7 +177,7 @@
 	@media (max-width: 760px) {
 		.art-page__works {
 			grid-template-columns: 1fr;
-			gap: 2.2rem;
+			gap: var(--art-mobile-gap);
 		}
 	}
 </style>

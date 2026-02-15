@@ -3,6 +3,7 @@
 	import FilterChipGroup from '$lib/ui/FilterChipGroup.svelte'
 	import FilterableCollection from '$lib/ui/FilterableCollection.svelte'
 	import PageContainer from '$lib/ui/PageContainer.svelte'
+	import PageShell from '$lib/ui/PageShell.svelte'
 	import SegmentedControl from '$lib/ui/SegmentedControl.svelte'
 	import Hero from '$lib/ui/Hero.svelte'
 	import SearchToolbar from '$lib/ui/SearchToolbar.svelte'
@@ -43,86 +44,110 @@
 	<title>Labs - MIKO.ART</title>
 </svelte:head>
 
-<Hero
-	title="Labs"
-	subtitle="Playful experiments, sketches, and odd ideas."
-	icon="/media/emoji-labs.png"
-/>
+<PageShell className="labs-page">
+	<Hero
+		eyebrow="Labs"
+		title="Labs 🧪"
+		subtitle="Playful experiments, sketches, and odd ideas."
+	/>
 
-<PageContainer className="labs-page">
-	<FilterableCollection
-		count={filteredLabs.length}
-		countLabel="experiments"
-		emptyMessage="No experiments match your filters."
-		onClear={() => { searchQuery = ''; selectedScope = 'all'; sortBy = 'title' }}
-	>
-		{#snippet toolbar()}
-			<div class="labs-page__tools" aria-label="Labs filters">
-				<SearchToolbar bind:query={searchQuery} placeholder="Search experiments..." ariaLabel="Search labs">
-					<div class="labs-page__controls">
-						<FilterChipGroup
-							className="labs-page__chips"
-							items={scopeOptions}
-							bind:value={selectedScope}
-							ariaLabel="Scope filter"
-						/>
+	<PageContainer className="labs-page__content">
+		<FilterableCollection
+			count={filteredLabs.length}
+			countLabel="experiments"
+			emptyMessage="No experiments match your filters."
+			onClear={() => { searchQuery = ''; selectedScope = 'all'; sortBy = 'title' }}
+		>
+			{#snippet toolbar()}
+				<div class="labs-page__tools" aria-label="Labs filters">
+					<SearchToolbar bind:query={searchQuery} placeholder="Search experiments..." ariaLabel="Search labs">
+						<div class="labs-page__controls">
+							<FilterChipGroup
+								className="labs-page__chips"
+								items={scopeOptions}
+								bind:value={selectedScope}
+								ariaLabel="Scope filter"
+							/>
 
-						<div class="labs-page__sort">
-							<ArrowUpDown size={13} strokeWidth={2.2} />
-							<SegmentedControl options={sortOptions} bind:value={sortBy} ariaLabel="Sort labs" />
+							<div class="labs-page__sort">
+								<ArrowUpDown size={13} strokeWidth={2.2} />
+								<SegmentedControl options={sortOptions} bind:value={sortBy} ariaLabel="Sort labs" />
+							</div>
 						</div>
-					</div>
-				</SearchToolbar>
-			</div>
-		{/snippet}
-		<ul class="labs-page__grid">
-			{#each filteredLabs as lab, i}
-				<li>
-					<a href={lab.href} class="labs-page__card" style={`--card-bg:${getCardTheme(i).bg};--card-border:${getCardTheme(i).border};--card-ink:${getCardTheme(i).ink};--card-muted:${getCardTheme(i).muted};`}>
-						<div class="labs-page__visual" aria-hidden="true"></div>
-						<p class="labs-page__card-top">
-							<span class="labs-page__kind">
-								<FlaskConical size={13} strokeWidth={2.2} />
-								{isExternalLab(lab.href) ? 'Demo' : 'Lab'}
-							</span>
-							{#if isExternalLab(lab.href)}
-								<span class="labs-page__external-icon">
-									<ExternalLink size={14} strokeWidth={2.2} />
+					</SearchToolbar>
+				</div>
+			{/snippet}
+			<ul class="labs-page__grid">
+				{#each filteredLabs as lab, i}
+					<li>
+						<a href={lab.href} class="labs-page__card" style={`--card-bg:${getCardTheme(i).bg};--card-border:${getCardTheme(i).border};--card-ink:${getCardTheme(i).ink};--card-muted:${getCardTheme(i).muted};`}>
+							<div class="labs-page__visual" aria-hidden="true"></div>
+							<p class="labs-page__card-top">
+								<span class="labs-page__kind">
+									<FlaskConical size={13} strokeWidth={2.2} />
+									{isExternalLab(lab.href) ? 'Demo' : 'Lab'}
 								</span>
-							{/if}
-						</p>
-						<h2><span>{lab.title}</span></h2>
-						<p class="labs-page__vibe">{lab.vibe}</p>
-						<p class="labs-page__path">{lab.href}</p>
-						<p class="labs-page__open">
-							<span>Open experiment</span>
-							<Sparkles size={13} strokeWidth={2.2} />
-						</p>
-					</a>
-				</li>
-			{/each}
-		</ul>
-	</FilterableCollection>
-</PageContainer>
+								{#if isExternalLab(lab.href)}
+									<span class="labs-page__external-icon">
+										<ExternalLink size={14} strokeWidth={2.2} />
+									</span>
+								{/if}
+							</p>
+							<h2><span>{lab.title}</span></h2>
+							<p class="labs-page__vibe">{lab.vibe}</p>
+							<p class="labs-page__path">{lab.href}</p>
+							<p class="labs-page__open">
+								<span>Open experiment</span>
+								<Sparkles size={13} strokeWidth={2.2} />
+							</p>
+						</a>
+					</li>
+				{/each}
+			</ul>
+		</FilterableCollection>
+	</PageContainer>
+</PageShell>
 
 <style>
+	:global(.labs-page) {
+		--labs-tools-gap: var(--space-3);
+		--labs-controls-gap: var(--space-3);
+		--labs-sort-gap: var(--space-1);
+		--labs-grid-gap: 0.9rem;
+		--labs-card-gap: var(--space-2);
+		--labs-card-padding: 0.8rem 0.8rem 0.85rem;
+		--labs-card-radius: 10px;
+		--labs-visual-radius: var(--radius-md);
+		--labs-kind-gap: 0.28rem;
+		--labs-kind-font: 0.72rem;
+		--labs-title-top: 0.72rem;
+		--labs-title-left: 0.72rem;
+		--labs-title-font: 1.05rem;
+		--labs-title-pill-padding: 0.46rem 0.62rem 0.44rem;
+		--labs-title-pill-radius: 7px;
+		--labs-vibe-font: 0.9rem;
+		--labs-path-font: 0.72rem;
+		--labs-open-gap: 0.32rem;
+		--labs-open-font: 0.78rem;
+	}
+
 	.labs-page__tools {
 		display: grid;
-		gap: 0.7rem;
+		gap: var(--labs-tools-gap);
 		margin-bottom: 1rem;
 	}
 
 	.labs-page__controls {
 		display: flex;
 		justify-content: space-between;
-		gap: 0.7rem;
+		gap: var(--labs-controls-gap);
 		align-items: center;
 	}
 
 	.labs-page__sort {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.35rem;
+		gap: var(--labs-sort-gap);
 		color: var(--muted);
 	}
 
@@ -132,7 +157,7 @@
 		padding: 0;
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-		gap: 0.9rem;
+		gap: var(--labs-grid-gap);
 	}
 
 	.labs-page__card {
@@ -141,12 +166,12 @@
 		--card-glow: color-mix(in srgb, var(--card-border) 54%, transparent);
 		display: grid;
 		grid-template-rows: 1fr auto auto auto;
-		gap: 0.5rem;
-		padding: 0.8rem 0.8rem 0.85rem;
+		gap: var(--labs-card-gap);
+		padding: var(--labs-card-padding);
 		aspect-ratio: 1 / 1;
 		text-decoration: none;
 		color: var(--card-ink);
-		border-radius: 10px;
+		border-radius: var(--labs-card-radius);
 		border: 1px solid var(--card-border);
 		background:
 			radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--card-glow) 68%, transparent) 0%, transparent 55%),
@@ -183,7 +208,7 @@
 
 	.labs-page__visual {
 		grid-row: 1 / 2;
-		border-radius: 8px;
+		border-radius: var(--labs-visual-radius);
 		border: 1px solid color-mix(in srgb, var(--card-border) 70%, var(--color-white));
 		background:
 			radial-gradient(85% 90% at 20% 16%, color-mix(in srgb, var(--card-bg) 75%, var(--color-white)) 0%, transparent 65%),
@@ -207,8 +232,8 @@
 	.labs-page__kind {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.28rem;
-		font-size: 0.72rem;
+		gap: var(--labs-kind-gap);
+		font-size: var(--labs-kind-font);
 		font-weight: 600;
 		letter-spacing: 0.03em;
 		text-transform: uppercase;
@@ -222,11 +247,11 @@
 
 	.labs-page__card h2 {
 		position: absolute;
-		top: 0.72rem;
-		left: 0.72rem;
+		top: var(--labs-title-top);
+		left: var(--labs-title-left);
 		margin: 0;
 		font-family: var(--font-sans);
-		font-size: 1.05rem;
+		font-size: var(--labs-title-font);
 		font-weight: 700;
 		line-height: 1;
 		letter-spacing: 0.01em;
@@ -235,8 +260,8 @@
 
 	.labs-page__card h2 span {
 		display: inline-block;
-		padding: 0.46rem 0.62rem 0.44rem;
-		border-radius: 7px;
+		padding: var(--labs-title-pill-padding);
+		border-radius: var(--labs-title-pill-radius);
 		color: var(--color-white);
 		background: color-mix(in srgb, var(--color-black) 84%, var(--card-ink));
 		border: 1px solid color-mix(in srgb, var(--color-black) 74%, var(--card-border));
@@ -250,7 +275,7 @@
 	.labs-page__vibe {
 		grid-row: 3 / 4;
 		margin: 0;
-		font-size: 0.9rem;
+		font-size: var(--labs-vibe-font);
 		color: var(--card-muted);
 		font-family: var(--font-serif);
 		white-space: nowrap;
@@ -262,7 +287,7 @@
 		grid-row: 4 / 5;
 		margin: 0;
 		font-family: monospace;
-		font-size: 0.72rem;
+		font-size: var(--labs-path-font);
 		color: var(--card-muted);
 		opacity: 0.95;
 		white-space: nowrap;
@@ -275,8 +300,8 @@
 		margin: 0;
 		display: inline-flex;
 		align-items: center;
-		gap: 0.32rem;
-		font-size: 0.78rem;
+		gap: var(--labs-open-gap);
+		font-size: var(--labs-open-font);
 		font-weight: 600;
 		font-family: var(--font-sans);
 		color: var(--card-ink);

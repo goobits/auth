@@ -230,7 +230,7 @@
 			<form method="POST" action="?/login" use:enhance>
 				<input type="hidden" name="email" value="admin@miko.art" />
 				<div class="admin-page__login-field">
-					<input type="password" name="password" placeholder="Passcode" />
+					<input class="admin-page__input" type="password" name="password" placeholder="Passcode" />
 				</div>
 				{#if form?.error}
 					<div class="admin-page__login-error">{form.error}</div>
@@ -261,7 +261,7 @@
 				</button>
 			{/each}
 			<form method="POST" action="?/logout" use:enhance>
-				<button class="admin-page__sidebar-item admin-page__side-item--logout" type="submit"><LogOut size={16} strokeWidth={1.8} /> Logout</button>
+				<button class="admin-page__sidebar-item admin-page__sidebar-item--logout" type="submit"><LogOut size={16} strokeWidth={1.8} /> Logout</button>
 			</form>
 		</aside>
 
@@ -324,9 +324,9 @@
 							<div class="admin-page__field">
 								<span class="admin-page__field-label">Operating hours</span>
 								<div class="admin-page__time-row">
-									<input type="time" bind:value={hours.from} aria-label="Opening time" />
+									<input class="admin-page__input" type="time" bind:value={hours.from} aria-label="Opening time" />
 									<span class="admin-page__time-separator">to</span>
-									<input type="time" bind:value={hours.to} aria-label="Closing time" />
+									<input class="admin-page__input" type="time" bind:value={hours.to} aria-label="Closing time" />
 								</div>
 							</div>
 						</div>
@@ -335,7 +335,7 @@
 								<label class="admin-page__field-label">
 									Buffer between slots
 									<div class="admin-page__input-wrap">
-										<input type="number" min="0" bind:value={buffer} />
+										<input class="admin-page__input admin-page__input--number" type="number" min="0" bind:value={buffer} />
 										<span class="admin-page__input-suffix">min</span>
 									</div>
 								</label>
@@ -344,7 +344,7 @@
 								<label class="admin-page__field-label">
 									Minimum notice
 									<div class="admin-page__input-wrap">
-										<input type="number" min="1" bind:value={notice} />
+										<input class="admin-page__input admin-page__input--number" type="number" min="1" bind:value={notice} />
 										<span class="admin-page__input-suffix">hrs</span>
 									</div>
 								</label>
@@ -353,7 +353,7 @@
 								<label class="admin-page__field-label">
 									Capacity per slot
 									<div class="admin-page__input-wrap">
-										<input type="number" min="1" bind:value={capacity} />
+										<input class="admin-page__input admin-page__input--number" type="number" min="1" bind:value={capacity} />
 										<span class="admin-page__input-suffix">people</span>
 									</div>
 								</label>
@@ -362,7 +362,7 @@
 					</div>
 					<button class="admin-page__button-secondary" onclick={save} disabled={saving}>
 						{#if saving}
-							<Loader size={12} class="spin" />
+							<Loader size={12} class="admin-page__spin" />
 							Saving...
 						{:else}
 							<Save size={12} />
@@ -458,14 +458,14 @@
 							<div class="admin-page__field">
 								<label class="admin-page__field-label">
 									Email (optional)
-									<input type="email" bind:value={inviteEmail} placeholder="user@example.com" />
+									<input class="admin-page__input" type="email" bind:value={inviteEmail} placeholder="user@example.com" />
 								</label>
 							</div>
 							<div class="admin-page__field">
 								<label class="admin-page__field-label">
 									Uses
 									<div class="admin-page__input-wrap">
-										<input type="number" min="1" bind:value={inviteUses} />
+										<input class="admin-page__input admin-page__input--number" type="number" min="1" bind:value={inviteUses} />
 									</div>
 								</label>
 							</div>
@@ -473,7 +473,7 @@
 								<label class="admin-page__field-label">
 									Expires in
 									<div class="admin-page__input-wrap">
-										<input type="number" min="1" bind:value={inviteExpires} />
+										<input class="admin-page__input admin-page__input--number" type="number" min="1" bind:value={inviteExpires} />
 										<span class="admin-page__input-suffix">days</span>
 									</div>
 								</label>
@@ -482,7 +482,7 @@
 					</div>
 					<button class="admin-page__button-secondary" onclick={createInvite} disabled={creatingInvite}>
 						{#if creatingInvite}
-							<Loader size={12} class="spin" />
+							<Loader size={12} class="admin-page__spin" />
 							Creating...
 						{:else}
 							Create Invite
@@ -607,7 +607,7 @@
 					<button class="admin-page__button-primary" onclick={() => viewBooking = null}>Done</button>
 					<button class="admin-page__button-secondary admin-page__button-secondary--danger" onclick={() => cancelBooking(viewBooking.id)} disabled={canceling}>
 						{#if canceling}
-							<Loader size={12} class="spin" />
+							<Loader size={12} class="admin-page__spin" />
 							Canceling...
 						{:else}
 							Cancel booking

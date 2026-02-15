@@ -1,0 +1,123 @@
+// Admin Dashboard - Grid-based layout with theme variables
+
+$grid-unit: 8px;
+
+.admin-page {
+	font-family: var(--font-sans);
+	background: var(--bg);
+	color: var(--text);
+	line-height: 1.4;
+	-webkit-font-smoothing: antialiased;
+	overflow: visible;
+	display: grid;
+	grid-template-columns: 160px 1fr;
+	gap: 0;
+	width: 100%;
+}
+
+.admin-page__login {
+	min-height: 70vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 3rem 1.5rem;
+}
+
+.admin-page__login-card {
+	width: min(420px, 100%);
+	background: color-mix(in srgb, var(--color-black) 94%, var(--bg) 6%);
+	border: 1px solid var(--color-white-08);
+	border-radius: 16px;
+	padding: 2rem;
+	box-shadow: 0 20px 50px var(--overlay-black-35);
+}
+
+.admin-page__login-title {
+	font-size: 1.5rem;
+	font-weight: var(--font-weight-semibold);
+	color: color-mix(in srgb, var(--color-white) 97%, var(--bg) 3%);
+	margin-bottom: 0.35rem;
+}
+
+.admin-page__login-sub {
+	color: color-mix(in srgb, var(--color-white) 70%, transparent);
+	margin-bottom: 1.5rem;
+}
+
+.admin-page__login-field input {
+	width: 100%;
+	background: color-mix(in srgb, var(--color-black) 92%, var(--bg) 8%);
+	border: 1px solid var(--color-white-12);
+	border-radius: 10px;
+	padding: 0.75rem 0.85rem;
+	color: color-mix(in srgb, var(--color-white) 97%, var(--bg) 3%);
+	outline: none;
+}
+
+.admin-page__login-error {
+	margin: 0.75rem 0 1rem;
+	color: color-mix(in srgb, var(--form-error) 72%, var(--color-white) 28%);
+}
+
+.admin-page__sidebar-item--logout {
+	margin-top: auto;
+	color: var(--color-white-60);
+}
+
+// Sidebar
+.admin-page__sidebar {
+	padding: $grid-unit * 3 $grid-unit * 2;
+	border-right: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+	align-self: stretch;
+}
+
+.admin-page__sidebar-title {
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--muted);
+	margin-bottom: $grid-unit;
+}
+
+.admin-page__sidebar-item {
+	display: grid;
+	grid-template-columns: 16px 1fr;
+	align-items: center;
+	gap: $grid-unit;
+	padding: $grid-unit $grid-unit;
+	border-radius: 4px;
+	font-size: 13px;
+	font-weight: 500;
+	line-height: 1.4;
+	color: var(--muted);
+	background: transparent;
+	cursor: pointer;
+	transition: all 0.15s;
+	border: none;
+	width: 100%;
+	font-family: inherit;
+	text-align: left;
+
+	&:hover {
+		background: var(--card-bg);
+	}
+
+	&.admin-page__sidebar-item--active {
+		color: var(--text);
+		background: var(--card-bg);
+		border-left: 2px solid var(--brand-primary);
+		padding-left: calc($grid-unit - 2px);
+	}
+
+	svg {
+		width: 16px;
+		height: 16px;
+		color: var(--muted);
+	}
+
+	&.admin-page__sidebar-item--active svg,
+	&:hover svg {
+		color: var(--text);
+	}
+}

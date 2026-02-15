@@ -7,6 +7,7 @@
 	import './Calendar.scss'
 
 	const { data, children } = $props()
+	const headerLinks = [...CALENDAR_ACTIVITY_LIST].sort((a, b) => a.label.localeCompare(b.label))
 
 	$effect(() => {
 		const pathname = $page.url.pathname
@@ -31,7 +32,7 @@
 		<div class="calendar-shell__nav-inner">
 			<a href="/calendar" class="calendar-shell__brand">Members</a>
 			<div class="calendar-shell__links">
-				{#each CALENDAR_ACTIVITY_LIST as item}
+				{#each headerLinks as item}
 					<a href={item.href} class:active={isActive(item.href)}>
 						{item.label}
 					</a>
@@ -57,19 +58,6 @@
 </div>
 
 <style lang="scss">
-	:global(header),
-	:global(footer) {
-		display: none !important;
-	}
-
-	:global(main) {
-		max-width: none;
-		width: 100%;
-		margin: 0;
-		padding: 0;
-		display: contents;
-	}
-
 	.calendar-shell__layout {
 		flex: 1;
 		display: flex;

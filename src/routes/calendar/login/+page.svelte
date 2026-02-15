@@ -2,9 +2,6 @@
 	import { page } from '$app/stores'
 	import { getProviderErrorMessage, type CalendarProviderName } from '$lib/auth/ui/providers'
 	import { buildProviderLoginHref } from '$lib/auth/ui/redirects'
-	import Hero from '$lib/ui/Hero.svelte'
-	import Section from '$lib/ui/Section.svelte'
-	import Card from '$lib/ui/Card.svelte'
 	import '../Calendar.scss'
 
 	const { data } = $props<{
@@ -21,17 +18,44 @@
 	const inviteCode = $page.url.searchParams.get('invite') || ''
 	const redirectTo = $page.url.searchParams.get('redirect') || '/calendar'
 	const verifiedStatus = $page.url.searchParams.get('verified') || ''
+	let inviteInput = $state(inviteCode)
 
-	async function loginWith(provider: CalendarProviderName) {
+	async function loginWith(provider: CalendarProviderName, codeOverride?: string) {
 		loading = true
 		error = ''
 
 		try {
-			window.location.href = buildProviderLoginHref(provider, { inviteCode, redirectTo })
+			const code = codeOverride ?? inviteCode
+			window.location.href = buildProviderLoginHref(provider, { inviteCode: code, redirectTo })
 		} catch {
 			error = 'Something went wrong. Please try again.'
 			loading = false
 		}
+	}
+
+	function canUse(provider: CalendarProviderName) {
+		return Boolean(data.providers[provider])
+	}
+
+	function joinWithInvite(event: SubmitEvent) {
+		event.preventDefault()
+		const code = inviteInput.trim()
+		if (!code) {
+			error = 'Enter an invite code to continue.'
+			return
+		}
+
+		if (canUse('google')) {
+			loginWith('google', code)
+			return
+		}
+
+		if (canUse('apple')) {
+			loginWith('apple', code)
+			return
+		}
+
+		error = 'No sign-in provider is configured yet.'
 	}
 </script>
 
@@ -40,18 +64,12 @@
 </svelte:head>
 
 <div class="calendar-page calendar-login">
-	<Hero
-		className="calendar-page__hero calendar-login__hero"
-		glowClass="calendar-page__hero-glow calendar-login__glow"
-		eyebrowClass="calendar-page__eyebrow calendar-login__eyebrow"
-		subtitleClass="calendar-page__subtitle calendar-login__sub"
-		eyebrow="Members"
-		title="Welcome."
-		subtitle="Sign in to access activities and events."
-	/>
+	<div class="calendar-login__center">
+		<section class="calendar-login__card" aria-label="Members sign in">
+			<p class="calendar-login__label">Members</p>
+			<h1 class="calendar-login__title">Welcome back ✨</h1>
+			<p class="calendar-login__subtitle">Sign in to access activities and events.</p>
 
-	<Section className="calendar-page__section calendar-login__section">
-		<Card className="calendar-page__login-card calendar-login__card">
 			{#if error}
 				<div class="calendar-page__error-message calendar-login__error">{error}</div>
 			{/if}
@@ -72,12 +90,12 @@
 				</div>
 			{/if}
 
-			<div class="calendar-page__login-buttons calendar-login__buttons">
+			<div class="calendar-login__buttons">
 				{#if data.providers.google}
 					<button
-						onclick={() => loginWith('google')}
+						onclick={() => loginWith('google', inviteInput.trim() || inviteCode)}
 						disabled={loading}
-						class="calendar-page__login-button calendar-page__login-button--google calendar-login__button calendar-login__button--google"
+						class="calendar-login__button calendar-login__button--google"
 					>
 						<svg viewBox="0 0 24 24" width="20" height="20">
 							<path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -91,9 +109,9 @@
 
 				{#if data.providers.apple}
 					<button
-						onclick={() => loginWith('apple')}
+						onclick={() => loginWith('apple', inviteInput.trim() || inviteCode)}
 						disabled={loading}
-						class="calendar-page__login-button calendar-page__login-button--apple calendar-login__button calendar-login__button--apple"
+						class="calendar-login__button calendar-login__button--apple"
 					>
 						<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
 							<path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
@@ -103,6 +121,31 @@
 				{/if}
 			</div>
 
+			{#if data.hasAnyProvider}
+				<div class="calendar-login__divider" aria-hidden="true">
+					<div class="calendar-login__divider-line"></div>
+					<span>or join with invite</span>
+					<div class="calendar-login__divider-line"></div>
+				</div>
+
+				<form class="calendar-login__invite-form" onsubmit={joinWithInvite}>
+					<div class="calendar-login__invite-row">
+						<input
+							class="calendar-login__invite-input"
+							type="text"
+							maxlength="24"
+							spellcheck="false"
+							autocomplete="off"
+							placeholder="Invite code"
+							bind:value={inviteInput}
+						/>
+						<button class="calendar-login__invite-button" type="submit" disabled={loading}>
+							Join
+						</button>
+					</div>
+				</form>
+			{/if}
+
 			{#if !data.hasAnyProvider}
 				<p class="calendar-page__invite-hint calendar-login__hint">
 					No sign-in provider is configured yet. Please add OAuth credentials in environment settings.
@@ -111,9 +154,9 @@
 
 			{#if !inviteCode}
 				<p class="calendar-page__invite-hint calendar-login__hint">
-					Need an account? You'll need an invite code to join.
+					Don't have a code? Invites are shared directly by Miko.
 				</p>
 			{/if}
-		</Card>
-	</Section>
+		</section>
+	</div>
 </div>

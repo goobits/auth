@@ -1,0 +1,64 @@
+// Calendar - Dark sleek design shared across all calendar pages
+
+.calendar-shell {
+	width: 100%;
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	background: var(--calendar-shell-bg);
+}
+
+.calendar-page {
+	font-family: var(--font-sans);
+	color: var(--calendar-shell-text);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	min-height: 100vh;
+	padding-bottom: 2rem;
+	--calendar-size-2: 2px;
+	--calendar-size-4: 4px;
+	--calendar-size-6: 6px;
+	--calendar-size-8: 8px;
+	--calendar-size-9: 9px;
+	--calendar-size-10: 10px;
+	--calendar-size-11: 11px;
+	--calendar-size-12: 12px;
+	--calendar-size-13: 13px;
+	--calendar-size-14: 14px;
+	--calendar-size-15: 15px;
+	--calendar-size-16: 16px;
+	--calendar-size-17: 17px;
+	--calendar-size-18: 18px;
+	--calendar-size-20: 20px;
+	--calendar-size-21: 21px;
+	--calendar-size-22: 22px;
+	--calendar-size-24: 24px;
+	--calendar-size-28: 28px;
+	--calendar-size-30: 30px;
+	--calendar-size-32: 32px;
+	--calendar-size-36: 36px;
+	--calendar-size-40: 40px;
+	--calendar-size-48: 48px;
+	--calendar-size-50: 50px;
+	--calendar-size-52: 52px;
+	--calendar-size-60: 60px;
+	--calendar-size-64: 64px;
+	--calendar-size-70: 70px;
+	--calendar-size-80: 80px;
+	--calendar-size-85: 85px;
+	--calendar-size-100: 100px;
+	--calendar-size-120: 120px;
+	--calendar-size-160: 160px;
+	--calendar-size-180: 180px;
+	--calendar-size-200: 200px;
+	--calendar-size-240: 240px;
+	--calendar-size-260: 260px;
+	--calendar-size-400: 400px;
+	--calendar-size-420: 420px;
+	--calendar-size-480: 480px;
+	--calendar-size-520: 520px;
+	--calendar-size-600: 600px;
+	--calendar-size-720: 720px;
+	--calendar-size-800: 800px;
+	--calendar-size-900: 900px;
+}

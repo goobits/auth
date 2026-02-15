@@ -54,29 +54,41 @@
 	<Hero
 		className="contact-page__hero"
 		eyebrow="Contact"
-		title="Contact Miko"
-		subtitle="Got a question? Drop me a line."
+		title="Say hello 💌"
+		subtitle="Got a question, a project idea, or just want to chat? Drop me a line."
 		compact
 	/>
 
 	<section class="contact-page__layout">
-		<div class="contact-page__form-shell ui-surface-card">
+		<div class="contact-page__form-section">
 			<form class="contact-page__form" onsubmit={onSubmit} novalidate>
 			<label class="contact-page__field">
-				<span>Your Name <i aria-hidden="true">*</i></span>
-				<input type="text" name="name" bind:value={values.name} autocomplete="name" />
+				<span>Name <i aria-hidden="true">*</i></span>
+				<input
+					type="text"
+					name="name"
+					bind:value={values.name}
+					autocomplete="name"
+					placeholder="What should I call you?"
+				/>
 				{#if errors.name}<small>{errors.name}</small>{/if}
 			</label>
 
 			<label class="contact-page__field">
-				<span>Your Email <i aria-hidden="true">*</i></span>
-				<input type="email" name="email" bind:value={values.email} autocomplete="email" />
+				<span>Email <i aria-hidden="true">*</i></span>
+				<input
+					type="email"
+					name="email"
+					bind:value={values.email}
+					autocomplete="email"
+					placeholder="you@email.com"
+				/>
 				{#if errors.email}<small>{errors.email}</small>{/if}
 			</label>
 
 			<label class="contact-page__field">
-				<span>Your Message <i aria-hidden="true">*</i></span>
-				<textarea name="message" bind:value={values.message}></textarea>
+				<span>Message <i aria-hidden="true">*</i></span>
+				<textarea name="message" bind:value={values.message} placeholder="Tell me about your project…"></textarea>
 				{#if errors.message}<small>{errors.message}</small>{/if}
 			</label>
 
@@ -85,19 +97,31 @@
 			{/if}
 
 			<button class="contact-page__submit" type="submit" disabled={submitting}>
-				{submitting ? 'Sending…' : 'Send'}
+				{submitting ? 'Sending…' : 'Send message →'}
 			</button>
 
 			<p class="contact-page__legal-note">
-				By sending this form, you agree to our
-				<a href="/privacy">Privacy Policy</a>,
-				<a href="/terms">Terms of Use</a>, and
-				<a href="/cookies">Cookie Policy</a>.
+				By sending this form you agree to our <a href="/privacy">Privacy Policy</a>, <a href="/terms">Terms</a>,
+				and <a href="/cookies">Cookie Policy</a>.
 			</p>
 			</form>
 		</div>
 		<aside class="contact-page__aside">
-			<img class="contact-page__image" src="/media/super-racoon.svg" alt="Raccoon illustration" loading="lazy" />
+			<section class="contact-page__aside-section">
+				<p class="contact-page__aside-label">Response time</p>
+				<p>
+					I usually reply within a day or two. A short note about scope and timeline helps me get back faster.
+				</p>
+			</section>
+			<section class="contact-page__aside-section">
+				<p class="contact-page__aside-label">Elsewhere</p>
+				<nav class="contact-page__aside-links" aria-label="Social profiles">
+					<a href="https://github.com" target="_blank" rel="noreferrer noopener">GitHub ↗</a>
+				</nav>
+			</section>
+			<div class="contact-page__raccoon-wrap">
+				<img class="contact-page__image" src="/media/super-racoon.svg" alt="Raccoon illustration" loading="lazy" />
+			</div>
 		</aside>
 	</section>
 </PageShell>

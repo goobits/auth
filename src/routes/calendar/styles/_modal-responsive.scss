@@ -1,0 +1,99 @@
+// Modal
+.calendar-page__modal-overlay {
+	@include ui.modal-overlay(60%, 50);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: var(--calendar-size-24);
+}
+
+.calendar-page__modal-card {
+	width: min(var(--calendar-size-420), 100%);
+	@include ui.modal-card(var(--calendar-size-16), var(--calendar-size-20), var(--panel-bg), var(--color-white-10));
+	box-shadow: 0 var(--calendar-size-20) var(--calendar-size-50) color-mix(in srgb, var(--color-black) 40%, transparent);
+}
+
+.calendar-page__modal-title {
+	margin: 0 0 var(--calendar-size-8);
+	font-size: var(--calendar-size-20);
+}
+
+.calendar-page__modal-subtitle {
+	margin: 0 0 var(--calendar-size-16);
+	color: color-mix(in srgb, var(--calendar-shell-text) 70%, transparent);
+}
+
+.calendar-page__modal-actions {
+	display: flex;
+	gap: var(--calendar-size-12);
+	justify-content: flex-end;
+	flex-wrap: wrap;
+}
+
+// Calendar responsive
+@media (max-width: 700px) {
+	.calendar-page__calendar-header {
+		gap: var(--calendar-size-12);
+	}
+
+	.calendar-page__month-label {
+		font-size: var(--calendar-size-20);
+		min-width: var(--calendar-size-160);
+	}
+
+	.calendar-page__calendar {
+		padding: var(--calendar-size-16);
+		border-radius: var(--calendar-size-16);
+	}
+
+	.calendar-page__weekdays {
+		gap: var(--calendar-size-4);
+
+		span {
+			font-size: var(--calendar-size-11);
+			padding: var(--calendar-size-8) 0;
+		}
+	}
+
+	.calendar-page__grid {
+		gap: var(--calendar-size-4);
+	}
+
+	.calendar-page__day {
+		border-radius: var(--calendar-size-10);
+		min-height: var(--calendar-size-50);
+		gap: var(--calendar-size-4);
+		padding: var(--calendar-size-4);
+	}
+
+	.calendar-page__day-number {
+		font-size: var(--calendar-size-14);
+	}
+
+	.calendar-page__day.calendar-page__day--today .calendar-page__day-number {
+		width: var(--calendar-size-30);
+		height: var(--calendar-size-30);
+	}
+
+	.calendar-page__day-dots {
+		gap: var(--calendar-size-2);
+
+		.calendar-page__day-dot {
+			width: var(--calendar-size-4);
+			height: var(--calendar-size-4);
+		}
+	}
+
+	.calendar-page__slots-grid {
+		grid-template-columns: repeat(auto-fill, minmax(var(--calendar-size-85), 1fr));
+	}
+
+	.calendar-page__form-card {
+		padding: var(--calendar-size-28) var(--calendar-size-20);
+	}
+
+	.calendar-page__cancel-inputs {
+		flex-direction: column;
+		align-items: stretch;
+	}
+}

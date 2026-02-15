@@ -1,6 +1,7 @@
 <script>
 	import { ArrowUpRight, CalendarDays, Tag } from '@lucide/svelte'
 	import PageContainer from '$lib/ui/PageContainer.svelte'
+	import PageShell from '$lib/ui/PageShell.svelte'
 	import FilterableCollection from '$lib/ui/FilterableCollection.svelte'
 	import Hero from '$lib/ui/Hero.svelte'
 	import SearchToolbar from '$lib/ui/SearchToolbar.svelte'
@@ -36,82 +37,84 @@
 	<title>Journal - MIKO.ART</title>
 </svelte:head>
 
-<Hero
-	title="Journal"
-	subtitle="Thoughts, process notes, and little breakthroughs."
-	icon="/media/emoji-journal.png"
-/>
+<PageShell className="journal-page">
+	<Hero
+		eyebrow="Journal"
+		title="Journal 📔"
+		subtitle="Thoughts, process notes, and little breakthroughs."
+	/>
 
-<PageContainer className="journal-page">
-	<FilterableCollection
-		className="journal-page__collection"
-		count={filteredPosts.length}
-		countLabel="entries"
-		emptyMessage="No posts match your filters."
-		onClear={() => { searchQuery = ''; selectedCategory = 'all'; sortBy = 'newest' }}
-	>
-		{#snippet toolbar()}
-			<div class="journal-page__tools" aria-label="Journal filters">
-				<SearchToolbar bind:query={searchQuery} placeholder="Search posts..." ariaLabel="Search posts">
-					<div class="journal-page__selects">
-						<label>
-							<span>Category</span>
-							<select bind:value={selectedCategory}>
-								<option value="all">All</option>
-								{#each availableCategories as category}
-									<option value={category}>{category}</option>
-								{/each}
-							</select>
-						</label>
-						<div class="journal-page__sort-control">
-							<span>Sort</span>
-							<SegmentedControl options={sortOptions} bind:value={sortBy} ariaLabel="Sort posts" />
+	<PageContainer className="journal-page__content">
+		<FilterableCollection
+			className="journal-page__collection"
+			count={filteredPosts.length}
+			countLabel="entries"
+			emptyMessage="No posts match your filters."
+			onClear={() => { searchQuery = ''; selectedCategory = 'all'; sortBy = 'newest' }}
+		>
+			{#snippet toolbar()}
+				<div class="journal-page__tools" aria-label="Journal filters">
+					<SearchToolbar bind:query={searchQuery} placeholder="Search posts..." ariaLabel="Search posts">
+						<div class="journal-page__selects">
+							<label>
+								<span>Category</span>
+								<select bind:value={selectedCategory}>
+									<option value="all">All</option>
+									{#each availableCategories as category}
+										<option value={category}>{category}</option>
+									{/each}
+								</select>
+							</label>
+							<div class="journal-page__sort-control">
+								<span>Sort</span>
+								<SegmentedControl options={sortOptions} bind:value={sortBy} ariaLabel="Sort posts" />
+							</div>
 						</div>
-					</div>
-				</SearchToolbar>
-			</div>
-		{/snippet}
+					</SearchToolbar>
+				</div>
+			{/snippet}
 
-		{#each yearOrder as year}
-			<section class="year-group journal-page__year-group">
-				<h2>{year}</h2>
-				<ol>
-					{#each groupedByYear[year] as post}
-						<li>
-							<article class="journal-page__entry">
-								<div class="journal-page__entry-date">
-									<CalendarDays size={14} strokeWidth={2.2} />
-									<span>{formatDateMonthDay(post.date)}</span>
-								</div>
+			{#each yearOrder as year}
+				<section class="year-group journal-page__year-group">
+					<h2>{year}</h2>
+					<ol>
+						{#each groupedByYear[year] as post}
+							<li>
+								<article class="journal-page__entry">
+									<div class="journal-page__entry-date">
+										<CalendarDays size={14} strokeWidth={2.2} />
+										<span>{formatDateMonthDay(post.date)}</span>
+									</div>
 
-								<h3 class="journal-page__entry-title">
-									<a href={`/${post.urlPath}`}>{post.metadata.fm.title}</a>
-								</h3>
+									<h3 class="journal-page__entry-title">
+										<a href={`/${post.urlPath}`}>{post.metadata.fm.title}</a>
+									</h3>
 
-								<div class="journal-page__entry-right">
-									{#if getFirstCategory(post)}
-										<a
-											class="journal-page__tag"
-											href={`/journal/category/${slugify(getFirstCategory(post))}`}
-										>
-											<Tag size={13} strokeWidth={2.2} />
-											<span>{getFirstCategory(post)}</span>
+									<div class="journal-page__entry-right">
+										{#if getFirstCategory(post)}
+											<a
+												class="journal-page__tag"
+												href={`/journal/category/${slugify(getFirstCategory(post))}`}
+											>
+												<Tag size={13} strokeWidth={2.2} />
+												<span>{getFirstCategory(post)}</span>
+											</a>
+										{/if}
+
+										<a href={`/${post.urlPath}`} class="journal-page__read-link">
+											<span>Read</span>
+											<ArrowUpRight size={14} strokeWidth={2.2} />
 										</a>
-									{/if}
-
-									<a href={`/${post.urlPath}`} class="journal-page__read-link">
-										<span>Read</span>
-										<ArrowUpRight size={14} strokeWidth={2.2} />
-									</a>
-								</div>
-							</article>
-						</li>
-					{/each}
-				</ol>
-			</section>
-		{/each}
-	</FilterableCollection>
-</PageContainer>
+									</div>
+								</article>
+							</li>
+						{/each}
+					</ol>
+				</section>
+			{/each}
+		</FilterableCollection>
+	</PageContainer>
+</PageShell>
 
 <style>
 	.journal-page__tools {

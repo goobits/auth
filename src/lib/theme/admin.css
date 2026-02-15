@@ -6,13 +6,13 @@
 .admin-console__grid {
 	display: grid;
 	gap: 1rem;
-	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
 	margin-top: 1.5rem;
 }
 
 .admin-console__card-surface {
 	border: 1px solid var(--card-border);
-	border-radius: 12px;
+	border-radius: var(--radius-lg);
 	padding: 1.25rem;
 	background: var(--card-bg);
 }
@@ -26,6 +26,6 @@
 }
 
 .admin-console__card:hover {
-	transform: translateY(-2px);
-	box-shadow: var(--shadow-card) 0 12px 24px;
+	transform: translateY(-0.125rem);
+	box-shadow: var(--shadow-card) 0 0.75rem 1.5rem;
 }

@@ -353,7 +353,7 @@
 			</div>
 
 			<div class="calendar-page__form-fields">
-				<label class:has-error={touched.name && fieldErrors.name}>
+				<label class="calendar-page__field" class:calendar-page__field--error={touched.name && fieldErrors.name}>
 					<span>Name</span>
 					<input
 						bind:value={name}
@@ -364,7 +364,7 @@
 						<span class="calendar-page__field-error">{fieldErrors.name}</span>
 					{/if}
 				</label>
-				<label class:has-error={touched.email && fieldErrors.email}>
+				<label class="calendar-page__field" class:calendar-page__field--error={touched.email && fieldErrors.email}>
 					<span>Email</span>
 					<input
 						bind:value={email}
@@ -376,7 +376,7 @@
 						<span class="calendar-page__field-error">{fieldErrors.email}</span>
 					{/if}
 				</label>
-				<label class:has-error={touched.seats && fieldErrors.seats}>
+				<label class="calendar-page__field" class:calendar-page__field--error={touched.seats && fieldErrors.seats}>
 					<span>Seats</span>
 					<input
 						bind:value={seats}
@@ -390,7 +390,7 @@
 						<span class="calendar-page__field-error">{fieldErrors.seats}</span>
 					{/if}
 				</label>
-				<label class:has-error={touched.note && fieldErrors.note}>
+				<label class="calendar-page__field" class:calendar-page__field--error={touched.note && fieldErrors.note}>
 					<span>Note (optional)</span>
 					<textarea
 						bind:value={note}

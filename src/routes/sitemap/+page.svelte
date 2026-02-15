@@ -14,6 +14,7 @@
 	import FilterableCollection from '$lib/ui/FilterableCollection.svelte'
 	import Hero from '$lib/ui/Hero.svelte'
 	import PageContainer from '$lib/ui/PageContainer.svelte'
+	import PageShell from '$lib/ui/PageShell.svelte'
 	import SearchToolbar from '$lib/ui/SearchToolbar.svelte'
 	import SegmentedControl from '$lib/ui/SegmentedControl.svelte'
 	import SitemapCategory from '$lib/ui/SitemapCategory.svelte'
@@ -69,78 +70,91 @@
 	<meta name="description" content="Human-readable sitemap for MIKO.ART with public pages and journal posts." />
 </svelte:head>
 
-<Hero
-	title="Sitemap"
-	subtitle="A friendly map of everything on this site."
-	icon="/media/emoji-sitemap.png"
-/>
+<PageShell className="sitemap-page">
+	<Hero
+		eyebrow="Sitemap"
+		title="Sitemap 🧭"
+		subtitle="A friendly map of everything on this site."
+	/>
 
-<PageContainer className="sitemap-page">
-	<header class="sitemap-page__header">
-		{#if data.showDevDiagnostics}
-			<span class="sitemap-page__dev-badge">DEV MODE</span>
-		{/if}
-	</header>
-
-	<FilterableCollection
-		count={filteredCount}
-		countLabel={`of ${data.stats.total} routes`}
-		emptyMessage="No routes match your filters."
-		onClear={() => { searchQuery = ''; selectedTags = [] }}
-	>
-		{#snippet toolbar()}
-			<div class="sitemap-page__controls">
-				<SearchToolbar bind:query={searchQuery} placeholder="Search routes..." ariaLabel="Search routes">
-					<div class="sitemap-page__filters">
-						<div class="sitemap-page__tag-filters">
-							<span class="sitemap-page__filter-label">
-								<Filter size={13} strokeWidth={2.2} />
-								<span>Filters</span>
-							</span>
-							<FilterChipGroup
-								className="sitemap-page__tag-filter-group"
-								items={availableTags}
-								bind:selected={selectedTags}
-								multiple={true}
-								ariaLabel="Sitemap filters"
-							/>
-						</div>
-
-						<div class="sitemap-page__sort-view">
-							<SegmentedControl
-								className="sitemap-page__sort-toggle"
-								options={sortOptions}
-								bind:value={sortBy}
-								ariaLabel="Sort routes"
-							/>
-						</div>
-					</div>
-				</SearchToolbar>
-			</div>
-		{/snippet}
-
-		{#each categoryOrder as category}
-			{#if filteredGrouped[category]}
-				{@const CategoryIcon = categoryIcons[category] || FileText}
-				<SitemapCategory
-					category={category}
-					count={filteredGrouped[category].length}
-					collapsed={Boolean(collapsedCategories[category])}
-					onToggle={() => toggleCategory(category)}
-					routes={filteredGrouped[category]}
-					getRouteTags={getRouteTags}
-					formatDate={formatDateMmDdYyyy}
-					icon={CategoryIcon}
-					ChevronDownIcon={ChevronDown}
-					ChevronRightIcon={ChevronRight}
-				/>
+	<PageContainer className="sitemap-page__content">
+		<header class="sitemap-page__header">
+			{#if data.showDevDiagnostics}
+				<span class="sitemap-page__dev-badge">DEV MODE</span>
 			{/if}
-		{/each}
-	</FilterableCollection>
+		</header>
 
-</PageContainer>
+		<FilterableCollection
+			count={filteredCount}
+			countLabel={`of ${data.stats.total} routes`}
+			emptyMessage="No routes match your filters."
+			onClear={() => { searchQuery = ''; selectedTags = [] }}
+		>
+			{#snippet toolbar()}
+				<div class="sitemap-page__controls">
+					<SearchToolbar bind:query={searchQuery} placeholder="Search routes..." ariaLabel="Search routes">
+						<div class="sitemap-page__filters">
+							<div class="sitemap-page__tag-filters">
+								<span class="sitemap-page__filter-label">
+									<Filter size={13} strokeWidth={2.2} />
+									<span>Filters</span>
+								</span>
+								<FilterChipGroup
+									className="sitemap-page__tag-filter-group"
+									items={availableTags}
+									bind:selected={selectedTags}
+									multiple={true}
+									ariaLabel="Sitemap filters"
+								/>
+							</div>
+
+							<div class="sitemap-page__sort-view">
+								<SegmentedControl
+									className="sitemap-page__sort-toggle"
+									options={sortOptions}
+									bind:value={sortBy}
+									ariaLabel="Sort routes"
+								/>
+							</div>
+						</div>
+					</SearchToolbar>
+				</div>
+			{/snippet}
+
+			{#each categoryOrder as category}
+				{#if filteredGrouped[category]}
+					{@const CategoryIcon = categoryIcons[category] || FileText}
+					<SitemapCategory
+						category={category}
+						count={filteredGrouped[category].length}
+						collapsed={Boolean(collapsedCategories[category])}
+						onToggle={() => toggleCategory(category)}
+						routes={filteredGrouped[category]}
+						getRouteTags={getRouteTags}
+						formatDate={formatDateMmDdYyyy}
+						icon={CategoryIcon}
+						ChevronDownIcon={ChevronDown}
+						ChevronRightIcon={ChevronRight}
+					/>
+				{/if}
+			{/each}
+		</FilterableCollection>
+	</PageContainer>
+</PageShell>
 
 <style>
+	:global(.sitemap-page) {
+		--sitemap-dev-badge-padding: 0.2rem 0.6rem;
+		--sitemap-dev-badge-size: 0.7rem;
+		--sitemap-dev-badge-radius: 3px;
+		--sitemap-controls-gap: 0.7rem;
+		--sitemap-filters-gap: 0.6rem;
+		--sitemap-tag-gap: 0.35rem;
+		--sitemap-filter-label-gap: 0.3rem;
+		--sitemap-filter-label-size: 0.78rem;
+		--sitemap-sort-gap: 0.35rem;
+	}
+
 	.sitemap-page__header {
 		text-align: center;
 		margin-bottom: 1.5rem;
@@ -149,25 +163,25 @@
 	.sitemap-page__dev-badge {
 		display: inline-block;
 		margin-top: 0.5rem;
-		padding: 0.2rem 0.6rem;
-		font-size: 0.7rem;
+		padding: var(--sitemap-dev-badge-padding);
+		font-size: var(--sitemap-dev-badge-size);
 		font-weight: 600;
 		background: var(--form-error);
 		color: var(--color-white);
-		border-radius: 3px;
+		border-radius: var(--sitemap-dev-badge-radius);
 		letter-spacing: 0.05em;
 	}
 
 	.sitemap-page__controls {
 		display: grid;
-		gap: 0.7rem;
+		gap: var(--sitemap-controls-gap);
 		margin-bottom: 1.25rem;
 	}
 
 	.sitemap-page__filters {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;
-		gap: 0.6rem;
+		gap: var(--sitemap-filters-gap);
 		align-items: center;
 	}
 
@@ -175,14 +189,14 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.35rem;
+		gap: var(--sitemap-tag-gap);
 	}
 
 	.sitemap-page__filter-label {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.3rem;
-		font-size: 0.78rem;
+		gap: var(--sitemap-filter-label-gap);
+		font-size: var(--sitemap-filter-label-size);
 		color: var(--muted);
 		margin-right: 0.35rem;
 		padding-right: 0.1rem;
@@ -190,7 +204,7 @@
 
 	.sitemap-page__sort-view {
 		display: flex;
-		gap: 0.35rem;
+		gap: var(--sitemap-sort-gap);
 		justify-self: end;
 	}
 
