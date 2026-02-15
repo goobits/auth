@@ -20,6 +20,7 @@
 		"check:all": "pnpm run typecheck && pnpm run svelte:check && pnpm run lint && pnpm run circular",
 		"e2e:sitemap": "node e2e/sitemap-smoke.mjs",
 		"e2e:visual": "node e2e/visual-snapshots.mjs",
+		"e2e:auth": "node e2e/auth-register-smoke.mjs",
 		"start": "dotenvx run -f config/env/.env -- bash tasks/dev-server.sh start",
 		"start:prod": "NODE_ENV=production dotenvx run -f config/env/.env -- node build",
 		"deploy:secrets": "dotenvx run -f config/env/.env.production -- node scripts/deploy-secrets.mjs",

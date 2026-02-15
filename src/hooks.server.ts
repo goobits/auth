@@ -132,8 +132,9 @@ const securityHeadersHandle: Handle = async ({ event, resolve }) => {
 		"frame-ancestors 'none'",
 		"img-src 'self' data: https:",
 		"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
-		`script-src 'self'${dev ? " 'unsafe-inline' 'unsafe-eval'" : ''}`,
-		"connect-src 'self' https:",
+		`script-src 'self' https://challenges.cloudflare.com${dev ? " 'unsafe-inline' 'unsafe-eval'" : ''}`,
+		"frame-src 'self' https://challenges.cloudflare.com",
+		"connect-src 'self' https://challenges.cloudflare.com https:",
 		"font-src 'self' data: https:"
 	].join('; ')
 
