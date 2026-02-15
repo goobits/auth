@@ -23,7 +23,7 @@
 	<div class="admin-page__button-row">
 		<button class="admin-page__button-secondary" onclick={dashboard.reconnect}>
 			<RefreshCw size={14} />
-			Reconnect
+			{dashboard.connected ? 'Reconnect' : 'Connect'}
 		</button>
 	</div>
 </div>
