@@ -6,7 +6,7 @@
 	import { page } from '$app/stores'
 	import Topbar from '$lib/ui/Topbar.svelte'
 	import FooterNav from '$lib/ui/FooterNav.svelte'
-	import { footerLegalItems, footerPrimaryItems, headerNavItems } from '$lib/layout/nav'
+	import { footerElsewhereItems, footerLegalItems, footerPrimaryItems, headerNavItems } from '$lib/layout/nav'
 
 	const { data, children } = $props()
 
@@ -28,7 +28,11 @@
 				{@render children()}
 			</main>
 
-			<FooterNav primaryItems={footerPrimaryItems} legalItems={footerLegalItems} />
+			<FooterNav
+				primaryItems={footerPrimaryItems}
+				elsewhereItems={footerElsewhereItems}
+				legalItems={footerLegalItems}
+			/>
 		{/if}
 	</div>
 </ThemeProvider>
