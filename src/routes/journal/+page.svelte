@@ -1,5 +1,6 @@
 <script>
 	import { Search } from '@lucide/svelte'
+	import Hero from '$lib/ui/Hero.svelte'
 	import ResultsEmpty from '$lib/ui/ResultsEmpty.svelte'
 	import PageShell from '$lib/ui/PageShell.svelte'
 	import { slugify } from '$lib/utils/collections'
@@ -35,11 +36,11 @@
 
 <PageShell className="journal-page">
 	<div class="journal-page__inner">
-		<header class="journal-page__hero">
-			<div class="journal-page__label">Journal</div>
-			<h1 class="journal-page__title">Journal <span class="journal-page__icon" aria-hidden="true">📔</span></h1>
-			<p class="journal-page__subtitle">Thoughts, process notes, and little breakthroughs.</p>
-		</header>
+		<Hero
+			eyebrow="Journal"
+			title="Journal 📔"
+			subtitle="Thoughts, process notes, and little breakthroughs."
+		/>
 
 		<section class="journal-page__toolbar" aria-label="Journal filters">
 			<label class="journal-page__search" aria-label="Search posts">
@@ -128,45 +129,7 @@
 		padding-inline: 1.5rem;
 	}
 
-	.journal-page__hero {
-		padding-top: 3rem;
-	}
-
-	.journal-page__label {
-		font-size: var(--font-size-xs);
-		font-weight: var(--font-weight-semibold);
-		text-transform: uppercase;
-		letter-spacing: 0.09em;
-		color: color-mix(in srgb, var(--muted) 88%, var(--text));
-		margin-bottom: 1rem;
-		font-family: var(--font-sans);
-	}
-
-	.journal-page__title {
-		margin: 0 0 0.75rem;
-		font-family: var(--font-display);
-		font-weight: 400;
-		font-size: clamp(2.25rem, 5vw, 3rem);
-		line-height: 1.15;
-		letter-spacing: -0.025em;
-		color: var(--text);
-	}
-
-	.journal-page__icon {
-		font-size: 0.9em;
-	}
-
-	.journal-page__subtitle {
-		margin: 0;
-		font-size: var(--font-size-base);
-		line-height: 1.65;
-		color: color-mix(in srgb, var(--muted) 92%, var(--text));
-		max-width: 56ch;
-		text-wrap: pretty;
-	}
-
 	.journal-page__toolbar {
-		padding-top: 3.5rem;
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
@@ -369,13 +332,7 @@
 	}
 
 	@media (max-width: 860px) {
-		.journal-page__hero {
-			padding-top: 2.5rem;
-		}
-
-		.journal-page__toolbar {
-			padding-top: 2.5rem;
-		}
+		.journal-page__toolbar { }
 
 		.journal-page__row {
 			grid-template-columns: 1fr;
