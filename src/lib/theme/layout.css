@@ -96,7 +96,7 @@
 }
 
 .layout-footer {
-	background: var(--bg);
+	background: var(--footer-gradient, var(--bg));
 	border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 	color: var(--text);
 	letter-spacing: 0.02em;
