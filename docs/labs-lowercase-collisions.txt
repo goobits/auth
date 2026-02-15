@@ -1,5 +1,5 @@
-Uppercase entries found: 631
-Safe rename candidates: 631
+Uppercase entries found: 621
+Safe rename candidates: 621
 Collision targets: 0
 
 Collision details:
