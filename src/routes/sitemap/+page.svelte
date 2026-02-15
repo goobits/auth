@@ -48,6 +48,28 @@
 		'API Routes',
 		'Utility Pages'
 	]
+	const accentColors = [
+		'#ec4899',
+		'#f59e0b',
+		'#eab308',
+		'#22c55e',
+		'#14b8a6',
+		'#3b82f6',
+		'#8b5cf6',
+		'#f43f5e',
+		'#f97316'
+	]
+
+	function hashString(input) {
+		let h = 0
+		for (let i = 0; i < input.length; i++) h = (h * 31 + input.charCodeAt(i)) | 0
+		return Math.abs(h)
+	}
+
+	function getAccentColor(category) {
+		const idx = hashString(category || '') % accentColors.length
+		return accentColors[idx]
+	}
 	const categoryIcons = {
 		'Main Pages': House,
 		'Journal Pages': BookOpen,
@@ -129,6 +151,7 @@
 						count={filteredGrouped[category].length}
 						collapsed={Boolean(collapsedCategories[category])}
 						onToggle={() => toggleCategory(category)}
+						accent={getAccentColor(category)}
 						routes={filteredGrouped[category]}
 						getRouteTags={getRouteTags}
 						formatDate={formatDateMmDdYyyy}
