@@ -45,7 +45,8 @@
 
 :root {
 	/* Layout */
-	--max-width: 1060px;
+	/* Single site-wide content width. Header/footer already use --max-width-readable. */
+	--max-width: var(--max-width-readable);
 	--header-height: 104px;
 	--project-card-width: 305px;
 	--project-image-height: 230px;
