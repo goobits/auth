@@ -7,7 +7,7 @@
 	display: block;
 	background: var(--card-bg);
 	border: 1px solid var(--card-border);
-	border-radius: 6px;
+	border-radius: var(--radius-md);
 	padding: 0.5rem 0.75rem;
 	cursor: pointer;
 	text-align: left;
@@ -100,7 +100,7 @@
 	font-size: 0.65rem;
 	font-weight: 600;
 	padding: 0.1rem 0.35rem;
-	border-radius: 3px;
+	border-radius: 0.1875rem;
 	text-transform: uppercase;
 }
 
@@ -126,7 +126,7 @@
 .sitemap-page__tag {
 	font-size: 0.65rem;
 	padding: 0.1rem 0.4rem;
-	border-radius: 3px;
+	border-radius: 0.1875rem;
 	background: var(--tag-bg);
 	color: var(--text);
 }
@@ -147,7 +147,7 @@
 	font-family: monospace;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 37.5em) {
 	.sitemap-page__route {
 		grid-template-columns: minmax(0, 1fr);
 	}
