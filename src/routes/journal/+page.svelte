@@ -1,11 +1,7 @@
 <script>
-	import { ArrowUpRight, CalendarDays, Tag } from '@lucide/svelte'
-	import PageContainer from '$lib/ui/PageContainer.svelte'
+	import { Search } from '@lucide/svelte'
+	import ResultsEmpty from '$lib/ui/ResultsEmpty.svelte'
 	import PageShell from '$lib/ui/PageShell.svelte'
-	import FilterableCollection from '$lib/ui/FilterableCollection.svelte'
-	import Hero from '$lib/ui/Hero.svelte'
-	import SearchToolbar from '$lib/ui/SearchToolbar.svelte'
-	import SegmentedControl from '$lib/ui/SegmentedControl.svelte'
 	import { slugify } from '$lib/utils/collections'
 	import { formatDateMonthDay } from '$lib/utils/date'
 	import {
@@ -38,73 +34,84 @@
 </svelte:head>
 
 <PageShell className="journal-page">
-	<Hero
-		eyebrow="Journal"
-		title="Journal 📔"
-		subtitle="Thoughts, process notes, and little breakthroughs."
-	/>
+	<div class="journal-page__inner">
+		<header class="journal-page__hero">
+			<div class="journal-page__label">Journal</div>
+			<h1 class="journal-page__title">Journal <span class="journal-page__icon" aria-hidden="true">📔</span></h1>
+			<p class="journal-page__subtitle">Thoughts, process notes, and little breakthroughs.</p>
+		</header>
 
-	<PageContainer className="journal-page__content">
-		<FilterableCollection
-			className="journal-page__collection"
-			count={filteredPosts.length}
-			countLabel="entries"
-			emptyMessage="No posts match your filters."
-			onClear={() => { searchQuery = ''; selectedCategory = 'all'; sortBy = 'newest' }}
-		>
-			{#snippet toolbar()}
-				<div class="journal-page__tools" aria-label="Journal filters">
-					<SearchToolbar bind:query={searchQuery} placeholder="Search posts..." ariaLabel="Search posts">
-						<div class="journal-page__selects">
-							<label>
-								<span>Category</span>
-								<select bind:value={selectedCategory}>
-									<option value="all">All</option>
-									{#each availableCategories as category}
-										<option value={category}>{category}</option>
-									{/each}
-								</select>
-							</label>
-							<div class="journal-page__sort-control">
-								<span>Sort</span>
-								<SegmentedControl options={sortOptions} bind:value={sortBy} ariaLabel="Sort posts" />
-							</div>
-						</div>
-					</SearchToolbar>
-				</div>
-			{/snippet}
+		<section class="journal-page__toolbar" aria-label="Journal filters">
+			<label class="journal-page__search" aria-label="Search posts">
+				<Search class="journal-page__search-icon" size={15} strokeWidth={2.2} />
+				<input
+					class="journal-page__search-input"
+					type="text"
+					placeholder="Search posts..."
+					bind:value={searchQuery}
+				/>
+			</label>
+
+			<label class="journal-page__select">
+				<span class="journal-page__select-label">Category</span>
+				<select class="journal-page__select-control" bind:value={selectedCategory} aria-label="Category">
+					<option value="all">All categories</option>
+					{#each availableCategories as category}
+						<option value={category}>{category}</option>
+					{/each}
+				</select>
+			</label>
+
+			<div class="journal-page__sort" role="tablist" aria-label="Sort posts">
+				{#each sortOptions as option}
+					<button
+						type="button"
+						role="tab"
+						class="journal-page__sort-button"
+						class:journal-page__sort-button--active={sortBy === option.value}
+						aria-selected={sortBy === option.value}
+						onclick={() => (sortBy = option.value)}
+					>
+						{option.label}
+					</button>
+				{/each}
+			</div>
+		</section>
+
+		{#if filteredPosts.length === 0}
+			<ResultsEmpty
+				message="No posts match your filters."
+				onAction={() => {
+					searchQuery = ''
+					selectedCategory = 'all'
+					sortBy = 'newest'
+				}}
+			/>
+		{:else}
+			<p class="journal-page__count">{filteredPosts.length} {filteredPosts.length === 1 ? 'entry' : 'entries'}</p>
 
 			{#each yearOrder as year}
-				<section class="year-group journal-page__year-group">
-					<h2>{year}</h2>
-					<ol>
+				<section class="journal-page__year-group" aria-label={`Posts from ${year}`}>
+					<h2 class="journal-page__year">{year}</h2>
+					<ol class="journal-page__list">
 						{#each groupedByYear[year] as post}
-							<li>
-								<article class="journal-page__entry">
-									<div class="journal-page__entry-date">
-										<CalendarDays size={14} strokeWidth={2.2} />
-										<span>{formatDateMonthDay(post.date)}</span>
-									</div>
+							<li class="journal-page__item">
+								<article class="journal-page__row">
+									<div class="journal-page__date">{formatDateMonthDay(post.date)}</div>
 
-									<h3 class="journal-page__entry-title">
+									<h3 class="journal-page__post-title">
 										<a href={`/${post.urlPath}`}>{post.metadata.fm.title}</a>
 									</h3>
 
-									<div class="journal-page__entry-right">
+									<div class="journal-page__meta">
 										{#if getFirstCategory(post)}
 											<a
 												class="journal-page__tag"
 												href={`/journal/category/${slugify(getFirstCategory(post))}`}
 											>
-												<Tag size={13} strokeWidth={2.2} />
-												<span>{getFirstCategory(post)}</span>
+												{getFirstCategory(post)}
 											</a>
 										{/if}
-
-										<a href={`/${post.urlPath}`} class="journal-page__read-link">
-											<span>Read</span>
-											<ArrowUpRight size={14} strokeWidth={2.2} />
-										</a>
 									</div>
 								</article>
 							</li>
@@ -112,99 +119,216 @@
 					</ol>
 				</section>
 			{/each}
-		</FilterableCollection>
-	</PageContainer>
+		{/if}
+	</div>
 </PageShell>
 
 <style>
-	.journal-page__tools {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		gap: 0.8rem;
-		align-items: end;
-		margin-bottom: 0.9rem;
+	.journal-page__inner {
+		padding-inline: 1.5rem;
 	}
 
-	.journal-page__selects {
-		display: flex;
-		gap: 0.55rem;
+	.journal-page__hero {
+		padding-top: 3rem;
 	}
 
-	.journal-page__selects label {
-		display: grid;
-		gap: 0.25rem;
-	}
-
-	.journal-page__sort-control {
-		display: grid;
-		gap: 0.25rem;
-	}
-
-	.journal-page__selects span {
-		font-size: 0.75rem;
-		color: var(--muted);
+	.journal-page__label {
+		font-size: var(--font-size-xs);
+		font-weight: var(--font-weight-semibold);
+		text-transform: uppercase;
+		letter-spacing: 0.09em;
+		color: color-mix(in srgb, var(--muted) 88%, var(--text));
+		margin-bottom: 1rem;
 		font-family: var(--font-sans);
 	}
 
-	select {
-		padding: 0.45rem 0.55rem;
-		border-radius: 5px;
-		border: 1px solid var(--border);
-		background: var(--card-bg);
+	.journal-page__title {
+		margin: 0 0 0.75rem;
+		font-family: var(--font-display);
+		font-weight: 400;
+		font-size: clamp(2.25rem, 5vw, 3rem);
+		line-height: 1.15;
+		letter-spacing: -0.025em;
 		color: var(--text);
-		font-size: 0.86rem;
+	}
+
+	.journal-page__icon {
+		font-size: 0.9em;
+	}
+
+	.journal-page__subtitle {
+		margin: 0;
+		font-size: var(--font-size-base);
+		line-height: 1.65;
+		color: color-mix(in srgb, var(--muted) 92%, var(--text));
+		max-width: 56ch;
+		text-wrap: pretty;
+	}
+
+	.journal-page__toolbar {
+		padding-top: 3.5rem;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.journal-page__search {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		flex: 1 1 240px;
+		min-width: 180px;
+		border: 1.5px solid color-mix(in srgb, var(--border) 70%, transparent);
+		border-radius: var(--radius-pill);
+		background: transparent;
+		padding: 0.1rem 0.9rem;
+		transition: border-color 0.25s;
+	}
+
+	.journal-page__search:focus-within {
+		border-color: color-mix(in srgb, var(--text) 55%, var(--border));
+	}
+
+	.journal-page__search-icon {
+		color: color-mix(in srgb, var(--muted) 92%, var(--text));
+		flex-shrink: 0;
+	}
+
+	.journal-page__search-input {
+		width: 100%;
+		font-family: var(--font-sans);
+		font-size: var(--font-size-sm);
+		color: var(--text);
+		background: transparent;
+		border: none;
+		padding: 0.75rem 0;
+		margin: 0;
+	}
+
+	.journal-page__search-input:focus {
+		outline: none;
+	}
+
+	.journal-page__select {
+		display: grid;
+		gap: 0.25rem;
+	}
+
+	.journal-page__select-label {
+		font-size: var(--font-size-xs);
+		font-weight: var(--font-weight-medium);
+		color: color-mix(in srgb, var(--muted) 92%, var(--text));
+		font-family: var(--font-sans);
+	}
+
+	.journal-page__select-control {
+		font-family: var(--font-sans);
+		font-size: var(--font-size-xs);
+		color: color-mix(in srgb, var(--muted) 92%, var(--text));
+		background: transparent;
+		border: 1.5px solid color-mix(in srgb, var(--border) 70%, transparent);
+		border-radius: var(--radius-pill);
+		padding: 0.6rem 0.95rem;
+		outline: none;
+		cursor: pointer;
+		appearance: none;
+	}
+
+	.journal-page__select-control:focus {
+		border-color: color-mix(in srgb, var(--text) 55%, var(--border));
+	}
+
+	.journal-page__sort {
+		display: inline-flex;
+		align-items: center;
+		border: 1.5px solid color-mix(in srgb, var(--border) 70%, transparent);
+		border-radius: var(--radius-pill);
+		overflow: hidden;
+	}
+
+	.journal-page__sort-button {
+		border: none;
+		background: transparent;
+		color: color-mix(in srgb, var(--muted) 92%, var(--text));
+		font-family: var(--font-sans);
+		font-size: var(--font-size-xs);
+		padding: 0.6rem 0.95rem;
+		cursor: pointer;
+		transition: background-color 0.2s, color 0.2s;
+	}
+
+	.journal-page__sort-button--active {
+		background: var(--text);
+		color: var(--bg);
+	}
+
+	.journal-page__count {
+		margin: 1rem 0 0.5rem;
+		font-size: var(--font-size-xs);
+		color: color-mix(in srgb, var(--muted) 92%, var(--text));
+		font-family: var(--font-sans);
 	}
 
 	.journal-page__year-group {
-		margin-bottom: 1.7rem;
+		margin-bottom: 2rem;
 	}
 
-	.journal-page__year-group h2 {
-		margin: 0 0 0.55rem;
+	.journal-page__year {
+		margin: 0;
+		padding-top: 2.5rem;
 		font-family: var(--font-display);
-		font-size: 1.5rem;
 		font-weight: 500;
-		line-height: 1.1;
+		font-size: 1.25rem;
+		letter-spacing: -0.015em;
+		color: var(--text);
 	}
 
-	.journal-page__year-group ol {
+	.journal-page__list {
+		margin: 0;
+		padding: 0.5rem 0 0;
+		list-style: none;
+	}
+
+	.journal-page__item {
 		margin: 0;
 		padding: 0;
-		list-style: none;
-		border-top: 1px solid var(--panel-border);
 	}
 
-	.journal-page__entry {
+	.journal-page__row {
 		display: grid;
-		grid-template-columns: 110px minmax(0, 1fr) auto;
-		gap: 0.8rem;
-		align-items: center;
-		padding: 0.8rem 0;
-		border-bottom: 1px solid var(--panel-border);
+		grid-template-columns: 72px minmax(0, 1fr) auto;
+		align-items: baseline;
+		gap: 0 1rem;
+		padding: 0.75rem 0;
+		border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+		transition: opacity 0.2s, border-color 0.2s;
 	}
 
-	.journal-page__entry-date {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.32rem;
-		font-size: 0.82rem;
+	.journal-page__row:hover {
+		opacity: 0.7;
+		border-bottom-color: color-mix(in srgb, var(--border) 85%, transparent);
+	}
+
+	.journal-page__date {
+		font-size: var(--font-size-xs);
 		font-family: var(--font-sans);
-		color: var(--muted);
+		color: color-mix(in srgb, var(--muted) 92%, var(--text));
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 	}
 
-	.journal-page__entry-title {
+	.journal-page__post-title {
 		margin: 0;
 		min-width: 0;
-		font-family: var(--font-display);
-		font-weight: 500;
-		font-size: clamp(1.05rem, 1.6vw, 1.45rem);
-		line-height: 1.24;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
+		font-family: var(--font-sans);
+		font-weight: 400;
+		font-size: var(--font-size-sm);
+		letter-spacing: -0.005em;
 	}
 
-	.journal-page__entry-title a {
+	.journal-page__post-title a {
 		text-decoration: none;
 		color: var(--text);
 		display: block;
@@ -213,72 +337,59 @@
 		text-overflow: ellipsis;
 	}
 
-	.journal-page__entry-title a:hover {
+	.journal-page__post-title a:hover {
 		color: var(--link-hover);
 	}
 
-	.journal-page__entry-right {
+	.journal-page__meta {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		justify-content: flex-end;
+		min-width: 0;
 		white-space: nowrap;
 	}
 
 	.journal-page__tag {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.25rem;
-		font-size: 0.74rem;
-		padding: 0.16rem 0.5rem;
-		border-radius: 999px;
-		background: var(--tag-bg);
-		color: var(--muted);
+		font-size: 0.6875rem;
+		font-weight: var(--font-weight-medium);
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		padding: 0.2rem 0.55rem;
+		border-radius: var(--radius-sm);
+		color: color-mix(in srgb, var(--link) 70%, var(--text));
+		background: color-mix(in srgb, var(--link) 9%, transparent);
 		text-decoration: none;
 	}
 
 	.journal-page__tag:hover {
-		background: var(--tag-hover-bg);
-	}
-
-	.journal-page__read-link {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.24rem;
-		font-family: var(--font-sans);
-		font-size: 0.8rem;
-		font-weight: 600;
-		text-decoration: none;
-		color: var(--muted);
-		white-space: nowrap;
-	}
-
-	.journal-page__read-link:hover {
-		color: var(--link-hover);
+		background: color-mix(in srgb, var(--link-hover) 10%, transparent);
+		color: color-mix(in srgb, var(--link-hover) 72%, var(--text));
 	}
 
 	@media (max-width: 860px) {
-		.journal-page__tools {
-			grid-template-columns: 1fr;
+		.journal-page__hero {
+			padding-top: 2.5rem;
 		}
 
-		.journal-page__entry {
+		.journal-page__toolbar {
+			padding-top: 2.5rem;
+		}
+
+		.journal-page__row {
 			grid-template-columns: 1fr;
 			gap: 0.45rem;
 		}
 
-		.journal-page__entry-title,
-		.journal-page__entry-title a {
+		.journal-page__post-title a {
 			white-space: normal;
 			overflow: visible;
 			text-overflow: initial;
 		}
 
-		.journal-page__entry-right {
+		.journal-page__meta {
 			justify-content: space-between;
-		}
-
-		.journal-page__read-link {
-			width: fit-content;
 		}
 	}
 </style>
