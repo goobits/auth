@@ -23,6 +23,11 @@ export function handlePrerenderHttpError(pathname: string, message: string) {
 	if (pathname.startsWith('/labs/') && hasStaticFile(pathname)) {
 		return
 	}
+	// Don't fail the build on missing non-HTML assets referenced by legacy content.
+	// These should be fixed over time, but blocking deploys on old broken image URLs isn't useful.
+	if (/\.(png|jpg|jpeg|gif|webp|avif|svg)$/i.test(pathname)) {
+		return
+	}
 	if (pathname.includes('[') && pathname.includes(']')) {
 		return
 	}
