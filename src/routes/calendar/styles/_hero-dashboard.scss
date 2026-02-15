@@ -10,6 +10,12 @@
 	overflow: visible;
 }
 
+/* Hero.svelte sets `margin: 0 0 ...` (no horizontal centering). Calendar pages want centered hero blocks. */
+.calendar-page__hero.ui-hero {
+	margin: 0 auto;
+	max-width: var(--calendar-size-720);
+}
+
 .calendar-page__hero-glow {
 	position: absolute;
 	top: -var(--calendar-size-120);
