@@ -1,6 +1,9 @@
 import { getCalendarAuth, setCalendarLoginContext } from '$lib/auth/calendar.ts'
 import {
+	buildCalendarLoginErrorPath,
+	getRedirectLocationFromError,
 	hasValidOAuthCallbackParams,
+	isStatusError,
 	resolveCallbackProvider,
 	resolveLegacySigninPath,
 	resolveRequestedProvider,
@@ -12,14 +15,12 @@ import type { RequestHandler } from './$types'
 
 function logProviderRedirectDiagnostics({
 	provider,
-	response
+	location
 }: {
 	provider: string
-	response: Response
+	location: string
 }) {
 	if (!dev) return
-	const location = response.headers.get('location')
-	if (!location) return
 	if (!location.startsWith('https://accounts.google.com/o/oauth2/v2/auth')) return
 
 	const authUrl = new URL(location)
@@ -59,9 +60,7 @@ export const GET: RequestHandler = async (event) => {
 	if (requestedProvider) {
 		const providers = auth?.providers ?? {}
 		if (!(requestedProvider in providers)) {
-			const params = new URLSearchParams(event.url.searchParams)
-			params.set('error', `${requestedProvider}_not_enabled`)
-			throw redirect(302, `/calendar/login?${params.toString()}`)
+			throw redirect(302, buildCalendarLoginErrorPath(`${requestedProvider}_not_enabled`))
 		}
 	}
 
@@ -72,32 +71,33 @@ export const GET: RequestHandler = async (event) => {
 			cookies: event.cookies,
 			provider: callbackProvider
 		})) {
-			const params = new URLSearchParams()
-			params.set('error', 'oauth_state_invalid')
-			throw redirect(302, `/calendar/login?${params.toString()}`)
+			throw redirect(302, buildCalendarLoginErrorPath('oauth_state_invalid'))
 		}
 	}
 
 	try {
 		const response = await auth.handlers.GET(event)
 		if (callbackProvider && response.status >= 500) {
-			const params = new URLSearchParams()
-			params.set('error', 'oauth_failed')
-			throw redirect(302, `/calendar/login?${params.toString()}`)
+			throw redirect(302, buildCalendarLoginErrorPath('oauth_failed'))
 		}
 		if (requestedProvider) {
 			logProviderRedirectDiagnostics({
 				provider: requestedProvider,
-				response
+				location: response.headers.get('location') || ''
 			})
 		}
 		return response
 	} catch (error) {
+		if (requestedProvider && isStatusError(error) && error.status >= 300 && error.status < 400) {
+			logProviderRedirectDiagnostics({
+				provider: requestedProvider,
+				location: getRedirectLocationFromError(error)
+			})
+		}
+
 		if (callbackProvider && shouldWrapAsOauthFailure(error)) {
 			console.error('[auth oauth callback] unexpected failure', error)
-			const params = new URLSearchParams()
-			params.set('error', 'oauth_failed')
-			throw redirect(302, `/calendar/login?${params.toString()}`)
+			throw redirect(302, buildCalendarLoginErrorPath('oauth_failed'))
 		}
 		throw error
 	}

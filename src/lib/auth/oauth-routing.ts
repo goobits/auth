@@ -80,3 +80,21 @@ export function shouldWrapAsOauthFailure(error: unknown) {
 	if (!isStatusError(error)) return true
 	return error.status >= 500
 }
+
+export function buildCalendarLoginErrorPath(errorCode: string) {
+	const params = new URLSearchParams()
+	params.set('error', errorCode)
+	return `/calendar/login?${params.toString()}`
+}
+
+export function getRedirectLocationFromError(error: unknown) {
+	if (
+		typeof error === 'object' &&
+		error &&
+		'location' in error &&
+		typeof (error as { location?: unknown }).location === 'string'
+	) {
+		return (error as { location: string }).location
+	}
+	return ''
+}

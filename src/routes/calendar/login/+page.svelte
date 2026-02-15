@@ -1,9 +1,12 @@
 <script lang="ts">
-	import { page } from '$app/stores'
-	import { CALENDAR_ACTIVITY_LIST } from '$lib/booking/activities'
-	import { getProviderErrorMessage, type CalendarProviderName } from '$lib/auth/ui/providers'
-	import { buildProviderLoginHref } from '$lib/auth/ui/redirects'
-	import '../Calendar.scss'
+import { page } from '$app/stores'
+import { getProviderErrorMessage, type CalendarProviderName } from '$lib/auth/ui/providers'
+import { buildProviderLoginHref } from '$lib/auth/ui/redirects'
+import {
+	resolveCalendarLoginTargetActivity,
+	resolveFirstAvailableProvider
+} from '$lib/viewmodels/calendar-login'
+import '../Calendar.scss'
 
 	const { data } = $props<{
 		data: {
@@ -21,15 +24,7 @@
 	const verifiedStatus = $page.url.searchParams.get('verified') || ''
 	let inviteInput = $state(inviteCode)
 
-	function resolveTargetActivity(path: string) {
-		const pathname = path.split('?')[0]?.replace(/\/+$/, '') || ''
-		if (pathname === '/calendar-gym') {
-			return CALENDAR_ACTIVITY_LIST.find((item) => item.slug === 'gym') ?? null
-		}
-		return CALENDAR_ACTIVITY_LIST.find((item) => item.href === pathname) ?? null
-	}
-
-	const targetActivity = resolveTargetActivity(redirectTo)
+	const targetActivity = resolveCalendarLoginTargetActivity(redirectTo)
 
 	async function loginWith(provider: CalendarProviderName, codeOverride?: string) {
 		loading = true
@@ -44,10 +39,6 @@
 		}
 	}
 
-	function canUse(provider: CalendarProviderName) {
-		return Boolean(data.providers[provider])
-	}
-
 	function joinWithInvite(event: SubmitEvent) {
 		event.preventDefault()
 		const code = inviteInput.trim()
@@ -56,13 +47,9 @@
 			return
 		}
 
-		if (canUse('google')) {
-			loginWith('google', code)
-			return
-		}
-
-		if (canUse('apple')) {
-			loginWith('apple', code)
+		const provider = resolveFirstAvailableProvider(data.providers)
+		if (provider) {
+			loginWith(provider, code)
 			return
 		}
 
