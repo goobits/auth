@@ -161,11 +161,10 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 					const normalizedEmail = (profile.email || '').trim().toLowerCase()
 					const canBypassInvite = normalizedEmail.endsWith(INVITE_BYPASS_DOMAIN)
 					if (!hasRedeemed) {
-						if (!canBypassInvite && !invite) {
-							throw redirect(302, '/calendar/login?error=invite_required')
-						}
-
 						if (!canBypassInvite) {
+							if (!invite) {
+								throw redirect(302, '/calendar/login?error=invite_required')
+							}
 							const result = await validateInvite({ db, code: invite, email: profile.email })
 							if (!result.valid) {
 								throw redirect(302, `/calendar/login?error=invite_${result.reason}`)
