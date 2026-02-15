@@ -44,7 +44,8 @@
 								</span>
 							{/if}
 						{:else}
-							{#if route.isDynamic}
+							{@const isTemplatePath = route.isDynamic && route.path.includes('[')}
+							{#if isTemplatePath}
 								<span class="sitemap-page__route-path">{route.path}</span>
 							{:else}
 								<a href={route.path} class="sitemap-page__route-link">{route.path}</a>
