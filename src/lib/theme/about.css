@@ -1,6 +1,3 @@
-.about-page {
-}
-
 .about-page__intro {
 	padding-top: var(--space-10);
 	display: grid;
@@ -175,3 +172,4 @@
 		grid-template-columns: 1fr;
 	}
 }
+

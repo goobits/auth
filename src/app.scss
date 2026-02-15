@@ -8,13 +8,14 @@
 @import './lib/theme/showcase.css';
 @import './lib/theme/sitemap.css';
 @import './lib/theme/admin.css';
+@import './lib/theme/about.css';
 
 @font-face {
 	font-family: 'Canela Deck';
 	src: url('/fonts/CanelaDeck-Light-Trial.otf') format('opentype');
 	font-style: normal;
 	font-weight: 300;
-	font-display: swap;
+	font-display: optional;
 }
 
 @font-face {
@@ -22,7 +23,7 @@
 	src: url('/fonts/CanelaDeck-Regular-Trial.otf') format('opentype');
 	font-style: normal;
 	font-weight: 400;
-	font-display: swap;
+	font-display: optional;
 }
 
 @font-face {
@@ -30,7 +31,7 @@
 	src: url('/fonts/CanelaDeck-Medium-Trial.otf') format('opentype');
 	font-style: normal;
 	font-weight: 500;
-	font-display: swap;
+	font-display: optional;
 }
 
 @font-face {
@@ -38,7 +39,7 @@
 	src: url('/fonts/CanelaDeck-Bold-Trial.otf') format('opentype');
 	font-style: normal;
 	font-weight: 700;
-	font-display: swap;
+	font-display: optional;
 }
 
 :root {
@@ -48,8 +49,8 @@
 	--project-card-width: 305px;
 	--project-image-height: 230px;
 	--font-sans: 'Canela Deck', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-	--font-serif: 'Source Serif Pro', Georgia, serif;
-	--font-display: 'Playfair Display', Georgia, serif;
+	--font-serif: ui-serif, Georgia, 'Times New Roman', Times, serif;
+	--font-display: 'Canela Deck', ui-serif, Georgia, 'Times New Roman', Times, serif;
 	--color-white: #ffffff;
 	--color-black: #000000;
 	--color-white-60: rgba(255, 255, 255, 0.6);
