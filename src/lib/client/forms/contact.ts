@@ -2,6 +2,8 @@ export type ContactPayload = {
 	name: string
 	email: string
 	message: string
+	from?: string
+	topic?: string
 }
 
 export type ContactSubmitResult = {
@@ -10,10 +12,14 @@ export type ContactSubmitResult = {
 }
 
 export function toContactPayload(formData: FormData): ContactPayload {
+	const from = String(formData.get('from') ?? '').trim()
+	const topic = String(formData.get('topic') ?? '').trim()
 	return {
 		name: String(formData.get('name') ?? '').trim(),
 		email: String(formData.get('email') ?? '').trim(),
-		message: String(formData.get('message') ?? '').trim()
+		message: String(formData.get('message') ?? '').trim(),
+		...(from ? { from } : {}),
+		...(topic ? { topic } : {})
 	}
 }
 

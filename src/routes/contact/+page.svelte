@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/stores'
 	import { goto } from '$app/navigation'
 	import Hero from '$lib/ui/Hero.svelte'
 	import PageShell from '$lib/ui/PageShell.svelte'
@@ -15,6 +16,19 @@
 	let submitError = $state('')
 	let values = $state({ name: '', email: '', message: '' })
 	let errors = $state<ContactErrors>({})
+
+	const contextFrom = $derived($page.url.searchParams.get('from')?.trim() || '')
+	const contextTopic = $derived($page.url.searchParams.get('topic')?.trim() || '')
+	const contextLabel = $derived(() => {
+		const parts = [contextFrom, contextTopic].filter(Boolean)
+		return parts.length ? parts.join(' / ') : ''
+	})
+	const messagePlaceholder = $derived(() => {
+		if (contextFrom === 'music' && contextTopic) return 'Tell me what you need and include any links...'
+		if (contextFrom === 'art') return 'Tell me about the piece, timeline, and any reference links...'
+		if (contextFrom === 'about' && contextTopic) return 'Tell me a bit about your project and what you are looking for...'
+		return 'Tell me about your project…'
+	})
 
 	function validate() {
 		const nextErrors: ContactErrors = {}
@@ -62,6 +76,11 @@
 	<section class="contact-page__layout">
 		<div class="contact-page__form-section">
 			<form class="contact-page__form" onsubmit={onSubmit} novalidate>
+				<input type="hidden" name="from" value={contextFrom} />
+				<input type="hidden" name="topic" value={contextTopic} />
+				{#if contextLabel}
+					<p class="contact-page__context">Context: {contextLabel}</p>
+				{/if}
 			<label class="contact-page__field">
 				<span>Name <i aria-hidden="true">*</i></span>
 				<input
@@ -88,7 +107,7 @@
 
 			<label class="contact-page__field">
 				<span>Message <i aria-hidden="true">*</i></span>
-				<textarea name="message" bind:value={values.message} placeholder="Tell me about your project…"></textarea>
+				<textarea name="message" bind:value={values.message} placeholder={messagePlaceholder}></textarea>
 				{#if errors.message}<small>{errors.message}</small>{/if}
 			</label>
 

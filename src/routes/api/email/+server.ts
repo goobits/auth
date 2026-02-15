@@ -5,6 +5,8 @@ type ContactBody = {
 	name: string
 	email: string
 	message: string
+	from?: string
+	topic?: string
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -15,15 +17,28 @@ function isContactBody(input: unknown): input is ContactBody {
 	return (
 		typeof record['name'] === 'string' &&
 		typeof record['email'] === 'string' &&
-		typeof record['message'] === 'string'
+		typeof record['message'] === 'string' &&
+		(!('from' in record) || typeof record['from'] === 'string' || record['from'] === undefined) &&
+		(!('topic' in record) || typeof record['topic'] === 'string' || record['topic'] === undefined)
 	)
 }
 
+function sanitizeContextValue(raw: unknown, maxLength: number) {
+	if (typeof raw !== 'string') return undefined
+	const cleaned = raw.replace(/[\r\n\t]+/g, ' ').trim()
+	if (!cleaned) return undefined
+	return cleaned.slice(0, maxLength)
+}
+
 function sanitize(body: ContactBody): ContactBody {
+	const from = sanitizeContextValue(body.from, 64)
+	const topic = sanitizeContextValue(body.topic, 64)
 	return {
 		name: body.name.trim(),
 		email: body.email.trim(),
-		message: body.message.trim()
+		message: body.message.trim(),
+		...(from ? { from } : {}),
+		...(topic ? { topic } : {})
 	}
 }
 
