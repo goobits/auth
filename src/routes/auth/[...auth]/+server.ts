@@ -1,51 +1,35 @@
 import { getCalendarAuth, setCalendarLoginContext } from '$lib/auth/calendar.ts'
+import {
+	hasValidOAuthCallbackParams,
+	resolveCallbackProvider,
+	resolveLegacySigninPath,
+	resolveRequestedProvider,
+	shouldWrapAsOauthFailure
+} from '$lib/auth/oauth-routing'
 import { redirect } from '@sveltejs/kit'
+import { dev } from '$app/environment'
 import type { RequestHandler } from './$types'
 
-const AUTH_RESERVED = new Set(['auth', 'signin', 'signout', 'callback', 'logout', 'magic-link', 'passkey', 'sessions'])
+function logProviderRedirectDiagnostics({
+	provider,
+	response
+}: {
+	provider: string
+	response: Response
+}) {
+	if (!dev) return
+	const location = response.headers.get('location')
+	if (!location) return
+	if (!location.startsWith('https://accounts.google.com/o/oauth2/v2/auth')) return
 
-function resolveLegacySigninPath(pathname: string) {
-	const parts = pathname.split('/').filter(Boolean)
-	if (parts.length < 3 || parts.length > 4) return null
-	if (parts[0] !== 'auth') return null
-	if (parts[1] !== 'signin') return null
-	const provider = parts[2]
-	if (!provider || provider === 'signout' || provider === 'callback') return null
-	if (parts.length === 3) return `/auth/${provider}`
-	if (parts.length === 4 && parts[3] === 'callback') return `/auth/${provider}/callback`
-	return null
-}
-
-function resolveRequestedProvider(pathname: string) {
-	const parts = pathname.split('/').filter(Boolean)
-	if (parts[0] !== 'auth') return null
-	if (parts.length === 2) {
-		const provider = parts[1]
-		if (!provider || AUTH_RESERVED.has(provider)) return null
-		return provider
-	}
-	if (parts.length === 3 && parts[1] === 'signin') {
-		const provider = parts[2]
-		if (!provider || AUTH_RESERVED.has(provider)) return null
-		return provider
-	}
-	return null
-}
-
-function resolveCallbackProvider(pathname: string) {
-	const parts = pathname.split('/').filter(Boolean)
-	if (parts[0] !== 'auth') return null
-	if (parts.length === 3 && parts[2] === 'callback') {
-		const provider = parts[1]
-		if (!provider || AUTH_RESERVED.has(provider)) return null
-		return provider
-	}
-	if (parts.length === 3 && parts[1] === 'callback') {
-		const provider = parts[2]
-		if (!provider || AUTH_RESERVED.has(provider)) return null
-		return provider
-	}
-	return null
+	const authUrl = new URL(location)
+	const redirectUri = authUrl.searchParams.get('redirect_uri') || ''
+	const clientId = authUrl.searchParams.get('client_id') || ''
+	console.info('[auth oauth debug] provider redirect', {
+		provider,
+		clientId,
+		redirectUri
+	})
 }
 
 export const GET: RequestHandler = async (event) => {
@@ -83,19 +67,11 @@ export const GET: RequestHandler = async (event) => {
 
 	const callbackProvider = resolveCallbackProvider(event.url.pathname)
 	if (callbackProvider) {
-		const callbackState = event.url.searchParams.get('state')
-		const callbackCode = event.url.searchParams.get('code')
-		const storedState = event.cookies.get(`${callbackProvider}_oauth_state`) || null
-		const storedCodeVerifier = event.cookies.get(`${callbackProvider}_oauth_code_verifier`) || null
-
-		const validCallbackParams = Boolean(
-			callbackCode &&
-			callbackState &&
-			storedState &&
-			storedCodeVerifier &&
-			callbackState === storedState
-		)
-		if (!validCallbackParams) {
+		if (!hasValidOAuthCallbackParams({
+			url: event.url,
+			cookies: event.cookies,
+			provider: callbackProvider
+		})) {
 			const params = new URLSearchParams()
 			params.set('error', 'oauth_state_invalid')
 			throw redirect(302, `/calendar/login?${params.toString()}`)
@@ -109,16 +85,16 @@ export const GET: RequestHandler = async (event) => {
 			params.set('error', 'oauth_failed')
 			throw redirect(302, `/calendar/login?${params.toString()}`)
 		}
+		if (requestedProvider) {
+			logProviderRedirectDiagnostics({
+				provider: requestedProvider,
+				response
+			})
+		}
 		return response
 	} catch (error) {
-		const status = (
-			typeof error === 'object' &&
-			error &&
-			'status' in error &&
-			typeof (error as { status?: unknown }).status === 'number'
-		) ? (error as { status: number }).status : null
-
-		if (callbackProvider && (status === null || status >= 500)) {
+		if (callbackProvider && shouldWrapAsOauthFailure(error)) {
+			console.error('[auth oauth callback] unexpected failure', error)
 			const params = new URLSearchParams()
 			params.set('error', 'oauth_failed')
 			throw redirect(302, `/calendar/login?${params.toString()}`)
