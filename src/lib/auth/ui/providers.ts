@@ -33,9 +33,12 @@ export function resolveCalendarProviders(env: Record<string, string | undefined>
 
 const providerErrors: Record<string, string> = {
 	google_not_enabled: 'Google sign-in is not configured right now.',
-	apple_not_enabled: 'Apple sign-in is not configured right now.'
+	apple_not_enabled: 'Apple sign-in is not configured right now.',
+	oauth_state_invalid: 'Your sign-in session expired. Please try again.',
+	oauth_failed: 'Google sign-in failed. Please try again.'
 }
 
 export function getProviderErrorMessage(rawError: string) {
-	return providerErrors[rawError] || rawError
+	if (!rawError) return ''
+	return providerErrors[rawError] || 'Sign-in failed. Please try again.'
 }

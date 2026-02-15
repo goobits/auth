@@ -13,6 +13,7 @@
 	}>()
 
 	let loading = $state(false)
+	let inviteInputEl = $state<HTMLInputElement | null>(null)
 	const rawError = $page.url.searchParams.get('error') || ''
 	let error = $state(getProviderErrorMessage(rawError))
 
@@ -67,6 +68,13 @@
 		}
 
 		error = 'No sign-in provider is configured yet.'
+	}
+
+	function focusInviteInput(event: MouseEvent) {
+		const target = event.target as HTMLElement | null
+		if (target?.closest('.calendar-login__invite-button')) return
+		inviteInputEl?.focus()
+		inviteInputEl?.select()
 	}
 </script>
 
@@ -146,7 +154,7 @@
 				</div>
 
 				<form class="calendar-login__invite-form" onsubmit={joinWithInvite}>
-					<div class="calendar-login__invite-row">
+					<div class="calendar-login__invite-row" onclick={focusInviteInput}>
 						<input
 							class="calendar-login__invite-input"
 							type="text"
@@ -155,6 +163,7 @@
 							autocomplete="off"
 							placeholder="Invite code"
 							bind:value={inviteInput}
+							bind:this={inviteInputEl}
 						/>
 						<button class="calendar-login__invite-button" type="submit" disabled={loading}>
 							Join

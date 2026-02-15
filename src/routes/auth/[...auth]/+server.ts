@@ -102,7 +102,29 @@ export const GET: RequestHandler = async (event) => {
 		}
 	}
 
-	return auth.handlers.GET(event)
+	try {
+		const response = await auth.handlers.GET(event)
+		if (callbackProvider && response.status >= 500) {
+			const params = new URLSearchParams()
+			params.set('error', 'oauth_failed')
+			throw redirect(302, `/calendar/login?${params.toString()}`)
+		}
+		return response
+	} catch (error) {
+		const status = (
+			typeof error === 'object' &&
+			error &&
+			'status' in error &&
+			typeof (error as { status?: unknown }).status === 'number'
+		) ? (error as { status: number }).status : null
+
+		if (callbackProvider && (status === null || status >= 500)) {
+			const params = new URLSearchParams()
+			params.set('error', 'oauth_failed')
+			throw redirect(302, `/calendar/login?${params.toString()}`)
+		}
+		throw error
+	}
 }
 
 export const POST: RequestHandler = async (event) => {

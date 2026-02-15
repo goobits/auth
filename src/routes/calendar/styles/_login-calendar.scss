@@ -102,61 +102,82 @@
 	letter-spacing: 0.02em;
 }
 
+.calendar-login__invite-form {
+	margin: 0;
+}
+
 .calendar-login__invite-row {
 	display: flex;
-	align-items: center;
+	align-items: stretch;
+	height: var(--calendar-login-control-height);
 	border: 0.09375rem solid color-mix(in srgb, var(--calendar-shell-text) 18%, transparent);
 	border-radius: var(--radius-pill);
-	padding: 0.125rem;
-	background: color-mix(in srgb, var(--calendar-shell-bg) 92%, transparent);
+	padding: 0;
+	background: transparent;
 	overflow: hidden;
+	transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.calendar-login__invite-row:focus-within {
+	border-color: color-mix(in srgb, var(--calendar-shell-text) 32%, transparent);
+	box-shadow: 0 0 0 0.125rem color-mix(in srgb, var(--calendar-shell-text) 10%, transparent);
 }
 
 .calendar-login__invite-input {
 	flex: 1;
-	height: var(--calendar-login-control-height);
+	height: 100%;
+	margin: 0;
+	appearance: none;
+	-webkit-appearance: none;
 	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 	font-size: 0.875rem;
 	color: var(--calendar-shell-text);
 	background: transparent;
 	border: none;
 	border-radius: 0;
-	padding: 0 1.25rem;
+	padding: 0 1rem;
 	outline: none;
 	letter-spacing: 0.08em;
 	text-align: center;
-	transition: background 0.25s ease;
+	transition: background 0.25s ease, color 0.25s ease;
+	line-height: calc(var(--calendar-login-control-height) - 0.1875rem);
 }
 
 .calendar-login__invite-input:focus {
-	background: color-mix(in srgb, var(--calendar-shell-bg) 86%, transparent);
+	background: color-mix(in srgb, var(--calendar-shell-bg) 94%, transparent);
 }
 
 .calendar-login__invite-input::placeholder {
 	color: color-mix(in srgb, var(--calendar-shell-text) 34%, transparent);
 	font-family: var(--font-sans);
 	letter-spacing: 0;
-	font-size: 0.8125rem;
+	font-size: 0.875rem;
+	line-height: inherit;
 }
 
 .calendar-login__invite-button {
-	height: var(--calendar-login-control-height);
+	height: 100%;
 	font-family: var(--font-sans);
 	font-size: 0.875rem;
 	font-weight: var(--font-weight-medium);
 	color: var(--calendar-shell-bg);
 	background: var(--calendar-shell-text);
-	border: none;
+	border: 0;
+	border-left: 0.09375rem solid color-mix(in srgb, var(--calendar-shell-text) 28%, transparent);
 	padding: 0 1.5rem;
-	border-radius: var(--radius-pill);
+	border-radius: 0;
 	cursor: pointer;
-	transition: opacity 0.25s ease;
+	transition: background 0.25s ease, color 0.25s ease;
 	white-space: nowrap;
-	margin-left: var(--space-1);
+	min-width: 6.25rem;
+	line-height: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .calendar-login__invite-button:hover:not(:disabled) {
-	opacity: 0.82;
+	background: color-mix(in srgb, var(--calendar-shell-text) 90%, var(--calendar-shell-bg) 10%);
 }
 
 .calendar-login__invite-button:disabled {
@@ -174,10 +195,6 @@
 @media (max-width: 30em) {
 	.calendar-login {
 		--calendar-login-top-offset: min(16vh, 7.5rem);
-	}
-
-	.calendar-login__invite-row {
-		flex-direction: column;
 	}
 }
 
