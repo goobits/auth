@@ -1,10 +1,11 @@
 <script lang="ts">
+	import { browser } from '$app/environment'
 	import { page } from '$app/stores'
 	import { goto } from '$app/navigation'
+	import { ChevronRight } from '@lucide/svelte'
 	import Hero from '$lib/ui/Hero.svelte'
 	import PageShell from '$lib/ui/PageShell.svelte'
 	import { submitContact, toContactPayload } from '$lib/client/forms/contact'
-	import './Contact.scss'
 
 	type ContactErrors = {
 		name?: string
@@ -17,8 +18,8 @@
 	let values = $state({ name: '', email: '', message: '' })
 		let errors = $state<ContactErrors>({})
 
-		const contextFrom = $derived($page.url.searchParams.get('from')?.trim() || '')
-		const contextTopic = $derived($page.url.searchParams.get('topic')?.trim() || '')
+		const contextFrom = $derived(browser ? $page.url.searchParams.get('from')?.trim() || '' : '')
+		const contextTopic = $derived(browser ? $page.url.searchParams.get('topic')?.trim() || '' : '')
 		const contextLabel = $derived.by(() => {
 			const parts = [contextFrom, contextTopic].filter(Boolean)
 			return parts.length ? parts.join(' / ') : ''
@@ -116,7 +117,10 @@
 			{/if}
 
 			<button class="contact-page__submit" type="submit" disabled={submitting}>
-				{submitting ? 'Sending…' : 'Send message →'}
+				{submitting ? 'Sending…' : 'Send message'}
+				{#if !submitting}
+					<ChevronRight class="contact-page__submit-icon" size={18} strokeWidth={2.4} aria-hidden="true" />
+				{/if}
 			</button>
 
 			<p class="contact-page__legal-note">
