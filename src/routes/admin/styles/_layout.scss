@@ -61,11 +61,10 @@ $grid-unit: 0.5rem;
 }
 
 .admin-page__login {
-	min-height: 70vh;
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	justify-content: center;
-	padding: 3rem 1.5rem;
+	padding: clamp(6rem, 33vh, 14rem) 1.5rem 3rem;
 }
 
 .admin-login {

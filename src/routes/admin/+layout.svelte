@@ -1,6 +1,5 @@
 <script>
 	import './Admin.scss'
-	import Hero from '$lib/ui/Hero.svelte'
 	import ShellNav from '$lib/ui/ShellNav.svelte'
 	import { page } from '$app/stores'
 	import { goto } from '$app/navigation'
@@ -23,7 +22,6 @@
 	</ShellNav>
 
 	<div class="admin-shell__main">
-		<Hero eyebrow="Admin" title="Members control room" subtitle="Bookings, invites, and Google Calendar connection." compact />
 		{#if connectedNow}
 			<p class="admin-shell__notice admin-shell__notice--success">Google Calendar connected.</p>
 		{/if}
