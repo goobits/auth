@@ -5,7 +5,7 @@
 	display: flex;
 	align-items: center;
 	font-family: var(--font-sans);
-	min-height: var(--header-height);
+	min-height: calc(var(--header-height) + 2rem);
 	height: auto;
 	padding: var(--layout-logo-padding-y, 1rem) 0;
 	letter-spacing: 0.05em;
@@ -20,7 +20,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	min-height: calc(var(--header-height) - 2rem);
+	min-height: var(--header-height);
 }
 
 .layout-header__left {
