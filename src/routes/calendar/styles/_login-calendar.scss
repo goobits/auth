@@ -123,6 +123,12 @@
 	box-shadow: 0 0 0 0.125rem color-mix(in srgb, var(--calendar-shell-text) 10%, transparent);
 }
 
+.calendar-login__invite-input-shell {
+	flex: 1;
+	height: 100%;
+	display: block;
+}
+
 .calendar-login__invite-input {
 	flex: 1;
 	height: 100%;
