@@ -136,7 +136,7 @@
 		border-radius: 999px;
 		color: var(--color-white);
 		cursor: pointer;
-		font-family: var(--font-sans);
+		font-family: inherit;
 		font-size: 0.74rem;
 		font-weight: 500;
 		line-height: 0;
@@ -196,7 +196,7 @@
 		border-radius: 0.45rem;
 		color: var(--text);
 		cursor: pointer;
-		font-family: var(--font-sans);
+		font-family: inherit;
 		font-size: 0.8rem;
 		font-weight: 500;
 		padding: 0.4rem 0.52rem;

@@ -4,8 +4,9 @@
 	box-shadow: none;
 	display: flex;
 	align-items: center;
-	height: var(--header-height);
-	padding: 0;
+	min-height: var(--header-height);
+	height: auto;
+	padding: 1rem 0;
 	letter-spacing: 0.05em;
 	width: 100vw;
 }
