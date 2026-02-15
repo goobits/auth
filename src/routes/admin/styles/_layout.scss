@@ -101,8 +101,14 @@ $grid-unit: 0.5rem;
 
 .admin-login__row {
 	display: flex;
-	gap: 0.5rem;
 	margin-bottom: 1rem;
+	border: 1.5px solid var(--input-border);
+	border-radius: var(--radius-pill);
+	overflow: hidden;
+}
+
+.admin-login__row:focus-within {
+	border-color: var(--text);
 }
 
 .admin-login__passcode {
@@ -111,17 +117,12 @@ $grid-unit: 0.5rem;
 	font-size: 0.875rem;
 	color: var(--text);
 	background: transparent;
-	border: 1.5px solid var(--input-border);
-	border-radius: var(--radius-pill);
+	border: 0;
+	border-radius: 0;
 	padding: 0.75rem 1.25rem;
 	outline: none;
 	letter-spacing: 0.12em;
 	text-align: center;
-	transition: border-color 0.25s ease;
-}
-
-.admin-login__passcode:focus {
-	border-color: var(--text);
 }
 
 .admin-login__passcode::placeholder {
@@ -137,9 +138,10 @@ $grid-unit: 0.5rem;
 	font-weight: var(--font-weight-medium);
 	color: var(--bg);
 	background: var(--text);
-	border: none;
+	border: 0;
+	border-left: 1.5px solid var(--input-border);
 	padding: 0.75rem 1.75rem;
-	border-radius: var(--radius-pill);
+	border-radius: 0;
 	cursor: pointer;
 	transition: opacity 0.25s ease;
 	white-space: nowrap;
