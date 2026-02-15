@@ -2,15 +2,6 @@ import { cancelCalendarBooking, createCalendarBooking, getCalendarAvailability }
 import type { BookingSlot } from './booking-state'
 import { getMonthRange } from './booking-state'
 
-type AvailabilityResponse = {
-	slots?: BookingSlot[]
-}
-
-type BookingResponse = {
-	eventLink?: string
-	cancelToken?: string
-}
-
 type CreateBookingParams = {
 	selectedSlot: BookingSlot
 	timeZone: string
@@ -23,8 +14,8 @@ type CreateBookingParams = {
 
 export async function loadAvailabilityForMonth(currentMonth: Date) {
 	const { start, end } = getMonthRange(currentMonth)
-	const data = await getCalendarAvailability(start.toISOString(), end.toISOString()) as AvailabilityResponse
-	return data.slots || []
+	const data = await getCalendarAvailability(start.toISOString(), end.toISOString())
+	return data.slots
 }
 
 export async function submitBooking(params: CreateBookingParams) {
@@ -38,7 +29,7 @@ export async function submitBooking(params: CreateBookingParams) {
 		note: params.note,
 		activity: params.activityName,
 		idempotencyKey: crypto.randomUUID()
-	}) as BookingResponse
+	})
 
 	return {
 		eventLink: data.eventLink || '',

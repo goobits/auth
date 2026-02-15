@@ -14,8 +14,9 @@ export class ApiClientError extends Error {
 	}
 }
 
-type RequestOptions = RequestInit & {
+type RequestOptions<T> = RequestInit & {
 	expectOk?: boolean
+	parse?: (payload: unknown) => T
 }
 
 function getPayloadError(payload: unknown) {
@@ -25,8 +26,8 @@ function getPayloadError(payload: unknown) {
 	return candidate as { message?: unknown; code?: unknown }
 }
 
-export async function requestApi<T = unknown>(url: string, options: RequestOptions = {}): Promise<T> {
-	const { expectOk = true, ...init } = options
+export async function requestApi<T = unknown>(url: string, options: RequestOptions<T> = {}): Promise<T> {
+	const { expectOk = true, parse, ...init } = options
 	const response = await fetch(url, init)
 	let payload: unknown = null
 
@@ -52,5 +53,12 @@ export async function requestApi<T = unknown>(url: string, options: RequestOptio
 		throw new ApiClientError(message, response.status, payload, code)
 	}
 
+	// Most internal endpoints always return JSON. If we got a 2xx but no JSON payload,
+	// fail fast (unless the caller explicitly doesn't care via expectOk=false).
+	if (expectOk && payload === null) {
+		throw new ApiClientError('Invalid JSON response', response.status, payload)
+	}
+
+	if (parse) return parse(payload)
 	return payload as T
 }
