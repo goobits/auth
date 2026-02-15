@@ -4,9 +4,12 @@
 	import { ThemeProvider } from '@goobits/themes/svelte'
 	import { themeConfig } from '$lib/config/theme.js'
 	import { page } from '$app/stores'
+	import { browser } from '$app/environment'
+	import { onMount } from 'svelte'
 	import Topbar from '$lib/ui/Topbar.svelte'
 	import FooterNav from '$lib/ui/FooterNav.svelte'
 	import { footerElsewhereItems, footerLegalItems, footerPrimaryItems, headerNavItems } from '$lib/layout/nav'
+	import { enableLayoutShiftDebug } from '$lib/client/debug/layoutShift'
 
 	const { data, children } = $props()
 
@@ -15,6 +18,12 @@
 			$page.url.pathname.startsWith('/calendar-gym') ||
 			$page.url.pathname.startsWith('/admin')
 	)
+
+	onMount(() => {
+		if (!browser) return
+		const url = new URL(window.location.href)
+		if (url.searchParams.has('debugLayoutShift')) enableLayoutShiftDebug()
+	})
 </script>
 
 <ThemeProvider config={themeConfig} serverPreferences={data.preferences}>
