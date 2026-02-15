@@ -28,6 +28,7 @@
 						{#each primaryItems as item}
 							<li><a class="layout-footer__col-link" href={item.href}>{item.label}</a></li>
 						{/each}
+						<li><a class="layout-footer__col-link" href="/sitemap">Sitemap</a></li>
 					</ul>
 				</div>
 
@@ -57,7 +58,6 @@
 						{#each legalItems as item}
 							<li><a class="layout-footer__col-link" href={item.href}>{item.label}</a></li>
 						{/each}
-						<li><a class="layout-footer__col-link" href="/sitemap">Sitemap</a></li>
 					</ul>
 				</div>
 			</div>
