@@ -168,13 +168,13 @@
 		line-height: 1.52;
 	}
 
-	@media (max-width: 980px) {
+	@media (max-width: 61.25em) {
 		.art-page__works {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 	}
 
-	@media (max-width: 760px) {
+	@media (max-width: 47.5em) {
 		.art-page__works {
 			grid-template-columns: 1fr;
 			gap: var(--art-mobile-gap);

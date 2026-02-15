@@ -45,7 +45,7 @@
 	font-size: 0.85rem;
 }
 
-.sitemap-page__category ul {
+.sitemap-page__route-list {
 	list-style: none;
 	padding: 0 0 0 1.35rem;
 	margin: 0.45rem 0 0 0;
@@ -104,11 +104,11 @@
 	text-transform: uppercase;
 }
 
-.sitemap-page__method.get { background: var(--link); color: var(--color-white); }
-.sitemap-page__method.post { background: var(--button-bg); color: var(--color-white); }
-.sitemap-page__method.put { background: var(--color-warning); color: var(--color-white); }
-.sitemap-page__method.delete { background: var(--form-error); color: var(--color-white); }
-.sitemap-page__method.patch { background: var(--color-teal); color: var(--color-white); }
+.sitemap-page__method--get { background: var(--link); color: var(--color-white); }
+.sitemap-page__method--post { background: var(--button-bg); color: var(--color-white); }
+.sitemap-page__method--put { background: var(--color-warning); color: var(--color-white); }
+.sitemap-page__method--delete { background: var(--form-error); color: var(--color-white); }
+.sitemap-page__method--patch { background: var(--color-teal); color: var(--color-white); }
 
 .sitemap-page__route-meta {
 	display: flex;
@@ -131,13 +131,13 @@
 	color: var(--text);
 }
 
-.sitemap-page__tag.ssr { background: var(--link); color: var(--color-white); }
-.sitemap-page__tag.csr { background: var(--color-violet); color: var(--color-white); }
-.sitemap-page__tag.dynamic { background: var(--color-warning); color: var(--color-white); }
-.sitemap-page__tag.auth { background: var(--form-error); color: var(--color-white); }
-.sitemap-page__tag.noindex { background: var(--muted); color: var(--color-white); }
-.sitemap-page__tag.api { background: var(--button-bg); color: var(--color-white); }
-.sitemap-page__tag.layout { background: var(--color-cyan); color: var(--color-white); }
+.sitemap-page__tag--ssr { background: var(--link); color: var(--color-white); }
+.sitemap-page__tag--csr { background: var(--color-violet); color: var(--color-white); }
+.sitemap-page__tag--dynamic { background: var(--color-warning); color: var(--color-white); }
+.sitemap-page__tag--auth { background: var(--form-error); color: var(--color-white); }
+.sitemap-page__tag--noindex { background: var(--muted); color: var(--color-white); }
+.sitemap-page__tag--api { background: var(--button-bg); color: var(--color-white); }
+.sitemap-page__tag--layout { background: var(--color-cyan); color: var(--color-white); }
 
 .sitemap-page__modified {
 	font-size: 0.75rem;

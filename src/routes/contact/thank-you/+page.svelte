@@ -11,7 +11,7 @@
 		main {
 			h1 {
 				img {
-					max-height: calc(100vh - 450px);
+					max-height: calc(100vh - 28.125rem);
 				}
 			}
 

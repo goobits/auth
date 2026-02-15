@@ -7,7 +7,7 @@
 
 .showcase__section {
 	border: 1px solid var(--panel-border);
-	border-radius: 10px;
+	border-radius: var(--radius-md);
 	background: var(--card-bg);
 	padding: 1rem;
 }
@@ -35,7 +35,7 @@
 	gap: 0.28rem;
 	text-decoration: none;
 	padding: 0.42rem 0.72rem;
-	border-radius: 999px;
+	border-radius: var(--radius-pill);
 	border: 1px solid var(--border);
 	background: var(--card-bg);
 	color: var(--text);

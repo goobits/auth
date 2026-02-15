@@ -61,7 +61,7 @@
 .layout-header__nav a {
 	display: inline-block;
 	color: var(--color-white);
-	border-bottom: 2px solid transparent;
+	border-bottom: 0.125rem solid transparent;
 	line-height: 2em;
 	text-decoration: none;
 	font-size: 0.9rem;
@@ -136,8 +136,8 @@
 	text-decoration: none;
 	text-transform: uppercase;
 	font-size: 0.9rem;
-	border-bottom: 2px solid transparent;
-	padding-bottom: 2px;
+	border-bottom: 0.125rem solid transparent;
+	padding-bottom: 0.125rem;
 	transition: border-color 0.2s;
 }
 
@@ -159,7 +159,7 @@
 	text-align: center;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 53.75em) {
 	.layout-header {
 		height: auto;
 		padding: 0.9rem 1rem;
@@ -189,7 +189,7 @@
 	}
 }
 
-@media (max-width: 700px) {
+@media (max-width: 43.75em) {
 	.layout-header__nav a {
 		font-size: 0.82rem;
 	}
@@ -312,7 +312,7 @@
 	text-align: right;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 43.75em) {
 	.ui-entry-list__row {
 		grid-template-columns: 1.5rem minmax(0, 1fr) auto;
 		gap: 0 var(--space-2);

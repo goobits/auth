@@ -1,13 +1,15 @@
 // Login specific styles
 .calendar-login {
+	min-height: calc(100svh - var(--calendar-nav-height));
 	min-height: calc(100vh - var(--calendar-nav-height));
 	padding: var(--space-6) var(--space-4);
-	--calendar-login-top-offset: min(25vh, 220px);
-	--calendar-login-control-height: 46px;
+	--calendar-login-top-offset: min(25vh, 13.75rem);
+	--calendar-login-control-height: 2.875rem;
 }
 
 .calendar-login__center {
 	width: 100%;
+	min-height: calc(100svh - var(--calendar-nav-height) - (var(--space-6) * 2));
 	min-height: calc(100vh - var(--calendar-nav-height) - (var(--space-6) * 2));
 	display: flex;
 	align-items: flex-start;
@@ -16,7 +18,7 @@
 }
 
 .calendar-login__card {
-	width: min(100%, 380px);
+	width: min(100%, 23.75rem);
 	padding: var(--space-3);
 	text-align: center;
 }
@@ -57,12 +59,12 @@
 	justify-content: center;
 	gap: var(--space-2);
 	width: 100%;
-	padding: 13px 24px;
-	border: 1.5px solid color-mix(in srgb, var(--calendar-shell-text) 18%, transparent);
+	padding: 0.8125rem 1.5rem;
+	border: 0.09375rem solid color-mix(in srgb, var(--calendar-shell-text) 18%, transparent);
 	border-radius: var(--radius-pill);
 	background: transparent;
 	font-family: var(--font-sans);
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: var(--font-weight-medium);
 	color: var(--calendar-shell-text);
 	letter-spacing: -0.005em;
@@ -95,56 +97,62 @@
 }
 
 .calendar-login__divider span {
-	font-size: 12px;
+	font-size: 0.75rem;
 	color: color-mix(in srgb, var(--calendar-shell-text) 34%, transparent);
 	letter-spacing: 0.02em;
 }
 
 .calendar-login__invite-row {
 	display: flex;
-	gap: var(--space-2);
+	align-items: center;
+	border: 0.09375rem solid color-mix(in srgb, var(--calendar-shell-text) 18%, transparent);
+	border-radius: var(--radius-pill);
+	padding: 0.125rem;
+	background: color-mix(in srgb, var(--calendar-shell-bg) 92%, transparent);
+	overflow: hidden;
 }
 
 .calendar-login__invite-input {
 	flex: 1;
 	height: var(--calendar-login-control-height);
 	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-	font-size: 14px;
+	font-size: 0.875rem;
 	color: var(--calendar-shell-text);
 	background: transparent;
-	border: 1.5px solid color-mix(in srgb, var(--calendar-shell-text) 18%, transparent);
-	border-radius: var(--radius-pill);
-	padding: 0 20px;
+	border: none;
+	border-radius: 0;
+	padding: 0 1.25rem;
 	outline: none;
 	letter-spacing: 0.08em;
 	text-align: center;
-	transition: border-color 0.25s ease;
+	transition: background 0.25s ease;
 }
 
 .calendar-login__invite-input:focus {
-	border-color: var(--calendar-shell-text);
+	background: color-mix(in srgb, var(--calendar-shell-bg) 86%, transparent);
 }
 
 .calendar-login__invite-input::placeholder {
 	color: color-mix(in srgb, var(--calendar-shell-text) 34%, transparent);
 	font-family: var(--font-sans);
 	letter-spacing: 0;
-	font-size: 13px;
+	font-size: 0.8125rem;
 }
 
 .calendar-login__invite-button {
 	height: var(--calendar-login-control-height);
 	font-family: var(--font-sans);
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: var(--font-weight-medium);
 	color: var(--calendar-shell-bg);
 	background: var(--calendar-shell-text);
 	border: none;
-	padding: 0 24px;
+	padding: 0 1.5rem;
 	border-radius: var(--radius-pill);
 	cursor: pointer;
 	transition: opacity 0.25s ease;
 	white-space: nowrap;
+	margin-left: var(--space-1);
 }
 
 .calendar-login__invite-button:hover:not(:disabled) {
@@ -158,14 +166,14 @@
 
 .calendar-login__hint {
 	margin-top: var(--space-8);
-	font-size: 13px;
+	font-size: 0.8125rem;
 	color: color-mix(in srgb, var(--calendar-shell-text) 30%, transparent);
 	line-height: 1.6;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 30em) {
 	.calendar-login {
-		--calendar-login-top-offset: min(16vh, 120px);
+		--calendar-login-top-offset: min(16vh, 7.5rem);
 	}
 
 	.calendar-login__invite-row {

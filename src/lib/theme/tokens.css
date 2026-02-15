@@ -51,6 +51,9 @@
 	--hero-icon-size: 0.85em;
 	--hero-icon-offset-y: -0.08em;
 	--hero-icon-gap: 0.35rem;
+	--hero-glow-width: 48.75rem;
+	--hero-glow-height: 16.25rem;
+	--hero-glow-blur: 1.5rem;
 
 	--calendar-nav-height: 50px;
 	--calendar-nav-inner-gap: 20px;

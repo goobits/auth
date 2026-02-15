@@ -130,7 +130,7 @@ async function run() {
     }
   }
 
-  if (colorFindings.length) {
+  if (colorFindings.length || pxFindings.length) {
     process.exitCode = 1
   }
 }

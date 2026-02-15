@@ -7,7 +7,7 @@
 	&__layout {
 		padding: 0 0 7.5rem;
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+		grid-template-columns: minmax(0, 1fr) minmax(13.75rem, 20rem);
 		gap: 4.5rem;
 		align-items: start;
 	}
@@ -52,7 +52,7 @@
 		color: var(--text);
 		background: transparent;
 		border: 0;
-		border-bottom: 1.5px solid color-mix(in srgb, var(--border) 88%, transparent);
+		border-bottom: 0.09375rem solid color-mix(in srgb, var(--border) 88%, transparent);
 		padding: 0.65rem 0;
 		border-radius: 0;
 		outline: none;
@@ -121,7 +121,7 @@
 	&__legal-note a {
 		font-size: 0.75rem;
 		color: color-mix(in srgb, var(--muted) 90%, var(--text));
-		text-underline-offset: 3px;
+		text-underline-offset: 0.1875rem;
 	}
 
 	&__aside {
@@ -184,7 +184,7 @@
 	}
 }
 
-@media (max-width: 760px) {
+@media (max-width: 47.5em) {
 	.contact-page {
 		&__layout {
 			grid-template-columns: 1fr;

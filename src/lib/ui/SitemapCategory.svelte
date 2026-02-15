@@ -30,7 +30,7 @@
 	</button>
 
 	{#if !collapsed}
-		<ul>
+		<ul class="sitemap-page__route-list">
 			{#each routes as route}
 				<li class="sitemap-page__route">
 					<div class="sitemap-page__route-main">
@@ -39,7 +39,7 @@
 							{#if route.httpMethods?.length > 0}
 								<span class="sitemap-page__methods">
 									{#each route.httpMethods as method}
-										<span class="sitemap-page__method {method.toLowerCase()}">{method}</span>
+										<span class={`sitemap-page__method sitemap-page__method--${method.toLowerCase()}`}>{method}</span>
 									{/each}
 								</span>
 							{/if}
@@ -54,7 +54,7 @@
 					<div class="sitemap-page__route-meta">
 						<div class="sitemap-page__tags">
 							{#each getRouteTags(route) as tag}
-								<span class="sitemap-page__tag {tag.toLowerCase()}">{tag}</span>
+								<span class={`sitemap-page__tag sitemap-page__tag--${tag.toLowerCase()}`}>{tag}</span>
 							{/each}
 						</div>
 						<span class="sitemap-page__modified">{formatDate(route.lastModified)}</span>

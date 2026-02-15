@@ -2,6 +2,7 @@
 
 .calendar-shell {
 	width: 100%;
+	min-height: 100svh;
 	min-height: 100vh;
 	display: flex;
 	flex-direction: column;
@@ -13,6 +14,7 @@
 	color: var(--calendar-shell-text);
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
+	min-height: 100svh;
 	min-height: 100vh;
 	padding-bottom: 2rem;
 	--calendar-size-2: 2px;

@@ -161,7 +161,7 @@
 		padding-top: 5rem;
 	}
 
-	@media (max-width: 700px) {
+	@media (max-width: 43.75em) {
 		.music-page__platform-row {
 			gap: var(--space-2);
 		}
