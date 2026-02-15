@@ -1,5 +1,4 @@
 <script>
-	import { enhance } from '$app/forms'
 	const { form } = $props()
 </script>
 
@@ -9,10 +8,17 @@
 		<h1 class="admin-login__title">Control room 🔐</h1>
 		<p class="admin-login__subtitle">Bookings, invites, and calendar management.</p>
 
-		<form class="admin-login__form" method="POST" action="?/login" use:enhance>
+		<form class="admin-login__form" method="POST" action="?/login">
 			<input type="hidden" name="email" value="admin@miko.art" />
 			<div class="admin-login__row">
-				<input class="admin-login__passcode" type="password" name="password" placeholder="Passcode" />
+				<input
+					class="admin-login__passcode"
+					type="password"
+					name="password"
+					placeholder="Passcode"
+					autocomplete="current-password"
+					required
+				/>
 				<button class="admin-login__unlock" type="submit">Unlock</button>
 			</div>
 			{#if form?.error}
