@@ -143,7 +143,7 @@
 }
 
 .layout-footer__link:hover {
-	border-color: var(--color-white);
+	border-color: var(--link-hover);
 }
 
 .layout-footer__link:visited {
