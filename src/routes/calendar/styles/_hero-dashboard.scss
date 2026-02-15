@@ -1,3 +1,5 @@
+@use '../../../lib/styles/primitives' as ui;
+
 // Hero Section
 .calendar-page__hero {
 	position: relative;
@@ -103,10 +105,13 @@
 }
 
 .calendar-page__timezone {
-	margin-top: var(--calendar-size-32);
+	margin: var(--calendar-size-32) auto 0;
+	max-width: var(--calendar-size-900);
+	padding: 0 var(--calendar-size-24);
 	font-size: var(--calendar-size-13);
 	color: color-mix(in srgb, var(--calendar-shell-text) 32%, transparent);
 	letter-spacing: 0.01em;
+	text-align: center;
 }
 
 // Sections

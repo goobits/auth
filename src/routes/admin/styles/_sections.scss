@@ -1,3 +1,5 @@
+@use '../../../lib/styles/primitives' as ui;
+
 // Main content
 .admin-page__main {
 	display: grid;

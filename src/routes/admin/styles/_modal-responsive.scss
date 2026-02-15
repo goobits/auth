@@ -1,3 +1,5 @@
+@use '../../../lib/styles/primitives' as ui;
+
 // Modal
 .admin-page__modal-overlay {
 	@include ui.modal-overlay(50%, 200);

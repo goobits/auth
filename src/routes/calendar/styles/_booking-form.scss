@@ -1,3 +1,5 @@
+@use '../../../lib/styles/primitives' as ui;
+
 // Time Slots
 .calendar-page__slots-section {
 	margin-top: var(--calendar-size-32);

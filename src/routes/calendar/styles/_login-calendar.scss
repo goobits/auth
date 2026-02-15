@@ -1,3 +1,5 @@
+@use '../../../lib/styles/primitives' as ui;
+
 // Login specific styles
 .calendar-login {
 	min-height: calc(100svh - var(--calendar-nav-height));
