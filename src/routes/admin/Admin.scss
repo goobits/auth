@@ -2,7 +2,7 @@
 
 $grid-unit: 8px;
 
-@import './styles/layout';
-@import './styles/sections';
-@import './styles/controls-and-list';
-@import './styles/modal-responsive';
+@use './styles/layout';
+@use './styles/sections';
+@use './styles/controls-and-list';
+@use './styles/modal-responsive';

@@ -26,51 +26,21 @@ $grid-unit: 0.5rem;
 	--input-text: var(--calendar-shell-text);
 }
 
-.admin-header {
-	position: sticky;
-	top: 0;
-	z-index: 80;
-	width: 100%;
-	height: var(--calendar-nav-height);
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--space-3);
-	padding: 0 var(--space-4);
-	background: var(--color-white-015);
-	border-bottom: var(--border-width) solid var(--color-white-05);
-	backdrop-filter: blur(12px);
-	-webkit-backdrop-filter: blur(12px);
-}
-
-.admin-title {
-	font-size: 15px;
-	font-weight: var(--font-weight-semibold);
-	letter-spacing: -0.01em;
-	margin: 0;
-	background: var(--gradient-rainbow);
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
-	background-clip: text;
-}
-
-.admin-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.35rem;
-	font-size: 12px;
-	font-weight: var(--font-weight-medium);
-	color: color-mix(in srgb, var(--color-white) 62%, transparent);
-	border: var(--border-width) solid var(--color-white-10);
-	background: color-mix(in srgb, var(--color-white) 2.5%, transparent);
-	padding: var(--space-1) var(--space-3);
-	border-radius: var(--radius-pill);
-}
-
 .admin-shell__main {
 	max-width: var(--max-width, 1060px);
 	margin: 0 auto;
 	padding: var(--space-8) var(--space-4) var(--space-10);
+}
+
+.admin-shell__notice {
+	margin: var(--space-4) 0 0;
+	font-size: var(--font-size-sm);
+	line-height: 1.6;
+	color: color-mix(in srgb, var(--calendar-shell-text) 70%, transparent);
+}
+
+.admin-shell__notice--success {
+	color: color-mix(in srgb, var(--calendar-success) 86%, var(--calendar-shell-text));
 }
 
 .admin-shell__content {

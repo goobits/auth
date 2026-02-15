@@ -9,6 +9,16 @@
 	background: var(--calendar-shell-bg);
 }
 
+.calendar-shell__layout {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+.calendar-shell__main {
+	flex: 1;
+}
+
 .calendar-page {
 	font-family: var(--font-sans);
 	color: var(--calendar-shell-text);

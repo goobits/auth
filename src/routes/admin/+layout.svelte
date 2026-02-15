@@ -1,18 +1,34 @@
 <script>
 	import './Admin.scss'
 	import Hero from '$lib/ui/Hero.svelte'
+	import ShellNav from '$lib/ui/ShellNav.svelte'
+	import { page } from '$app/stores'
+	import { goto } from '$app/navigation'
+
+	const { children } = $props()
+	const connectedNow = $derived($page.url.searchParams.get('connected') === '1')
+
+	$effect(() => {
+		if (!connectedNow) return
+		// Clean up the query param after showing the notice (replaceState avoids history noise).
+		goto('/admin', { replaceState: true, keepFocus: true, noScroll: true })
+	})
 </script>
 
 <div class="admin-root">
-	<div class="admin-header">
-		<h2 class="admin-title">Rainbow Gym</h2>
-		<span class="admin-badge">Admin</span>
-	</div>
+	<ShellNav brandLabel="Rainbow Gym" brandHref="/admin" currentPath={$page.url.pathname}>
+		{#snippet right()}
+			<span class="shell-nav__badge">Admin</span>
+		{/snippet}
+	</ShellNav>
 
 	<div class="admin-shell__main">
 		<Hero eyebrow="Admin" title="Members control room" subtitle="Bookings, invites, and Google Calendar connection." compact />
+		{#if connectedNow}
+			<p class="admin-shell__notice admin-shell__notice--success">Google Calendar connected.</p>
+		{/if}
 		<div class="admin-shell__content">
-			<slot />
+			{@render children()}
 		</div>
 	</div>
 </div>

@@ -21,6 +21,11 @@
 		if (item.matchPrefix) return path === href || path.startsWith(`${href}/`)
 		return path === href
 	}
+
+	function shouldDisablePrefetch(href: string) {
+		// Calendar/Admin pages load large route-level styling; avoid "hover prefetch" injecting it on other pages.
+		return href.startsWith('/calendar') || href.startsWith('/admin')
+	}
 </script>
 
 <header class="layout-header">
@@ -37,6 +42,8 @@
 						href={item.href}
 						class="layout-header__nav-link"
 						class:layout-header__nav-link--active={isActive(item)}
+						data-sveltekit-preload-data={shouldDisablePrefetch(item.href) ? 'off' : undefined}
+						data-sveltekit-preload-code={shouldDisablePrefetch(item.href) ? 'off' : undefined}
 					>
 						{item.label}
 					</a>

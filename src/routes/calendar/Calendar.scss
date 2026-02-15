@@ -1,7 +1,5 @@
-@use '../../lib/styles/primitives' as ui;
-
-@import './styles/base';
-@import './styles/hero-dashboard';
-@import './styles/login-calendar';
-@import './styles/booking-form';
-@import './styles/modal-responsive';
+@use './styles/base';
+@use './styles/hero-dashboard';
+@use './styles/login-calendar';
+@use './styles/booking-form';
+@use './styles/modal-responsive';
