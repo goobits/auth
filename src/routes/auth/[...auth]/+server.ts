@@ -77,7 +77,7 @@ export const GET: RequestHandler = async (event) => {
 
 	try {
 		const response = await auth.handlers.GET(event)
-		if (callbackProvider && response.status >= 500) {
+		if (callbackProvider && response.status >= 400) {
 			throw redirect(302, buildCalendarLoginErrorPath('oauth_failed'))
 		}
 		if (requestedProvider) {
