@@ -4,6 +4,9 @@
 	import PageShell from '$lib/ui/PageShell.svelte'
 	import ResultsEmpty from '$lib/ui/ResultsEmpty.svelte'
 	import { filterAndSortLabs, labsCatalog } from '$lib/viewmodels/labs'
+	import { formatDateMmDdYyyy } from '$lib/utils/date'
+
+	const { data } = $props()
 
 	let searchQuery = $state('')
 	let sortBy = $state('title')
@@ -36,7 +39,15 @@
 		return accentColors[idx]
 	}
 
-	const filteredLabs = $derived(filterAndSortLabs(labsCatalog, searchQuery, 'all', sortBy))
+	function withDates(labs) {
+		return labs.map((lab) => {
+			const dateStr = data?.datesByHref?.[lab.href]
+			const date = dateStr ? new Date(dateStr) : null
+			return { ...lab, date, dateStr }
+		})
+	}
+
+	const filteredLabs = $derived(filterAndSortLabs(withDates(labsCatalog), searchQuery, 'all', sortBy))
 </script>
 
 <svelte:head>
@@ -100,7 +111,14 @@
 							<div class="labs-page__bar" aria-hidden="true"></div>
 
 							<div class="labs-page__card-body">
-								<h2 class="labs-page__card-title">{lab.title}</h2>
+								<div class="labs-page__card-head">
+									<h2 class="labs-page__card-title">{lab.title}</h2>
+									{#if lab.date}
+										<span class="labs-page__date" title={formatDateMmDdYyyy(lab.date)}>
+											{lab.date.getFullYear()}
+										</span>
+									{/if}
+								</div>
 								<p class="labs-page__vibe">{lab.vibe}</p>
 								<p class="labs-page__path">{lab.href}</p>
 							</div>
@@ -236,6 +254,13 @@
 		padding: 1.25rem 1.375rem 1.375rem;
 	}
 
+	.labs-page__card-head {
+		display: flex;
+		align-items: baseline;
+		gap: 0.75rem;
+		justify-content: space-between;
+	}
+
 	.labs-page__card-title {
 		margin: 0 0 0.35rem;
 		font-family: var(--font-display);
@@ -243,6 +268,19 @@
 		font-size: 1.1875rem;
 		letter-spacing: -0.015em;
 		line-height: 1.3;
+	}
+
+	.labs-page__date {
+		flex-shrink: 0;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+		font-size: 0.75rem;
+		letter-spacing: -0.01em;
+		font-variant-numeric: tabular-nums;
+		color: color-mix(in srgb, var(--muted) 92%, var(--text));
+		border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+		border-radius: 999px;
+		padding: 0.22rem 0.55rem;
+		background: color-mix(in srgb, var(--bg) 65%, transparent);
 	}
 
 	.labs-page__vibe {
