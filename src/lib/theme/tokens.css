@@ -43,6 +43,8 @@
 	--border-width: 1px;
 	--max-width-readable: 980px;
 	--layout-logo-width: 150px;
+	--layout-logo-height: 4rem;
+	--layout-logo-padding-y: 1rem;
 
 	--hero-max-width: 700px;
 	--hero-margin-bottom: 2.2rem;
