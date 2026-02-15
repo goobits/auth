@@ -8,6 +8,7 @@
 	}
 
 	type ShellNavProps = {
+		homeHref?: string
 		brandLabel: string
 		brandHref: string
 		links?: ShellNavLink[]
@@ -15,7 +16,7 @@
 		right?: Snippet
 	}
 
-	const { brandLabel, brandHref, links = [], currentPath, right }: ShellNavProps = $props()
+	const { homeHref = '/', brandLabel, brandHref, links = [], currentPath, right }: ShellNavProps = $props()
 
 	function isActive(href: string, exact = false) {
 		if (exact) return currentPath === href || currentPath === `${href}/`
@@ -25,6 +26,9 @@
 
 <nav class="shell-nav">
 	<div class="shell-nav__inner">
+		<a href={homeHref} class="shell-nav__home" aria-label="Home">
+			<img src="/media/logo.svg" alt="MIKO.ART" class="shell-nav__home-logo" />
+		</a>
 		<a href={brandHref} class="shell-nav__brand">{brandLabel}</a>
 
 		{#if links.length > 0}
@@ -67,6 +71,19 @@
 		display: flex;
 		align-items: center;
 		gap: var(--calendar-nav-inner-gap);
+	}
+
+	.shell-nav__home {
+		display: inline-flex;
+		align-items: center;
+		text-decoration: none;
+	}
+
+	.shell-nav__home-logo {
+		display: block;
+		height: 28px;
+		width: auto;
+		filter: none;
 	}
 
 	.shell-nav__brand {
