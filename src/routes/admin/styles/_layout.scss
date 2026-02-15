@@ -71,6 +71,7 @@ $grid-unit: 0.5rem;
 	width: 100%;
 	max-width: 21.25rem;
 	text-align: center;
+	--admin-login-control-height: 2.875rem;
 }
 
 .admin-login__label {
@@ -101,11 +102,12 @@ $grid-unit: 0.5rem;
 
 .admin-login__row {
 	display: flex;
-	align-items: stretch;
+	align-items: center;
 	margin-bottom: 1rem;
 	border: 1.5px solid var(--input-border);
 	border-radius: var(--radius-pill);
 	overflow: hidden;
+	height: var(--admin-login-control-height);
 }
 
 .admin-login__row:focus-within {
@@ -125,6 +127,11 @@ $grid-unit: 0.5rem;
 	outline: none;
 	letter-spacing: 0.12em;
 	text-align: center;
+	height: 100%;
+	appearance: none;
+	-webkit-appearance: none;
+	box-sizing: border-box;
+	margin: 0;
 }
 
 .admin-login__passcode::placeholder {
@@ -135,10 +142,12 @@ $grid-unit: 0.5rem;
 }
 
 .admin-login__unlock {
-	font-family: var(--font-sans);
+	/* Admin controls should use a true sans stack (site --font-sans is a branded face). */
+	font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+		sans-serif;
 	font-size: 0.875rem;
 	font-weight: var(--font-weight-medium);
-	line-height: 1.2;
+	line-height: 1;
 	color: var(--bg);
 	background: var(--text);
 	border: 0;
@@ -148,6 +157,12 @@ $grid-unit: 0.5rem;
 	cursor: pointer;
 	transition: opacity 0.25s ease;
 	white-space: nowrap;
+	height: 100%;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	margin: 0;
 }
 
 .admin-login__unlock:hover {

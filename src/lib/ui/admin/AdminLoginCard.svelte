@@ -21,6 +21,9 @@
 				/>
 				<button class="admin-login__unlock" type="submit">Unlock</button>
 			</div>
+			{#if form?.success}
+				<p class="admin-login__hint">Signing you in...</p>
+			{/if}
 			{#if form?.error}
 				<p class="admin-login__error" role="status">{form.error}</p>
 			{/if}
