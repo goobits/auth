@@ -11,9 +11,9 @@
 			</div>
 			<nav class="site-footer__nav" aria-label="Footer links">
 				<a class="site-footer__link" href="mailto:hello@pdx.run">Contact</a>
-				<a class="site-footer__link" href="#volunteer">Volunteer</a>
-				<a class="site-footer__link" href="#donate">Donate</a>
-				<a class="site-footer__link" href="/code-of-conduct.html">Code of Conduct</a>
+				<a class="site-footer__link" href="/volunteer">Volunteer</a>
+				<a class="site-footer__link" href="/donate">Donate</a>
+				<a class="site-footer__link" href="/code-of-conduct">Code of Conduct</a>
 			</nav>
 		</div>
 		<div class="site-footer__bottom">

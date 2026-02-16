@@ -57,14 +57,14 @@
 		<nav class="site-header__nav" aria-label="Primary">
 			{#each nav as item (item.id)}
 				<a
-					href={`#${item.id}`}
+					href={`/#${item.id}`}
 					class={`site-header__link ${active === item.id ? 'site-header__link--active' : ''}`}
 					aria-current={active === item.id ? 'page' : undefined}
 				>
 					{item.label}
 				</a>
 			{/each}
-			<a class="c-button c-button--primary c-button--compact" href="#volunteer">Join the Herd</a>
+			<a class="c-button c-button--primary c-button--compact" href="/join">Join the Herd</a>
 		</nav>
 
 		<button
@@ -83,11 +83,11 @@
 		<div class="site-header__mobile">
 			<div class="layout__container site-header__mobile-inner">
 				{#each nav as item (item.id)}
-					<a class="site-header__mobile-link" href={`#${item.id}`} onclick={closeMenu}>{item.label}</a>
+					<a class="site-header__mobile-link" href={`/#${item.id}`} onclick={closeMenu}>{item.label}</a>
 				{/each}
 				<div class="site-header__mobile-actions">
-					<a class="c-button c-button--secondary" href="#donate" onclick={closeMenu}>Donate</a>
-					<a class="c-button c-button--primary" href="#volunteer" onclick={closeMenu}>Join</a>
+					<a class="c-button c-button--secondary" href="/donate" onclick={closeMenu}>Donate</a>
+					<a class="c-button c-button--primary" href="/join" onclick={closeMenu}>Join</a>
 				</div>
 			</div>
 		</div>
