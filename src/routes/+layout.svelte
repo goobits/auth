@@ -15,7 +15,6 @@
 
 	const isCalendarRoute = $derived(
 		$page.url.pathname.startsWith('/calendar') ||
-			$page.url.pathname.startsWith('/calendar-gym') ||
 			$page.url.pathname.startsWith('/admin')
 	)
 

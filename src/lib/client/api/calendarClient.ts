@@ -7,46 +7,11 @@ export type CreateInviteInput = {
 	expiresInDays: number
 }
 
-export type CreateBookingInput = {
-	start: string
-	end: string
-	timezone: string
-	seats: number
-	name: string
-	email: string
-	note: string
-	activity: string
-	idempotencyKey: string
-}
-
 const CalendarOAuthStartResponseSchema = z.object({
 	authUrl: z.string()
 })
 
-const CalendarAvailabilitySlotSchema = z.object({
-	start: z.string(),
-	end: z.string(),
-	available: z.boolean(),
-	remaining: z.number()
-})
-
-const CalendarAvailabilityErrorSchema = z.object({
-	code: z.string(),
-	message: z.string()
-})
-
-const CalendarAvailabilityResponseSchema = z.object({
-	slots: z.array(CalendarAvailabilitySlotSchema),
-	error: CalendarAvailabilityErrorSchema.optional()
-})
-
-const CalendarBookingResponseSchema = z.object({
-	ok: z.literal(true),
-	eventLink: z.string().optional(),
-	cancelToken: z.string().optional()
-})
-
-const CalendarCancelResponseSchema = z.object({
+const CalendarMutationOkSchema = z.object({
 	ok: z.literal(true)
 })
 
@@ -115,9 +80,7 @@ const CalendarProfileResponseSchema = z.object({
 })
 
 export type CalendarOAuthStartResponse = z.infer<typeof CalendarOAuthStartResponseSchema>
-export type CalendarAvailabilityResponse = z.infer<typeof CalendarAvailabilityResponseSchema>
-export type CalendarBookingResponse = z.infer<typeof CalendarBookingResponseSchema>
-export type CalendarCancelResponse = z.infer<typeof CalendarCancelResponseSchema>
+export type CalendarMutationOk = z.infer<typeof CalendarMutationOkSchema>
 export type CalendarInvitesResponse = z.infer<typeof CalendarInvitesResponseSchema>
 export type CalendarUsersResponse = z.infer<typeof CalendarUsersResponseSchema>
 export type CalendarEventsResponse = z.infer<typeof CalendarEventsResponseSchema>
@@ -158,34 +121,6 @@ export async function deleteCalendarInvite(id: string) {
 	})
 }
 
-export async function getCalendarAvailability(startIso: string, endIso: string) {
-	const qs = new URLSearchParams({
-		start: startIso,
-		end: endIso
-	})
-	return requestApi<CalendarAvailabilityResponse>(`/api/calendar/availability?${qs.toString()}`, {
-		parse: (payload) => CalendarAvailabilityResponseSchema.parse(payload)
-	})
-}
-
-export async function createCalendarBooking(input: CreateBookingInput) {
-	return requestApi<CalendarBookingResponse>('/api/calendar/book', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(input),
-		parse: (payload) => CalendarBookingResponseSchema.parse(payload)
-	})
-}
-
-export async function cancelCalendarBooking(cancelToken: string) {
-	return requestApi<CalendarCancelResponse>('/api/calendar/cancel', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ cancelToken }),
-		parse: (payload) => CalendarCancelResponseSchema.parse(payload)
-	})
-}
-
 export async function logoutCalendarSession() {
 	return requestApi('/auth/logout', {
 		method: 'POST',
@@ -211,9 +146,9 @@ export async function joinCalendarEvent(eventId: number, input: { guestCount?: n
 }
 
 export async function leaveCalendarEvent(eventId: number) {
-	return requestApi<CalendarCancelResponse>(`/api/calendar/events/${eventId}/leave`, {
+	return requestApi<CalendarMutationOk>(`/api/calendar/events/${eventId}/leave`, {
 		method: 'POST',
-		parse: (payload) => CalendarCancelResponseSchema.parse(payload)
+		parse: (payload) => CalendarMutationOkSchema.parse(payload)
 	})
 }
 
@@ -226,10 +161,10 @@ export async function getCalendarProfile() {
 type CalendarProfileResponse = z.infer<typeof CalendarProfileResponseSchema>
 
 export async function saveCalendarProfile(input: CalendarProfile) {
-	return requestApi<CalendarCancelResponse>(`/api/calendar/profile`, {
+	return requestApi<CalendarMutationOk>(`/api/calendar/profile`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(input),
-		parse: (payload) => CalendarCancelResponseSchema.parse(payload)
+		parse: (payload) => CalendarMutationOkSchema.parse(payload)
 	})
 }

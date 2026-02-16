@@ -2,8 +2,17 @@
 	import Hero from '$lib/ui/Hero.svelte'
 	import BookingCalendar from '$lib/booking/BookingCalendar.svelte'
 	import type { CalendarActivityConfig } from '$lib/booking/activities'
+	import type { CalendarEventsResponse } from '$lib/client/api/calendarClient'
 
-	const { activity } = $props<{ activity: CalendarActivityConfig }>()
+	const {
+		activity,
+		upcoming = [],
+		recent = []
+	} = $props<{
+		activity: CalendarActivityConfig
+		upcoming?: CalendarEventsResponse['upcoming']
+		recent?: CalendarEventsResponse['recent']
+	}>()
 </script>
 
 <svelte:head>
@@ -25,7 +34,7 @@
 		<p class="calendar-activity__service-note">{activity.serviceStatusNote}</p>
 	{/if}
 
-	<BookingCalendar activityName={activity.activityName} glowClass={activity.formGlowClass} />
+	<BookingCalendar activitySlug={activity.slug} initialUpcoming={upcoming} initialRecent={recent} />
 </div>
 
 <style lang="scss">

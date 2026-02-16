@@ -1,12 +1,12 @@
 # 🎨 miko-art
 
-Personal website and booking system built with SvelteKit 5, deployed to Cloudflare Pages.
+Personal website and social calendar system built with SvelteKit 5, deployed to Cloudflare Pages.
 
 ## ✨ Key Features
 
-- **📅 Booking Calendar** - Appointment scheduling with Google Calendar integration and capacity control
+- **📅 Social Calendar** - Event feed, join/waitlist flows, +1 support, and Google Calendar integration
 - **🔐 Authentication** - OAuth (Google, Apple), passkeys, MFA, and local credentials via `@goobits/auth`
-- **🛡️ Admin Dashboard** - Session-based admin access for managing bookings and settings
+- **🛡️ Admin Dashboard** - Session-based admin access for managing events, programs, and settings
 - **🌐 Cloudflare D1** - Serverless SQLite with automatic migrations in development
 - **🎭 Theme System** - Dark mode support with cookie-based persistence
 - **📝 Journal** - Markdown-powered blog with mdsvex
@@ -36,7 +36,7 @@ pnpm preview
 
 ### @miko/calendar
 
-Google Calendar integration, booking slots, availability management, D1 storage helpers, and email invites.
+Google Calendar integration, event/participant storage, program routing, and invite management.
 
 ### @goobits/auth
 

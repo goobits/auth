@@ -51,12 +51,13 @@
 				if (event.id !== eventId) return event
 				const wasJoined = event.userStatus === 'joined'
 				const wasWaitlist = event.userStatus === 'waitlist'
+				const seatsToRelease = wasJoined ? 1 + (event.userGuestCount ?? 0) : 0
 				return {
 					...event,
 					userStatus: null,
 					userGuestCount: 0,
-					seatsTaken: wasJoined ? Math.max(0, event.seatsTaken - 1) : event.seatsTaken,
-					seatsLeft: wasJoined ? Math.min(event.capacity, event.seatsLeft + 1) : event.seatsLeft,
+					seatsTaken: wasJoined ? Math.max(0, event.seatsTaken - seatsToRelease) : event.seatsTaken,
+					seatsLeft: wasJoined ? Math.min(event.capacity, event.seatsLeft + seatsToRelease) : event.seatsLeft,
 					waitlistCount: wasWaitlist ? Math.max(0, event.waitlistCount - 1) : event.waitlistCount
 				}
 			})

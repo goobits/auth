@@ -11,7 +11,7 @@ import { getDevDb, type D1DatabaseLike } from '$lib/dev/devDb.ts'
 const INVITE_COOKIE = 'calendar_invite'
 const REDIRECT_COOKIE = 'calendar_redirect'
 const INVITE_TTL_SECONDS = 600
-const SAFE_REDIRECT_PREFIXES = ['/calendar', '/calendar-gym', '/admin']
+const SAFE_REDIRECT_PREFIXES = ['/calendar', '/admin']
 const INVITE_BYPASS_DOMAIN = '@miko.art'
 
 type PlatformEnv = {
