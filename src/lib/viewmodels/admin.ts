@@ -54,7 +54,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
 ]
 
 const ADMIN_TAB_SEGMENTS: Record<AdminTabId, string> = {
-	dash: '',
+	dash: 'overview',
 	cal: 'availability',
 	events: 'events',
 	programs: 'programs',

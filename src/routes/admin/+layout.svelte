@@ -12,7 +12,7 @@
 	$effect(() => {
 		if (!connectedNow) return
 		// Clean up the query param after showing the notice (replaceState avoids history noise).
-		goto('/admin', { replaceState: true, keepFocus: true, noScroll: true })
+		goto('/admin/overview', { replaceState: true, keepFocus: true, noScroll: true })
 	})
 </script>
 

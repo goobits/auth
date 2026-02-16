@@ -2,6 +2,7 @@ import { getAdminAuth, ensureAdminAccount } from '$lib/auth/admin.ts'
 import { createSigninHandler, createLogoutHandler } from '@goobits/auth/handlers'
 import { checkRateLimit } from '@packages/calendar/src/index.ts'
 import { logAdminEvent } from '../api/admin/_helpers.ts'
+import { redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import type { User } from '@goobits/auth/types'
 
@@ -14,6 +15,9 @@ function isAuthUser(value: unknown): value is User {
 
 export const load: PageServerLoad = async (event) => {
 	const locals = event.locals as { user?: Record<string, unknown> }
+	if (locals.user) {
+		throw redirect(302, '/admin/overview')
+	}
 	return { user: locals.user ?? null, initialTab: 'dash' }
 }
 

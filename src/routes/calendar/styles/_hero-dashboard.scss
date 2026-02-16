@@ -14,10 +14,18 @@
 
 /* Hero.svelte sets `margin: 0 0 ...` (no horizontal centering). Calendar pages want centered hero blocks. */
 .calendar-page__hero.ui-hero {
-	margin: 0 auto;
+	margin: 0 auto !important;
+	margin-inline: auto !important;
 	max-width: var(--calendar-size-720);
+	display: grid;
 	justify-items: center;
+	justify-self: center;
 	text-align: center;
+	width: min(100%, var(--calendar-size-720));
+}
+
+.calendar-page > .calendar-page__hero.ui-hero {
+	justify-self: center;
 }
 
 .calendar-page__hero .ui-hero__eyebrow,
@@ -25,6 +33,13 @@
 .calendar-page__hero .ui-hero__subtitle {
 	text-align: center;
 	margin-inline: auto;
+}
+
+.calendar-page__hero.ui-hero .ui-hero__eyebrow,
+.calendar-page__hero.ui-hero .ui-hero__title,
+.calendar-page__hero.ui-hero .ui-hero__subtitle {
+	width: 100%;
+	text-align: center !important;
 }
 
 .calendar-page__hero-glow {
