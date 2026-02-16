@@ -39,8 +39,8 @@
 			{/each}
 		</div>
 		<div class="hero__actions">
-			<a class="c-button c-button--primary c-button--large" href="#volunteer">Join the Herd</a>
-			<a class="c-button c-button--secondary c-button--large" href="#donate">Donate</a>
+			<a class="c-button c-button--primary c-button--large" href="/join">Join the Herd</a>
+			<a class="c-button c-button--secondary c-button--large" href="/donate">Donate</a>
 		</div>
 		<p class="hero__reassurance">{reassurance}</p>
 	</div>

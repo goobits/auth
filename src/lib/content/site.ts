@@ -137,30 +137,29 @@ export const site = {
 		{ icon: '🧺', label: 'Picnic blanket' },
 		{ icon: '😎', label: 'Good energy' }
 	],
-	donation: {
-		headline: 'Donate (if you can)',
-		body:
-			'This event is donation-based so it stays welcoming and accessible. Your donation helps cover permits, insurance, performer tips, and supports our beneficiary mission.',
-		bullets: [
-			'Permits + insurance are covered first',
-			'Aerial tips go directly to performers',
-			'Remainder supports [Beneficiary] / next year'
-		],
-		disclaimer: 'Benefiting [Beneficiary]. No endorsement implied unless explicitly stated.',
-		onlineUrl: '#',
-		venmoUrl: '#',
-		paypalUrl: '#'
-	},
-	volunteer: {
+		donation: {
+			headline: 'Donate (if you can)',
+			body:
+				'This event is donation-based so it stays welcoming and accessible. Your donation helps cover permits, insurance, performer tips, and supports our beneficiary mission.',
+			bullets: [
+				'Permits + insurance are covered first',
+				'Aerial tips go directly to performers',
+				'Remainder supports next year’s event operations'
+			],
+			disclaimer: 'Donations are community-managed and transparency updates are posted after the event.',
+			onlineUrl: '/donate#online',
+			venmoUrl: '/donate#venmo',
+			paypalUrl: '/donate#paypal'
+		},
+		volunteer: {
 		roles: [
 			{ title: 'Course Marshal', text: 'Stand at a key turn, cheer dinos, point the way.', icon: '📣' },
 			{ title: 'Check-In Buddy', text: 'Help people get oriented and answer questions.', icon: '👋' },
 			{ title: 'Setup / Takedown', text: 'Place signs, tidy up, leave the park pristine.', icon: '🔧' },
 			{ title: 'Sweep Walker', text: 'Bring up the rear so nobody finishes alone.', icon: '🐢' }
-		],
-		signupUrl: '#',
-		perks: 'Snacks, gratitude, and a volunteer patch/sticker.'
-	},
+			],
+			perks: 'Snacks, gratitude, and a volunteer patch/sticker.'
+		},
 	faq: [
 		{
 			q: 'Is this a race?',
