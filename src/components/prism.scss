@@ -282,34 +282,34 @@ pre[class*="language-"]
 
 /* Code box limit */
 
-.limit-300
+pre[class*="language-"].limit-300
 {
-	height: 300px !important;
+	height: 18.75rem;
 }
 
-.limit-400
+pre[class*="language-"].limit-400
 {
-	height: 400px !important;
+	height: 25rem;
 }
 
-.limit-500
+pre[class*="language-"].limit-500
 {
-	height: 500px !important;
+	height: 31.25rem;
 }
 
-.limit-600
+pre[class*="language-"].limit-600
 {
-	height: 600px !important;
+	height: 37.5rem;
 }
 
-.limit-700
+pre[class*="language-"].limit-700
 {
-	height: 700px !important;
+	height: 43.75rem;
 }
 
-.limit-800
+pre[class*="language-"].limit-800
 {
-	height: 800px !important;
+	height: 50rem;
 }
 
 .language-css
