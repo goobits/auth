@@ -1,5 +1,6 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
+import { parseAdminRulesInput, TransportValidationError } from '@packages/calendar/src/index.ts'
 import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
 
 export async function POST(event: RequestEvent) {
@@ -14,38 +15,18 @@ export async function POST(event: RequestEvent) {
 		}
 		const db = env.DB
 
-		const body = await event.request.json().catch(() => null)
-		if (!body) {
-			return json({ ok: false, error: { message: 'Invalid JSON' } }, { status: 400, headers: noStoreHeaders })
-		}
-		const { hoursFrom, hoursTo, buffer, notice, capacity } = body
+		const { hoursFrom, hoursTo, buffer, notice, capacity } = parseAdminRulesInput(
+			await event.request.json().catch(() => null)
+		)
 		const now = Date.now()
-
-		const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/
-		if (!timePattern.test(String(hoursFrom)) || !timePattern.test(String(hoursTo))) {
-			return json({ ok: false, error: { message: 'Invalid hours format' } }, { status: 400, headers: noStoreHeaders })
-		}
-
-		const bufferValue = Number.parseInt(buffer, 10)
-		const noticeValue = Number.parseInt(notice, 10)
-		const capacityValue = Number.parseInt(capacity, 10)
-		if (!Number.isFinite(bufferValue) || bufferValue < 0 || bufferValue > 180) {
-			return json({ ok: false, error: { message: 'Invalid buffer' } }, { status: 400, headers: noStoreHeaders })
-		}
-		if (!Number.isFinite(noticeValue) || noticeValue < 0 || noticeValue > 720) {
-			return json({ ok: false, error: { message: 'Invalid notice' } }, { status: 400, headers: noStoreHeaders })
-		}
-		if (!Number.isFinite(capacityValue) || capacityValue < 1 || capacityValue > 50) {
-			return json({ ok: false, error: { message: 'Invalid capacity' } }, { status: 400, headers: noStoreHeaders })
-		}
 
 		// Save each setting
 		const settings = [
 			['hoursFrom', hoursFrom],
 			['hoursTo', hoursTo],
-			['buffer', String(bufferValue)],
-			['notice', String(noticeValue)],
-			['capacity', String(capacityValue)]
+			['buffer', String(buffer)],
+			['notice', String(notice)],
+			['capacity', String(capacity)]
 		]
 
 		for (const [key, value] of settings) {
@@ -55,9 +36,12 @@ export async function POST(event: RequestEvent) {
 			).bind(key, value, now).run()
 		}
 
-		logAdminEvent(event, 'rules_update', { hoursFrom, hoursTo, buffer: bufferValue, notice: noticeValue, capacity: capacityValue })
+		logAdminEvent(event, 'rules_update', { hoursFrom, hoursTo, buffer, notice, capacity })
 		return json({ ok: true }, { headers: noStoreHeaders })
 	} catch (err) {
+		if (err instanceof TransportValidationError) {
+			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
+		}
 		console.error('Admin rules save error:', err)
 		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
 	}

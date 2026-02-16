@@ -1,6 +1,7 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../calendar/_bridge.ts'
 import { setAttendanceStatus, updateEventCapacity, updateEventMemory } from '@packages/calendar/src/services/social.ts'
+import { parseAdminEventUpdateInput, TransportValidationError } from '@packages/calendar/src/index.ts'
 import { enforceSameOrigin, logAdminEvent, noStoreHeaders, requireAdminSession, unauthorized } from '../../_helpers.ts'
 
 export async function POST(event: RequestEvent) {
@@ -19,41 +20,25 @@ export async function POST(event: RequestEvent) {
 			return json({ ok: false, error: { message: 'Invalid event id' } }, { status: 400, headers: noStoreHeaders })
 		}
 
-		const body = await event.request.json().catch(() => null)
-		if (!body || typeof body !== 'object') {
-			return json({ ok: false, error: { message: 'Invalid JSON' } }, { status: 400, headers: noStoreHeaders })
-		}
-
 		const env = await buildEnv(event.platform)
-		const action = typeof body.action === 'string' ? body.action : ''
-		if (action === 'capacity') {
-			const capacity = Number.parseInt(String(body.capacity ?? 0), 10)
-			if (!Number.isFinite(capacity) || capacity < 1 || capacity > 50) {
-				return json({ ok: false, error: { message: 'Invalid capacity' } }, { status: 400, headers: noStoreHeaders })
-			}
-			await updateEventCapacity(env.DB, { eventId, capacity })
-			logAdminEvent(event, 'event_capacity_update', { eventId, capacity })
+		const input = parseAdminEventUpdateInput(await event.request.json().catch(() => null))
+		if (input.action === 'capacity') {
+			await updateEventCapacity(env.DB, { eventId, capacity: input.capacity })
+			logAdminEvent(event, 'event_capacity_update', { eventId, capacity: input.capacity })
 			return json({ ok: true }, { headers: noStoreHeaders })
 		}
 
-		if (action === 'attendance') {
-			const userId = typeof body.userId === 'string' ? body.userId : ''
-			const attendanceStatus = body.attendanceStatus
-			if (!userId || (attendanceStatus !== 'unknown' && attendanceStatus !== 'attended' && attendanceStatus !== 'flaked')) {
-				return json({ ok: false, error: { message: 'Invalid attendance input' } }, { status: 400, headers: noStoreHeaders })
-			}
-			await setAttendanceStatus(env.DB, { eventId, userId, attendanceStatus })
-			logAdminEvent(event, 'event_attendance_update', { eventId, userId, attendanceStatus })
+		if (input.action === 'attendance') {
+			await setAttendanceStatus(env.DB, { eventId, userId: input.userId, attendanceStatus: input.attendanceStatus })
+			logAdminEvent(event, 'event_attendance_update', { eventId, userId: input.userId, attendanceStatus: input.attendanceStatus })
 			return json({ ok: true }, { headers: noStoreHeaders })
 		}
 
-		if (action === 'memory') {
-			const recapText = typeof body.recapText === 'string' ? body.recapText.slice(0, 400) : ''
-			const heroImageUrl = typeof body.heroImageUrl === 'string' ? body.heroImageUrl.slice(0, 240) : ''
+		if (input.action === 'memory') {
 			await updateEventMemory(env.DB, {
 				eventId,
-				recapText: recapText || null,
-				heroImageUrl: heroImageUrl || null
+				recapText: input.recapText,
+				heroImageUrl: input.heroImageUrl
 			})
 			logAdminEvent(event, 'event_memory_update', { eventId })
 			return json({ ok: true }, { headers: noStoreHeaders })
@@ -61,6 +46,9 @@ export async function POST(event: RequestEvent) {
 
 		return json({ ok: false, error: { message: 'Unknown action' } }, { status: 400, headers: noStoreHeaders })
 	} catch (err) {
+		if (err instanceof TransportValidationError) {
+			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
+		}
 		console.error('Admin event update error:', err)
 		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
 	}

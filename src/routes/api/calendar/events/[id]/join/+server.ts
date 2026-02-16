@@ -2,6 +2,7 @@ import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../_bridge.ts'
 import { joinEvent } from '@packages/calendar/src/services/social.ts'
 import { enqueueCalendarSyncJob, processCalendarSyncQueue } from '@packages/calendar/src/services/sync-queue.ts'
+import { parseCalendarJoinEventInput, TransportValidationError } from '@packages/calendar/src/index.ts'
 import { getCalendarUserId, noStoreHeaders, unauthorizedCalendar } from '../../../_auth.ts'
 
 export async function POST(event: RequestEvent) {
@@ -18,16 +19,14 @@ export async function POST(event: RequestEvent) {
 			return json({ ok: false, error: { message: 'Invalid event id' } }, { status: 400, headers: noStoreHeaders })
 		}
 
-		const body = await event.request.json().catch(() => null)
-		const guestCount = Number.parseInt(String(body?.guestCount ?? 0), 10)
-		const note = typeof body?.note === 'string' ? body.note.slice(0, 400) : null
+		const input = parseCalendarJoinEventInput(await event.request.json().catch(() => null))
 
 		const env = await buildEnv(event.platform)
 		const result = await joinEvent(env.DB, {
 			eventId,
 			userId,
-			guestCount: Number.isFinite(guestCount) ? guestCount : 0,
-			note
+			guestCount: input.guestCount,
+			note: input.note
 		})
 		// Don't block member experience if queue write fails.
 		try {
@@ -35,7 +34,7 @@ export async function POST(event: RequestEvent) {
 				eventId,
 				trigger: 'member_join',
 				requestedByUserId: userId,
-				payload: { guestCount: Number.isFinite(guestCount) ? guestCount : 0 }
+				payload: { guestCount: input.guestCount }
 			})
 			void processCalendarSyncQueue(env.DB, env, 2).catch((error) => {
 				console.warn('Best-effort calendar sync processing failed after join:', error)
@@ -49,6 +48,9 @@ export async function POST(event: RequestEvent) {
 		}
 		return json({ ok: true, status: result.status }, { headers: noStoreHeaders })
 	} catch (err) {
+		if (err instanceof TransportValidationError) {
+			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
+		}
 		console.error('Calendar join event error:', err)
 		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
 	}

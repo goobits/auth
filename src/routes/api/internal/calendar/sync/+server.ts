@@ -1,6 +1,6 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../calendar/_bridge.ts'
-import { processCalendarSyncQueue } from '@packages/calendar/src/services/sync-queue.ts'
+import { parseSyncQueueProcessLimitInput, processCalendarSyncQueue, TransportValidationError } from '@packages/calendar/src/index.ts'
 
 function unauthorized() {
 	return json({ ok: false, error: { message: 'Unauthorized' } }, { status: 401 })
@@ -16,11 +16,13 @@ export async function POST(event: RequestEvent) {
 		const token = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length).trim() : ''
 		if (!token || token !== configured) return unauthorized()
 
-		const body = await event.request.json().catch(() => null)
-		const limit = Math.max(1, Math.min(50, Number.parseInt(String(body?.limit ?? 10), 10) || 10))
+		const limit = parseSyncQueueProcessLimitInput(await event.request.json().catch(() => null))
 		const result = await processCalendarSyncQueue(env.DB, env, limit)
 		return json({ ok: true, ...result })
 	} catch (error) {
+		if (error instanceof TransportValidationError) {
+			return json({ ok: false, error: { message: error.message } }, { status: error.status })
+		}
 		console.error('Internal calendar sync runner failed:', error)
 		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
 	}
