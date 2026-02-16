@@ -7,7 +7,7 @@
 	<div class="layout__container">
 		<h2 class="layout__title">FAQ</h2>
 		<div class="faq__list">
-			{#each faqs as item, i}
+			{#each faqs as item, i (item.q)}
 				<article class="faq__item">
 					<button class="faq__button" type="button" onclick={() => (open = open === i ? null : i)} aria-expanded={open === i}>
 						<span>{item.q}</span>

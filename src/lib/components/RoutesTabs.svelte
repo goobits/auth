@@ -6,7 +6,7 @@
 	$effect(() => {
 		if (!active && routes[0]?.id) active = routes[0].id;
 	});
-	let current = $derived(routes.find((route) => route.id === active) ?? routes[0]);
+	let current = $derived(routes.find((route: Route) => route.id === active) ?? routes[0]);
 </script>
 
 <section class="layout__section routes" id="routes">
@@ -15,7 +15,7 @@
 		<p class="routes__intro">Pick the route that matches your day. You can walk, jog, or run.</p>
 
 		<div class="routes__tabs" role="tablist" aria-label="Route options">
-			{#each routes as route}
+			{#each routes as route (route.id)}
 				<button
 					class={`routes__tab ${active === route.id ? 'routes__tab--active' : ''}`}
 					type="button"

@@ -16,7 +16,7 @@
 			<p class="volunteer__perk">Snacks, gratitude, and a volunteer patch/sticker.</p>
 		</div>
 		<div class="volunteer__grid">
-			{#each volunteer.roles as role}
+			{#each volunteer.roles as role (role.title)}
 				<article class="c-card volunteer__role">
 					<h3 class="volunteer__role-title">{role.title}</h3>
 					<p class="volunteer__role-copy">{role.text}</p>

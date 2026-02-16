@@ -17,8 +17,8 @@
 
 	onMount(() => {
 		const sections = nav
-			.map((item) => document.getElementById(item.id))
-			.filter((node): node is HTMLElement => node !== null);
+			.map((item: NavItem) => document.getElementById(item.id))
+			.filter((node: HTMLElement | null): node is HTMLElement => node !== null);
 
 		const observer = new IntersectionObserver(
 			(entries) => {
@@ -30,8 +30,12 @@
 			{ threshold: [0.2, 0.5, 0.8], rootMargin: '-120px 0px -45% 0px' }
 		);
 
-		sections.forEach((section) => observer.observe(section));
-		return () => observer.disconnect();
+		sections.forEach((section: HTMLElement) => {
+			observer.observe(section);
+		});
+		return () => {
+			observer.disconnect();
+		};
 	});
 </script>
 
@@ -40,7 +44,7 @@
 		<a href="#top" class="site-header__brand">🦖 PDX Dino Run</a>
 
 		<nav class="site-header__nav" aria-label="Primary">
-			{#each nav as item}
+			{#each nav as item (item.id)}
 				<a
 					href={`#${item.id}`}
 					class={`site-header__link ${active === item.id ? 'site-header__link--active' : ''}`}
@@ -56,7 +60,14 @@
 			<a class="c-button c-button--primary" href="#volunteer">Join the Herd</a>
 		</div>
 
-		<button class="site-header__menu-button" type="button" onclick={() => (menuOpen = !menuOpen)} aria-expanded={menuOpen}>
+		<button
+			class="site-header__menu-button"
+			type="button"
+			onclick={() => {
+				menuOpen = !menuOpen;
+			}}
+			aria-expanded={menuOpen}
+		>
 			Menu
 		</button>
 	</div>
@@ -64,7 +75,7 @@
 	{#if menuOpen}
 		<div class="site-header__mobile">
 			<div class="layout__container site-header__mobile-inner">
-				{#each nav as item}
+				{#each nav as item (item.id)}
 					<a class="site-header__mobile-link" href={`#${item.id}`} onclick={closeMenu}>{item.label}</a>
 				{/each}
 				<div class="site-header__mobile-actions">

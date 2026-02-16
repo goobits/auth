@@ -8,7 +8,7 @@
 			<h2 class="supporters__title">Want to support the herd?</h2>
 			<p class="supporters__copy">We love in-kind support. It keeps this event practical and community-powered.</p>
 			<ul>
-				{#each sponsors.list as item}
+				{#each sponsors.list as item, i (`${item}-${String(i)}`)}
 					<li class="supporters__item">{item}</li>
 				{/each}
 			</ul>

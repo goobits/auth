@@ -15,7 +15,7 @@
 			<p class="hero__subhead">{subhead}</p>
 			<p class="hero__date">{dateLine}</p>
 			<div class="hero__chips">
-				{#each chips as chip}
+				{#each chips as chip (chip)}
 					<span class="hero__chip">{chip}</span>
 				{/each}
 			</div>
