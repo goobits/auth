@@ -1,12 +1,14 @@
 import {
 	cancelAdminBooking,
 	createAdminEvents,
+	deleteAdminProgram,
 	getAdminBookings,
 	getAdminEvents,
 	getAdminPrograms,
 	getAdminStatus,
 	saveAdminRules,
 	setAdminProgram,
+	toggleAdminProgram,
 	updateAdminEventMemory,
 	updateAdminEventCapacity,
 	type AdminRulesInput
@@ -115,7 +117,32 @@ export async function fetchAdminPrograms() {
 }
 
 export async function persistAdminProgram(input: { slug: string; enabled: boolean }) {
+	return toggleAdminProgram(input.slug, input.enabled)
+}
+
+export async function saveAdminProgram(input: {
+	slug: string
+	label: string
+	activityName: string
+	pageTitle: string
+	eyebrow: string
+	heroTitleLine1: string
+	heroTitleLine2?: string
+	heroSubtitle: string
+	description: string
+	icon: string
+	eyebrowClass?: string
+	glowClass?: string
+	formGlowClass?: string
+	serviceStatusNote?: string
+	enabled: boolean
+	sortOrder: number
+}) {
 	return setAdminProgram(input)
+}
+
+export async function removeAdminProgram(slug: string) {
+	return deleteAdminProgram(slug)
 }
 
 export async function fetchAdminEvents() {
@@ -128,6 +155,11 @@ export async function persistAdminEvents(input: {
 	startsAt: string
 	endsAt: string
 	capacity: number
+	costCents?: number
+	currency?: string
+	paymentProvider?: string
+	paymentHandle?: string
+	paymentNoteTemplate?: string
 	repeatWeeks?: number
 	location?: string
 	note?: string

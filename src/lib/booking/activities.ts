@@ -1,6 +1,6 @@
 export type CalendarActivityConfig = {
-	slug: 'gym' | 'circus' | 'adventure' | 'movie-night'
-	href: `/calendar/${'gym' | 'circus' | 'adventure' | 'movie-night'}`
+	slug: string
+	href: `/calendar/${string}`
 	label: string
 	activityName: string
 	pageTitle: string
@@ -10,11 +10,12 @@ export type CalendarActivityConfig = {
 	formGlowClass?: string
 	heroTitleLines: [string] | [string, string]
 	heroSubtitle: string
+	serviceStatusNote?: string
 	description: string
 	icon: string
 }
 
-export const CALENDAR_ACTIVITIES: Record<CalendarActivityConfig['slug'], CalendarActivityConfig> = {
+export const CALENDAR_ACTIVITIES = {
 	gym: {
 		slug: 'gym',
 		href: '/calendar/gym',
@@ -72,7 +73,7 @@ export const CALENDAR_ACTIVITIES: Record<CalendarActivityConfig['slug'], Calenda
 		description: 'Community film screenings',
 		icon: '🎬'
 	}
-}
+} satisfies Record<string, CalendarActivityConfig>
 
 export const CALENDAR_ACTIVITY_LIST: CalendarActivityConfig[] = [
 	CALENDAR_ACTIVITIES.gym,

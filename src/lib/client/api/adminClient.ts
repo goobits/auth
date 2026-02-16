@@ -11,7 +11,21 @@ export type AdminRulesInput = {
 
 export type AdminProgramInput = {
 	slug: string
+	label: string
+	activityName: string
+	pageTitle: string
+	eyebrow: string
+	heroTitleLine1: string
+	heroTitleLine2?: string
+	heroSubtitle: string
+	description: string
+	icon: string
+	eyebrowClass?: string
+	glowClass?: string
+	formGlowClass?: string
+	serviceStatusNote?: string
 	enabled: boolean
+	sortOrder: number
 }
 
 export type AdminEventCreateInput = {
@@ -63,8 +77,19 @@ const AdminProgramsResponseSchema = z.object({
 		slug: z.string(),
 		href: z.string(),
 		label: z.string(),
+		activityName: z.string(),
+		pageTitle: z.string(),
+		eyebrow: z.string(),
+		heroTitleLines: z.array(z.string()),
+		heroSubtitle: z.string(),
 		description: z.string(),
-		enabled: z.boolean()
+		icon: z.string(),
+		eyebrowClass: z.string().optional(),
+		glowClass: z.string().optional(),
+		formGlowClass: z.string().optional(),
+		serviceStatusNote: z.string().optional(),
+		enabled: z.boolean(),
+		sortOrder: z.number()
 	}))
 })
 
@@ -191,7 +216,25 @@ export async function setAdminProgram(input: AdminProgramInput) {
 	return requestApi<AdminMutationOk>('/api/admin/programs', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(input),
+		body: JSON.stringify({ action: 'upsert', ...input }),
+		parse: (payload) => AdminMutationOkSchema.parse(payload)
+	})
+}
+
+export async function toggleAdminProgram(slug: string, enabled: boolean) {
+	return requestApi<AdminMutationOk>('/api/admin/programs', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ action: 'toggle', slug, enabled }),
+		parse: (payload) => AdminMutationOkSchema.parse(payload)
+	})
+}
+
+export async function deleteAdminProgram(slug: string) {
+	return requestApi<AdminMutationOk>('/api/admin/programs', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ action: 'delete', slug }),
 		parse: (payload) => AdminMutationOkSchema.parse(payload)
 	})
 }

@@ -21,6 +21,9 @@
 		titleLines={activity.heroTitleLines}
 		subtitle={activity.heroSubtitle}
 	/>
+	{#if activity.serviceStatusNote}
+		<p class="calendar-activity__service-note">{activity.serviceStatusNote}</p>
+	{/if}
 
 	<BookingCalendar activityName={activity.activityName} glowClass={activity.formGlowClass} />
 </div>
@@ -36,5 +39,13 @@
 
 	.calendar-activity__subtitle {
 		text-wrap: pretty;
+	}
+
+	.calendar-activity__service-note {
+		margin: -0.4rem auto 1.2rem;
+		max-width: 42rem;
+		text-align: center;
+		font-size: 0.84rem;
+		color: color-mix(in srgb, var(--calendar-shell-text) 55%, transparent);
 	}
 </style>

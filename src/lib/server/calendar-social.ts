@@ -1,10 +1,10 @@
 import type { D1DatabaseLike } from '$lib/dev/devDb'
-import { CALENDAR_ACTIVITY_LIST } from '$lib/booking/activities'
-import { isKnownProgramSlug, type CalendarProgramSlug } from '$lib/booking/programs'
+import type { CalendarProgramSlug } from '$lib/booking/programs'
 
 type EventRow = {
 	id: number
 	activity_slug: string
+	activity_label: string | null
 	title: string
 	starts_at: string
 	ends_at: string
@@ -80,16 +80,6 @@ export type CalendarProfile = {
 	chatHandle: string
 }
 
-const ACTIVITY_BY_SLUG = new Map(CALENDAR_ACTIVITY_LIST.map((activity) => [activity.slug, activity]))
-
-function toProgramSlug(slug: string): CalendarProgramSlug | null {
-	return isKnownProgramSlug(slug) ? slug : null
-}
-
-function toActivityLabel(slug: CalendarProgramSlug) {
-	return ACTIVITY_BY_SLUG.get(slug)?.label ?? slug
-}
-
 async function listEventsByRange(
 	db: D1DatabaseLike,
 	userId: string,
@@ -104,10 +94,11 @@ async function listEventsByRange(
 		: ''
 
 	const eventResult = await db.prepare(
-		`SELECT e.id, e.activity_slug, e.title, e.starts_at, e.ends_at, e.capacity, e.status, e.location, e.note,
+		`SELECT e.id, e.activity_slug, p.label AS activity_label, e.title, e.starts_at, e.ends_at, e.capacity, e.status, e.location, e.note,
 		        e.cost_cents, e.currency, e.payment_provider, e.payment_handle, e.payment_note_template,
 		        e.recap_text, e.hero_image_url
 		 FROM calendar_events e
+		 LEFT JOIN calendar_programs p ON p.slug = e.activity_slug
 		 WHERE ${input.whereSql}
 		   ${whereMine}
 		 ORDER BY datetime(e.starts_at) ASC
@@ -136,8 +127,7 @@ async function listEventsByRange(
 	}
 
 	return rows.flatMap((row) => {
-		const activitySlug = toProgramSlug(row.activity_slug)
-		if (!activitySlug) return []
+		const activitySlug = row.activity_slug as CalendarProgramSlug
 		const participants = byEvent.get(row.id) ?? []
 		const joined = participants.filter((participant) => participant.status === 'joined')
 		const waitlist = participants.filter((participant) => participant.status === 'waitlist')
@@ -148,7 +138,7 @@ async function listEventsByRange(
 		return [{
 			id: row.id,
 			activitySlug,
-			activityLabel: toActivityLabel(activitySlug),
+			activityLabel: row.activity_label || row.activity_slug,
 			title: row.title,
 			startsAt: row.starts_at,
 			endsAt: row.ends_at,

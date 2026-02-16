@@ -5,11 +5,13 @@ import {
 import {
 	cancelDashboardBooking,
 	createAdminEventsBatch,
+	deleteDashboardProgram,
 	getCalendarReconnectUrl,
 	loadAdminEventsData,
 	loadAdminPrograms,
 	loadDashboardBookings,
 	loadDashboardStatus,
+	saveDashboardProgram,
 	saveDashboardRules,
 	updateAdminEventCapacityValue,
 	updateAdminEventMemoryValue,
@@ -41,9 +43,47 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 	let stats = $state(DEFAULT_ADMIN_STATS)
 	let loading = $state(true)
 	let error = $state('')
-	let programs = $state<Array<{ slug: string; href: string; label: string; description: string; enabled: boolean }>>([])
+	let programs = $state<Array<{
+		slug: string
+		href: string
+		label: string
+		activityName: string
+		pageTitle: string
+		eyebrow: string
+		heroTitleLines: string[]
+		heroSubtitle: string
+		description: string
+		icon: string
+		eyebrowClass?: string | undefined
+		glowClass?: string | undefined
+		formGlowClass?: string | undefined
+		serviceStatusNote?: string | undefined
+		enabled: boolean
+		sortOrder: number
+	}>>([])
 	let programsLoading = $state(false)
 	let programUpdatingSlug = $state<string | null>(null)
+	let programSaving = $state(false)
+	let programDeleting = $state(false)
+	let selectedProgramSlug = $state<string | null>(null)
+	let programDraft = $state({
+		slug: '',
+		label: '',
+		activityName: '',
+		pageTitle: '',
+		eyebrow: '',
+		heroTitleLine1: '',
+		heroTitleLine2: '',
+		heroSubtitle: '',
+		description: '',
+		icon: '',
+		eyebrowClass: '',
+		glowClass: '',
+		formGlowClass: '',
+		serviceStatusNote: '',
+		enabled: true,
+		sortOrder: 0
+	})
 	let events = $state<Array<{
 		id: number
 		activitySlug: string
@@ -196,6 +236,10 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 			const result = await loadAdminPrograms()
 			programs = result.programs
 			error = result.error
+			const firstProgram = programs[0]
+			if (!selectedProgramSlug && firstProgram) {
+				selectProgram(firstProgram.slug)
+			}
 		} catch (err) {
 			if (onUnauthorized?.(err)) return
 			error = err instanceof Error ? err.message : 'Failed to load programs'
@@ -221,6 +265,112 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 			error = err instanceof Error ? err.message : 'Failed to update program'
 		} finally {
 			programUpdatingSlug = null
+		}
+	}
+
+	function selectProgram(slug: string) {
+		const program = programs.find((item) => item.slug === slug)
+		if (!program) return
+		selectedProgramSlug = slug
+		programDraft = {
+			slug: program.slug,
+			label: program.label,
+			activityName: program.activityName,
+			pageTitle: program.pageTitle,
+			eyebrow: program.eyebrow,
+			heroTitleLine1: program.heroTitleLines[0] ?? '',
+			heroTitleLine2: program.heroTitleLines[1] ?? '',
+			heroSubtitle: program.heroSubtitle,
+			description: program.description,
+			icon: program.icon,
+			eyebrowClass: program.eyebrowClass ?? '',
+			glowClass: program.glowClass ?? '',
+			formGlowClass: program.formGlowClass ?? '',
+			serviceStatusNote: program.serviceStatusNote ?? '',
+			enabled: program.enabled,
+			sortOrder: program.sortOrder
+		}
+	}
+
+	function newProgramDraft() {
+		selectedProgramSlug = null
+		programDraft = {
+			slug: '',
+			label: '',
+			activityName: '',
+			pageTitle: '',
+			eyebrow: '',
+			heroTitleLine1: '',
+			heroTitleLine2: '',
+			heroSubtitle: '',
+			description: '',
+			icon: '✨',
+			eyebrowClass: '',
+			glowClass: '',
+			formGlowClass: '',
+			serviceStatusNote: '',
+			enabled: true,
+			sortOrder: (programs.at(-1)?.sortOrder ?? 0) + 10
+		}
+	}
+
+	async function saveProgram() {
+		programSaving = true
+		error = ''
+		try {
+			const result = await saveDashboardProgram({
+				slug: programDraft.slug.trim(),
+				label: programDraft.label.trim(),
+				activityName: programDraft.activityName.trim(),
+				pageTitle: programDraft.pageTitle.trim(),
+				eyebrow: programDraft.eyebrow.trim(),
+				heroTitleLine1: programDraft.heroTitleLine1.trim(),
+				heroTitleLine2: programDraft.heroTitleLine2.trim(),
+				heroSubtitle: programDraft.heroSubtitle.trim(),
+				description: programDraft.description.trim(),
+				icon: programDraft.icon.trim(),
+				eyebrowClass: programDraft.eyebrowClass.trim(),
+				glowClass: programDraft.glowClass.trim(),
+				formGlowClass: programDraft.formGlowClass.trim(),
+				serviceStatusNote: programDraft.serviceStatusNote.trim(),
+				enabled: programDraft.enabled,
+				sortOrder: programDraft.sortOrder
+			})
+			if (!result.ok) {
+				error = result.error
+				return
+			}
+			await loadPrograms()
+			selectProgram(programDraft.slug.trim())
+		} catch (err) {
+			if (onUnauthorized?.(err)) return
+			error = err instanceof Error ? err.message : 'Failed to save program'
+		} finally {
+			programSaving = false
+		}
+	}
+
+	async function deleteProgram() {
+		const slug = selectedProgramSlug
+		if (!slug) return
+		if (!confirm(`Delete program "${slug}"?`)) return
+		programDeleting = true
+		error = ''
+		try {
+			const result = await deleteDashboardProgram(slug)
+			if (!result.ok) {
+				error = result.error
+				return
+			}
+			await loadPrograms()
+			const firstProgram = programs[0]
+			if (firstProgram) selectProgram(firstProgram.slug)
+			else newProgramDraft()
+		} catch (err) {
+			if (onUnauthorized?.(err)) return
+			error = err instanceof Error ? err.message : 'Failed to delete program'
+		} finally {
+			programDeleting = false
 		}
 	}
 
@@ -337,6 +487,11 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 		get programs() { return programs },
 		get programsLoading() { return programsLoading },
 		get programUpdatingSlug() { return programUpdatingSlug },
+		get selectedProgramSlug() { return selectedProgramSlug },
+		get programDraft() { return programDraft },
+		set programDraft(value) { programDraft = value },
+		get programSaving() { return programSaving },
+		get programDeleting() { return programDeleting },
 		get events() { return events },
 		get eventsLoading() { return eventsLoading },
 		get eventsCreating() { return eventsCreating },
@@ -352,6 +507,10 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 		cancelBooking,
 		reconnect,
 		toggleProgram,
+		selectProgram,
+		newProgramDraft,
+		saveProgram,
+		deleteProgram,
 		createEvents,
 		updateEventCapacity,
 		updateEventMemory

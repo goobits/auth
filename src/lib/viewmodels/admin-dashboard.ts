@@ -12,7 +12,9 @@ import {
 	persistAdminProgram,
 	persistAdminRules,
 	persistInvite,
+	removeAdminProgram,
 	removeAdminBooking,
+	saveAdminProgram,
 	removeInvite,
 	type AdminRulesState
 } from '$lib/viewmodels/admin'
@@ -80,6 +82,33 @@ export async function loadAdminPrograms() {
 
 export async function updateAdminProgram(input: { slug: string; enabled: boolean }) {
 	await persistAdminProgram(input)
+	return { ok: true, error: '' }
+}
+
+export async function saveDashboardProgram(input: {
+	slug: string
+	label: string
+	activityName: string
+	pageTitle: string
+	eyebrow: string
+	heroTitleLine1: string
+	heroTitleLine2?: string
+	heroSubtitle: string
+	description: string
+	icon: string
+	eyebrowClass?: string
+	glowClass?: string
+	formGlowClass?: string
+	serviceStatusNote?: string
+	enabled: boolean
+	sortOrder: number
+}) {
+	await saveAdminProgram(input)
+	return { ok: true, error: '' }
+}
+
+export async function deleteDashboardProgram(slug: string) {
+	await removeAdminProgram(slug)
 	return { ok: true, error: '' }
 }
 

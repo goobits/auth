@@ -2,7 +2,7 @@ import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
 import { createEventsBatch, listEventsFeed } from '$lib/server/calendar-social'
 import { enforceSameOrigin, logAdminEvent, noStoreHeaders, requireAdminSession, unauthorized } from '../_helpers.ts'
-import { isKnownProgramSlug } from '$lib/booking/programs'
+import { getCalendarProgramBySlug } from '$lib/server/calendar-programs'
 
 export async function GET(event: RequestEvent) {
 	try {
@@ -42,7 +42,7 @@ export async function POST(event: RequestEvent) {
 		const paymentHandle = typeof body.paymentHandle === 'string' ? body.paymentHandle.trim().slice(0, 80) : null
 		const paymentNoteTemplate = typeof body.paymentNoteTemplate === 'string' ? body.paymentNoteTemplate.trim().slice(0, 120) : null
 
-		if (!isKnownProgramSlug(activitySlug) || !title || !startsAt || !endsAt || !Number.isFinite(capacity) || capacity < 1 || capacity > 50) {
+		if (!title || !startsAt || !endsAt || !Number.isFinite(capacity) || capacity < 1 || capacity > 50) {
 			return json({ ok: false, error: { message: 'Invalid event input' } }, { status: 400, headers: noStoreHeaders })
 		}
 		if (!Number.isFinite(costCents) || costCents < 0 || costCents > 200000) {
@@ -54,8 +54,12 @@ export async function POST(event: RequestEvent) {
 		}
 
 		const env = await buildEnv(event.platform)
+		const program = await getCalendarProgramBySlug(env.DB, activitySlug, { includeDisabled: true })
+		if (!program) {
+			return json({ ok: false, error: { message: 'Program not found' } }, { status: 404, headers: noStoreHeaders })
+		}
 		const ids = await createEventsBatch(env.DB, {
-			activitySlug,
+			activitySlug: program.slug,
 			title,
 			startsAt,
 			endsAt,
