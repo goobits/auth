@@ -1,0 +1,31 @@
+.site-footer {
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-surface-variant);
+  padding-block: var(--space-8);
+
+  &__inner {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  &__line {
+    margin: 0;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-accent);
+  }
+
+  &__nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  &__link {
+    text-decoration: none;
+    color: var(--color-text-secondary);
+  }
+
+  &__small {
+    color: var(--color-text-tertiary);
+  }
+}

@@ -1,0 +1,86 @@
+.routes {
+  &__intro,
+  &__safety {
+    color: var(--color-text-tertiary);
+  }
+
+  &__tabs {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+
+  &__tab {
+    height: var(--space-11);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+
+    &--active {
+      border-color: var(--color-accent-soft);
+      color: var(--color-accent);
+      background-color: var(--color-route-tab-active);
+    }
+  }
+
+  &__panel {
+    margin-top: var(--space-4);
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  &__meta,
+  &__map {
+    padding: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-2xl);
+    background-color: var(--color-surface);
+  }
+
+  &__meta-title {
+    margin: 0 0 var(--space-2);
+  }
+
+  &__meta-list {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  &__links {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+  }
+
+  &__map {
+    min-height: 13.75rem;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(150deg, var(--color-route-map-a), var(--color-route-map-b) 60%, var(--color-route-map-c));
+  }
+
+  &__map-label {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-full);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+@media (min-width: 56.25rem) {
+  .routes {
+    &__tabs {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    &__panel {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+}
