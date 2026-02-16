@@ -169,113 +169,12 @@
 		color: var(--text);
 	}
 
-	:global(.journal-entry__content > *) {
-		max-width: 70ch;
-		margin-left: auto;
-		margin-right: auto;
-	}
-
-	:global(.journal-entry__content > p:first-child) {
-			font-size: 1.18em;
-			line-height: 1.72;
-			color: color-mix(in srgb, var(--text) 92%, var(--muted) 8%);
-		}
-
-	:global(.journal-entry__content h2),
-	:global(.journal-entry__content h3),
-	:global(.journal-entry__content h4) {
-			font-family: var(--font-display);
-			letter-spacing: -0.01em;
-			line-height: 1.2;
-			margin-top: 2.4rem;
-			margin-bottom: 0.8rem;
-			text-align: left;
-		}
-
-	:global(.journal-entry__content h2) {
-			font-size: clamp(1.5rem, 2.3vw, 2rem);
-		}
-
-	:global(.journal-entry__content p) {
-			margin: 0 0 1.15rem;
-		}
-
-	:global(.journal-entry__content p + p) {
-			text-wrap: pretty;
-		}
-
-	:global(.journal-entry__content a) {
-			color: var(--link);
-			text-decoration-thickness: 1px;
-			text-underline-offset: 0.12em;
-		}
-
-	:global(.journal-entry__content a:hover) {
-			color: var(--link-hover);
-		}
-
-	:global(.journal-entry__content blockquote) {
-			border-left: 3px solid var(--border);
-			margin: 1.75rem auto;
-			padding: 0.35rem 1rem;
-			color: color-mix(in srgb, var(--text) 88%, var(--muted) 12%);
-			font-style: italic;
-		}
-
-	:global(.journal-entry__content ul),
-	:global(.journal-entry__content ol) {
-			margin: 1rem auto 1.25rem;
-			padding-left: 1.4rem;
-		}
-
-	:global(.journal-entry__content li) {
-			margin-bottom: 0.45rem;
-		}
-
-	:global(.journal-entry__content hr) {
-			border: 0;
-			border-top: 1px solid var(--panel-border);
-			margin: 2rem auto;
-		}
-
-	:global(.journal-entry__content pre) {
-			background: var(--card-bg);
-			border: 1px solid var(--panel-border);
-			border-radius: 8px;
-			padding: 0.9rem 1rem;
-			overflow-x: auto;
-			line-height: 1.55;
-		}
-
-	:global(.journal-entry__content :not(pre) > code) {
-			background: var(--card-bg);
-			border: 1px solid var(--panel-border);
-			border-radius: 4px;
-			padding: 0.1rem 0.35rem;
-			font-size: 0.88em;
-		}
-
-	:global(.journal-entry__content img) {
-			width: 100%;
-			max-width: 76ch;
-			margin: 1.4rem auto;
-			display: block;
-			height: auto;
-			border-radius: 0.45rem;
-			border: 1px solid var(--border);
-			box-shadow: 0 10px 24px var(--shadow-softest);
-		}
-
 	@media (max-width: 760px) {
 		.journal-entry__article {
 			border-radius: 8px;
 			padding: 1rem;
 
 			h1 {
-				max-width: none;
-			}
-
-			:global(.journal-entry__content > *) {
 				max-width: none;
 			}
 		}

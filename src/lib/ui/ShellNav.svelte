@@ -139,63 +139,6 @@
 		gap: var(--space-3);
 	}
 
-	:global(.shell-nav__user) {
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-	}
-
-	:global(.shell-nav__avatar) {
-		width: 24px;
-		height: 24px;
-		border-radius: 50%;
-		border: var(--border-width) solid var(--shell-nav-avatar-border, var(--color-white-12));
-	}
-
-	:global(.shell-nav__name) {
-		color: var(--shell-nav-muted, color-mix(in srgb, var(--color-white) 60%, transparent));
-		font-size: 12px;
-		font-weight: var(--font-weight-medium);
-	}
-
-	:global(.shell-nav__button) {
-		background: transparent;
-		border: var(--border-width) solid var(--shell-nav-button-border, var(--color-white-10));
-		color: var(--shell-nav-muted, color-mix(in srgb, var(--color-white) 54%, transparent));
-		padding: var(--space-1) var(--space-3);
-		border-radius: var(--radius-pill);
-		cursor: pointer;
-		font-size: 12px;
-		font-weight: var(--font-weight-medium);
-		transition: all 0.2s ease;
-	}
-
-	:global(.shell-nav__button:hover) {
-		background: var(--shell-nav-button-hover-bg, var(--color-white-04));
-		border-color: var(--shell-nav-button-hover-border, color-mix(in srgb, var(--color-white) 16%, transparent));
-		color: var(--shell-nav-button-hover-text, var(--color-white-82));
-	}
-
-	:global(.shell-nav__button--link) {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		text-decoration: none;
-	}
-
-	:global(.shell-nav__badge) {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		font-size: 12px;
-		font-weight: var(--font-weight-medium);
-		color: var(--shell-nav-muted, color-mix(in srgb, var(--color-white) 62%, transparent));
-		border: var(--border-width) solid var(--shell-nav-badge-border, var(--color-white-10));
-		background: var(--shell-nav-badge-bg, color-mix(in srgb, var(--color-white) 2.5%, transparent));
-		padding: var(--space-1) var(--space-3);
-		border-radius: var(--radius-pill);
-	}
-
 	@media (max-width: 700px) {
 		.shell-nav__inner {
 			padding: var(--space-3) var(--space-4);
@@ -219,8 +162,5 @@
 			white-space: nowrap;
 		}
 
-		:global(.shell-nav__name) {
-			display: none;
-		}
 	}
 </style>
