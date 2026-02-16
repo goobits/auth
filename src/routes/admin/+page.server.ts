@@ -14,7 +14,7 @@ function isAuthUser(value: unknown): value is User {
 
 export const load: PageServerLoad = async (event) => {
 	const locals = event.locals as { user?: Record<string, unknown> }
-	return { user: locals.user ?? null }
+	return { user: locals.user ?? null, initialTab: 'dash' }
 }
 
 export const actions: Actions = {

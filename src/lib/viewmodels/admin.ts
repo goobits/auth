@@ -55,6 +55,37 @@ export const ADMIN_NAV: AdminNavItem[] = [
 	{ label: 'Integrations', id: 'integrations' }
 ]
 
+const ADMIN_TAB_SEGMENTS: Record<AdminTabId, string> = {
+	dash: '',
+	cal: 'availability',
+	events: 'events',
+	programs: 'programs',
+	'calendar-auth': 'members',
+	integrations: 'integrations'
+}
+
+export function getAdminTabHref(tab: AdminTabId) {
+	const segment = ADMIN_TAB_SEGMENTS[tab]
+	return segment ? `/admin/${segment}` : '/admin'
+}
+
+export function getAdminTabFromSegment(segment: string): AdminTabId | null {
+	const normalized = segment.trim().toLowerCase()
+	for (const [tab, candidate] of Object.entries(ADMIN_TAB_SEGMENTS) as Array<[AdminTabId, string]>) {
+		if (candidate === normalized) return tab
+	}
+	return null
+}
+
+export function isAdminTabId(value: string): value is AdminTabId {
+	return value === 'dash' ||
+		value === 'cal' ||
+		value === 'events' ||
+		value === 'programs' ||
+		value === 'calendar-auth' ||
+		value === 'integrations'
+}
+
 export const DEFAULT_ADMIN_RULES: AdminRulesState = {
 	hours: { from: '06:00', to: '22:00' },
 	buffer: 15,
