@@ -7,6 +7,7 @@ import {
 	saveAdminRules,
 	setAdminProgram,
 	toggleAdminProgram,
+	mutateAdminSyncQueue,
 	updateAdminEventMemory,
 	updateAdminEventCapacity,
 	type AdminRulesInput
@@ -186,6 +187,18 @@ export async function persistAdminEventCapacity(eventId: number, capacity: numbe
 
 export async function persistAdminEventMemory(eventId: number, input: { recapText?: string; heroImageUrl?: string }) {
 	return updateAdminEventMemory(eventId, input)
+}
+
+export async function processAdminSyncQueue(limit = 10) {
+	return mutateAdminSyncQueue('process', limit)
+}
+
+export async function retryAdminSyncDeadLetters(limit = 10) {
+	return mutateAdminSyncQueue('retry_dead_letters', limit)
+}
+
+export async function purgeAdminSyncDeadLetters(limit = 10) {
+	return mutateAdminSyncQueue('purge_dead_letters', limit)
 }
 
 export async function fetchCalendarMembersData() {

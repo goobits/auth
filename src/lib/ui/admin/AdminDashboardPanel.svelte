@@ -1,10 +1,16 @@
 <script>
-	import { AlertTriangle, ChevronRight, RefreshCw } from '@lucide/svelte'
+	import { AlertTriangle, ChevronRight, RefreshCw, RotateCcw, Trash2 } from '@lucide/svelte'
 	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 
 	const { dashboard } = $props()
 	const needsCalendarAttention = $derived(dashboard.connectionExpired || !dashboard.connected)
-	const needsQueueAttention = $derived(dashboard.syncQueue.failed > 0 || dashboard.syncQueue.oldestPendingSeconds > 600)
+	const needsQueueAttention = $derived(
+		dashboard.syncQueue.hasBacklogAlert ||
+		dashboard.syncQueue.hasDeadLetterAlert ||
+		dashboard.syncQueue.failed > 0 ||
+		dashboard.syncQueue.oldestPendingSeconds > 600 ||
+		dashboard.syncQueue.deadLetter > 0
+	)
 </script>
 
 <h1 class="admin-page__title">Overview</h1>
@@ -51,9 +57,45 @@
 		<div class="admin-page__attention-card">
 			<div class="admin-page__attention-main">
 				<AlertTriangle size={14} />
-				<span>Sync queue delayed · {dashboard.syncQueue.pending} pending · {dashboard.syncQueue.failed} failed</span>
+				<span>
+					Sync queue delayed · {dashboard.syncQueue.pending} pending · {dashboard.syncQueue.failed} failed{#if dashboard.syncQueue.deadLetter > 0} · {dashboard.syncQueue.deadLetter} dead-letter{/if}
+				</span>
 			</div>
-			<span class="admin-page__section-count">{Math.floor(dashboard.syncQueue.oldestPendingSeconds / 60)}m oldest</span>
+			<div class="admin-page__actions-inline">
+				<PillButton
+					className="admin-page__button-secondary admin-page__button-secondary--compact"
+					variant="secondary"
+					size="sm"
+					onClick={dashboard.processSyncQueue}
+					disabled={dashboard.syncQueueBusy}
+				>
+					<RefreshCw size={12} />
+					Process
+				</PillButton>
+				{#if dashboard.syncQueue.deadLetter > 0}
+					<PillButton
+						className="admin-page__button-secondary admin-page__button-secondary--compact"
+						variant="secondary"
+						size="sm"
+						onClick={dashboard.retryDeadLetters}
+						disabled={dashboard.syncQueueBusy}
+					>
+						<RotateCcw size={12} />
+						Retry dead-letter
+					</PillButton>
+					<PillButton
+						className="admin-page__button-secondary admin-page__button-secondary--compact"
+						variant="secondary"
+						size="sm"
+						onClick={dashboard.purgeDeadLetters}
+						disabled={dashboard.syncQueueBusy}
+					>
+						<Trash2 size={12} />
+						Purge
+					</PillButton>
+				{/if}
+				<span class="admin-page__section-count">{Math.floor(dashboard.syncQueue.oldestPendingSeconds / 60)}m oldest</span>
+			</div>
 		</div>
 	{:else}
 		<p class="admin-page__section-description">No urgent issues right now.</p>

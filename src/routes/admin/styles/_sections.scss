@@ -159,6 +159,14 @@
 	color: color-mix(in srgb, var(--muted) 92%, var(--text));
 }
 
+.admin-page__actions-inline {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+
 // Badges
 .admin-page__status-badge {
 	display: inline-flex;

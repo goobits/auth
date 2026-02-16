@@ -10,8 +10,11 @@ import {
 	persistAdminEvents,
 	persistAdminProgram,
 	persistAdminRules,
+	processAdminSyncQueue,
+	purgeAdminSyncDeadLetters,
 	persistInvite,
 	removeAdminProgram,
+	retryAdminSyncDeadLetters,
 	saveAdminProgram,
 	removeInvite,
 	type AdminRulesState
@@ -155,6 +158,21 @@ export async function updateAdminEventCapacityValue(eventId: number, capacity: n
 
 export async function updateAdminEventMemoryValue(eventId: number, input: { recapText?: string; heroImageUrl?: string }) {
 	await persistAdminEventMemory(eventId, input)
+	return { ok: true, error: '' }
+}
+
+export async function processDashboardSyncQueue(limit = 10) {
+	await processAdminSyncQueue(limit)
+	return { ok: true, error: '' }
+}
+
+export async function retryDashboardSyncDeadLetters(limit = 10) {
+	await retryAdminSyncDeadLetters(limit)
+	return { ok: true, error: '' }
+}
+
+export async function purgeDashboardSyncDeadLetters(limit = 50) {
+	await purgeAdminSyncDeadLetters(limit)
 	return { ok: true, error: '' }
 }
 

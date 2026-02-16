@@ -10,6 +10,9 @@ import {
 	loadAdminPrograms,
 	loadDashboardBookings,
 	loadDashboardStatus,
+	processDashboardSyncQueue,
+	purgeDashboardSyncDeadLetters,
+	retryDashboardSyncDeadLetters,
 	saveDashboardProgram,
 	saveDashboardRules,
 	updateAdminEventCapacityValue,
@@ -35,7 +38,16 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 	let connected = $state(false)
 	let connectionExpired = $state(false)
 	let connectionRefreshFailed = $state(false)
-	let syncQueue = $state({ pending: 0, processing: 0, failed: 0, oldestPendingSeconds: 0 })
+	let syncQueue = $state({
+		pending: 0,
+		processing: 0,
+		failed: 0,
+		deadLetter: 0,
+		oldestPendingSeconds: 0,
+		oldestDeadLetterSeconds: 0,
+		hasBacklogAlert: false,
+		hasDeadLetterAlert: false
+	})
 	let bookings = $state<unknown[]>([])
 	let stats = $state(DEFAULT_ADMIN_STATS)
 	let loading = $state(true)
@@ -124,6 +136,7 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 	let eventsLoading = $state(false)
 	let eventsCreating = $state(false)
 	let eventUpdatingId = $state<number | null>(null)
+	let syncQueueBusy = $state(false)
 	let eventDraft = $state({
 		activitySlug: '',
 		title: '',
@@ -146,7 +159,16 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 			connected = dashboardStatus.connected
 			connectionExpired = dashboardStatus.connectionExpired
 			connectionRefreshFailed = dashboardStatus.connectionRefreshFailed
-			syncQueue = dashboardStatus.syncQueue ?? { pending: 0, processing: 0, failed: 0, oldestPendingSeconds: 0 }
+			syncQueue = dashboardStatus.syncQueue ?? {
+				pending: 0,
+				processing: 0,
+				failed: 0,
+				deadLetter: 0,
+				oldestPendingSeconds: 0,
+				oldestDeadLetterSeconds: 0,
+				hasBacklogAlert: false,
+				hasDeadLetterAlert: false
+			}
 			if (dashboardStatus.rules) {
 				hours = { from: dashboardStatus.rules.hoursFrom, to: dashboardStatus.rules.hoursTo }
 				buffer = dashboardStatus.rules.buffer
@@ -450,6 +472,61 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 		}
 	}
 
+	async function processSyncQueue() {
+		syncQueueBusy = true
+		error = ''
+		try {
+			const result = await processDashboardSyncQueue(20)
+			if (!result.ok) {
+				error = result.error
+				return
+			}
+			await loadStatus()
+		} catch (err) {
+			if (onUnauthorized?.(err)) return
+			error = err instanceof Error ? err.message : 'Failed to process sync queue'
+		} finally {
+			syncQueueBusy = false
+		}
+	}
+
+	async function retryDeadLetters() {
+		syncQueueBusy = true
+		error = ''
+		try {
+			const result = await retryDashboardSyncDeadLetters(20)
+			if (!result.ok) {
+				error = result.error
+				return
+			}
+			await loadStatus()
+		} catch (err) {
+			if (onUnauthorized?.(err)) return
+			error = err instanceof Error ? err.message : 'Failed to requeue dead-letter jobs'
+		} finally {
+			syncQueueBusy = false
+		}
+	}
+
+	async function purgeDeadLetters() {
+		if (!confirm('Purge dead-letter sync jobs? This discards failed jobs permanently.')) return
+		syncQueueBusy = true
+		error = ''
+		try {
+			const result = await purgeDashboardSyncDeadLetters(100)
+			if (!result.ok) {
+				error = result.error
+				return
+			}
+			await loadStatus()
+		} catch (err) {
+			if (onUnauthorized?.(err)) return
+			error = err instanceof Error ? err.message : 'Failed to purge dead-letter jobs'
+		} finally {
+			syncQueueBusy = false
+		}
+	}
+
 	return {
 		get hours() { return hours },
 		set hours(value) { hours = value },
@@ -482,6 +559,7 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 		get eventsLoading() { return eventsLoading },
 		get eventsCreating() { return eventsCreating },
 		get eventUpdatingId() { return eventUpdatingId },
+		get syncQueueBusy() { return syncQueueBusy },
 		get recentEvents() { return recentEvents },
 		get eventDraft() { return eventDraft },
 		set eventDraft(value) { eventDraft = value },
@@ -498,6 +576,9 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 		deleteProgram,
 		createEvents,
 		updateEventCapacity,
-		updateEventMemory
+		updateEventMemory,
+		processSyncQueue,
+		retryDeadLetters,
+		purgeDeadLetters
 	}
 }

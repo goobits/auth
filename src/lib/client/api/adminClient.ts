@@ -44,6 +44,8 @@ export type AdminEventCreateInput = {
 	note?: string
 }
 
+export type AdminSyncQueueAction = 'process' | 'retry_dead_letters' | 'purge_dead_letters'
+
 const AdminStatusResponseSchema = z.object({
 	ok: z.literal(true),
 	google: z.object({
@@ -56,7 +58,11 @@ const AdminStatusResponseSchema = z.object({
 		pending: z.number(),
 		processing: z.number(),
 		failed: z.number(),
-		oldestPendingSeconds: z.number()
+		deadLetter: z.number().optional().default(0),
+		oldestPendingSeconds: z.number(),
+		oldestDeadLetterSeconds: z.number().optional().default(0),
+		hasBacklogAlert: z.boolean().optional().default(false),
+		hasDeadLetterAlert: z.boolean().optional().default(false)
 	}),
 	rules: z.object({
 		hoursFrom: z.string(),
@@ -68,6 +74,16 @@ const AdminStatusResponseSchema = z.object({
 })
 
 const AdminMutationOkSchema = z.object({ ok: z.literal(true) })
+const AdminSyncQueueMutationSchema = z.object({
+	ok: z.literal(true),
+	action: z.union([z.literal('process'), z.literal('retry_dead_letters'), z.literal('purge_dead_letters')]),
+	claimed: z.number().optional(),
+	processed: z.number().optional(),
+	failed: z.number().optional(),
+	deadLettered: z.number().optional(),
+	requeued: z.number().optional(),
+	deleted: z.number().optional()
+})
 
 const AdminProgramsResponseSchema = z.object({
 	ok: z.literal(true),
@@ -166,6 +182,7 @@ export type AdminMutationOk = z.infer<typeof AdminMutationOkSchema>
 export type AdminMeResponse = z.infer<typeof AdminMeResponseSchema>
 export type AdminProgramsResponse = z.infer<typeof AdminProgramsResponseSchema>
 export type AdminEventsResponse = z.infer<typeof AdminEventsResponseSchema>
+export type AdminSyncQueueMutationResponse = z.infer<typeof AdminSyncQueueMutationSchema>
 
 export async function getAdminStatus() {
 	return requestApi<AdminStatusResponse>('/api/admin/status', {
@@ -255,5 +272,14 @@ export async function updateAdminEventMemory(eventId: number, input: { recapText
 			heroImageUrl: input.heroImageUrl ?? ''
 		}),
 		parse: (payload) => AdminMutationOkSchema.parse(payload)
+	})
+}
+
+export async function mutateAdminSyncQueue(action: AdminSyncQueueAction, limit = 10) {
+	return requestApi<AdminSyncQueueMutationResponse>('/api/admin/sync-queue', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ action, limit }),
+		parse: (payload) => AdminSyncQueueMutationSchema.parse(payload)
 	})
 }
