@@ -3,7 +3,6 @@ import {
 	DEFAULT_ADMIN_STATS
 } from '$lib/viewmodels/admin'
 import {
-	cancelDashboardBooking,
 	createAdminEventsBatch,
 	deleteDashboardProgram,
 	getCalendarReconnectUrl,
@@ -17,7 +16,6 @@ import {
 	updateAdminEventMemoryValue,
 	updateAdminProgram
 } from '$lib/viewmodels/admin-dashboard'
-import { CALENDAR_ACTIVITY_LIST } from '$lib/booking/activities'
 
 type UnauthorizedHandler = (error: unknown) => boolean
 
@@ -34,11 +32,9 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 	let capacity = $state(DEFAULT_ADMIN_RULES.capacity)
 	let saved = $state(false)
 	let saving = $state(false)
-	let canceling = $state(false)
-	let viewBooking = $state(null)
-	let hover = $state<number | null>(null)
 	let connected = $state(false)
 	let connectionExpired = $state(false)
+	let connectionRefreshFailed = $state(false)
 	let bookings = $state<unknown[]>([])
 	let stats = $state(DEFAULT_ADMIN_STATS)
 	let loading = $state(true)
@@ -128,7 +124,7 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 	let eventsCreating = $state(false)
 	let eventUpdatingId = $state<number | null>(null)
 	let eventDraft = $state({
-		activitySlug: CALENDAR_ACTIVITY_LIST[0]?.slug ?? 'gym',
+		activitySlug: '',
 		title: '',
 		startsAt: '',
 		endsAt: '',
@@ -148,6 +144,7 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 			const dashboardStatus = await loadDashboardStatus()
 			connected = dashboardStatus.connected
 			connectionExpired = dashboardStatus.connectionExpired
+			connectionRefreshFailed = dashboardStatus.connectionRefreshFailed
 			if (dashboardStatus.rules) {
 				hours = { from: dashboardStatus.rules.hoursFrom, to: dashboardStatus.rules.hoursTo }
 				buffer = dashboardStatus.rules.buffer
@@ -196,25 +193,6 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 		}
 	}
 
-	async function cancelBooking(bookingId: string) {
-		if (!confirm('Are you sure you want to cancel this booking?')) return
-		canceling = true
-		try {
-			const cancellationResult = await cancelDashboardBooking(bookingId)
-			if (cancellationResult.ok) {
-				viewBooking = null
-				await loadBookings()
-			} else {
-				error = cancellationResult.error
-			}
-		} catch (err) {
-			if (onUnauthorized?.(err)) return
-			error = err instanceof Error ? err.message : 'Failed to cancel booking'
-		} finally {
-			canceling = false
-		}
-	}
-
 	async function reconnect() {
 		try {
 			const reconnectResult = await getCalendarReconnectUrl()
@@ -239,6 +217,10 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 			const firstProgram = programs[0]
 			if (!selectedProgramSlug && firstProgram) {
 				selectProgram(firstProgram.slug)
+			}
+			const firstEnabled = programs.find((program) => program.enabled)
+			if (firstEnabled && (!eventDraft.activitySlug || !programs.some((program) => program.slug === eventDraft.activitySlug && program.enabled))) {
+				eventDraft = { ...eventDraft, activitySlug: firstEnabled.slug }
 			}
 		} catch (err) {
 			if (onUnauthorized?.(err)) return
@@ -394,6 +376,10 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 		eventsCreating = true
 		error = ''
 		try {
+			if (!eventDraft.activitySlug) {
+				error = 'Select a program before creating events.'
+				return
+			}
 			if (!eventDraft.title || !eventDraft.startsAt || !eventDraft.endsAt) {
 				error = 'Title, start, and end are required.'
 				return
@@ -473,13 +459,9 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 		set capacity(value) { capacity = value },
 		get saved() { return saved },
 		get saving() { return saving },
-		get canceling() { return canceling },
-		get viewBooking() { return viewBooking },
-		set viewBooking(value) { viewBooking = value },
-		get hover() { return hover },
-		set hover(value) { hover = value },
 		get connected() { return connected },
 		get connectionExpired() { return connectionExpired },
+		get connectionRefreshFailed() { return connectionRefreshFailed },
 		get bookings() { return bookings },
 		get stats() { return stats },
 		get loading() { return loading },
@@ -493,6 +475,7 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 		get programSaving() { return programSaving },
 		get programDeleting() { return programDeleting },
 		get events() { return events },
+		get enabledPrograms() { return programs.filter((program) => program.enabled) },
 		get eventsLoading() { return eventsLoading },
 		get eventsCreating() { return eventsCreating },
 		get eventUpdatingId() { return eventUpdatingId },
@@ -504,7 +487,6 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 		loadPrograms,
 		loadEvents,
 		save,
-		cancelBooking,
 		reconnect,
 		toggleProgram,
 		selectProgram,

@@ -1,5 +1,7 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
+import { ensureValidGoogleToken, getConnection, saveConnection } from '../../../../../packages/calendar/src/index.ts'
+import { getTokenKey } from '../../../../../functions/api/calendar/_helpers.ts'
 import { requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
 
 export async function GET(event: RequestEvent) {
@@ -11,14 +13,33 @@ export async function GET(event: RequestEvent) {
 		}
 		const db = env.DB
 
-		// Check if Google connection exists
-		const connection = await db.prepare(
-			`SELECT provider, expires_at FROM connections WHERE provider = 'google' LIMIT 1`
-		).first<{ provider: string; expires_at: number | null }>()
+		let connected = false
+		let expired = false
+		let refreshFailed = false
+		let expiresAt: number | null = null
 
-		const connected = !!connection
-		const expiresAt = connection?.expires_at || null
-		const expired = expiresAt ? Date.now() > expiresAt : false
+		const base64Key = getTokenKey(env)
+		const connection = await getConnection({ db, provider: 'google', base64Key })
+		if (connection) {
+			connected = true
+			expiresAt = connection.expiresAt ?? null
+			expired = !expiresAt || Date.now() > expiresAt
+
+			// Access tokens are short-lived; attempt refresh before flagging broken state.
+			if (expired) {
+				try {
+					const next = await ensureValidGoogleToken({ env, token: connection })
+					if (next.expiresAt !== connection.expiresAt || next.accessToken !== connection.accessToken) {
+						await saveConnection({ db, provider: 'google', token: next, base64Key })
+					}
+					expiresAt = next.expiresAt ?? null
+					expired = !expiresAt || Date.now() > expiresAt
+				} catch (error) {
+					refreshFailed = true
+					console.warn('Google token refresh check failed in admin status:', error)
+				}
+			}
+		}
 
 		// Get current rules from settings table, fallback to env
 		const settingsRes = await db.prepare(
@@ -47,7 +68,8 @@ export async function GET(event: RequestEvent) {
 			google: {
 				connected,
 				expired,
-				expiresAt
+				expiresAt,
+				refreshFailed
 			},
 			rules
 		}, { headers: noStoreHeaders })

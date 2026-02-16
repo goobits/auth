@@ -3,7 +3,6 @@ import {
 	buildInviteLink,
 	fetchAdminEvents,
 	fetchAdminPrograms,
-	fetchAdminBookings,
 	fetchAdminStatus,
 	fetchCalendarMembersData,
 	persistAdminEventCapacity,
@@ -13,7 +12,6 @@ import {
 	persistAdminRules,
 	persistInvite,
 	removeAdminProgram,
-	removeAdminBooking,
 	saveAdminProgram,
 	removeInvite,
 	type AdminRulesState
@@ -24,26 +22,35 @@ export async function loadDashboardStatus() {
 	return {
 		connected: data.google.connected,
 		connectionExpired: data.google.expired,
+		connectionRefreshFailed: data.google.refreshFailed ?? false,
 		rules: data.rules
 	}
 }
 
 export async function loadDashboardBookings() {
-	const data = await fetchAdminBookings()
+	const data = await fetchAdminEvents()
+	const bookings = data.upcoming.map((event) => ({
+		id: event.id,
+		date: new Date(event.startsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+		time: `${new Date(event.startsAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} – ${new Date(event.endsAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`,
+		title: event.title,
+		activityLabel: event.activityLabel,
+		seats: event.seatsTaken,
+		capacity: event.capacity,
+		status: event.seatsLeft > 0 ? 'open' : 'full'
+	}))
 	return {
 		error: '',
-		bookings: data.bookings,
-		stats: data.stats
+		bookings,
+		stats: {
+			upcoming: bookings.length,
+			seats: bookings.reduce((sum, booking) => sum + booking.seats, 0)
+		}
 	}
 }
 
 export async function saveDashboardRules(input: AdminRulesState) {
 	await persistAdminRules(input)
-	return { ok: true, error: '' }
-}
-
-export async function cancelDashboardBooking(bookingId: string) {
-	await removeAdminBooking(bookingId)
 	return { ok: true, error: '' }
 }
 

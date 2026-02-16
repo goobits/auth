@@ -55,10 +55,10 @@ export function createAdminCalendarConnectionController() {
 		if (typeof window === 'undefined') return
 		const params = new SvelteURLSearchParams(window.location.search)
 		if (isCalendarConnectedFromParams(params)) {
-			status = 'Connected! Redirecting you to Rainbow Gym...'
+			status = 'Connected! Redirecting you to calendar...'
 			connected = true
 			scheduleCalendarConnectedRedirect(() => {
-				window.location.href = '/calendar-gym'
+				window.location.href = '/calendar'
 			})
 		}
 		checkAuth()

@@ -1,8 +1,6 @@
 import {
-	cancelAdminBooking,
 	createAdminEvents,
 	deleteAdminProgram,
-	getAdminBookings,
 	getAdminEvents,
 	getAdminPrograms,
 	getAdminStatus,
@@ -127,16 +125,8 @@ export async function fetchAdminStatus() {
 	return getAdminStatus()
 }
 
-export async function fetchAdminBookings() {
-	return getAdminBookings()
-}
-
 export async function persistAdminRules(state: AdminRulesState) {
 	return saveAdminRules(normalizeRulesInput(state))
-}
-
-export async function removeAdminBooking(bookingId: string) {
-	return cancelAdminBooking(bookingId)
 }
 
 export async function beginCalendarOAuth() {

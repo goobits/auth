@@ -6,12 +6,12 @@
 </script>
 
 <h1 class="admin-page__title">Overview</h1>
-<p class="admin-page__subtitle">A snapshot of booking and calendar health.</p>
+<p class="admin-page__subtitle">A snapshot of event activity and calendar health.</p>
 
 <div class="admin-page__stats">
 	<div class="admin-page__stat-card">
 		<div class="admin-page__stat-value">{dashboard.stats.upcoming}</div>
-		<div class="admin-page__stat-label">Upcoming bookings</div>
+		<div class="admin-page__stat-label">Upcoming events</div>
 	</div>
 	<div class="admin-page__stat-card">
 		<div class="admin-page__stat-value">{dashboard.stats.seats}</div>
@@ -38,7 +38,7 @@
 		<div class="admin-page__attention-card">
 			<div class="admin-page__attention-main">
 				<AlertTriangle size={14} />
-				<span>{dashboard.connectionExpired ? 'Google Calendar token expired' : 'Google Calendar is not connected'}</span>
+				<span>{dashboard.connectionRefreshFailed ? 'Google Calendar refresh failed' : dashboard.connectionExpired ? 'Google Calendar token expired' : 'Google Calendar is not connected'}</span>
 			</div>
 			<button class="admin-page__button-secondary admin-page__button-secondary--compact" onclick={dashboard.reconnect}>
 				<RefreshCw size={12} />
@@ -54,33 +54,29 @@
 
 <div class="admin-page__section">
 	<div class="admin-page__section-head">
-		<h3 class="admin-page__section-title">Recent bookings</h3>
+		<h3 class="admin-page__section-title">Upcoming events</h3>
 		<span class="admin-page__section-count">{dashboard.bookings.length} total</span>
 	</div>
 	{#if dashboard.loading}
-		<p class="admin-page__section-description">Loading bookings...</p>
+		<p class="admin-page__section-description">Loading events...</p>
 	{:else if dashboard.error}
 		<p class="admin-page__section-description admin-page__section-description--error">{dashboard.error}</p>
 		<button class="admin-page__button-secondary" onclick={dashboard.loadBookings}>Retry</button>
 	{:else if dashboard.bookings.length === 0}
-		<p class="admin-page__section-description">No upcoming bookings yet.</p>
+		<p class="admin-page__section-description">No upcoming events yet.</p>
 	{:else}
 		<div class="admin-page__bookings-list">
 			{#each dashboard.bookings as b, i}
-				<button
+				<div
 					class="admin-page__booking-row"
-					class:admin-page__booking-row--hovered={dashboard.hover === b.id}
-					onmouseenter={() => dashboard.hover = b.id}
-					onmouseleave={() => dashboard.hover = null}
-					onclick={() => dashboard.viewBooking = b}
 				>
 					<span class="admin-page__booking-date">{b.date} · {b.time}</span>
-					<span class="admin-page__booking-meta">{b.seats} {b.seats === 1 ? 'seat' : 'seats'} · {b.name}</span>
-					<span class="admin-page__status-badge" class:admin-page__status-badge--confirmed={b.status === 'confirmed'} class:admin-page__status-badge--pending={b.status === 'pending'}>
-						{b.status === 'confirmed' ? 'Confirmed' : 'Pending'}
+					<span class="admin-page__booking-meta">{b.activityLabel} · {b.title}</span>
+					<span class="admin-page__status-badge" class:admin-page__status-badge--confirmed={b.status === 'open'} class:admin-page__status-badge--pending={b.status === 'full'}>
+						{b.seats}/{b.capacity}
 					</span>
 					<ChevronRight class="admin-page__booking-arrow" size={14} />
-				</button>
+				</div>
 				{#if i < dashboard.bookings.length - 1}
 					<div class="admin-page__booking-divider"></div>
 				{/if}

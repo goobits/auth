@@ -13,7 +13,6 @@
 	import AdminEventsPanel from '$lib/ui/admin/AdminEventsPanel.svelte'
 	import AdminMembersPanel from '$lib/ui/admin/AdminMembersPanel.svelte'
 	import AdminIntegrationsPanel from '$lib/ui/admin/AdminIntegrationsPanel.svelte'
-	import AdminBookingModal from '$lib/ui/admin/AdminBookingModal.svelte'
 	import AdminToast from '$lib/ui/admin/AdminToast.svelte'
 
 	let { data, form, initialTab = 'dash' } = $props()
@@ -61,6 +60,7 @@
 
 	$effect(() => {
 		if (tab === 'events') {
+			dashboard.loadPrograms()
 			dashboard.loadEvents()
 		}
 	})
@@ -102,8 +102,6 @@
 			{/if}
 		</main>
 	</div>
-
-	<AdminBookingModal {dashboard} />
 
 	{#if dashboard.saved}
 		<AdminToast />

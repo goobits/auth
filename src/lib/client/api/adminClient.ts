@@ -49,7 +49,8 @@ const AdminStatusResponseSchema = z.object({
 	google: z.object({
 		connected: z.boolean(),
 		expired: z.boolean(),
-		expiresAt: z.number().nullable()
+		expiresAt: z.number().nullable(),
+		refreshFailed: z.boolean().optional().default(false)
 	}),
 	rules: z.object({
 		hoursFrom: z.string(),
@@ -57,15 +58,6 @@ const AdminStatusResponseSchema = z.object({
 		buffer: z.number(),
 		notice: z.number(),
 		capacity: z.number()
-	})
-})
-
-const AdminBookingsResponseSchema = z.object({
-	ok: z.literal(true),
-	bookings: z.array(z.unknown()),
-	stats: z.object({
-		upcoming: z.number(),
-		seats: z.number()
 	})
 })
 
@@ -164,7 +156,6 @@ const AdminEventsResponseSchema = z.object({
 })
 
 export type AdminStatusResponse = z.infer<typeof AdminStatusResponseSchema>
-export type AdminBookingsResponse = z.infer<typeof AdminBookingsResponseSchema>
 export type AdminMutationOk = z.infer<typeof AdminMutationOkSchema>
 export type AdminMeResponse = z.infer<typeof AdminMeResponseSchema>
 export type AdminProgramsResponse = z.infer<typeof AdminProgramsResponseSchema>
@@ -176,26 +167,11 @@ export async function getAdminStatus() {
 	})
 }
 
-export async function getAdminBookings() {
-	return requestApi<AdminBookingsResponse>('/api/admin/bookings', {
-		parse: (payload) => AdminBookingsResponseSchema.parse(payload)
-	})
-}
-
 export async function saveAdminRules(input: AdminRulesInput) {
 	return requestApi<AdminMutationOk>('/api/admin/rules', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(input),
-		parse: (payload) => AdminMutationOkSchema.parse(payload)
-	})
-}
-
-export async function cancelAdminBooking(bookingId: string) {
-	return requestApi<AdminMutationOk>('/api/admin/cancel', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ bookingId }),
 		parse: (payload) => AdminMutationOkSchema.parse(payload)
 	})
 }

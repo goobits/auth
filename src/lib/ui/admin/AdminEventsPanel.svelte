@@ -1,5 +1,4 @@
 <script>
-	import { CALENDAR_ACTIVITY_LIST } from '$lib/booking/activities'
 	const { dashboard } = $props()
 	let memoryDrafts = $state({})
 
@@ -38,7 +37,7 @@
 					value={dashboard.eventDraft.activitySlug}
 					onchange={(event) => dashboard.eventDraft = { ...dashboard.eventDraft, activitySlug: event.currentTarget.value }}
 				>
-					{#each CALENDAR_ACTIVITY_LIST as activity}
+					{#each dashboard.enabledPrograms as activity}
 						<option value={activity.slug}>{activity.label}</option>
 					{/each}
 				</select>
@@ -152,9 +151,12 @@
 		</div>
 	</div>
 
-	<button class="admin-page__button-secondary" onclick={dashboard.createEvents} disabled={dashboard.eventsCreating}>
+	<button class="admin-page__button-secondary" onclick={dashboard.createEvents} disabled={dashboard.eventsCreating || dashboard.enabledPrograms.length === 0}>
 		{dashboard.eventsCreating ? 'Creating...' : 'Create Events'}
 	</button>
+	{#if dashboard.enabledPrograms.length === 0}
+		<p class="admin-page__section-description">Enable at least one program before creating events.</p>
+	{/if}
 </div>
 
 <div class="admin-page__divider" aria-hidden="true"></div>
