@@ -19,7 +19,7 @@ pnpm db:migrate:local
 - `pnpm dev` - run Vite dev server
 - `pnpm build` - production build
 - `pnpm preview` - preview production build
-- `pnpm cf:dev` - Cloudflare Pages local runtime (`http://127.0.0.1:8788`)
+- `pnpm cf:dev` - Cloudflare Pages local runtime (`http://127.0.0.1:3580`)
 - `pnpm cf:deploy` - build + deploy to Cloudflare Pages
 - `pnpm db:migrate:local` - apply D1 migrations to local DB
 - `pnpm db:migrate:remote` - apply D1 migrations to remote DB
