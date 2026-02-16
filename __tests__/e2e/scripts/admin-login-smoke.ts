@@ -41,23 +41,13 @@ export async function runAdminLoginSmoke() {
 
 		// UI-driven login (real form submit + redirect).
 		await page.fill('input[name="password"]', passcode)
-		const navWait = page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => null)
+		const navWait = page
+			.waitForURL((url) => url.pathname.startsWith('/admin/overview'), { timeout: 30000 })
+			.catch(() => null)
 		await page.click('button[type="submit"]')
 		await navWait
 
-		// Ensure the cookie actually landed in the browser context, then load /admin/ fresh.
-		// This avoids flake around action redirect handling and guarantees hooks run on the GET.
-		const cookies = await context.cookies(ADMIN_URL)
-		const hasSessionCookie = cookies.some(c => c.name === 'admin_session')
-		if (!hasSessionCookie) {
-			// Fallback: perform the login via context.request to capture a useful failure mode.
-			const res = await context.request.post(`${BASE_URL}/admin/?/login`, {
-				form: { email: 'admin@miko.art', password: passcode },
-				headers: { accept: 'text/html' }
-			})
-			throw new Error(`admin_session cookie missing after login (ui). fallback_status=${res.status()}`)
-		}
-
+		// Load /admin/ fresh to ensure hooks/session are valid server-side after login.
 		await page.goto(ADMIN_URL, { waitUntil: 'domcontentloaded', timeout: 30000 })
 		await page.locator('.admin-page__sidebar').first().waitFor({ timeout: 30000 })
 
