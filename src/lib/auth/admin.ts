@@ -21,7 +21,7 @@ async function getDb(platform: PlatformLike) {
 	return platform?.env?.DB || null
 }
 
-export async function getAdminAuth({ event }: { event: { platform?: PlatformLike } }) {
+export async function getAdminAuth({ event }: { event: { platform?: PlatformLike; url: URL } }) {
 	const db = await getDb(event.platform)
 	if (!db) throw new Error('Database unavailable')
 	const env = {
@@ -32,7 +32,7 @@ export async function getAdminAuth({ event }: { event: { platform?: PlatformLike
 	} as Record<string, string | undefined>
 	// Browsers will not persist `Secure` cookies over plain http (e.g. localhost dev),
 	// which makes admin login appear to "work" server-side but never stick client-side.
-	const url = (event as unknown as { url?: URL }).url
+	const url = event.url
 	const isHttps = url?.protocol === 'https:'
 	const secureCookies = !dev && isHttps
 

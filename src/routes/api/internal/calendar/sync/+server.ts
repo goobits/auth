@@ -9,7 +9,7 @@ function unauthorized() {
 export async function POST(event: RequestEvent) {
 	try {
 		const env = await buildEnv(event.platform)
-		const configured = String(env['CALENDAR_SYNC_CRON_SECRET'] || env['ADMIN_PASSCODE'] || '')
+		const configured = String(env['CALENDAR_SYNC_CRON_SECRET'] || '')
 		if (!configured) return unauthorized()
 
 		const authHeader = event.request.headers.get('authorization') || ''
