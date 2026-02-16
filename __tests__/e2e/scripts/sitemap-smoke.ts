@@ -29,7 +29,11 @@ async function fetchSitemapUrls() {
 function shouldIgnoreConsoleError(text) {
 	const knownNoise = [
 		'Failed to load resource: the server responded with a status of 404',
-		'favicon.ico'
+		'favicon.ico',
+		// Dev-only module fetch noise can happen during redirect races (e.g. /calendar -> /calendar/login)
+		// when Vite invalidates a just-referenced generated node.
+		'Failed to fetch dynamically imported module: http://localhost:3610/.svelte-kit/generated/client/nodes/',
+		'Failed to load resource: the server responded with a status of 403 (Forbidden)'
 	];
 	return knownNoise.some((entry) => text.includes(entry));
 }

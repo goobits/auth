@@ -26,7 +26,9 @@
 </script>
 
 <PageShell className={`legal__shell ${className}`.trim()}>
-	<Hero eyebrow="Legal" title={title} subtitle={subtitle} icon={icon} />
+	<div class="legal__hero-shell" style="min-height: clamp(14rem, 26vw, 21.75rem);">
+		<Hero eyebrow="Legal" title={title} subtitle={subtitle} icon={icon} />
+	</div>
 
 	<Prose className="legal__page legal">
 		<p class="legal__updated">Last updated {updatedAt}</p>
@@ -36,3 +38,9 @@
 		{/if}
 	</Prose>
 </PageShell>
+
+<style>
+	.legal__hero-shell {
+		width: 100%;
+	}
+</style>
