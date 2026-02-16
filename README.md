@@ -84,7 +84,7 @@ pnpm preview          # Preview build (port 3000)
 pnpm dev:stop         # Stop dev server
 pnpm dev:restart      # Restart dev server
 pnpm check            # Types + svelte-check + lint + circular deps
-pnpm test             # Full e2e suite
+pnpm test             # Full Vitest + Playwright e2e suite (__tests__/e2e)
 pnpm deploy:secrets   # Push production secrets only (no site deploy)
 pnpm deploy:prod      # Build + Cloudflare Pages deploy (standard)
 pnpm deploy:prod:full # Secrets + build + Cloudflare Pages deploy
