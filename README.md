@@ -26,6 +26,9 @@ pnpm db:migrate:local
 - `pnpm db:migrate:remote` - apply D1 migrations to remote DB
 - `pnpm lint` - ESLint (strict)
 - `pnpm check` - `svelte-check` + TypeScript
+- `pnpm test:unit` - Vitest unit tests (`__tests__/unit`)
+- `pnpm test:e2e` - Playwright e2e tests (`__tests__/e2e`)
+- `pnpm test:all` - unit + e2e
 - `pnpm validate` - lint + check + build
 
 ## Runtime config
@@ -66,3 +69,12 @@ pnpm db:migrate:local
 - `src/lib/server/submissions.ts` - form validation + D1 persistence
 - `migrations/` - D1 schema migrations
 - `static/` - static assets, route files, OG image
+- `__tests__/unit/` - fast logic and server tests
+- `__tests__/e2e/` - browser interaction tests
+
+## Test setup
+
+```bash
+pnpm exec playwright install
+pnpm test:all
+```

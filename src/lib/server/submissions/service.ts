@@ -1,13 +1,13 @@
-import { error } from '@sveltejs/kit';
 import { requireDb } from './db';
 import { parseEmail, parseName, parseNotes, parseShort } from './validators';
 import type { JoinSubmission, PlatformWithDb, ReminderSubmission, VolunteerSubmission } from './types';
+import { raise } from '../http-error';
 
 export async function saveJoin(platform: PlatformWithDb | undefined, form: FormData): Promise<void> {
 	const db = requireDb(platform);
 	const attendeesRaw = Number.parseInt(parseShort(form.get('attendees'), 2), 10);
 	if (!Number.isFinite(attendeesRaw) || attendeesRaw < 1 || attendeesRaw > 20) {
-		error(400, 'Attendee count must be between 1 and 20.');
+		raise(400, 'Attendee count must be between 1 and 20.');
 	}
 
 	const payload: JoinSubmission = {

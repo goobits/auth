@@ -5,7 +5,16 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
 	{
-		ignores: ['.svelte-kit/**', '.wrangler/**', 'build/**', 'dist/**', 'node_modules/**']
+		ignores: [
+			'.svelte-kit/**',
+			'.wrangler/**',
+			'build/**',
+			'dist/**',
+			'coverage/**',
+			'playwright-report/**',
+			'test-results/**',
+			'node_modules/**'
+		]
 	},
 	js.configs.recommended,
 	...tseslint.configs.strictTypeChecked,
@@ -19,7 +28,15 @@ export default tseslint.config(
 			},
 			parserOptions: {
 				projectService: {
-					allowDefaultProject: ['eslint.config.js', 'svelte.config.js']
+					maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 20,
+					allowDefaultProject: [
+						'eslint.config.js',
+						'svelte.config.js',
+						'playwright.config.ts',
+						'vitest.config.ts',
+						'__tests__/unit/*.ts',
+						'__tests__/e2e/*.ts'
+					]
 				},
 				tsconfigRootDir: import.meta.dirname,
 				extraFileExtensions: ['.svelte']
