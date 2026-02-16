@@ -1,7 +1,13 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized, noStoreHeaders } from '../../../admin/_helpers.ts'
 import { getAdminAuth } from '$lib/auth/admin.ts'
-import { createInvite, deleteInvite, listInvites } from '@packages/calendar/src/calendar/invites.ts'
+import {
+	createInvite,
+	deleteInvite,
+	listInvites,
+	parseCalendarInviteCreateInput,
+	TransportValidationError
+} from '@packages/calendar/src/index.ts'
 
 export async function GET(event: RequestEvent) {
 	try {
@@ -26,16 +32,16 @@ export async function POST(event: RequestEvent) {
 		if (!auth.ok) return unauthorized()
 
 		const { db } = await getAdminAuth({ event })
-		const body = await event.request.json().catch(() => ({}))
-		const uses = Number.isFinite(Number(body?.uses)) ? Number(body.uses) : 1
-		const expiresInDays = Number.isFinite(Number(body?.expiresInDays)) ? Number(body.expiresInDays) : null
+		const input = parseCalendarInviteCreateInput(await event.request.json().catch(() => null))
+		const uses = input.uses
+		const expiresInDays = input.expiresInDays
 		const expiresAt = expiresInDays
 			? Math.floor(Date.now() / 1000) + (expiresInDays * 24 * 60 * 60)
 			: null
 
 		const invite = await createInvite({
 			db,
-			email: body?.email || null,
+			email: input.email,
 			usesRemaining: uses,
 			expiresAt
 		})
@@ -43,6 +49,9 @@ export async function POST(event: RequestEvent) {
 		logAdminEvent(event, 'invite_create', { inviteId: invite?.id, email: invite?.email ?? null })
 		return json({ ok: true, invite }, { headers: noStoreHeaders })
 	} catch (err) {
+		if (err instanceof TransportValidationError) {
+			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
+		}
 		console.error('Admin invite create error:', err)
 		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
 	}
