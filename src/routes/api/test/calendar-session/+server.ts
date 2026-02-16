@@ -1,6 +1,7 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { D1SessionAdapter } from '@goobits/auth/adapters'
 import { buildEnv } from '../../calendar/_bridge.ts'
+import { parseCalendarSessionBootstrapInput, TransportValidationError } from '@packages/calendar/src/index.ts'
 
 type CalendarUserRow = { id: string | number }
 
@@ -19,13 +20,7 @@ export async function POST(event: RequestEvent) {
 		const token = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length).trim() : ''
 		if (!token || token !== expected) return unauthorized()
 
-		const body = await event.request.json().catch(() => null)
-		const email = typeof body?.email === 'string' && body.email.trim().length > 0
-			? body.email.trim().toLowerCase()
-			: `e2e-calendar-${Date.now()}@example.com`
-		const name = typeof body?.name === 'string' && body.name.trim().length > 0
-			? body.name.trim()
-			: 'E2E Calendar User'
+		const { email, name } = parseCalendarSessionBootstrapInput(await event.request.json().catch(() => null))
 
 		const existing = await env.DB.prepare(
 			`SELECT id FROM calendar_users WHERE lower(email) = lower(?) LIMIT 1`
@@ -65,6 +60,9 @@ export async function POST(event: RequestEvent) {
 
 		return json({ ok: true, email, userId: String(userId) })
 	} catch (error) {
+		if (error instanceof TransportValidationError) {
+			return json({ ok: false, error: { message: error.message } }, { status: error.status })
+		}
 		console.error('E2E calendar session bootstrap failed:', error)
 		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500 })
 	}

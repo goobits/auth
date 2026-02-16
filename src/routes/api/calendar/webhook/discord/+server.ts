@@ -1,6 +1,7 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../_bridge.ts'
 import { enforceSameOrigin, noStoreHeaders, requireAdminSession, unauthorized } from '../../../admin/_helpers.ts'
+import { parseDiscordWebhookTextInput, TransportValidationError } from '@packages/calendar/src/index.ts'
 
 export async function POST(event: RequestEvent) {
 	try {
@@ -17,11 +18,7 @@ export async function POST(event: RequestEvent) {
 			return json({ ok: false, error: { message: 'DISCORD_WEBHOOK_URL not configured' } }, { status: 400, headers: noStoreHeaders })
 		}
 
-		const body = await event.request.json().catch(() => null)
-		const text = typeof body?.text === 'string' ? body.text.slice(0, 1500) : ''
-		if (!text) {
-			return json({ ok: false, error: { message: 'Missing text' } }, { status: 400, headers: noStoreHeaders })
-		}
+		const { text } = parseDiscordWebhookTextInput(await event.request.json().catch(() => null))
 
 		const response = await fetch(webhookUrl, {
 			method: 'POST',
@@ -34,6 +31,9 @@ export async function POST(event: RequestEvent) {
 
 		return json({ ok: true }, { headers: noStoreHeaders })
 	} catch (err) {
+		if (err instanceof TransportValidationError) {
+			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
+		}
 		console.error('Discord webhook error:', err)
 		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
 	}
