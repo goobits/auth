@@ -34,6 +34,12 @@ function logProviderRedirectDiagnostics({
 
 export const GET: RequestHandler = async (event) => {
 	const { auth, secureCookies } = await getCalendarAuth({ event })
+	const pathname = event.url.pathname
+
+	// Forward-only auth routing: legacy provider route shapes are intentionally unsupported.
+	if (pathname.startsWith('/auth/signin/') || pathname.startsWith('/auth/callback/')) {
+		throw redirect(302, buildCalendarLoginErrorPath('oauth_route_removed'))
+	}
 
 	// Set invite/redirect cookies on signin routes (e.g. /auth/google)
 	const invite = event.url.searchParams.get('invite') || null
