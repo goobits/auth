@@ -1,7 +1,7 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
 import { ensureValidGoogleToken, getConnection, saveConnection } from '../../../../../packages/calendar/src/index.ts'
-import { getTokenKey } from '../../../../../functions/api/calendar/_helpers.ts'
+import { requireEnv } from '@packages/calendar/src/config/env.ts'
 import { getCalendarSyncQueueHealth } from '@packages/calendar/src/services/sync-queue.ts'
 import { requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
 
@@ -19,7 +19,7 @@ export async function GET(event: RequestEvent) {
 		let refreshFailed = false
 		let expiresAt: number | null = null
 
-		const base64Key = getTokenKey(env)
+		const base64Key = requireEnv(env, 'TOKEN_ENC_KEY')
 		const connection = await getConnection({ db, provider: 'google', base64Key })
 		if (connection) {
 			connected = true
