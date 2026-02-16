@@ -6,7 +6,7 @@
 	<div class="layout__container">
 		<h2 class="layout__title">What to bring</h2>
 		<ul class="bring-list__items">
-			{#each items as item}
+			{#each items as item (item)}
 				<li>{item}</li>
 			{/each}
 		</ul>

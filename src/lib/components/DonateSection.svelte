@@ -19,7 +19,7 @@
 				<h2 class="layout__title">{donation.headline}</h2>
 				<p class="donate__copy">{donation.body}</p>
 				<ul>
-					{#each donation.bullets as bullet}
+					{#each donation.bullets as bullet (bullet)}
 						<li class="donate__item">{bullet}</li>
 					{/each}
 				</ul>

@@ -8,17 +8,26 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"validate": "pnpm lint && pnpm check && pnpm build"
 	},
 	"devDependencies": {
+		"@eslint/js": "^10.0.1",
 		"@sveltejs/adapter-auto": "^7.0.0",
 		"@sveltejs/kit": "^2.49.1",
 		"@sveltejs/vite-plugin-svelte": "^6.2.1",
+		"@types/node": "^25.2.3",
+		"eslint": "^10.0.0",
+		"eslint-plugin-svelte": "^3.15.0",
+		"globals": "^17.3.0",
 		"sass": "^1.97.3",
 		"svelte": "^5.45.6",
 		"svelte-check": "^4.3.4",
 		"typescript": "^5.9.3",
+		"typescript-eslint": "^8.56.0",
 		"vite": "^7.2.6"
 	},
 	"dependencies": {

@@ -9,7 +9,7 @@
 	<div class="layout__container">
 		<h2 class="layout__title">The day at a glance</h2>
 		<div class="activities__grid">
-			{#each activities as item, i}
+			{#each activities as item, i (item.title)}
 				<article class="c-card activities__card">
 					<p class="activities__icon" aria-hidden="true">
 						{item.icon === 'bike'
