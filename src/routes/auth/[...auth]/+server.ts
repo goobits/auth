@@ -5,7 +5,6 @@ import {
 	hasValidOAuthCallbackParams,
 	isStatusError,
 	resolveCallbackProvider,
-	resolveLegacySigninPath,
 	resolveRequestedProvider,
 	shouldWrapAsOauthFailure
 } from '$lib/auth/oauth-routing'
@@ -46,14 +45,6 @@ export const GET: RequestHandler = async (event) => {
 		setCalendarLoginContext(event.cookies, {
 			...context
 		})
-	}
-
-	// Backward-compatible OAuth provider route:
-	// /auth/signin/google -> /auth/google
-	const providerPath = resolveLegacySigninPath(event.url.pathname)
-	if (providerPath) {
-		const query = event.url.search || ''
-		throw redirect(302, `${providerPath}${query}`)
 	}
 
 	const requestedProvider = resolveRequestedProvider(event.url.pathname)
