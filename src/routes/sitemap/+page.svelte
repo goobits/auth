@@ -93,80 +93,82 @@
 </svelte:head>
 
 <PageShell className="sitemap-page">
-	<Hero
-		eyebrow="Sitemap"
-		title="Sitemap 🧭"
-		subtitle="A friendly map of everything on this site."
-	/>
+	<div class="sitemap-page__inner">
+		<Hero
+			eyebrow="Sitemap"
+			title="Sitemap 🧭"
+			subtitle="A friendly map of everything on this site."
+		/>
 
-	<PageContainer className="sitemap-page__content">
-		<header class="sitemap-page__header">
-			{#if data.showDevDiagnostics}
-				<span class="sitemap-page__dev-badge">DEV MODE</span>
-			{/if}
-		</header>
-
-		<FilterableCollection
-			count={filteredCount}
-			countLabel={`of ${data.stats.total} routes`}
-			emptyMessage="No routes match your filters."
-			onClear={() => { searchQuery = ''; selectedTags = [] }}
-		>
-			{#snippet toolbar()}
-				<div class="sitemap-page__controls">
-					<SearchToolbar bind:query={searchQuery} placeholder="Search routes..." ariaLabel="Search routes">
-						<div class="sitemap-page__filters">
-							<div class="sitemap-page__tag-filters">
-								<span class="sitemap-page__filter-label">
-									<Filter size={13} strokeWidth={2.2} />
-									<span>Filters</span>
-								</span>
-								<FilterChipGroup
-									className="sitemap-page__tag-filter-group"
-									items={availableTags}
-									bind:selected={selectedTags}
-									multiple={true}
-									ariaLabel="Sitemap filters"
-								/>
-							</div>
-
-							<div class="sitemap-page__sort-view">
-								<SegmentedControl
-									className="sitemap-page__sort-toggle"
-									options={sortOptions}
-									bind:value={sortBy}
-									ariaLabel="Sort routes"
-								/>
-							</div>
-						</div>
-					</SearchToolbar>
-				</div>
-			{/snippet}
-
-			{#each categoryOrder as category}
-				{#if filteredGrouped[category]}
-					{@const CategoryIcon = categoryIcons[category] || FileText}
-					<SitemapCategory
-						category={category}
-						count={filteredGrouped[category].length}
-						collapsed={Boolean(collapsedCategories[category])}
-						onToggle={() => toggleCategory(category)}
-						accent={getAccentColor(category)}
-						routes={filteredGrouped[category]}
-						getRouteTags={getRouteTags}
-						formatDate={formatDateMmDdYyyy}
-						icon={CategoryIcon}
-						ChevronDownIcon={ChevronDown}
-						ChevronRightIcon={ChevronRight}
-					/>
+		<PageContainer className="sitemap-page__content">
+			<header class="sitemap-page__header">
+				{#if data.showDevDiagnostics}
+					<span class="sitemap-page__dev-badge">DEV MODE</span>
 				{/if}
-			{/each}
-		</FilterableCollection>
-	</PageContainer>
+			</header>
+
+			<FilterableCollection
+				count={filteredCount}
+				countLabel={`of ${data.stats.total} routes`}
+				emptyMessage="No routes match your filters."
+				onClear={() => { searchQuery = ''; selectedTags = [] }}
+			>
+				{#snippet toolbar()}
+					<div class="sitemap-page__controls">
+						<SearchToolbar bind:query={searchQuery} placeholder="Search routes..." ariaLabel="Search routes">
+							<div class="sitemap-page__filters">
+								<div class="sitemap-page__tag-filters">
+									<span class="sitemap-page__filter-label">
+										<Filter size={13} strokeWidth={2.2} />
+										<span>Filters</span>
+									</span>
+									<FilterChipGroup
+										className="sitemap-page__tag-filter-group"
+										items={availableTags}
+										bind:selected={selectedTags}
+										multiple={true}
+										ariaLabel="Sitemap filters"
+									/>
+								</div>
+
+								<div class="sitemap-page__sort-view">
+									<SegmentedControl
+										className="sitemap-page__sort-toggle"
+										options={sortOptions}
+										bind:value={sortBy}
+										ariaLabel="Sort routes"
+									/>
+								</div>
+							</div>
+						</SearchToolbar>
+					</div>
+				{/snippet}
+
+				{#each categoryOrder as category}
+					{#if filteredGrouped[category]}
+						{@const CategoryIcon = categoryIcons[category] || FileText}
+						<SitemapCategory
+							category={category}
+							count={filteredGrouped[category].length}
+							collapsed={Boolean(collapsedCategories[category])}
+							onToggle={() => toggleCategory(category)}
+							accent={getAccentColor(category)}
+							routes={filteredGrouped[category]}
+							getRouteTags={getRouteTags}
+							formatDate={formatDateMmDdYyyy}
+							icon={CategoryIcon}
+							ChevronDownIcon={ChevronDown}
+							ChevronRightIcon={ChevronRight}
+						/>
+					{/if}
+				{/each}
+			</FilterableCollection>
+		</PageContainer>
+	</div>
 </PageShell>
 
 <style>
-	:global(.sitemap-page) {
+	.sitemap-page__inner {
 		--sitemap-dev-badge-padding: 0.2rem 0.6rem;
 		--sitemap-dev-badge-size: 0.7rem;
 		--sitemap-dev-badge-radius: 3px;
