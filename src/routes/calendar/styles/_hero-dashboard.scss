@@ -5,23 +5,21 @@
 	position: relative;
 	display: grid;
 	justify-items: center;
+	justify-self: center;
 	text-align: center;
 	padding: var(--calendar-size-80) var(--calendar-size-24) var(--calendar-size-60);
 	max-width: var(--calendar-size-720);
+	width: min(100%, var(--calendar-size-720));
 	margin: 0 auto;
 	overflow: visible;
 }
 
-/* Hero.svelte sets `margin: 0 0 ...` (no horizontal centering). Calendar pages want centered hero blocks. */
 .calendar-page__hero.ui-hero {
-	margin: 0 auto !important;
-	margin-inline: auto !important;
-	max-width: var(--calendar-size-720);
+	margin-inline: auto;
 	display: grid;
 	justify-items: center;
 	justify-self: center;
 	text-align: center;
-	width: min(100%, var(--calendar-size-720));
 }
 
 .calendar-page > .calendar-page__hero.ui-hero {
@@ -39,22 +37,21 @@
 .calendar-page__hero.ui-hero .ui-hero__title,
 .calendar-page__hero.ui-hero .ui-hero__subtitle {
 	width: 100%;
-	text-align: center !important;
+	text-align: center;
 }
 
-/* Activity pages: force hero centering at highest practical specificity. */
 .calendar-page.calendar-activity .calendar-page__hero.ui-hero {
-	margin-inline: auto !important;
-	justify-self: center !important;
-	justify-items: center !important;
-	text-align: center !important;
+	margin-inline: auto;
+	justify-self: center;
+	justify-items: center;
+	text-align: center;
 }
 
 .calendar-page.calendar-activity .calendar-page__hero.ui-hero .ui-hero__eyebrow,
 .calendar-page.calendar-activity .calendar-page__hero.ui-hero .ui-hero__title,
 .calendar-page.calendar-activity .calendar-page__hero.ui-hero .ui-hero__subtitle {
-	text-align: center !important;
-	margin-inline: auto !important;
+	text-align: center;
+	margin-inline: auto;
 }
 
 .calendar-page__hero-glow {
@@ -328,7 +325,7 @@
 .calendar-home__facepile span {
 	width: 1.7rem;
 	height: 1.7rem;
-	border-radius: 999px;
+	border-radius: var(--radius-pill);
 	border: 1px solid color-mix(in srgb, var(--calendar-shell-text) 18%, transparent);
 	display: inline-flex;
 	align-items: center;

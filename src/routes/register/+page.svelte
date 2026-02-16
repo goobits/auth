@@ -77,9 +77,11 @@
 			<p class="register-page__error">{form.error}</p>
 		{/if}
 
-		<PillButton type="submit" className="register-page__submit" variant="primary" size="md">
-			Create account
-		</PillButton>
+		<div class="register-page__submit-row">
+			<PillButton type="submit" className="register-page__submit" variant="primary" size="md">
+				Create account
+			</PillButton>
+		</div>
 	</form>
 </section>
 
@@ -126,5 +128,7 @@
 		color: var(--status-error-text);
 	}
 
-	:global(.register-page__submit) { justify-self: start; }
+	.register-page__submit-row {
+		justify-self: start;
+	}
 </style>

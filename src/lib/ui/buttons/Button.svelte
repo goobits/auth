@@ -96,7 +96,7 @@
 		background: transparent;
 		color: var(--text);
 		cursor: pointer;
-		font-family: var(--font-ui-sans, var(--font-sans)) !important;
+		font-family: var(--font-ui-sans, var(--font-sans));
 		font-weight: var(--font-weight-medium);
 		line-height: 1.2;
 		text-decoration: none;

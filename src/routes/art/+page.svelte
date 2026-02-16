@@ -67,27 +67,28 @@
 </svelte:head>
 
 <PageShell className="art-page">
-	<Hero
-		eyebrow="Art"
-		title="Product design, playful merch, and weirdly fun ideas"
-		icon="/media/art-rainbow-imagination.png"
-		iconAlt="Art rainbow icon"
-		iconSize="0.95em"
-		subtitle="A working gallery of t-shirt concepts, Portland Ketchup experiments, packaging directions, and other product-ready visuals."
-	/>
+	<div class="art-page__inner">
+		<Hero
+			eyebrow="Art"
+			title="Product design, playful merch, and weirdly fun ideas"
+			icon="/media/art-rainbow-imagination.png"
+			iconAlt="Art rainbow icon"
+			iconSize="0.95em"
+			subtitle="A working gallery of t-shirt concepts, Portland Ketchup experiments, packaging directions, and other product-ready visuals."
+		/>
 
-	<section class="art-page__works" aria-label="Selected works">
-		{#each works as work}
-			<article class="art-page__work">
-				<div class="art-page__image-wrap">
-					<img src={work.image} alt={work.title} loading="lazy" />
-				</div>
-				<p class="art-page__work-type">{work.category}</p>
-				<h2>{work.title}</h2>
-				<p>{work.note}</p>
-			</article>
-		{/each}
-	</section>
+		<section class="art-page__works" aria-label="Selected works">
+			{#each works as work}
+				<article class="art-page__work">
+					<div class="art-page__image-wrap">
+						<img src={work.image} alt={work.title} loading="lazy" />
+					</div>
+					<p class="art-page__work-type">{work.category}</p>
+					<h2>{work.title}</h2>
+					<p>{work.note}</p>
+				</article>
+			{/each}
+		</section>
 
 		<PageClosing
 			className="art-page__closing"
@@ -98,10 +99,11 @@
 			linkLabel="Get in touch"
 			maxWidth="31.25rem"
 		/>
-	</PageShell>
+	</div>
+</PageShell>
 
 <style lang="scss">
-	:global(.art-page) {
+	.art-page__inner {
 		--art-grid-gap-row: 2.4rem;
 		--art-grid-gap-col: 1.5rem;
 		--art-image-radius: 11px;

@@ -53,7 +53,9 @@
 		/>
 
 		<section class="music-page__platforms" aria-label="Listening platforms">
-			<SectionLabel text="Listen" className="music-page__section-label" />
+			<div class="music-page__section-label-wrap">
+				<SectionLabel text="Listen" />
+			</div>
 			<div class="music-page__platform-row ui-chip-row">
 				{#each platforms as item}
 					<a href={item.href} class="music-page__platform-chip ui-chip">
@@ -65,7 +67,9 @@
 		</section>
 
 		<section class="music-page__entries" aria-label="Music entries">
-			<SectionLabel text="Entries" className="music-page__section-label" />
+			<div class="music-page__section-label-wrap">
+				<SectionLabel text="Entries" />
+			</div>
 			<ol class="ui-entry-list">
 				{#each getEntries() as entry, idx}
 					<li class="ui-entry-list__item">
@@ -80,15 +84,16 @@
 			</ol>
 		</section>
 
-			<PageClosing
-				className="music-page__closing"
-				label="Collaborations"
-				title="Need a custom soundtrack or audio collaboration?"
-				copy="Original music for a product, visual project, or interactive experience. Reach out anytime."
-				href="/contact?from=music&topic=collaboration"
-				linkLabel="Start a conversation"
-				maxWidth="27.5rem"
-			/>
+			<div class="music-page__closing-wrap">
+				<PageClosing
+					label="Collaborations"
+					title="Need a custom soundtrack or audio collaboration?"
+					copy="Original music for a product, visual project, or interactive experience. Reach out anytime."
+					href="/contact?from=music&topic=collaboration"
+					linkLabel="Start a conversation"
+					maxWidth="27.5rem"
+				/>
+			</div>
 	</div>
 </PageShell>
 
@@ -110,7 +115,7 @@
 		--music-date-font: 0.8125rem;
 	}
 
-	:global(.music-page__section-label) {
+	.music-page__section-label-wrap {
 		margin-bottom: 1.25rem;
 	}
 
@@ -160,7 +165,7 @@
 		min-width: 6.2rem;
 	}
 
-	:global(.music-page__closing) {
+	.music-page__closing-wrap {
 		padding-top: 5rem;
 	}
 

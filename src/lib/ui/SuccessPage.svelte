@@ -32,14 +32,16 @@
 			<img class="success-page__image" src={imageSrc} alt={imageAlt} />
 			<h1 class="success-page__title">{title}</h1>
 			<p class="success-page__copy">{copy}</p>
-			<PillButton className="success-page__button" href={buttonHref} variant="primary" size="lg">
-				{buttonLabel}
-				{#if buttonIcon === 'home'}
-					<House size={16} strokeWidth={2.2} aria-hidden="true" />
-				{:else if buttonIcon === 'login'}
-					<LogIn size={16} strokeWidth={2.2} aria-hidden="true" />
-				{/if}
-			</PillButton>
+			<div class="success-page__button-row">
+				<PillButton className="success-page__button" href={buttonHref} variant="primary" size="lg">
+					{buttonLabel}
+					{#if buttonIcon === 'home'}
+						<House size={16} strokeWidth={2.2} aria-hidden="true" />
+					{:else if buttonIcon === 'login'}
+						<LogIn size={16} strokeWidth={2.2} aria-hidden="true" />
+					{/if}
+				</PillButton>
+			</div>
 		</div>
 	</section>
 </PageShell>
@@ -86,7 +88,9 @@
 		text-wrap: pretty;
 	}
 
-	:global(.success-page__button) {
-		margin: 0 auto;
+	.success-page__button-row {
+		display: grid;
+		justify-items: center;
 	}
+
 </style>

@@ -2,7 +2,6 @@
 	import { Search } from '@lucide/svelte'
 	import Hero from '$lib/ui/Hero.svelte'
 	import PageShell from '$lib/ui/PageShell.svelte'
-	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	import ResultsEmpty from '$lib/ui/ResultsEmpty.svelte'
 	import { filterAndSortLabs, labsCatalog } from '$lib/viewmodels/labs'
 	import { formatDateMmDdYyyy } from '$lib/utils/date'
@@ -71,17 +70,15 @@
 
 			<div class="labs-page__chip-group" role="tablist" aria-label="Sort labs">
 				{#each sortOptions as option}
-					<PillButton
+					<button
 						type="button"
 						role="tab"
-						className={`labs-page__chip ${sortBy === option.value ? 'labs-page__chip--active' : ''}`}
-						variant={sortBy === option.value ? 'primary' : 'secondary'}
-						size="sm"
-						ariaSelected={sortBy === option.value}
-						onClick={() => (sortBy = option.value)}
+						class={`labs-page__chip ${sortBy === option.value ? 'labs-page__chip--active' : ''}`}
+						aria-selected={sortBy === option.value}
+						onclick={() => (sortBy = option.value)}
 					>
 						{option.label}
-					</PillButton>
+					</button>
 				{/each}
 			</div>
 		</section>
@@ -187,7 +184,7 @@
 		overflow: hidden;
 	}
 
-	:global(.labs-page__chip) {
+	.labs-page__chip {
 		border: none;
 		background: transparent;
 		color: color-mix(in srgb, var(--muted) 92%, var(--text));
@@ -198,7 +195,7 @@
 		transition: background-color 0.2s, color 0.2s;
 	}
 
-	:global(.labs-page__chip--active) {
+	.labs-page__chip--active {
 		background: var(--text);
 		color: var(--bg);
 	}

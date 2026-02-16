@@ -1,5 +1,5 @@
-@mixin focus-ring($color: var(--color-primary-500), $offset: 2px) {
-	outline: 2px solid $color;
+@mixin focus-ring($color: var(--color-primary-500), $offset: var(--space-0_5)) {
+	outline: calc(var(--space-px) * 2) solid $color;
 	outline-offset: $offset;
 }
 
@@ -13,4 +13,3 @@
 @mixin interactive-transition {
 	transition: var(--transition-colors), var(--transition-shadow), var(--transition-transform);
 }
-

@@ -194,7 +194,7 @@
 	color: color-mix(in srgb, var(--muted) 92%, var(--text));
 }
 
-@media (max-width: 600px) {
+@media (max-width: 37.5em) {
 	.layout-footer__top {
 		flex-direction: column;
 		gap: 1.75rem;

@@ -3,7 +3,6 @@
 	import Hero from '$lib/ui/Hero.svelte'
 	import ResultsEmpty from '$lib/ui/ResultsEmpty.svelte'
 	import PageShell from '$lib/ui/PageShell.svelte'
-	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	import { slugify } from '$lib/utils/collections'
 	import { formatDateMonthDay } from '$lib/utils/date'
 	import {
@@ -71,17 +70,15 @@
 
 			<div class="journal-page__sort" role="tablist" aria-label="Sort posts">
 				{#each sortOptions as option}
-					<PillButton
+					<button
 						type="button"
 						role="tab"
-						className={`journal-page__sort-button ${sortBy === option.value ? 'journal-page__sort-button--active' : ''}`}
-						variant={sortBy === option.value ? 'primary' : 'secondary'}
-						size="sm"
-						ariaSelected={sortBy === option.value}
-						onClick={() => (sortBy = option.value)}
+						class={`journal-page__sort-button ${sortBy === option.value ? 'journal-page__sort-button--active' : ''}`}
+						aria-selected={sortBy === option.value}
+						onclick={() => (sortBy = option.value)}
 					>
 						{option.label}
-					</PillButton>
+					</button>
 				{/each}
 			</div>
 		</section>
@@ -218,7 +215,7 @@
 		overflow: hidden;
 	}
 
-	:global(.journal-page__sort-button) {
+	.journal-page__sort-button {
 		border: none;
 		background: transparent;
 		color: color-mix(in srgb, var(--muted) 92%, var(--text));
@@ -229,7 +226,7 @@
 		transition: background-color 0.2s, color 0.2s;
 	}
 
-	:global(.journal-page__sort-button--active) {
+	.journal-page__sort-button--active {
 		background: var(--text);
 		color: var(--bg);
 	}

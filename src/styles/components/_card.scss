@@ -31,7 +31,7 @@
 	&--interactive:hover {
 		background: var(--color-surface-variant);
 		box-shadow: var(--shadow-md);
-		transform: translateY(-2px);
+		transform: translateY(calc(var(--space-0_5) * -1));
 	}
 
 	&--loading {
@@ -39,4 +39,3 @@
 		pointer-events: none;
 	}
 }
-

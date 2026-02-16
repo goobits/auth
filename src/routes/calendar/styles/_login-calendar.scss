@@ -173,7 +173,7 @@
 	border: 0;
 	border-left: 0.09375rem solid color-mix(in srgb, var(--calendar-shell-text) 28%, transparent);
 	padding: 0 1.5rem;
-	border-radius: 0 var(--radius-pill) var(--radius-pill) 0 !important;
+	border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
 	cursor: pointer;
 	transition: background 0.25s ease, color 0.25s ease;
 	white-space: nowrap;
