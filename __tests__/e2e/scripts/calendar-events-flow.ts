@@ -32,6 +32,7 @@ export async function runCalendarEventsFlow() {
 
 	const browser = await chromium.launch({ headless: true })
 	const context = await browser.newContext()
+	const contextB = await browser.newContext()
 	const page = await context.newPage()
 
 	try {
@@ -55,6 +56,7 @@ export async function runCalendarEventsFlow() {
 
 		const title = `E2E Calendar Event ${Date.now()}`
 		const waitlistTitle = `E2E Waitlist Event ${Date.now()}`
+		const contentionTitle = `E2E Contention Event ${Date.now()}`
 		const startDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
 		startDate.setMinutes(0, 0, 0)
 		startDate.setHours(18)
@@ -75,12 +77,26 @@ export async function runCalendarEventsFlow() {
 		await page.click('button:has-text("Create Events")')
 		await page.locator(`text=${waitlistTitle}`).first().waitFor({ timeout: 30000 })
 
+		await page.fill('#event-draft-title', contentionTitle)
+		await page.fill('#event-draft-starts', toLocalDateTimeInputValue(new Date(startDate.getTime() + 4 * 60 * 60 * 1000)))
+		await page.fill('#event-draft-ends', toLocalDateTimeInputValue(new Date(endDate.getTime() + 4 * 60 * 60 * 1000)))
+		await page.fill('#event-draft-capacity', '1')
+		await page.click('button:has-text("Create Events")')
+		await page.locator(`text=${contentionTitle}`).first().waitFor({ timeout: 30000 })
+
 		const bootstrapRes = await context.request.post(`${BASE_URL}/api/test/calendar-session`, {
 			headers: { authorization: `Bearer ${passcode}` },
 			data: { email: `e2e-calendar-${Date.now()}@example.com`, name: 'E2E Calendar User' }
 		})
 		if (!bootstrapRes.ok()) {
 			throw new Error(`calendar member bootstrap failed: ${bootstrapRes.status()}`)
+		}
+		const bootstrapResB = await contextB.request.post(`${BASE_URL}/api/test/calendar-session`, {
+			headers: { authorization: `Bearer ${passcode}` },
+			data: { email: `e2e-calendar-b-${Date.now()}@example.com`, name: 'E2E Calendar User B' }
+		})
+		if (!bootstrapResB.ok()) {
+			throw new Error(`calendar member bootstrap B failed: ${bootstrapResB.status()}`)
 		}
 
 		await page.goto(`${BASE_URL}/calendar/gym`, { waitUntil: 'domcontentloaded', timeout: 30000 })
@@ -112,9 +128,40 @@ export async function runCalendarEventsFlow() {
 		await page.waitForTimeout(250)
 		await waitlistCard.locator('text=0/1 seats').first().waitFor({ timeout: 30000 })
 
+		const contentionFeedRes = await context.request.get(`${BASE_URL}/api/calendar/events`)
+		if (!contentionFeedRes.ok()) throw new Error(`failed to load contention feed: ${contentionFeedRes.status()}`)
+		const contentionFeedJson = await contentionFeedRes.json() as { upcoming?: Array<{ id: number; title: string }> }
+		const contentionEvent = (contentionFeedJson.upcoming ?? []).find((event) => event.title === contentionTitle)
+		if (!contentionEvent) throw new Error('contention event not found in feed')
+
+		const [joinARes, joinBRes] = await Promise.all([
+			context.request.post(`${BASE_URL}/api/calendar/events/${contentionEvent.id}/join`, { data: { guestCount: 0 } }),
+			contextB.request.post(`${BASE_URL}/api/calendar/events/${contentionEvent.id}/join`, { data: { guestCount: 0 } })
+		])
+		if (!joinARes.ok()) throw new Error(`contention join A failed: ${joinARes.status()}`)
+		if (!joinBRes.ok()) throw new Error(`contention join B failed: ${joinBRes.status()}`)
+		const joinA = await joinARes.json() as { status?: string }
+		const joinB = await joinBRes.json() as { status?: string }
+		const statuses = [joinA.status, joinB.status].sort().join(',')
+		if (statuses !== 'joined,waitlist') {
+			throw new Error(`unexpected contention statuses: ${statuses}`)
+		}
+
+		const verifyFeedRes = await context.request.get(`${BASE_URL}/api/calendar/events`)
+		if (!verifyFeedRes.ok()) throw new Error(`failed to verify contention feed: ${verifyFeedRes.status()}`)
+		const verifyFeed = await verifyFeedRes.json() as {
+			upcoming?: Array<{ title: string; seatsTaken: number; capacity: number; waitlistCount: number }>
+		}
+		const verifyEvent = (verifyFeed.upcoming ?? []).find((event) => event.title === contentionTitle)
+		if (!verifyEvent) throw new Error('contention event missing in verify feed')
+		if (verifyEvent.seatsTaken !== 1 || verifyEvent.capacity !== 1 || verifyEvent.waitlistCount !== 1) {
+			throw new Error(`unexpected contention counters: seats=${verifyEvent.seatsTaken}/${verifyEvent.capacity}, waitlist=${verifyEvent.waitlistCount}`)
+		}
+
 		console.log('[calendar-events-flow] PASS')
 	} finally {
 		await context.close()
+		await contextB.close()
 		await browser.close()
 	}
 }
