@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
 	{
-		ignores: ['.svelte-kit/**', 'build/**', 'dist/**', 'node_modules/**']
+		ignores: ['.svelte-kit/**', '.wrangler/**', 'build/**', 'dist/**', 'node_modules/**']
 	},
 	js.configs.recommended,
 	...tseslint.configs.strictTypeChecked,

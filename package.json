@@ -7,6 +7,8 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
+		"cf:dev": "pnpm build && wrangler pages dev .svelte-kit/cloudflare --ip 0.0.0.0 --port 8788",
+		"cf:deploy": "pnpm build && wrangler pages deploy .svelte-kit/cloudflare",
 		"prepare": "svelte-kit sync || echo ''",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
@@ -16,21 +18,22 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
-		"@sveltejs/adapter-auto": "^7.0.0",
-		"@sveltejs/kit": "^2.49.1",
-		"@sveltejs/vite-plugin-svelte": "^6.2.1",
+		"@sveltejs/adapter-cloudflare": "^7.2.7",
+		"@sveltejs/kit": "^2.52.0",
+		"@sveltejs/vite-plugin-svelte": "^6.2.4",
 		"@types/node": "^25.2.3",
 		"eslint": "^10.0.0",
 		"eslint-plugin-svelte": "^3.15.0",
 		"globals": "^17.3.0",
 		"sass": "^1.97.3",
-		"svelte": "^5.45.6",
-		"svelte-check": "^4.3.4",
+		"svelte": "^5.51.2",
+		"svelte-check": "^4.4.0",
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.56.0",
-		"vite": "^7.2.6"
+		"vite": "^7.3.1",
+		"wrangler": "^4.65.0"
 	},
 	"dependencies": {
-		"lucide-svelte": "^0.562.0"
+		"lucide-svelte": "^0.564.0"
 	}
 }
