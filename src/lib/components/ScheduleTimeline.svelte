@@ -13,7 +13,7 @@
 					<span class="schedule__time">{item.time}</span>
 					<p class="schedule__label">
 						{#if item.featured}
-							<strong>{item.label}</strong>
+							<span class="schedule__label-featured">{item.label}</span>
 						{:else}
 							{item.label}
 						{/if}

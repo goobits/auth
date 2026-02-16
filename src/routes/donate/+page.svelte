@@ -15,16 +15,16 @@
 			</div>
 			<div class="flow-page__stack">
 				<section id="online" class="flow-page__block">
-					<h2>Online</h2>
-					<p>Primary checkout link goes here when your payment processor is finalized.</p>
+					<h2 class="flow-page__block-title">Online</h2>
+					<p class="flow-page__block-copy">Primary checkout link goes here when your payment processor is finalized.</p>
 				</section>
 				<section id="venmo" class="flow-page__block">
-					<h2>Venmo</h2>
-					<p>Use your team Venmo profile URL and QR code for fast mobile donations.</p>
+					<h2 class="flow-page__block-title">Venmo</h2>
+					<p class="flow-page__block-copy">Use your team Venmo profile URL and QR code for fast mobile donations.</p>
 				</section>
 				<section id="paypal" class="flow-page__block">
-					<h2>PayPal</h2>
-					<p>Use your PayPal donation URL and include it in social follow-up messages.</p>
+					<h2 class="flow-page__block-title">PayPal</h2>
+					<p class="flow-page__block-copy">Use your PayPal donation URL and include it in social follow-up messages.</p>
 				</section>
 			</div>
 			<p class="flow-page__copy">After donating, we recommend joining updates so you get route and weather notices.</p>

@@ -20,7 +20,7 @@
 				<p class="donate__copy">{donation.body}</p>
 				<ul class="donate__list">
 					{#each donation.bullets as bullet (bullet)}
-						<li class="donate__item"><span aria-hidden="true">→</span>{bullet}</li>
+						<li class="donate__item"><span class="donate__item-arrow" aria-hidden="true">→</span>{bullet}</li>
 					{/each}
 				</ul>
 				<p class="donate__disclaimer">{donation.disclaimer}</p>
