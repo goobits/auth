@@ -60,6 +60,19 @@ pnpm db:migrate:local
 2. `pnpm db:migrate:remote`
 3. `pnpm cf:deploy`
 
+## Recommended branch protection
+
+Protect `main` and require these GitHub checks before merge:
+
+- `Lint, Typecheck, Build, Unit`
+- `E2E (Playwright)`
+
+Also recommended:
+
+- Require pull request before merging
+- Require branches to be up to date before merging
+- Include administrators
+
 ## Project layout
 
 - `src/routes/` - page and server routes
