@@ -67,14 +67,6 @@ export function getAdminTabHref(tab: AdminTabId) {
 	return segment ? `/admin/${segment}` : '/admin'
 }
 
-export function getAdminTabFromSegment(segment: string): AdminTabId | null {
-	const normalized = segment.trim().toLowerCase()
-	for (const [tab, candidate] of Object.entries(ADMIN_TAB_SEGMENTS) as Array<[AdminTabId, string]>) {
-		if (candidate === normalized) return tab
-	}
-	return null
-}
-
 export function isAdminTabId(value: string): value is AdminTabId {
 	return value === 'dash' ||
 		value === 'cal' ||

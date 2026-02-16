@@ -4,4 +4,3 @@
 </script>
 
 <AdminPageShell {data} {form} initialTab={data.initialTab || 'dash'} />
-

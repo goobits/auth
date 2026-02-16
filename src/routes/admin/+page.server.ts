@@ -43,7 +43,7 @@ export const actions: Actions = {
 			},
 			userAdapter,
 			sessionAdapter,
-			redirectTo: '/admin',
+				redirectTo: '/admin/overview',
 			rateLimit: {
 				check: async (key: string) => {
 					try {

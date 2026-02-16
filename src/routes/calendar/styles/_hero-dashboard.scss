@@ -42,6 +42,21 @@
 	text-align: center !important;
 }
 
+/* Activity pages: force hero centering at highest practical specificity. */
+.calendar-page.calendar-activity .calendar-page__hero.ui-hero {
+	margin-inline: auto !important;
+	justify-self: center !important;
+	justify-items: center !important;
+	text-align: center !important;
+}
+
+.calendar-page.calendar-activity .calendar-page__hero.ui-hero .ui-hero__eyebrow,
+.calendar-page.calendar-activity .calendar-page__hero.ui-hero .ui-hero__title,
+.calendar-page.calendar-activity .calendar-page__hero.ui-hero .ui-hero__subtitle {
+	text-align: center !important;
+	margin-inline: auto !important;
+}
+
 .calendar-page__hero-glow {
 	position: absolute;
 	top: -var(--calendar-size-120);
