@@ -56,10 +56,10 @@
 								src={icon}
 								class="ui-hero__icon"
 								alt={iconAlt}
-								width="64"
-								height="64"
+								loading="eager"
+								fetchpriority="high"
 								decoding="async"
-								style={`--hero-icon-size: ${iconSize};`}
+								style={`--hero-icon-size: ${iconSize}; width: ${iconSize}; height: ${iconSize};`}
 							/></span
 						></span
 					>
@@ -78,10 +78,10 @@
 								src={icon}
 								class="ui-hero__icon"
 								alt={iconAlt}
-								width="64"
-								height="64"
+								loading="eager"
+								fetchpriority="high"
 								decoding="async"
-								style={`--hero-icon-size: ${iconSize};`}
+								style={`--hero-icon-size: ${iconSize}; width: ${iconSize}; height: ${iconSize};`}
 							/></span
 						></span
 				>
