@@ -52,6 +52,12 @@ const AdminStatusResponseSchema = z.object({
 		expiresAt: z.number().nullable(),
 		refreshFailed: z.boolean().optional().default(false)
 	}),
+	syncQueue: z.object({
+		pending: z.number(),
+		processing: z.number(),
+		failed: z.number(),
+		oldestPendingSeconds: z.number()
+	}),
 	rules: z.object({
 		hoursFrom: z.string(),
 		hoursTo: z.string(),

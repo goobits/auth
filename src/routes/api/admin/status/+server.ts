@@ -2,6 +2,7 @@ import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
 import { ensureValidGoogleToken, getConnection, saveConnection } from '../../../../../packages/calendar/src/index.ts'
 import { getTokenKey } from '../../../../../functions/api/calendar/_helpers.ts'
+import { getCalendarSyncQueueHealth } from '$lib/server/calendar-sync-queue'
 import { requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
 
 export async function GET(event: RequestEvent) {
@@ -62,6 +63,7 @@ export async function GET(event: RequestEvent) {
 			notice: parseInt(settings['notice'] || envValue('BOOKING_MIN_NOTICE_HOURS', '24'), 10),
 			capacity: parseInt(settings['capacity'] || envValue('BOOKING_CAPACITY', '4'), 10)
 		}
+		const syncQueue = await getCalendarSyncQueueHealth(db)
 
 		return json({
 			ok: true,
@@ -71,6 +73,7 @@ export async function GET(event: RequestEvent) {
 				expiresAt,
 				refreshFailed
 			},
+			syncQueue,
 			rules
 		}, { headers: noStoreHeaders })
 	} catch (err) {

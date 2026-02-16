@@ -35,6 +35,7 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 	let connected = $state(false)
 	let connectionExpired = $state(false)
 	let connectionRefreshFailed = $state(false)
+	let syncQueue = $state({ pending: 0, processing: 0, failed: 0, oldestPendingSeconds: 0 })
 	let bookings = $state<unknown[]>([])
 	let stats = $state(DEFAULT_ADMIN_STATS)
 	let loading = $state(true)
@@ -145,6 +146,7 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 			connected = dashboardStatus.connected
 			connectionExpired = dashboardStatus.connectionExpired
 			connectionRefreshFailed = dashboardStatus.connectionRefreshFailed
+			syncQueue = dashboardStatus.syncQueue ?? { pending: 0, processing: 0, failed: 0, oldestPendingSeconds: 0 }
 			if (dashboardStatus.rules) {
 				hours = { from: dashboardStatus.rules.hoursFrom, to: dashboardStatus.rules.hoursTo }
 				buffer = dashboardStatus.rules.buffer
@@ -462,6 +464,7 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 		get connected() { return connected },
 		get connectionExpired() { return connectionExpired },
 		get connectionRefreshFailed() { return connectionRefreshFailed },
+		get syncQueue() { return syncQueue },
 		get bookings() { return bookings },
 		get stats() { return stats },
 		get loading() { return loading },

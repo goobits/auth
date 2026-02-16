@@ -2,6 +2,7 @@ import { execSync } from 'node:child_process'
 import { chromium } from 'playwright'
 
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3610'
+const ADMIN_URL = `${BASE_URL}/admin/`
 
 function getAdminPasscode() {
 	if (process.env.ADMIN_PASSCODE) return process.env.ADMIN_PASSCODE
@@ -34,17 +35,26 @@ export async function runCalendarEventsFlow() {
 	const page = await context.newPage()
 
 	try {
-		await page.goto(`${BASE_URL}/admin`, { waitUntil: 'domcontentloaded', timeout: 30000 })
+		await page.goto(ADMIN_URL, { waitUntil: 'domcontentloaded', timeout: 30000 })
 
-		if ((await page.locator('.admin-login').count()) > 0) {
+		const alreadyAuthed = (await page.locator('.admin-page__sidebar').count()) > 0
+		if (!alreadyAuthed && (await page.locator('.admin-login').count()) > 0) {
 			await page.fill('input[name="password"]', passcode)
+			const navWait = page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => null)
 			await page.click('button[type="submit"]')
+			await navWait
 		}
 
+		const cookies = await context.cookies(ADMIN_URL)
+		const hasSessionCookie = cookies.some((cookie) => cookie.name === 'admin_session')
+		if (!hasSessionCookie) throw new Error('admin session cookie missing after login')
+
 		await page.goto(`${BASE_URL}/admin/events`, { waitUntil: 'domcontentloaded', timeout: 30000 })
+		await page.locator('.admin-page__sidebar').first().waitFor({ timeout: 30000 })
 		await page.locator('.admin-page__title').first().waitFor({ timeout: 30000 })
 
 		const title = `E2E Calendar Event ${Date.now()}`
+		const waitlistTitle = `E2E Waitlist Event ${Date.now()}`
 		const startDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
 		startDate.setMinutes(0, 0, 0)
 		startDate.setHours(18)
@@ -57,6 +67,46 @@ export async function runCalendarEventsFlow() {
 
 		await page.click('button:has-text("Create Events")')
 		await page.locator(`text=${title}`).first().waitFor({ timeout: 30000 })
+
+		await page.fill('#event-draft-title', waitlistTitle)
+		await page.fill('#event-draft-starts', toLocalDateTimeInputValue(new Date(startDate.getTime() + 2 * 60 * 60 * 1000)))
+		await page.fill('#event-draft-ends', toLocalDateTimeInputValue(new Date(endDate.getTime() + 2 * 60 * 60 * 1000)))
+		await page.fill('#event-draft-capacity', '1')
+		await page.click('button:has-text("Create Events")')
+		await page.locator(`text=${waitlistTitle}`).first().waitFor({ timeout: 30000 })
+
+		await page.goto(`${BASE_URL}/calendar/gym`, { waitUntil: 'domcontentloaded', timeout: 30000 })
+		if (page.url().includes('/calendar/login')) {
+			console.log('[calendar-events-flow] SKIP program-page counters (calendar member session required)')
+			console.log('[calendar-events-flow] PASS (admin event creation only)')
+			return
+		}
+
+		const mainCard = page.locator('.calendar-home__event-card', { hasText: title }).first()
+		await mainCard.waitFor({ timeout: 30000 })
+		await mainCard.locator('button:has-text("Join +1")').click()
+		await page.waitForTimeout(250)
+		await mainCard.locator('text=2/4 seats').first().waitFor({ timeout: 30000 })
+		await mainCard.locator('button:has-text("Leave")').click()
+		await page.waitForTimeout(250)
+		await mainCard.locator('text=0/4 seats').first().waitFor({ timeout: 30000 })
+
+		const waitlistCard = page.locator('.calendar-home__event-card', { hasText: waitlistTitle }).first()
+		await waitlistCard.waitFor({ timeout: 30000 })
+		const feedRes = await context.request.get(`${BASE_URL}/api/calendar/events`)
+		if (!feedRes.ok()) throw new Error(`failed to load calendar events feed: ${feedRes.status()}`)
+		const feedJson = await feedRes.json() as { upcoming?: Array<{ id: number; title: string }> }
+		const waitlistEvent = (feedJson.upcoming ?? []).find((event) => event.title === waitlistTitle)
+		if (!waitlistEvent) throw new Error('waitlist event not found in feed')
+		const waitlistJoinRes = await context.request.post(`${BASE_URL}/api/calendar/events/${waitlistEvent.id}/join`, {
+			data: { guestCount: 1 }
+		})
+		if (!waitlistJoinRes.ok()) throw new Error(`waitlist join failed: ${waitlistJoinRes.status()}`)
+		await page.reload({ waitUntil: 'domcontentloaded' })
+		await waitlistCard.locator('text=waitlist 1').first().waitFor({ timeout: 30000 })
+		await waitlistCard.locator('button:has-text("Leave")').click()
+		await page.waitForTimeout(250)
+		await waitlistCard.locator('text=0/1 seats').first().waitFor({ timeout: 30000 })
 
 		console.log('[calendar-events-flow] PASS')
 	} finally {

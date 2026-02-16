@@ -1,6 +1,7 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../_bridge.ts'
 import { joinEvent } from '$lib/server/calendar-social'
+import { enqueueCalendarSyncJob } from '$lib/server/calendar-sync-queue'
 import { getCalendarUserId, noStoreHeaders, unauthorizedCalendar } from '../../../_auth.ts'
 
 export async function POST(event: RequestEvent) {
@@ -28,6 +29,17 @@ export async function POST(event: RequestEvent) {
 			guestCount: Number.isFinite(guestCount) ? guestCount : 0,
 			note
 		})
+		// Don't block member experience if queue write fails.
+		try {
+			await enqueueCalendarSyncJob(env.DB, {
+				eventId,
+				trigger: 'member_join',
+				requestedByUserId: userId,
+				payload: { guestCount: Number.isFinite(guestCount) ? guestCount : 0 }
+			})
+		} catch (error) {
+			console.warn('Failed to enqueue calendar sync after join:', error)
+		}
 
 		if (!result.ok) {
 			return json({ ok: false, error: { message: result.message, code: result.code } }, { status: 404, headers: noStoreHeaders })

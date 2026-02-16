@@ -23,6 +23,7 @@ export async function loadDashboardStatus() {
 		connected: data.google.connected,
 		connectionExpired: data.google.expired,
 		connectionRefreshFailed: data.google.refreshFailed ?? false,
+		syncQueue: data.syncQueue,
 		rules: data.rules
 	}
 }

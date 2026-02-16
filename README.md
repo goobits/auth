@@ -37,6 +37,7 @@ pnpm preview
 ### @miko/calendar
 
 Google Calendar integration, event/participant storage, program routing, and invite management.
+Event participation is written first; Google sync runs asynchronously via a retry queue.
 
 ### @goobits/auth
 

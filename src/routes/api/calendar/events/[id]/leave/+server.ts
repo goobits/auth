@@ -1,6 +1,7 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../_bridge.ts'
 import { leaveEvent } from '$lib/server/calendar-social'
+import { enqueueCalendarSyncJob } from '$lib/server/calendar-sync-queue'
 import { getCalendarUserId, noStoreHeaders, unauthorizedCalendar } from '../../../_auth.ts'
 
 export async function POST(event: RequestEvent) {
@@ -19,6 +20,16 @@ export async function POST(event: RequestEvent) {
 
 		const env = await buildEnv(event.platform)
 		await leaveEvent(env.DB, { eventId, userId })
+		// Don't block member experience if queue write fails.
+		try {
+			await enqueueCalendarSyncJob(env.DB, {
+				eventId,
+				trigger: 'member_leave',
+				requestedByUserId: userId
+			})
+		} catch (error) {
+			console.warn('Failed to enqueue calendar sync after leave:', error)
+		}
 		return json({ ok: true }, { headers: noStoreHeaders })
 	} catch (err) {
 		console.error('Calendar leave event error:', err)
