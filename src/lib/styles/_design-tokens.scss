@@ -56,18 +56,27 @@
   --color-danger-800: hsl(0, 70%, 35%);
   --color-danger-900: hsl(0, 63%, 31%);
 
-  /* Brand-preserving tokens for visual parity */
-  --color-brand-cream-50: hsl(40, 45%, 96%);
-  --color-brand-cream-100: hsl(38, 46%, 93%);
-  --color-brand-ink-900: hsl(217, 43%, 8%);
-  --color-brand-ink-700: hsl(217, 32%, 22%);
-  --color-brand-ink-500: hsl(218, 12%, 46%);
-  --color-brand-forest-900: hsl(153, 60%, 11%);
-  --color-brand-forest-700: hsl(151, 63%, 22%);
-  --color-brand-forest-500: hsl(143, 59%, 30%);
-  --color-brand-dino-orange: hsl(32, 87%, 54%);
-  --color-brand-sky-200: hsl(201, 100%, 87%);
-  --color-brand-sun-200: hsl(34, 100%, 85%);
+  /* Brand-specific tokens */
+  --color-brand-cream-50: hsl(34, 44%, 96%);
+  --color-brand-cream-100: hsl(35, 39%, 93%);
+  --color-brand-cream-200: hsl(36, 35%, 88%);
+  --color-brand-forest-900: hsl(146, 58%, 13%);
+  --color-brand-forest-800: hsl(144, 54%, 17%);
+  --color-brand-forest-700: hsl(144, 56%, 21%);
+  --color-brand-forest-600: hsl(142, 53%, 27%);
+  --color-brand-ink-900: hsl(240, 17%, 14%);
+  --color-brand-ink-700: hsl(240, 11%, 27%);
+  --color-brand-ink-500: hsl(240, 6%, 51%);
+  --color-brand-orange: hsl(29, 67%, 52%);
+  --color-brand-orange-strong: hsl(27, 70%, 45%);
+  --color-brand-orange-soft: hsl(31, 75%, 96%);
+  --color-brand-orange-border: hsl(34, 66%, 87%);
+  --color-brand-sky-top: hsl(205, 58%, 86%);
+  --color-brand-sky-mid: hsl(204, 57%, 91%);
+  --color-brand-meadow-light: hsl(90, 51%, 77%);
+  --color-brand-meadow: hsl(96, 39%, 53%);
+  --color-brand-meadow-dark: hsl(105, 40%, 43%);
+  --color-brand-sun: hsl(47, 94%, 76%);
 
   /* ===== SEMANTIC COLORS ===== */
   --color-white: hsl(0, 0%, 100%);
@@ -77,23 +86,49 @@
   --color-text-primary: var(--color-brand-ink-900);
   --color-text-secondary: var(--color-brand-ink-700);
   --color-text-tertiary: var(--color-brand-ink-500);
-  --color-border: var(--color-gray-200);
-  --color-border-subtle: var(--color-gray-100);
+  --color-border: hsl(40, 20%, 87%);
+  --color-border-subtle: hsl(40, 25%, 92%);
   --color-accent: var(--color-brand-forest-700);
   --color-accent-strong: var(--color-brand-forest-900);
-  --color-accent-soft: var(--color-brand-forest-500);
-  --color-highlight: var(--color-brand-dino-orange);
-  --color-hero-meadow: hsl(110, 34%, 93%);
-  --color-hero-mountain-top: hsl(153, 17%, 59%);
-  --color-hero-mountain-bottom: hsl(154, 18%, 45%);
-  --color-donate-surface: hsl(35, 100%, 96%);
-  --color-donate-border: hsl(35, 80%, 86%);
-  --color-volunteer-surface: hsl(140, 43%, 95%);
-  --color-volunteer-border: hsl(140, 37%, 88%);
-  --color-route-tab-active: hsl(140, 44%, 95%);
-  --color-route-map-a: hsl(96, 25%, 93%);
-  --color-route-map-b: hsl(180, 31%, 96%);
-  --color-route-map-c: hsl(206, 100%, 94%);
+  --color-accent-soft: var(--color-brand-forest-600);
+  --color-highlight: var(--color-brand-orange);
+
+  --color-hero-gradient: linear-gradient(175deg, var(--color-brand-sky-top) 0%, var(--color-brand-sky-mid) 35%, var(--color-brand-meadow-light) 72%, hsl(98, 47%, 70%) 100%);
+  --color-schedule-surface: var(--color-brand-forest-900);
+
+  /* ===== TYPOGRAPHY ===== */
+  --font-family-body: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-family-display: 'Fredoka', system-ui, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+  --font-size-5xl: 3rem;
+  --font-size-6xl: 3.75rem;
+  --font-size-7xl: 4.5rem;
+  --font-size-8xl: 6rem;
+  --font-size-9xl: 8rem;
+
+  --font-weight-thin: 100;
+  --font-weight-extralight: 200;
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --font-weight-black: 900;
+
+  --line-height-none: 1;
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+  --line-height-loose: 2;
 
   /* ===== SPACING ===== */
   --space-0: 0;
@@ -132,38 +167,6 @@
   --space-80: 20rem;
   --space-96: 24rem;
 
-  /* ===== TYPOGRAPHY ===== */
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-size-3xl: 1.875rem;
-  --font-size-4xl: 2.25rem;
-  --font-size-5xl: 3rem;
-  --font-size-6xl: 3.75rem;
-  --font-size-7xl: 4.5rem;
-  --font-size-8xl: 6rem;
-  --font-size-9xl: 8rem;
-
-  --font-weight-thin: 100;
-  --font-weight-extralight: 200;
-  --font-weight-light: 300;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-  --font-weight-extrabold: 800;
-  --font-weight-black: 900;
-
-  --line-height-none: 1;
-  --line-height-tight: 1.25;
-  --line-height-snug: 1.375;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.625;
-  --line-height-loose: 2;
-
   /* ===== RADIUS ===== */
   --radius-none: 0;
   --radius-sm: 0.125rem;
@@ -175,9 +178,9 @@
   --radius-full: 9999px;
 
   /* ===== SHADOWS ===== */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.04);
+  --shadow-md: 0 4px 16px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 8px 32px rgb(0 0 0 / 0.08);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
   --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
   --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.06);

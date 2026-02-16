@@ -1,31 +1,59 @@
 .site-footer {
-  border-top: 1px solid var(--color-border);
-  background-color: var(--color-surface-variant);
-  padding-block: var(--space-8);
+  background: var(--color-accent-strong);
+  color: var(--color-white);
+  padding: 3.25rem 0;
 
-  &__inner {
-    display: grid;
-    gap: var(--space-2);
+  &__top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1.5rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid rgb(255 255 255 / 0.08);
+    margin-bottom: 1.25rem;
   }
 
-  &__line {
+  &__brand {
+    font-family: var(--font-family-display);
+    font-size: 1.375rem;
+    font-weight: var(--font-weight-bold);
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+
+  &__tagline {
+    font-size: var(--font-size-sm);
+    opacity: 0.45;
     margin: 0;
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-accent);
   }
 
   &__nav {
     display: flex;
+    gap: 1.5rem;
     flex-wrap: wrap;
-    gap: var(--space-3);
   }
 
   &__link {
     text-decoration: none;
-    color: var(--color-text-secondary);
+    color: rgb(255 255 255 / 0.55);
+    font-size: var(--font-size-sm);
+
+    &:hover {
+      color: var(--color-white);
+    }
+  }
+
+  &__bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
   }
 
   &__small {
-    color: var(--color-text-tertiary);
+    font-size: 0.8125rem;
+    opacity: 0.35;
   }
 }

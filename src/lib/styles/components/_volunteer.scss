@@ -1,37 +1,99 @@
 .volunteer {
-  &__hero {
-    padding: var(--space-6);
-    border-radius: var(--radius-3xl);
-    background: linear-gradient(160deg, var(--color-volunteer-surface), var(--color-surface) 70%);
-    border: 1px solid var(--color-volunteer-border);
+  background: var(--color-surface-variant);
+
+  &__banner {
+    background: var(--color-accent-strong);
+    border-radius: 1.75rem;
+    padding: 3.5rem;
+    text-align: center;
+    color: var(--color-white);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2.25rem;
+    box-shadow: 0 4px 24px rgb(14 53 32 / 0.15);
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 120%, rgb(31 107 66 / 0.2) 0%, transparent 60%);
+    }
+
+    > * {
+      position: relative;
+      z-index: 1;
+    }
   }
 
-  &__copy,
-  &__role-copy {
-    color: var(--color-text-secondary);
+  &__title {
+    color: var(--color-white);
+  }
+
+  &__copy {
+    max-width: 28.75rem;
+    margin: 0 auto var(--space-6);
+    opacity: 0.75;
+    font-size: 0.9375rem;
+    line-height: 1.7;
   }
 
   &__perk {
-    font-size: var(--font-size-sm);
-    color: var(--color-text-tertiary);
+    font-size: 0.8125rem;
+    opacity: 0.45;
+    margin-top: var(--space-4);
   }
 
   &__grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-3);
-    margin-top: var(--space-4);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.875rem;
+  }
+
+  &__role {
+    padding: 1.5rem 1.25rem;
+  }
+
+  &__role-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.625rem;
+    background: hsl(143, 40%, 93%);
+    display: grid;
+    place-items: center;
+    font-size: 1.125rem;
+    margin-bottom: 0.875rem;
   }
 
   &__role-title {
+    margin: 0 0 0.25rem;
+    font-size: 0.9375rem;
+    font-weight: var(--font-weight-bold);
+  }
+
+  &__role-copy {
     margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-text-tertiary);
+    line-height: 1.55;
   }
 }
 
-@media (min-width: 56.25rem) {
+@media (max-width: 56.25rem) {
   .volunteer {
     &__grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}
+
+@media (max-width: 40rem) {
+  .volunteer {
+    &__banner {
+      padding: 2.25rem 1.5rem;
+    }
+
+    &__grid {
+      grid-template-columns: 1fr;
     }
   }
 }

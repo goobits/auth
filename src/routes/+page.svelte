@@ -3,14 +3,13 @@
 	import MobileCtaBar from '$lib/components/MobileCtaBar.svelte';
 	import Hero from '$lib/components/Hero.svelte';
 	import QuickFacts from '$lib/components/QuickFacts.svelte';
-	import Activities from '$lib/components/Activities.svelte';
 	import ScheduleTimeline from '$lib/components/ScheduleTimeline.svelte';
 	import RoutesTabs from '$lib/components/RoutesTabs.svelte';
 	import BringList from '$lib/components/BringList.svelte';
 	import DonateSection from '$lib/components/DonateSection.svelte';
-	import SponsorsSection from '$lib/components/SponsorsSection.svelte';
 	import VolunteerSection from '$lib/components/VolunteerSection.svelte';
 	import FaqAccordion from '$lib/components/FaqAccordion.svelte';
+	import RemindSection from '$lib/components/RemindSection.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import { site } from '$lib/content/site';
 </script>
@@ -28,14 +27,13 @@
 <main>
 	<Hero {...site.hero} />
 	<QuickFacts facts={site.quickFacts} />
-	<Activities activities={site.activities} />
 	<ScheduleTimeline items={site.schedule} />
 	<RoutesTabs routes={site.routes} />
 	<BringList items={site.bring} />
 	<DonateSection donation={site.donation} />
-	<SponsorsSection sponsors={site.sponsors} />
 	<VolunteerSection volunteer={site.volunteer} />
 	<FaqAccordion faqs={site.faq} />
+	<RemindSection remind={site.remind} />
 </main>
-<Footer line={site.footer.line} year={site.footer.year} />
+<Footer brand={site.footer.brand} line={site.footer.line} year={site.footer.year} />
 <MobileCtaBar />

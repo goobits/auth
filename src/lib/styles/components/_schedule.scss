@@ -1,41 +1,65 @@
 .schedule {
-  &__note {
-    color: var(--color-text-tertiary);
+  background: var(--color-schedule-surface);
+  color: var(--color-white);
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 15% 20%, rgb(31 107 66 / 0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 80%, rgb(31 107 66 / 0.15) 0%, transparent 50%);
   }
 
-  &__list {
-    list-style: none;
-    margin: var(--space-5) 0 0;
-    padding: 0;
+  .layout__container {
+    position: relative;
+    z-index: 1;
+  }
+
+  &__title {
+    color: var(--color-white);
+  }
+
+  &__note {
+    color: rgb(255 255 255 / 0.45);
+    margin-bottom: 2rem;
+  }
+
+  &__timeline {
     display: grid;
-    gap: var(--space-2_5);
+    gap: 2px;
+    max-width: 35rem;
   }
 
   &__item {
-    background-color: var(--color-surface);
-    padding: var(--space-3) var(--space-4);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-xl);
-    position: relative;
-    padding-left: 2.75rem;
+    display: grid;
+    grid-template-columns: 5rem 1fr;
+    gap: 1.25rem;
+    padding: 1.125rem 0;
+    border-bottom: 1px solid rgb(255 255 255 / 0.06);
+    align-items: baseline;
 
-    &::before {
-      content: '';
-      width: var(--space-2_5);
-      height: var(--space-2_5);
-      border-radius: var(--radius-full);
-      background-color: var(--color-highlight);
-      position: absolute;
-      left: var(--space-4);
-      top: 1.125rem;
+    &:last-child {
+      border-bottom: 0;
     }
   }
-}
 
-@media (min-width: 60rem) {
-  .schedule {
-    &__list {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+  &__time {
+    font-family: var(--font-family-display);
+    font-weight: var(--font-weight-semibold);
+    font-size: 0.9375rem;
+    color: var(--color-brand-sun);
+  }
+
+  &__label {
+    font-size: 0.9375rem;
+    color: rgb(255 255 255 / 0.75);
+    margin: 0;
+
+    strong {
+      color: var(--color-white);
+      font-weight: var(--font-weight-semibold);
     }
   }
 }

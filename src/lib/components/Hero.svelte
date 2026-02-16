@@ -1,5 +1,6 @@
 <script lang="ts">
-	let { title, subhead, dateLine, chips, reassurance } = $props<{
+	let { eyebrow, title, subhead, dateLine, chips, reassurance } = $props<{
+		eyebrow: string;
 		title: string;
 		subhead: string;
 		dateLine: string;
@@ -8,31 +9,39 @@
 	}>();
 </script>
 
-<section class="layout__section hero" id="top">
-	<div class="layout__container hero__grid">
-		<div>
-			<h1 class="hero__title">{title}</h1>
-			<p class="hero__subhead">{subhead}</p>
-			<p class="hero__date">{dateLine}</p>
-			<div class="hero__chips">
-				{#each chips as chip (chip)}
-					<span class="hero__chip">{chip}</span>
-				{/each}
-			</div>
-			<div class="hero__actions">
-				<a class="c-button c-button--primary" href="#volunteer">Join the Herd</a>
-				<a class="c-button c-button--secondary" href="#donate">Donate</a>
-				<a class="hero__text-link" href="#volunteer">Volunteer for a 90-minute shift</a>
-			</div>
-			<p class="hero__reassurance">{reassurance}</p>
-		</div>
+<section class="hero" id="top">
+	<div class="hero__sun" aria-hidden="true"></div>
+	<div class="hero__cloud hero__cloud--1" aria-hidden="true"></div>
+	<div class="hero__cloud hero__cloud--2" aria-hidden="true"></div>
+	<div class="hero__cloud hero__cloud--3" aria-hidden="true"></div>
+	<div class="hero__mountains" aria-hidden="true">
+		<div class="hero__mountain-back"></div>
+		<div class="hero__mountain-front"></div>
+	</div>
+	<div class="hero__trees" aria-hidden="true">
+		<span class="hero__tree"></span>
+		<span class="hero__tree hero__tree--small"></span>
+		<span class="hero__tree hero__tree--large"></span>
+		<span class="hero__tree hero__tree--small"></span>
+		<span class="hero__tree"></span>
+	</div>
+	<div class="hero__ground" aria-hidden="true"></div>
+	<div class="hero__dinos" aria-hidden="true">🦕 🦖 🏃 🦖 🦕</div>
 
-		<div class="hero__art" aria-hidden="true">
-			<div class="hero__sun"></div>
-			<div class="hero__mountain"></div>
-			<div class="hero__tree hero__tree--left"></div>
-			<div class="hero__tree hero__tree--right"></div>
-			<div class="hero__dino">🦖</div>
+	<div class="layout__container hero__content">
+		<p class="hero__eyebrow">{eyebrow}</p>
+		<h1 class="hero__title">{title}</h1>
+		<p class="hero__subhead">{subhead}</p>
+		<p class="hero__date">{dateLine}</p>
+		<div class="hero__chips">
+			{#each chips as chip (chip)}
+				<span class="hero__chip">{chip}</span>
+			{/each}
 		</div>
+		<div class="hero__actions">
+			<a class="c-button c-button--primary c-button--large" href="#volunteer">Join the Herd</a>
+			<a class="c-button c-button--secondary c-button--large" href="#donate">Donate</a>
+		</div>
+		<p class="hero__reassurance">{reassurance}</p>
 	</div>
 </section>
