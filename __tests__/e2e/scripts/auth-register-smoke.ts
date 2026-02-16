@@ -56,6 +56,20 @@ export async function runAuthRegisterSmoke() {
 			throw new Error(`unexpected legacy callback redirect target: ${page.url()}`)
 		}
 
+		// API-level check: legacy endpoints must not return success pages.
+		const legacySigninRes = await context.request.get(`${BASE_URL}/auth/signin/google`, {
+			maxRedirects: 0
+		})
+		if (legacySigninRes.status() < 300 || legacySigninRes.status() >= 400) {
+			throw new Error(`expected redirect for legacy signin route, got ${legacySigninRes.status()}`)
+		}
+		const legacyCallbackRes = await context.request.get(`${BASE_URL}/auth/callback/google`, {
+			maxRedirects: 0
+		})
+		if (legacyCallbackRes.status() < 300 || legacyCallbackRes.status() >= 400) {
+			throw new Error(`expected redirect for legacy callback route, got ${legacyCallbackRes.status()}`)
+		}
+
 		console.log('[auth-register-smoke] PASS')
 	} finally {
 		await context.close()
