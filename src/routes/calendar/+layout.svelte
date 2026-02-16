@@ -28,17 +28,17 @@
 	<ShellNav
 		brandLabel="Members"
 		brandHref="/calendar"
-	links={headerLinks}
-	currentPath={$page.url.pathname}
+		links={headerLinks}
+		currentPath={$page.url.pathname}
 	>
 		{#snippet right()}
-			<div class="shell-nav__user">
+			<div class="calendar-shell__nav-user">
 				{#if data.user}
 					<PillButton
 						href="/calendar?mine=1"
 						variant="secondary"
 						size="sm"
-						className="shell-nav__button shell-nav__button--link"
+						className="calendar-shell__nav-button calendar-shell__nav-button--link"
 						ariaLabel="My schedule"
 					>
 						<Bell size={13} />
@@ -48,16 +48,16 @@
 						href="/calendar/profile"
 						variant="secondary"
 						size="sm"
-						className="shell-nav__button shell-nav__button--link"
+						className="calendar-shell__nav-button calendar-shell__nav-button--link"
 						ariaLabel="Profile"
 					>
 						<UserRound size={13} />
 						Profile
 					</PillButton>
 					{#if data.user.avatarUrl}
-						<img src={data.user.avatarUrl} alt="" class="shell-nav__avatar" />
+						<img src={data.user.avatarUrl} alt="" class="calendar-shell__nav-avatar" />
 					{/if}
-					<PillButton onClick={logout} variant="secondary" size="sm" className="shell-nav__button">
+					<PillButton onClick={logout} variant="secondary" size="sm" className="calendar-shell__nav-button">
 						Logout
 					</PillButton>
 				{/if}

@@ -19,10 +19,10 @@
 <div class="admin-root">
 	<ShellNav currentPath={$page.url.pathname}>
 		{#snippet right()}
-			<span class="shell-nav__badge">Admin</span>
+			<span class="admin-shell__nav-badge">Admin</span>
 			{#if data.user}
 				<form method="POST" action="/admin?/logout" use:enhance>
-					<PillButton className="shell-nav__button" type="submit" size="sm" variant="secondary">
+					<PillButton className="admin-shell__nav-button" type="submit" size="sm" variant="secondary">
 						Logout
 					</PillButton>
 				</form>
