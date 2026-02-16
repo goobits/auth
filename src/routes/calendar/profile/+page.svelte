@@ -1,5 +1,6 @@
 <script>
 	import { saveCalendarProfile } from '$lib/client/api/calendarClient'
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 
 	let { data } = $props()
 	let emergencyContact = $derived(data.profile?.emergencyContact ?? '')
@@ -68,10 +69,19 @@
 					</div>
 				</div>
 				<div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.7rem">
-					<button class="calendar-page__primary-button" onclick={save} disabled={saving}>
+					<PillButton className="calendar-page__primary-button" variant="primary" size="lg" onClick={save} disabled={saving}>
 						{saving ? 'Saving...' : 'Save profile'}
-					</button>
-					<a class="calendar-page__ghost-button" href="/api/calendar/ics" target="_blank" rel="noopener noreferrer">Subscribe (.ics)</a>
+					</PillButton>
+					<PillButton
+						className="calendar-page__ghost-button"
+						variant="ghost"
+						size="md"
+						href="/api/calendar/ics"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						Subscribe (.ics)
+					</PillButton>
 					{#if status}<span class="calendar-page__status-text--muted">{status}</span>{/if}
 				</div>
 			</div>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { useTheme } from '@goobits/themes/svelte'
+	import Button from '$lib/ui/buttons/Button.svelte'
 
 	type ThemePreset = 'light' | 'dark' | 'magic'
 
@@ -51,13 +52,13 @@
 <svelte:window onclick={onWindowClick} onkeydown={onWindowKeydown} />
 
 <div class="ui-theme-select" bind:this={rootEl}>
-	<button
+	<Button
 		type="button"
-		class="ui-theme-select__trigger"
-		onclick={toggleMenu}
-		aria-haspopup="menu"
-		aria-expanded={menuOpen}
-		aria-label="Change theme"
+		className="ui-theme-select__trigger"
+		onClick={toggleMenu}
+		ariaHaspopup="menu"
+		ariaExpanded={menuOpen}
+		ariaLabel="Change theme"
 		title="Theme"
 	>
 		<span class="ui-theme-select__icon" aria-hidden="true">
@@ -80,40 +81,37 @@
 		<svg viewBox="0 0 10 6" aria-hidden="true" class="ui-theme-select__chevron" class:open={menuOpen}>
 			<path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
 		</svg>
-	</button>
+	</Button>
 
 	{#if menuOpen}
 		<div class="ui-theme-select__menu" role="menu" aria-label="Theme options">
-			<button
+			<Button
 				type="button"
-				class="ui-theme-select__option"
-				class:active={activePreset === 'light'}
-				onclick={() => chooseTheme('light')}
+				className={`ui-theme-select__option ${activePreset === 'light' ? 'active' : ''}`}
+				onClick={() => chooseTheme('light')}
 				role="menuitemradio"
-				aria-checked={activePreset === 'light'}
+				ariaChecked={activePreset === 'light'}
 			>
 				Light
-			</button>
-			<button
+			</Button>
+			<Button
 				type="button"
-				class="ui-theme-select__option"
-				class:active={activePreset === 'dark'}
-				onclick={() => chooseTheme('dark')}
+				className={`ui-theme-select__option ${activePreset === 'dark' ? 'active' : ''}`}
+				onClick={() => chooseTheme('dark')}
 				role="menuitemradio"
-				aria-checked={activePreset === 'dark'}
+				ariaChecked={activePreset === 'dark'}
 			>
 				Dark
-			</button>
-			<button
+			</Button>
+			<Button
 				type="button"
-				class="ui-theme-select__option"
-				class:active={activePreset === 'magic'}
-				onclick={() => chooseTheme('magic')}
+				className={`ui-theme-select__option ${activePreset === 'magic' ? 'active' : ''}`}
+				onClick={() => chooseTheme('magic')}
 				role="menuitemradio"
-				aria-checked={activePreset === 'magic'}
+				ariaChecked={activePreset === 'magic'}
 			>
 				Magic
-			</button>
+			</Button>
 		</div>
 	{/if}
 </div>
@@ -126,7 +124,7 @@
 		z-index: 120;
 	}
 
-	.ui-theme-select__trigger {
+	:global(.ui-theme-select__trigger) {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -136,7 +134,7 @@
 		border-radius: 999px;
 		color: var(--color-white);
 		cursor: pointer;
-		font-family: inherit;
+		font-family: var(--font-ui-sans, var(--font-sans));
 		font-size: 0.74rem;
 		font-weight: 500;
 		line-height: 0;
@@ -145,7 +143,7 @@
 		vertical-align: middle;
 	}
 
-	.ui-theme-select__trigger:focus-visible {
+	:global(.ui-theme-select__trigger:focus-visible) {
 		outline: 2px solid color-mix(in srgb, var(--color-white) 64%, transparent);
 		outline-offset: 2px;
 	}
@@ -187,7 +185,7 @@
 		z-index: 130;
 	}
 
-	.ui-theme-select__option {
+	:global(.ui-theme-select__option) {
 		display: block;
 		width: 100%;
 		text-align: left;
@@ -196,19 +194,19 @@
 		border-radius: 0.45rem;
 		color: var(--text);
 		cursor: pointer;
-		font-family: inherit;
+		font-family: var(--font-ui-sans, var(--font-sans));
 		font-size: 0.8rem;
 		font-weight: 500;
 		padding: 0.4rem 0.52rem;
 	}
 
-	.ui-theme-select__option:hover,
-	.ui-theme-select__option:focus-visible {
+	:global(.ui-theme-select__option:hover),
+	:global(.ui-theme-select__option:focus-visible) {
 		background: color-mix(in srgb, var(--text) 11%, transparent);
 		outline: none;
 	}
 
-	.ui-theme-select__option.active {
+	:global(.ui-theme-select__option.active) {
 		background: color-mix(in srgb, var(--link) 24%, transparent);
 		color: var(--text);
 	}

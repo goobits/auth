@@ -1,6 +1,7 @@
 <script>
 	import './Admin.scss'
 	import ShellNav from '$lib/ui/ShellNav.svelte'
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	import { enhance } from '$app/forms'
 	import { page } from '$app/stores'
 	import { goto } from '$app/navigation'
@@ -21,7 +22,9 @@
 			<span class="shell-nav__badge">Admin</span>
 			{#if data.user}
 				<form method="POST" action="/admin?/logout" use:enhance>
-					<button class="shell-nav__button" type="submit">Logout</button>
+					<PillButton className="shell-nav__button" type="submit" size="sm" variant="secondary">
+						Logout
+					</PillButton>
 				</form>
 			{/if}
 		{/snippet}

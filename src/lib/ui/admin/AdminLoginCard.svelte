@@ -1,4 +1,5 @@
 <script>
+	import Button from '$lib/ui/buttons/Button.svelte'
 	const { form } = $props()
 </script>
 
@@ -19,7 +20,7 @@
 					autocomplete="current-password"
 					required
 				/>
-				<button class="admin-login__unlock" type="submit">Unlock</button>
+				<Button className="admin-login__unlock" variant="primary" size="lg" type="submit">Unlock</Button>
 			</div>
 			{#if form?.success}
 				<p class="admin-login__hint">Signing you in...</p>

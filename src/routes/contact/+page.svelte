@@ -3,6 +3,7 @@
 	import { ChevronRight } from '@lucide/svelte'
 	import Hero from '$lib/ui/Hero.svelte'
 	import PageShell from '$lib/ui/PageShell.svelte'
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	import { submitContact, toContactPayload } from '$lib/client/forms/contact'
 
 	let { data } = $props()
@@ -119,12 +120,12 @@
 					<p class="contact-page__submit-error">{submitError}</p>
 				{/if}
 
-				<button class="contact-page__submit" type="submit" disabled={submitting}>
+				<PillButton className="contact-page__submit" type="submit" variant="primary" size="lg" disabled={submitting}>
 					{submitting ? 'Sending…' : 'Send message'}
 					{#if !submitting}
 						<ChevronRight class="contact-page__submit-icon" size={18} strokeWidth={2.4} aria-hidden="true" />
 					{/if}
-				</button>
+				</PillButton>
 
 				<p class="contact-page__legal-note">
 					By sending this form you agree to our <a href="/privacy">Privacy Policy</a>, <a href="/terms">Terms</a>,

@@ -14,20 +14,6 @@
 	@include surface-card($radius, $padding, var(--color-white-03), var(--color-white-06));
 }
 
-@mixin button-primary($radius: 12px, $padding: 12px 24px) {
-	display: inline-block;
-	padding: $padding;
-	border-radius: $radius;
-	border: 1px solid var(--brand-primary);
-	background: var(--brand-primary);
-	color: var(--color-white);
-	font-family: inherit;
-	font-weight: 600;
-	cursor: pointer;
-	text-decoration: none;
-	transition: all 0.2s ease;
-}
-
 @mixin button-ghost($radius: 999px, $padding: 10px 20px, $border-color: var(--color-white-12)) {
 	border: 1px solid $border-color;
 	background: transparent;

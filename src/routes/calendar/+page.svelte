@@ -1,5 +1,6 @@
 <script>
 	import { joinCalendarEvent, leaveCalendarEvent } from '$lib/client/api/calendarClient'
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	let { data } = $props()
 	let upcoming = $state([])
 	let recent = $state([])
@@ -93,9 +94,14 @@
 	<section class="calendar-page__section calendar-home__section">
 		<div class="calendar-home__feed-head">
 			<h2 class="calendar-home__feed-title">{data.onlyMine ? 'My Schedule' : 'Upcoming Events'}</h2>
-			<a href={data.onlyMine ? '/calendar' : '/calendar?mine=1'} class="calendar-page__ghost-button">
+			<PillButton
+				href={data.onlyMine ? '/calendar' : '/calendar?mine=1'}
+				variant="ghost"
+				size="md"
+				className="calendar-page__ghost-button"
+			>
 				{data.onlyMine ? 'Show all events' : 'My schedule'}
-			</a>
+			</PillButton>
 		</div>
 		{#if feedError}
 			<p class="calendar-page__status-text--muted">{feedError}</p>
@@ -131,17 +137,35 @@
 								{/each}
 							</div>
 							{#if event.userStatus}
-								<button class="calendar-page__ghost-button" onclick={() => leave(event.id)} disabled={pendingEventId === event.id}>
+								<PillButton
+									className="calendar-page__ghost-button"
+									variant="ghost"
+									size="md"
+									onClick={() => leave(event.id)}
+									disabled={pendingEventId === event.id}
+								>
 									{pendingEventId === event.id ? '...' : 'Leave'}
-								</button>
+								</PillButton>
 							{:else}
-								<button class="calendar-page__primary-button" onclick={() => join(event.id, 0)} disabled={pendingEventId === event.id}>
+								<PillButton
+									className="calendar-page__primary-button"
+									variant="primary"
+									size="lg"
+									onClick={() => join(event.id, 0)}
+									disabled={pendingEventId === event.id}
+								>
 									{pendingEventId === event.id ? '...' : event.seatsLeft > 0 ? 'Join' : 'Join waitlist'}
-								</button>
+								</PillButton>
 								{#if event.seatsLeft >= 2}
-									<button class="calendar-page__ghost-button" onclick={() => join(event.id, 1)} disabled={pendingEventId === event.id}>
+									<PillButton
+										className="calendar-page__ghost-button"
+										variant="ghost"
+										size="md"
+										onClick={() => join(event.id, 1)}
+										disabled={pendingEventId === event.id}
+									>
 										{pendingEventId === event.id ? '...' : 'Join +1'}
-									</button>
+									</PillButton>
 								{/if}
 							{/if}
 						</div>

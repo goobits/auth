@@ -1,5 +1,6 @@
 <script>
 	import { Save, Loader } from '@lucide/svelte'
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	const { dashboard } = $props()
 </script>
 
@@ -52,7 +53,7 @@
 			</div>
 		</div>
 	</div>
-	<button class="admin-page__button-secondary" onclick={dashboard.save} disabled={dashboard.saving}>
+	<PillButton className="admin-page__button-secondary" variant="secondary" onClick={dashboard.save} disabled={dashboard.saving}>
 		{#if dashboard.saving}
 			<Loader size={12} class="admin-page__spin" />
 			Saving...
@@ -60,5 +61,5 @@
 			<Save size={12} />
 			Save rules
 		{/if}
-	</button>
+	</PillButton>
 </div>

@@ -32,6 +32,13 @@
 		subtitleClass = '',
 		compact = false
 	}: HeroProps = $props()
+
+	function splitTail(input: string) {
+		const text = input.trimEnd()
+		const parts = text.match(/^(.*\s)(\S+)$/)
+		if (!parts) return { head: '', tail: text }
+		return { head: parts[1], tail: parts[2] }
+	}
 </script>
 
 <section class={`ui-hero ${compact ? 'ui-hero--compact' : ''} ${className} ${heroClass}`.trim()}>
@@ -42,25 +49,45 @@
 	{#if titleLines.length > 0}
 		<h1 class={`ui-hero__title ${titleClass}`.trim()}>
 			{#each titleLines as line, index}
-				{line.trimEnd()}
+				{@const lineParts = splitTail(line)}
+				{#if icon && index === titleLines.length - 1}
+					{lineParts.head}<span class="ui-hero__tail">{lineParts.tail}<span class="ui-hero__icon-wrap"
+							><img
+								src={icon}
+								class="ui-hero__icon"
+								alt={iconAlt}
+								width="64"
+								height="64"
+								decoding="async"
+								style={`--hero-icon-size: ${iconSize};`}
+							/></span
+						></span
+					>
+				{:else}
+					{line.trimEnd()}
+				{/if}
 				{#if index < titleLines.length - 1}<br />{/if}
-			{/each}{#if icon}<span class="ui-hero__icon-wrap"
-					><img
-						src={icon}
-						class="ui-hero__icon"
-						alt={iconAlt}
-						style={`--hero-icon-size: ${iconSize};`}
-					/></span>{/if}
+			{/each}
 		</h1>
 	{:else if title}
 		<h1 class={`ui-hero__title ${titleClass}`.trim()}>
-			<span class="ui-hero__title-text">{title.trimEnd()}</span>{#if icon}<span class="ui-hero__icon-wrap"
-					><img
-						src={icon}
-						class="ui-hero__icon"
-						alt={iconAlt}
-						style={`--hero-icon-size: ${iconSize};`}
-					/></span>{/if}
+			{#if icon}
+				<span class="ui-hero__title-text">{splitTail(title).head}</span><span class="ui-hero__tail"
+					>{splitTail(title).tail}<span class="ui-hero__icon-wrap"
+							><img
+								src={icon}
+								class="ui-hero__icon"
+								alt={iconAlt}
+								width="64"
+								height="64"
+								decoding="async"
+								style={`--hero-icon-size: ${iconSize};`}
+							/></span
+						></span
+				>
+			{:else}
+				<span class="ui-hero__title-text">{title.trimEnd()}</span>
+			{/if}
 		</h1>
 	{/if}
 	{#if subtitle}
@@ -111,6 +138,10 @@
 		display: inline-block;
 		white-space: nowrap;
 		margin-left: 0.25em;
+	}
+
+	.ui-hero__tail {
+		white-space: nowrap;
 	}
 
 	.ui-hero__icon {

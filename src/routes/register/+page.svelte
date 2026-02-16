@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
 	import Hero from '$lib/ui/Hero.svelte'
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 
 	type ActionData = {
 		error?: string
@@ -76,7 +77,9 @@
 			<p class="register-page__error">{form.error}</p>
 		{/if}
 
-		<button type="submit" class="register-page__submit">Create account</button>
+		<PillButton type="submit" className="register-page__submit" variant="primary" size="md">
+			Create account
+		</PillButton>
 	</form>
 </section>
 
@@ -123,14 +126,5 @@
 		color: var(--status-error-text);
 	}
 
-	.register-page__submit {
-		justify-self: start;
-		padding: var(--space-3) var(--space-6);
-		border: none;
-		border-radius: var(--radius-pill);
-		background: var(--button-bg);
-		color: var(--button-text);
-		font-weight: var(--font-weight-semibold);
-		cursor: pointer;
-	}
+	:global(.register-page__submit) { justify-self: start; }
 </style>

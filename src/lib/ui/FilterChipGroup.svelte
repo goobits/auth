@@ -1,4 +1,6 @@
 <script lang="ts">
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
+
 	type FilterChipItem = string | { value: string; label: string }
 
 	type FilterChipGroupProps = {
@@ -46,13 +48,14 @@
 
 <div class={`ui-chip-group ${className}`.trim()} role="tablist" aria-label={ariaLabel}>
 	{#each items as item}
-		<button
+		<PillButton
 			type="button"
-			class="ui-chip-group__button"
-			class:ui-chip-group__button--active={isActive(item)}
-			onclick={() => toggle(item)}
+			className={`ui-chip-group__button ${isActive(item) ? 'ui-chip-group__button--active' : ''}`}
+			variant={isActive(item) ? 'primary' : 'secondary'}
+			size="sm"
+			onClick={() => toggle(item)}
 		>
 			{getItemLabel(item)}
-		</button>
+		</PillButton>
 	{/each}
 </div>

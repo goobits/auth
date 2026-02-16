@@ -309,14 +309,11 @@
 
 // Buttons
 .calendar-page__primary-button {
-	@include ui.button-primary(var(--calendar-size-12), var(--calendar-size-12) var(--calendar-size-24));
-	border: none;
 	font-size: var(--calendar-size-15);
 	font-weight: 600;
 	background: var(--gradient-action);
 	color: var(--color-white);
 	box-shadow: 0 var(--calendar-size-2) var(--calendar-size-20) color-mix(in srgb, var(--calendar-slot-selected-bg) 25%, transparent);
-	transition: all 0.3s ease;
 	letter-spacing: -0.01em;
 	text-decoration: none;
 
@@ -327,11 +324,9 @@
 }
 
 .calendar-page__ghost-button {
-	@include ui.button-ghost(var(--radius-pill), var(--calendar-size-10) var(--calendar-size-20), var(--color-white-12));
 	color: color-mix(in srgb, var(--calendar-shell-text) 56%, transparent);
 	font-size: var(--calendar-size-14);
 	text-decoration: none;
-	display: inline-block;
 
 	&:hover {
 		border-color: var(--color-white-24);

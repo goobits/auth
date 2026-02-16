@@ -1,4 +1,5 @@
 <script>
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	const { dashboard } = $props()
 </script>
 
@@ -15,9 +16,9 @@
 	<div class="admin-page__section-head">
 		<h3 class="admin-page__section-title">Program list</h3>
 		<div class="admin-page__button-row admin-page__button-row--compact">
-			<button class="admin-page__button-secondary admin-page__button-secondary--compact" onclick={dashboard.newProgramDraft}>
+			<PillButton className="admin-page__button-secondary admin-page__button-secondary--compact" variant="secondary" size="sm" onClick={dashboard.newProgramDraft}>
 				New Program
-			</button>
+			</PillButton>
 		</div>
 	</div>
 	{#if dashboard.programsLoading}
@@ -37,18 +38,19 @@
 						</div>
 					</div>
 					<div class="admin-page__members-actions">
-						<a class="admin-page__button-secondary admin-page__button-secondary--compact" href={program.href} target="_blank" rel="noopener noreferrer">Open</a>
-						<button class="admin-page__button-secondary admin-page__button-secondary--compact" onclick={() => dashboard.selectProgram(program.slug)}>
+						<PillButton className="admin-page__button-secondary admin-page__button-secondary--compact" variant="secondary" size="sm" href={program.href} target="_blank" rel="noopener noreferrer">Open</PillButton>
+						<PillButton className="admin-page__button-secondary admin-page__button-secondary--compact" variant="secondary" size="sm" onClick={() => dashboard.selectProgram(program.slug)}>
 							Edit
-						</button>
-						<button
-							class="admin-page__button-secondary admin-page__button-secondary--compact"
-							class:admin-page__button-secondary--danger={program.enabled}
-							onclick={() => dashboard.toggleProgram(program.slug, !program.enabled)}
+						</PillButton>
+						<PillButton
+							className={`admin-page__button-secondary admin-page__button-secondary--compact ${program.enabled ? 'admin-page__button-secondary--danger' : ''}`}
+							variant={program.enabled ? 'danger' : 'secondary'}
+							size="sm"
+							onClick={() => dashboard.toggleProgram(program.slug, !program.enabled)}
 							disabled={dashboard.programUpdatingSlug === program.slug}
 						>
 							{dashboard.programUpdatingSlug === program.slug ? 'Saving...' : (program.enabled ? 'Disable' : 'Enable')}
-						</button>
+						</PillButton>
 					</div>
 				</div>
 				{#if i < dashboard.programs.length - 1}<div class="admin-page__booking-divider"></div>{/if}
@@ -63,13 +65,15 @@
 	<div class="admin-page__section-head">
 		<h3 class="admin-page__section-title">{dashboard.selectedProgramSlug ? `Edit ${dashboard.selectedProgramSlug}` : 'Create program'}</h3>
 		{#if dashboard.selectedProgramSlug}
-			<button
-				class="admin-page__button-secondary admin-page__button-secondary--danger admin-page__button-secondary--compact"
-				onclick={dashboard.deleteProgram}
+			<PillButton
+				className="admin-page__button-secondary admin-page__button-secondary--danger admin-page__button-secondary--compact"
+				variant="danger"
+				size="sm"
+				onClick={dashboard.deleteProgram}
 				disabled={dashboard.programDeleting}
 			>
 				{dashboard.programDeleting ? 'Deleting...' : 'Delete'}
-			</button>
+			</PillButton>
 		{/if}
 	</div>
 	<div class="admin-page__fields-grid">
@@ -159,8 +163,7 @@
 		</div>
 	</div>
 
-	<button class="admin-page__button-secondary" onclick={dashboard.saveProgram} disabled={dashboard.programSaving}>
+	<PillButton className="admin-page__button-secondary" variant="secondary" onClick={dashboard.saveProgram} disabled={dashboard.programSaving}>
 		{dashboard.programSaving ? 'Saving...' : 'Save Program'}
-	</button>
+	</PillButton>
 </div>
-

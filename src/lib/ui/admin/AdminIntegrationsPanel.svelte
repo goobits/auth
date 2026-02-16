@@ -1,5 +1,6 @@
 <script>
 	import { Check, RefreshCw } from '@lucide/svelte'
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	const { dashboard } = $props()
 </script>
 
@@ -27,9 +28,9 @@
 	</div>
 	<p class="admin-page__section-description">Your bookings automatically sync with Google Calendar. Blocked times remove availability.</p>
 	<div class="admin-page__button-row">
-		<button class="admin-page__button-secondary" onclick={dashboard.reconnect}>
+		<PillButton className="admin-page__button-secondary" variant="secondary" onClick={dashboard.reconnect}>
 			<RefreshCw size={14} />
 			{dashboard.connected ? 'Reconnect' : 'Connect'}
-		</button>
+		</PillButton>
 	</div>
 </div>

@@ -1,22 +1,18 @@
+<script lang="ts">
+	import SuccessPage from '$lib/ui/SuccessPage.svelte'
+</script>
+
 <svelte:head>
-	<title>Check your email - MIKO.ART</title>
+	<title>Check Your Email - MIKO.ART</title>
 </svelte:head>
 
-<section class="register-success ui-surface-card">
-	<h1>Check your email</h1>
-	<p>Your account was created. Please verify your email before signing in.</p>
-	<p><a href="/calendar/login">Go to sign in</a></p>
-</section>
-
-<style>
-	.register-success {
-		max-width: min(36rem, 100%);
-		padding: var(--space-8);
-		display: grid;
-		gap: var(--space-3);
-	}
-	.register-success h1,
-	.register-success p {
-		margin: 0;
-	}
-</style>
+<SuccessPage
+	className="register-page register-success-page"
+	title="Check your email"
+	copy="Your account is ready. Open your inbox and confirm your email to finish setup before signing in."
+	buttonHref="/calendar/login"
+	buttonLabel="Go to sign in"
+	imageSrc="/media/contact-thank-you.svg"
+	imageAlt="Success illustration"
+	buttonIcon="login"
+/>

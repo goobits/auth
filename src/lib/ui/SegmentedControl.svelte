@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Button from '$lib/ui/buttons/Button.svelte'
+
 	export type SegmentedOption = {
 		value: string
 		label: string
@@ -21,15 +23,17 @@
 
 <div class={`ui-segmented ${className}`.trim()} role="tablist" aria-label={ariaLabel}>
 	{#each options as option}
-		<button
+		<Button
 			type="button"
 			role="tab"
-			class="ui-segmented__button"
-			class:ui-segmented__button--active={value === option.value}
-			aria-selected={value === option.value}
-			onclick={() => (value = option.value)}
+			className={`ui-segmented__button ${value === option.value ? 'ui-segmented__button--active' : ''}`}
+			variant="ghost"
+			size="sm"
+			ariaSelected={value === option.value}
+			ariaLabel={option.label}
+			onClick={() => (value = option.value)}
 		>
 			{option.label}
-		</button>
+		</Button>
 	{/each}
 </div>

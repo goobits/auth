@@ -1,6 +1,7 @@
 <script>
 	import { Clock, Calendar, CalendarClock, LayoutGrid, Users, Link2 } from '@lucide/svelte'
 	import { ADMIN_NAV } from '$lib/viewmodels/admin'
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 
 	const { tab, onSelect } = $props()
 </script>
@@ -10,10 +11,11 @@
 
 	<div class="admin-page__sidebar-items">
 		{#each ADMIN_NAV as n}
-			<button
-				class="admin-page__sidebar-item"
-				class:admin-page__sidebar-item--active={tab === n.id}
-				onclick={() => onSelect(n.id)}
+			<PillButton
+				className={`admin-page__sidebar-item ${tab === n.id ? 'admin-page__sidebar-item--active' : ''}`}
+				variant="secondary"
+				size="sm"
+				onClick={() => onSelect(n.id)}
 				type="button"
 			>
 				{#if n.id === 'dash'}
@@ -30,7 +32,7 @@
 					<Link2 size={16} strokeWidth={1.8} />
 				{/if}
 				{n.label}
-			</button>
+			</PillButton>
 		{/each}
 	</div>
 </aside>

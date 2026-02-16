@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Button from '$lib/ui/buttons/Button.svelte'
+
 	type ResultsEmptyProps = {
 		message: string
 		actionLabel?: string
@@ -17,6 +19,8 @@
 <div class={`ui-search__empty ${className}`.trim()}>
 	<p>{message}</p>
 	{#if onAction}
-		<button class="ui-search__empty-action" onclick={onAction}>{actionLabel}</button>
+		<Button className="ui-search__empty-action" variant="primary" size="md" onClick={onAction}>
+			{actionLabel}
+		</Button>
 	{/if}
 </div>

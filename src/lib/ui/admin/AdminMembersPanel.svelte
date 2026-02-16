@@ -1,5 +1,6 @@
 <script>
 	import { Loader } from '@lucide/svelte'
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	const { members, formatDate } = $props()
 </script>
 
@@ -40,14 +41,14 @@
 			</div>
 		</div>
 	</div>
-	<button class="admin-page__button-secondary" onclick={members.createInvite} disabled={members.creating}>
+	<PillButton className="admin-page__button-secondary" variant="secondary" onClick={members.createInvite} disabled={members.creating}>
 		{#if members.creating}
 			<Loader size={12} class="admin-page__spin" />
 			Creating...
 		{:else}
 			Create Invite
 		{/if}
-	</button>
+	</PillButton>
 </div>
 
 <div class="admin-page__divider" aria-hidden="true"></div>
@@ -76,12 +77,12 @@
 						</div>
 					</div>
 					<div class="admin-page__members-actions">
-						<button class="admin-page__button-secondary admin-page__button-secondary--compact" onclick={() => members.copyInvite(invite.code)}>
+						<PillButton className="admin-page__button-secondary admin-page__button-secondary--compact" variant="secondary" size="sm" onClick={() => members.copyInvite(invite.code)}>
 							Copy Link
-						</button>
-						<button class="admin-page__button-secondary admin-page__button-secondary--danger admin-page__button-secondary--compact" onclick={() => members.deleteInvite(invite.id)}>
+						</PillButton>
+						<PillButton className="admin-page__button-secondary admin-page__button-secondary--danger admin-page__button-secondary--compact" variant="danger" size="sm" onClick={() => members.deleteInvite(invite.id)}>
 							Delete
-						</button>
+						</PillButton>
 					</div>
 				</div>
 				{#if i < members.invites.length - 1}<div class="admin-page__booking-divider"></div>{/if}

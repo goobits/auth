@@ -1,8 +1,10 @@
 <script>
 	import { AlertTriangle, ChevronRight, RefreshCw } from '@lucide/svelte'
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 
 	const { dashboard } = $props()
 	const needsCalendarAttention = $derived(dashboard.connectionExpired || !dashboard.connected)
+	const needsQueueAttention = $derived(dashboard.syncQueue.failed > 0 || dashboard.syncQueue.oldestPendingSeconds > 600)
 </script>
 
 <h1 class="admin-page__title">Overview</h1>
@@ -40,10 +42,18 @@
 				<AlertTriangle size={14} />
 				<span>{dashboard.connectionRefreshFailed ? 'Google Calendar refresh failed' : dashboard.connectionExpired ? 'Google Calendar token expired' : 'Google Calendar is not connected'}</span>
 			</div>
-			<button class="admin-page__button-secondary admin-page__button-secondary--compact" onclick={dashboard.reconnect}>
+			<PillButton className="admin-page__button-secondary admin-page__button-secondary--compact" variant="secondary" size="sm" onClick={dashboard.reconnect}>
 				<RefreshCw size={12} />
 				Reconnect
-			</button>
+			</PillButton>
+		</div>
+	{:else if needsQueueAttention}
+		<div class="admin-page__attention-card">
+			<div class="admin-page__attention-main">
+				<AlertTriangle size={14} />
+				<span>Sync queue delayed · {dashboard.syncQueue.pending} pending · {dashboard.syncQueue.failed} failed</span>
+			</div>
+			<span class="admin-page__section-count">{Math.floor(dashboard.syncQueue.oldestPendingSeconds / 60)}m oldest</span>
 		</div>
 	{:else}
 		<p class="admin-page__section-description">No urgent issues right now.</p>
@@ -61,7 +71,7 @@
 		<p class="admin-page__section-description">Loading events...</p>
 	{:else if dashboard.error}
 		<p class="admin-page__section-description admin-page__section-description--error">{dashboard.error}</p>
-		<button class="admin-page__button-secondary" onclick={dashboard.loadBookings}>Retry</button>
+		<PillButton className="admin-page__button-secondary" variant="secondary" onClick={dashboard.loadBookings}>Retry</PillButton>
 	{:else if dashboard.bookings.length === 0}
 		<p class="admin-page__section-description">No upcoming events yet.</p>
 	{:else}

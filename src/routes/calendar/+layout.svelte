@@ -4,6 +4,7 @@
 	import { Bell, UserRound } from '@lucide/svelte'
 	import { logoutCalendarSession } from '$lib/client/api/calendarClient'
 	import { buildCalendarLoginRedirect, shouldRedirectCalendarGuest } from '$lib/client/routing/auth'
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	import ShellNav from '$lib/ui/ShellNav.svelte'
 	import './Calendar.scss'
 
@@ -33,18 +34,32 @@
 		{#snippet right()}
 			<div class="shell-nav__user">
 				{#if data.user}
-					<a href="/calendar?mine=1" class="shell-nav__button shell-nav__button--link" aria-label="My schedule">
+					<PillButton
+						href="/calendar?mine=1"
+						variant="secondary"
+						size="sm"
+						className="shell-nav__button shell-nav__button--link"
+						ariaLabel="My schedule"
+					>
 						<Bell size={13} />
 						My schedule
-					</a>
-					<a href="/calendar/profile" class="shell-nav__button shell-nav__button--link" aria-label="Profile">
+					</PillButton>
+					<PillButton
+						href="/calendar/profile"
+						variant="secondary"
+						size="sm"
+						className="shell-nav__button shell-nav__button--link"
+						ariaLabel="Profile"
+					>
 						<UserRound size={13} />
 						Profile
-					</a>
+					</PillButton>
 					{#if data.user.avatarUrl}
 						<img src={data.user.avatarUrl} alt="" class="shell-nav__avatar" />
 					{/if}
-					<button onclick={logout} class="shell-nav__button">Logout</button>
+					<PillButton onClick={logout} variant="secondary" size="sm" className="shell-nav__button">
+						Logout
+					</PillButton>
 				{/if}
 			</div>
 		{/snippet}

@@ -8,7 +8,8 @@
 </svelte:head>
 
 <LegalPage
-	title="Privacy Policy 🔒"
+	title="Privacy Policy"
+	icon="/media/privacy-shield.png"
 	subtitle="What I collect, why, and how it is protected."
 	updatedAt="February 11, 2026"
 	className="legal--privacy"

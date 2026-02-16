@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { joinCalendarEvent, leaveCalendarEvent, type CalendarEventsResponse } from '$lib/client/api/calendarClient'
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 
 	let {
 		activitySlug,
@@ -126,17 +127,35 @@
 							{/each}
 						</div>
 						{#if event.userStatus}
-							<button class="calendar-page__ghost-button" onclick={() => leave(event.id)} disabled={pendingEventId === event.id}>
+							<PillButton
+								className="calendar-page__ghost-button"
+								variant="ghost"
+								size="md"
+								onClick={() => leave(event.id)}
+								disabled={pendingEventId === event.id}
+							>
 								{pendingEventId === event.id ? '...' : 'Leave'}
-							</button>
+							</PillButton>
 						{:else}
-							<button class="calendar-page__primary-button" onclick={() => join(event.id, 0)} disabled={pendingEventId === event.id}>
+							<PillButton
+								className="calendar-page__primary-button"
+								variant="primary"
+								size="lg"
+								onClick={() => join(event.id, 0)}
+								disabled={pendingEventId === event.id}
+							>
 								{pendingEventId === event.id ? '...' : event.seatsLeft > 0 ? 'Join' : 'Join waitlist'}
-							</button>
+							</PillButton>
 							{#if event.seatsLeft >= 2}
-								<button class="calendar-page__ghost-button" onclick={() => join(event.id, 1)} disabled={pendingEventId === event.id}>
+								<PillButton
+									className="calendar-page__ghost-button"
+									variant="ghost"
+									size="md"
+									onClick={() => join(event.id, 1)}
+									disabled={pendingEventId === event.id}
+								>
 									{pendingEventId === event.id ? '...' : 'Join +1'}
-								</button>
+								</PillButton>
 							{/if}
 						{/if}
 					</div>

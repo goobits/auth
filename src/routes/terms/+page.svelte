@@ -8,7 +8,8 @@
 </svelte:head>
 
 <LegalPage
-	title="Terms of Use ⚖️"
+	title="Terms of Use"
+	icon="/media/terms-justice.png"
 	subtitle="A quick guide to using this site smoothly."
 	updatedAt="February 11, 2026"
 	className="legal--terms"

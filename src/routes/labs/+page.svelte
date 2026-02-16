@@ -2,6 +2,7 @@
 	import { Search } from '@lucide/svelte'
 	import Hero from '$lib/ui/Hero.svelte'
 	import PageShell from '$lib/ui/PageShell.svelte'
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	import ResultsEmpty from '$lib/ui/ResultsEmpty.svelte'
 	import { filterAndSortLabs, labsCatalog } from '$lib/viewmodels/labs'
 	import { formatDateMmDdYyyy } from '$lib/utils/date'
@@ -46,7 +47,14 @@
 
 <PageShell className="labs-page">
 	<div class="labs-page__inner">
-		<Hero eyebrow="Labs" title="Labs 🧪" subtitle="Playful experiments, sketches, and odd ideas." />
+		<Hero
+			eyebrow="Labs"
+			title="Labs"
+			icon="/media/labs-flask.png"
+			iconAlt="Flask icon"
+			iconSize="0.95em"
+			subtitle="Playful experiments, sketches, and odd ideas."
+		/>
 
 		<section class="labs-page__toolbar" aria-label="Labs filters">
 			<label class="labs-page__search" aria-label="Search experiments">
@@ -63,16 +71,17 @@
 
 			<div class="labs-page__chip-group" role="tablist" aria-label="Sort labs">
 				{#each sortOptions as option}
-					<button
+					<PillButton
 						type="button"
 						role="tab"
-						class="labs-page__chip"
-						class:labs-page__chip--active={sortBy === option.value}
-						aria-selected={sortBy === option.value}
-						onclick={() => (sortBy = option.value)}
+						className={`labs-page__chip ${sortBy === option.value ? 'labs-page__chip--active' : ''}`}
+						variant={sortBy === option.value ? 'primary' : 'secondary'}
+						size="sm"
+						ariaSelected={sortBy === option.value}
+						onClick={() => (sortBy = option.value)}
 					>
 						{option.label}
-					</button>
+					</PillButton>
 				{/each}
 			</div>
 		</section>
@@ -178,7 +187,7 @@
 		overflow: hidden;
 	}
 
-	.labs-page__chip {
+	:global(.labs-page__chip) {
 		border: none;
 		background: transparent;
 		color: color-mix(in srgb, var(--muted) 92%, var(--text));
@@ -189,7 +198,7 @@
 		transition: background-color 0.2s, color 0.2s;
 	}
 
-	.labs-page__chip--active {
+	:global(.labs-page__chip--active) {
 		background: var(--text);
 		color: var(--bg);
 	}

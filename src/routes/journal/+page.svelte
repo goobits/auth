@@ -3,6 +3,7 @@
 	import Hero from '$lib/ui/Hero.svelte'
 	import ResultsEmpty from '$lib/ui/ResultsEmpty.svelte'
 	import PageShell from '$lib/ui/PageShell.svelte'
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	import { slugify } from '$lib/utils/collections'
 	import { formatDateMonthDay } from '$lib/utils/date'
 	import {
@@ -38,7 +39,10 @@
 	<div class="journal-page__inner">
 		<Hero
 			eyebrow="Journal"
-			title="Journal 📔"
+			title="Journal"
+			icon="/media/journal-journaling.png"
+			iconAlt="Journal icon"
+			iconSize="0.95em"
 			subtitle="Thoughts, process notes, and little breakthroughs."
 		/>
 
@@ -67,16 +71,17 @@
 
 			<div class="journal-page__sort" role="tablist" aria-label="Sort posts">
 				{#each sortOptions as option}
-					<button
+					<PillButton
 						type="button"
 						role="tab"
-						class="journal-page__sort-button"
-						class:journal-page__sort-button--active={sortBy === option.value}
-						aria-selected={sortBy === option.value}
-						onclick={() => (sortBy = option.value)}
+						className={`journal-page__sort-button ${sortBy === option.value ? 'journal-page__sort-button--active' : ''}`}
+						variant={sortBy === option.value ? 'primary' : 'secondary'}
+						size="sm"
+						ariaSelected={sortBy === option.value}
+						onClick={() => (sortBy = option.value)}
 					>
 						{option.label}
-					</button>
+					</PillButton>
 				{/each}
 			</div>
 		</section>
@@ -213,7 +218,7 @@
 		overflow: hidden;
 	}
 
-	.journal-page__sort-button {
+	:global(.journal-page__sort-button) {
 		border: none;
 		background: transparent;
 		color: color-mix(in srgb, var(--muted) 92%, var(--text));
@@ -224,7 +229,7 @@
 		transition: background-color 0.2s, color 0.2s;
 	}
 
-	.journal-page__sort-button--active {
+	:global(.journal-page__sort-button--active) {
 		background: var(--text);
 		color: var(--bg);
 	}

@@ -1,4 +1,5 @@
 <script>
+	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	const { dashboard } = $props()
 	let memoryDrafts = $state({})
 
@@ -151,9 +152,9 @@
 		</div>
 	</div>
 
-	<button class="admin-page__button-secondary" onclick={dashboard.createEvents} disabled={dashboard.eventsCreating || dashboard.enabledPrograms.length === 0}>
+	<PillButton className="admin-page__button-secondary" variant="secondary" onClick={dashboard.createEvents} disabled={dashboard.eventsCreating || dashboard.enabledPrograms.length === 0}>
 		{dashboard.eventsCreating ? 'Creating...' : 'Create Events'}
-	</button>
+	</PillButton>
 	{#if dashboard.enabledPrograms.length === 0}
 		<p class="admin-page__section-description">Enable at least one program before creating events.</p>
 	{/if}
@@ -208,9 +209,11 @@
 						</div>
 					</div>
 					<div class="admin-page__members-actions">
-						<button
-							class="admin-page__button-secondary admin-page__button-secondary--compact"
-							onclick={() => dashboard.updateEventMemory(
+						<PillButton
+							className="admin-page__button-secondary admin-page__button-secondary--compact"
+							variant="secondary"
+							size="sm"
+							onClick={() => dashboard.updateEventMemory(
 								session.id,
 								memoryDrafts[session.id]?.recapText ?? session.recapText ?? '',
 								memoryDrafts[session.id]?.heroImageUrl ?? session.heroImageUrl ?? ''
@@ -218,7 +221,7 @@
 							disabled={dashboard.eventUpdatingId === session.id}
 						>
 							{dashboard.eventUpdatingId === session.id ? 'Saving...' : 'Save memory'}
-						</button>
+						</PillButton>
 					</div>
 				</div>
 				{#if i < dashboard.recentEvents.length - 1}<div class="admin-page__booking-divider"></div>{/if}

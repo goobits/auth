@@ -1,4 +1,6 @@
 <script>
+	import Button from '$lib/ui/buttons/Button.svelte'
+
 	const {
 		category,
 		count,
@@ -18,7 +20,7 @@
 	<div class="sitemap-page__category-card">
 		<div class="sitemap-page__bar" aria-hidden="true"></div>
 
-		<button class="sitemap-page__category-header" onclick={onToggle} type="button">
+		<Button className="sitemap-page__category-header" variant="ghost" size="md" onClick={onToggle} type="button">
 			<h2 class="sitemap-page__category-title">
 				{#if Icon}
 					<Icon class="sitemap-page__category-icon" size={14} strokeWidth={2.2} />
@@ -31,7 +33,7 @@
 				<span class="sitemap-page__category-title-text">{category}</span>
 				<span class="sitemap-page__count">{count}</span>
 			</h2>
-		</button>
+		</Button>
 
 		{#if !collapsed}
 			<div class="sitemap-page__category-body">

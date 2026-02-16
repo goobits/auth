@@ -8,7 +8,8 @@
 </svelte:head>
 
 <LegalPage
-	title="Cookie Policy 🍪"
+	title="Cookie Policy"
+	icon="/media/cookies-cookie.png"
 	subtitle="What cookies do here, and what they don't."
 	updatedAt="February 11, 2026"
 	className="legal--cookies"
