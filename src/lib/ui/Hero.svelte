@@ -42,19 +42,25 @@
 	{#if titleLines.length > 0}
 		<h1 class={`ui-hero__title ${titleClass}`.trim()}>
 			{#each titleLines as line, index}
-				{line}
+				{line.trimEnd()}
 				{#if index < titleLines.length - 1}<br />{/if}
-			{/each}
-			{#if icon}
-				<img src={icon} class="ui-hero__icon" alt={iconAlt} style={`--hero-icon-size: ${iconSize};`} />
-			{/if}
+			{/each}{#if icon}<span class="ui-hero__icon-wrap"
+					><img
+						src={icon}
+						class="ui-hero__icon"
+						alt={iconAlt}
+						style={`--hero-icon-size: ${iconSize};`}
+					/></span>{/if}
 		</h1>
 	{:else if title}
 		<h1 class={`ui-hero__title ${titleClass}`.trim()}>
-			{title}
-			{#if icon}
-				<img src={icon} class="ui-hero__icon" alt={iconAlt} style={`--hero-icon-size: ${iconSize};`} />
-			{/if}
+			<span class="ui-hero__title-text">{title.trimEnd()}</span>{#if icon}<span class="ui-hero__icon-wrap"
+					><img
+						src={icon}
+						class="ui-hero__icon"
+						alt={iconAlt}
+						style={`--hero-icon-size: ${iconSize};`}
+					/></span>{/if}
 		</h1>
 	{/if}
 	{#if subtitle}
@@ -101,11 +107,17 @@
 		text-wrap: pretty;
 	}
 
+	.ui-hero__icon-wrap {
+		display: inline-block;
+		white-space: nowrap;
+		margin-left: 0.25em;
+	}
+
 	.ui-hero__icon {
 		width: var(--hero-icon-size);
 		height: var(--hero-icon-size);
+		display: inline-block;
 		vertical-align: var(--hero-icon-offset-y);
-		margin-left: var(--hero-icon-gap);
 		object-fit: contain;
 	}
 

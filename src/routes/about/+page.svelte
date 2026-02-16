@@ -69,7 +69,10 @@
 <PageShell className="about-page">
 	<Hero
 		eyebrow="About"
-		title="Haai! I'm Miko 🦄"
+		title="Haai! I'm Miko"
+		icon="/media/about-kitty-unicorn.png"
+		iconAlt="Unicorn kitty icon"
+		iconSize="0.95em"
 		subtitle="Developer, designer & musician"
 	/>
 
