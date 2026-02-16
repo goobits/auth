@@ -1,0 +1,32 @@
+@use '../mixins' as mixin;
+
+.c-button {
+  height: var(--space-11);
+  border-radius: var(--radius-2xl);
+  padding-inline: var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-weight: var(--font-weight-semibold);
+  border: 1px solid transparent;
+  cursor: pointer;
+  @include mixin.interactive;
+
+  &--primary {
+    background-color: var(--color-accent);
+    color: var(--color-white);
+  }
+
+  &--secondary {
+    background-color: var(--color-surface);
+    border-color: var(--color-border);
+    color: var(--color-accent);
+  }
+
+  &--ghost {
+    background-color: var(--color-surface);
+    border-color: var(--color-border);
+    color: var(--color-accent);
+  }
+}

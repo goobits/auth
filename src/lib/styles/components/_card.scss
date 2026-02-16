@@ -1,0 +1,6 @@
+@use '../mixins' as mixin;
+
+.c-card {
+  @include mixin.card-surface;
+  padding: var(--space-4);
+}

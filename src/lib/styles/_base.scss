@@ -1,0 +1,66 @@
+@use './mixins' as mixin;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: var(--space-0);
+  font-family: 'SF Pro Text', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: linear-gradient(180deg, var(--color-background) 0%, var(--color-white) 26%, var(--color-background) 100%);
+  color: var(--color-text-primary);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+.layout {
+  &__container {
+    max-width: 70rem;
+    margin: 0 auto;
+    padding-inline: var(--space-4);
+  }
+
+  &__section {
+    padding-block: var(--space-12);
+    scroll-margin-top: 6rem;
+  }
+
+  &__title {
+    @include mixin.section-title;
+  }
+
+  &__copy {
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-relaxed);
+  }
+}
+
+@media (min-width: 48rem) {
+  .layout {
+    &__container {
+      padding-inline: var(--space-8);
+    }
+
+    &__section {
+      padding-block: var(--space-16);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
