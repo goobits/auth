@@ -16,28 +16,28 @@
 			<form class="flow-form" method="POST" use:enhance>
 				<input class="flow-form__honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
 				<label class="flow-form__field">
-					<span>Name</span>
-					<input name="name" required maxlength="80" />
+					<span class="flow-form__label">Name</span>
+					<input class="flow-form__control" name="name" required maxlength="80" />
 				</label>
 				<label class="flow-form__field">
-					<span>Email</span>
-					<input name="email" type="email" required maxlength="140" />
+					<span class="flow-form__label">Email</span>
+					<input class="flow-form__control" name="email" type="email" required maxlength="140" />
 				</label>
 				<label class="flow-form__field">
-					<span>How many people?</span>
-					<input name="attendees" type="number" min="1" max="20" value="1" required />
+					<span class="flow-form__label">How many people?</span>
+					<input class="flow-form__control" name="attendees" type="number" min="1" max="20" value="1" required />
 				</label>
 				<label class="flow-form__field">
-					<span>Preferred route</span>
-					<select name="routePreference" required>
+					<span class="flow-form__label">Preferred route</span>
+					<select class="flow-form__control" name="routePreference" required>
 						<option value="Hatchling Loop">Hatchling Loop</option>
 						<option value="Raptor Ramble">Raptor Ramble</option>
 						<option value="T-Rex Trek">T-Rex Trek</option>
 					</select>
 				</label>
 				<label class="flow-form__field">
-					<span>Notes (optional)</span>
-					<textarea name="notes" rows="4" maxlength="1200"></textarea>
+					<span class="flow-form__label">Notes (optional)</span>
+					<textarea class="flow-form__control" name="notes" rows="4" maxlength="1200"></textarea>
 				</label>
 				<div class="flow-form__actions">
 					<button class="c-button c-button--primary c-button--large" type="submit">Submit Signup</button>

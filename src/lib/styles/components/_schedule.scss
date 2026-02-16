@@ -56,10 +56,10 @@
     font-size: 0.9375rem;
     color: rgb(255 255 255 / 0.75);
     margin: 0;
+  }
 
-    strong {
-      color: var(--color-white);
-      font-weight: var(--font-weight-semibold);
-    }
+  &__label-featured {
+    color: var(--color-white);
+    font-weight: var(--font-weight-semibold);
   }
 }

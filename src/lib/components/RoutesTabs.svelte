@@ -20,13 +20,13 @@
 						<p class="routes__distance">{route.distance}</p>
 						<p class="routes__description">{route.description}</p>
 						<div class="routes__meta">
-							<span><i></i>{route.surface}</span>
-							<span><i></i>{route.hills}</span>
-							<span><i></i>{route.note}</span>
+							<span class="routes__meta-item"><i class="routes__meta-dot"></i>{route.surface}</span>
+							<span class="routes__meta-item"><i class="routes__meta-dot"></i>{route.hills}</span>
+							<span class="routes__meta-item"><i class="routes__meta-dot"></i>{route.note}</span>
 						</div>
 						<div class="routes__links">
-							<a href={route.pdf}>PDF</a>
-							<a href={route.gpx}>GPX</a>
+							<a class="routes__link" href={route.pdf}>PDF</a>
+							<a class="routes__link" href={route.gpx}>GPX</a>
 						</div>
 					</div>
 				</article>
