@@ -46,6 +46,16 @@ export async function runAuthRegisterSmoke() {
 			throw new Error(`unexpected verify-email redirect target: ${page.url()}`)
 		}
 
+		// Legacy OAuth route shapes should be rejected and redirected to login error.
+		await page.goto(`${BASE_URL}/auth/signin/google`, { waitUntil: 'networkidle', timeout: 30000 })
+		if (!/\/calendar\/login\/?\?error=oauth_route_removed/.test(page.url())) {
+			throw new Error(`unexpected legacy signin redirect target: ${page.url()}`)
+		}
+		await page.goto(`${BASE_URL}/auth/callback/google`, { waitUntil: 'networkidle', timeout: 30000 })
+		if (!/\/calendar\/login\/?\?error=oauth_route_removed/.test(page.url())) {
+			throw new Error(`unexpected legacy callback redirect target: ${page.url()}`)
+		}
+
 		console.log('[auth-register-smoke] PASS')
 	} finally {
 		await context.close()
