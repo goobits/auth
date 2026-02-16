@@ -90,8 +90,8 @@ async function handleAdminAuth({ event, resolve }: Parameters<Handle>[0]) {
 async function handleCalendarAuth({ event, resolve }: Parameters<Handle>[0]) {
 	const pathname = event.url.pathname
 
-	// Attach auth locals for calendar + auth routes
-	if (!pathname.startsWith('/calendar') && !pathname.startsWith('/auth')) {
+	// Attach auth locals for calendar pages, calendar APIs, and auth routes
+	if (!pathname.startsWith('/calendar') && !pathname.startsWith('/api/calendar') && !pathname.startsWith('/auth')) {
 		return resolve(event)
 	}
 

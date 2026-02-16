@@ -86,6 +86,7 @@ pnpm dev:stop         # Stop dev server
 pnpm dev:restart      # Restart dev server
 pnpm check            # Types + svelte-check + lint + circular deps
 pnpm test             # Full Vitest + Playwright e2e suite (__tests__/e2e)
+pnpm calendar:sync    # Process pending calendar Google-sync jobs (uses CALENDAR_SYNC_CRON_SECRET)
 pnpm deploy:secrets   # Push production secrets only (no site deploy)
 pnpm deploy:prod      # Build + Cloudflare Pages deploy (standard)
 pnpm deploy:prod:full # Secrets + build + Cloudflare Pages deploy
@@ -118,6 +119,9 @@ pnpm deploy:secrets
 ```
 
 > `.env.keys` holds the private decryption key — never commit it (already in `.gitignore`).
+
+For async calendar sync processing in production, run `pnpm calendar:sync` on a schedule
+(cron/worker) using `CALENDAR_SYNC_CRON_SECRET` and `PUBLIC_BASE_URL`.
 
 `pnpm deploy:secrets` only updates runtime secrets and does not deploy site code.
 

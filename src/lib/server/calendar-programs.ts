@@ -52,14 +52,6 @@ function toProgram(row: ProgramRow): CalendarProgramState {
 	return base
 }
 
-function buildLegacyPrograms(): CalendarProgramState[] {
-	return CALENDAR_ACTIVITY_LIST.map((program, index) => ({
-		...program,
-		enabled: true,
-		sortOrder: (index + 1) * 10
-	}))
-}
-
 async function listProgramRows(db: D1DatabaseLike) {
 	const result = await db.prepare(
 		`SELECT slug, label, activity_name, page_title, eyebrow, hero_title_line_1, hero_title_line_2,
@@ -100,14 +92,9 @@ async function seedProgramRows(db: D1DatabaseLike) {
 }
 
 export async function getCalendarPrograms(db: D1DatabaseLike): Promise<CalendarProgramState[]> {
-	try {
-		await seedProgramRows(db)
-		const rows = await listProgramRows(db)
-		return rows.map(toProgram)
-	} catch (error) {
-		console.warn('Falling back to legacy calendar programs:', error)
-		return buildLegacyPrograms()
-	}
+	await seedProgramRows(db)
+	const rows = await listProgramRows(db)
+	return rows.map(toProgram)
 }
 
 export async function getEnabledCalendarPrograms(db: D1DatabaseLike): Promise<CalendarActivityConfig[]> {
@@ -116,14 +103,10 @@ export async function getEnabledCalendarPrograms(db: D1DatabaseLike): Promise<Ca
 }
 
 export async function isCalendarProgramEnabled(db: D1DatabaseLike, slug: CalendarProgramSlug) {
-	try {
-		const row = await db.prepare(
-			`SELECT enabled FROM calendar_programs WHERE slug = ? LIMIT 1`
-		).bind(slug).first<{ enabled: number }>()
-		return row?.enabled !== 0
-	} catch {
-		return buildLegacyPrograms().some((program) => program.slug === slug)
-	}
+	const row = await db.prepare(
+		`SELECT enabled FROM calendar_programs WHERE slug = ? LIMIT 1`
+	).bind(slug).first<{ enabled: number }>()
+	return row?.enabled !== 0
 }
 
 export async function setCalendarProgramEnabled(db: D1DatabaseLike, slug: CalendarProgramSlug, enabled: boolean) {
@@ -133,39 +116,28 @@ export async function setCalendarProgramEnabled(db: D1DatabaseLike, slug: Calend
 }
 
 export async function getCalendarProgramBySlug(db: D1DatabaseLike, slug: string, options: { includeDisabled?: boolean } = {}) {
-	try {
-		const row = await db.prepare(
-			`SELECT slug, label, activity_name, page_title, eyebrow, hero_title_line_1, hero_title_line_2,
-			        hero_subtitle, description, icon, eyebrow_class, glow_class, form_glow_class,
-			        service_status_note, enabled, sort_order
-			 FROM calendar_programs
-			 WHERE slug = ?
-			 LIMIT 1`
-		).bind(slug).first<ProgramRow>()
-		if (!row) return null
-		if (!options.includeDisabled && row.enabled === 0) return null
-		return toProgram(row)
-	} catch {
-		const legacy = buildLegacyPrograms().find((program) => program.slug === slug) ?? null
-		if (!legacy) return null
-		return legacy
-	}
+	const row = await db.prepare(
+		`SELECT slug, label, activity_name, page_title, eyebrow, hero_title_line_1, hero_title_line_2,
+		        hero_subtitle, description, icon, eyebrow_class, glow_class, form_glow_class,
+		        service_status_note, enabled, sort_order
+		 FROM calendar_programs
+		 WHERE slug = ?
+		 LIMIT 1`
+	).bind(slug).first<ProgramRow>()
+	if (!row) return null
+	if (!options.includeDisabled && row.enabled === 0) return null
+	return toProgram(row)
 }
 
 export async function getEnabledCalendarProgramByActivityName(db: D1DatabaseLike, activityName: string) {
-	try {
-		const row = await db.prepare(
-			`SELECT slug, enabled
-			 FROM calendar_programs
-			 WHERE activity_name = ?
-			 LIMIT 1`
-		).bind(activityName).first<{ slug: string; enabled: number }>()
-		if (!row || row.enabled === 0) return null
-		return row.slug
-	} catch {
-		const legacy = buildLegacyPrograms().find((program) => program.activityName === activityName)
-		return legacy?.slug ?? null
-	}
+	const row = await db.prepare(
+		`SELECT slug, enabled
+		 FROM calendar_programs
+		 WHERE activity_name = ?
+		 LIMIT 1`
+	).bind(activityName).first<{ slug: string; enabled: number }>()
+	if (!row || row.enabled === 0) return null
+	return row.slug
 }
 
 export type CalendarProgramInput = {

@@ -31,6 +31,7 @@
 		"e2e:sitemap": "pnpm exec vitest run --maxWorkers=1 __tests__/e2e/sitemap-smoke.test.ts",
 		"e2e:visual": "pnpm exec vitest run --maxWorkers=1 __tests__/e2e/visual-snapshots.test.ts",
 		"seed:calendar": "node scripts/seed/calendar-social.mjs",
+		"calendar:sync": "node scripts/cron/run-calendar-sync.mjs",
 		"deploy:secrets": "dotenvx run -f config/env/.env.production -- node scripts/deploy-secrets.mjs",
 		"deploy:prod": "node scripts/deploy-prod.mjs",
 		"deploy:prod:full": "node scripts/deploy-prod.mjs --full",

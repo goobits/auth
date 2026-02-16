@@ -1,7 +1,7 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../_bridge.ts'
 import { joinEvent } from '$lib/server/calendar-social'
-import { enqueueCalendarSyncJob } from '$lib/server/calendar-sync-queue'
+import { enqueueCalendarSyncJob, processCalendarSyncQueue } from '$lib/server/calendar-sync-queue'
 import { getCalendarUserId, noStoreHeaders, unauthorizedCalendar } from '../../../_auth.ts'
 
 export async function POST(event: RequestEvent) {
@@ -36,6 +36,9 @@ export async function POST(event: RequestEvent) {
 				trigger: 'member_join',
 				requestedByUserId: userId,
 				payload: { guestCount: Number.isFinite(guestCount) ? guestCount : 0 }
+			})
+			void processCalendarSyncQueue(env.DB, env, 2).catch((error) => {
+				console.warn('Best-effort calendar sync processing failed after join:', error)
 			})
 		} catch (error) {
 			console.warn('Failed to enqueue calendar sync after join:', error)

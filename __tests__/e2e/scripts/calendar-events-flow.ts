@@ -75,12 +75,16 @@ export async function runCalendarEventsFlow() {
 		await page.click('button:has-text("Create Events")')
 		await page.locator(`text=${waitlistTitle}`).first().waitFor({ timeout: 30000 })
 
-		await page.goto(`${BASE_URL}/calendar/gym`, { waitUntil: 'domcontentloaded', timeout: 30000 })
-		if (page.url().includes('/calendar/login')) {
-			console.log('[calendar-events-flow] SKIP program-page counters (calendar member session required)')
-			console.log('[calendar-events-flow] PASS (admin event creation only)')
-			return
+		const bootstrapRes = await context.request.post(`${BASE_URL}/api/test/calendar-session`, {
+			headers: { authorization: `Bearer ${passcode}` },
+			data: { email: `e2e-calendar-${Date.now()}@example.com`, name: 'E2E Calendar User' }
+		})
+		if (!bootstrapRes.ok()) {
+			throw new Error(`calendar member bootstrap failed: ${bootstrapRes.status()}`)
 		}
+
+		await page.goto(`${BASE_URL}/calendar/gym`, { waitUntil: 'domcontentloaded', timeout: 30000 })
+		if (page.url().includes('/calendar/login')) throw new Error('calendar member session bootstrap did not stick')
 
 		const mainCard = page.locator('.calendar-home__event-card', { hasText: title }).first()
 		await mainCard.waitFor({ timeout: 30000 })
