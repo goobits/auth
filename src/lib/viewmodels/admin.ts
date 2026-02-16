@@ -1,4 +1,16 @@
-import { cancelAdminBooking, getAdminBookings, getAdminStatus, saveAdminRules, type AdminRulesInput } from '$lib/client/api/adminClient'
+import {
+	cancelAdminBooking,
+	createAdminEvents,
+	getAdminBookings,
+	getAdminEvents,
+	getAdminPrograms,
+	getAdminStatus,
+	saveAdminRules,
+	setAdminProgram,
+	updateAdminEventMemory,
+	updateAdminEventCapacity,
+	type AdminRulesInput
+} from '$lib/client/api/adminClient'
 import {
 	createCalendarInvite,
 	deleteCalendarInvite,
@@ -8,7 +20,7 @@ import {
 	type CreateInviteInput
 } from '$lib/client/api/calendarClient'
 
-export type AdminTabId = 'dash' | 'cal' | 'calendar-auth'
+export type AdminTabId = 'dash' | 'cal' | 'events' | 'programs' | 'calendar-auth' | 'integrations'
 
 export type AdminNavItem = {
 	label: string
@@ -33,9 +45,12 @@ export type AdminRulesState = {
 }
 
 export const ADMIN_NAV: AdminNavItem[] = [
-	{ label: 'Dashboard', id: 'dash' },
-	{ label: 'Settings', id: 'cal' },
-	{ label: 'Members', id: 'calendar-auth' }
+	{ label: 'Overview', id: 'dash' },
+	{ label: 'Availability', id: 'cal' },
+	{ label: 'Events', id: 'events' },
+	{ label: 'Programs', id: 'programs' },
+	{ label: 'Members', id: 'calendar-auth' },
+	{ label: 'Integrations', id: 'integrations' }
 ]
 
 export const DEFAULT_ADMIN_RULES: AdminRulesState = {
@@ -93,6 +108,39 @@ export async function removeAdminBooking(bookingId: string) {
 
 export async function beginCalendarOAuth() {
 	return startCalendarOAuth()
+}
+
+export async function fetchAdminPrograms() {
+	return getAdminPrograms()
+}
+
+export async function persistAdminProgram(input: { slug: string; enabled: boolean }) {
+	return setAdminProgram(input)
+}
+
+export async function fetchAdminEvents() {
+	return getAdminEvents()
+}
+
+export async function persistAdminEvents(input: {
+	activitySlug: string
+	title: string
+	startsAt: string
+	endsAt: string
+	capacity: number
+	repeatWeeks?: number
+	location?: string
+	note?: string
+}) {
+	return createAdminEvents(input)
+}
+
+export async function persistAdminEventCapacity(eventId: number, capacity: number) {
+	return updateAdminEventCapacity(eventId, capacity)
+}
+
+export async function persistAdminEventMemory(eventId: number, input: { recapText?: string; heroImageUrl?: string }) {
+	return updateAdminEventMemory(eventId, input)
 }
 
 export async function fetchCalendarMembersData() {

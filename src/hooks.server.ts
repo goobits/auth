@@ -72,8 +72,19 @@ async function handleAdminAuth({ event, resolve }: Parameters<Handle>[0]) {
 		return resolve(event)
 	}
 
-	const { auth } = await getAdminAuth({ event })
-	return auth.handle()({ event, resolve })
+	try {
+		const { auth } = await getAdminAuth({ event })
+		return auth.handle()({ event, resolve })
+	} catch (error) {
+		// Keep /admin shell reachable even if auth adapters/env are temporarily unavailable.
+		// This prevents global hard-fail 500s during checks/dev startup races.
+		console.error('[admin-auth] unavailable', error)
+		if (pathname.startsWith('/admin')) {
+			;(event.locals as { user?: unknown }).user = undefined
+			return resolve(event)
+		}
+		return new Response('Admin auth unavailable', { status: 503 })
+	}
 }
 
 async function handleCalendarAuth({ event, resolve }: Parameters<Handle>[0]) {

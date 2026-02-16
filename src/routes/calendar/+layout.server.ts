@@ -4,12 +4,18 @@ type CalendarUser = {
 	[key: string]: unknown
 }
 
-export function load({ locals }: { locals: { user?: CalendarUser } }) {
+import { buildEnv } from '../api/calendar/_bridge.ts'
+import { getEnabledCalendarPrograms } from '$lib/server/calendar-programs'
+
+export async function load({ locals, platform }: { locals: { user?: CalendarUser }; platform: App.Platform }) {
 	const rawUser = locals.user
 	const user = rawUser
 		? { ...rawUser, avatarUrl: rawUser.avatarUrl || rawUser.avatar }
 		: null
+	const env = await buildEnv(platform)
+	const activities = await getEnabledCalendarPrograms(env.DB)
 	return {
-		user
+		user,
+		activities
 	}
 }

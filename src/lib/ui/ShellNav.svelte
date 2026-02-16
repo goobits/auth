@@ -55,8 +55,8 @@
 
 <style lang="scss">
 	.shell-nav {
-		background: var(--color-white-015);
-		border-bottom: var(--border-width) solid var(--color-white-05);
+		background: var(--shell-nav-bg, var(--color-white-015));
+		border-bottom: var(--border-width) solid var(--shell-nav-border, var(--color-white-05));
 		width: 100%;
 		position: sticky;
 		top: 0;
@@ -112,7 +112,7 @@
 	.shell-nav__link {
 		display: inline-flex;
 		align-items: center;
-		color: color-mix(in srgb, var(--color-white) 52%, transparent);
+		color: var(--shell-nav-link, color-mix(in srgb, var(--color-white) 52%, transparent));
 		text-decoration: none;
 		font-size: 13px;
 		font-weight: var(--font-weight-medium);
@@ -122,13 +122,13 @@
 	}
 
 	.shell-nav__link:hover {
-		color: color-mix(in srgb, var(--color-white) 78%, transparent);
-		background: color-mix(in srgb, var(--color-white) 3.5%, transparent);
+		color: var(--shell-nav-link-hover, color-mix(in srgb, var(--color-white) 78%, transparent));
+		background: var(--shell-nav-link-hover-bg, color-mix(in srgb, var(--color-white) 3.5%, transparent));
 	}
 
 	.shell-nav__link--active {
-		color: var(--color-white);
-		background: color-mix(in srgb, var(--color-white) 7.5%, transparent);
+		color: var(--shell-nav-link-active, var(--color-white));
+		background: var(--shell-nav-link-active-bg, color-mix(in srgb, var(--color-white) 7.5%, transparent));
 		text-decoration: underline;
 		text-underline-offset: 0.22em;
 	}
@@ -149,19 +149,19 @@
 		width: 24px;
 		height: 24px;
 		border-radius: 50%;
-		border: var(--border-width) solid var(--color-white-12);
+		border: var(--border-width) solid var(--shell-nav-avatar-border, var(--color-white-12));
 	}
 
 	:global(.shell-nav__name) {
-		color: color-mix(in srgb, var(--color-white) 60%, transparent);
+		color: var(--shell-nav-muted, color-mix(in srgb, var(--color-white) 60%, transparent));
 		font-size: 12px;
 		font-weight: var(--font-weight-medium);
 	}
 
 	:global(.shell-nav__button) {
 		background: transparent;
-		border: var(--border-width) solid var(--color-white-10);
-		color: color-mix(in srgb, var(--color-white) 54%, transparent);
+		border: var(--border-width) solid var(--shell-nav-button-border, var(--color-white-10));
+		color: var(--shell-nav-muted, color-mix(in srgb, var(--color-white) 54%, transparent));
 		padding: var(--space-1) var(--space-3);
 		border-radius: var(--radius-pill);
 		cursor: pointer;
@@ -171,9 +171,16 @@
 	}
 
 	:global(.shell-nav__button:hover) {
-		background: var(--color-white-04);
-		border-color: color-mix(in srgb, var(--color-white) 16%, transparent);
-		color: var(--color-white-82);
+		background: var(--shell-nav-button-hover-bg, var(--color-white-04));
+		border-color: var(--shell-nav-button-hover-border, color-mix(in srgb, var(--color-white) 16%, transparent));
+		color: var(--shell-nav-button-hover-text, var(--color-white-82));
+	}
+
+	:global(.shell-nav__button--link) {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		text-decoration: none;
 	}
 
 	:global(.shell-nav__badge) {
@@ -182,9 +189,9 @@
 		gap: 0.35rem;
 		font-size: 12px;
 		font-weight: var(--font-weight-medium);
-		color: color-mix(in srgb, var(--color-white) 62%, transparent);
-		border: var(--border-width) solid var(--color-white-10);
-		background: color-mix(in srgb, var(--color-white) 2.5%, transparent);
+		color: var(--shell-nav-muted, color-mix(in srgb, var(--color-white) 62%, transparent));
+		border: var(--border-width) solid var(--shell-nav-badge-border, var(--color-white-10));
+		background: var(--shell-nav-badge-bg, color-mix(in srgb, var(--color-white) 2.5%, transparent));
 		padding: var(--space-1) var(--space-3);
 		border-radius: var(--radius-pill);
 	}

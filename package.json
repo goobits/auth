@@ -28,6 +28,7 @@
 		"e2e:links": "node e2e/dead-links.mjs",
 		"e2e:sitemap": "node e2e/sitemap-smoke.mjs",
 		"e2e:visual": "node e2e/visual-snapshots.mjs",
+		"seed:calendar": "node scripts/seed/calendar-social.mjs",
 		"deploy:secrets": "dotenvx run -f config/env/.env.production -- node scripts/deploy-secrets.mjs",
 		"deploy:prod": "node scripts/deploy-prod.mjs",
 		"deploy:prod:full": "node scripts/deploy-prod.mjs --full",

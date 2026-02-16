@@ -1,9 +1,15 @@
 import {
 	beginCalendarOAuth,
 	buildInviteLink,
+	fetchAdminEvents,
+	fetchAdminPrograms,
 	fetchAdminBookings,
 	fetchAdminStatus,
 	fetchCalendarMembersData,
+	persistAdminEventCapacity,
+	persistAdminEventMemory,
+	persistAdminEvents,
+	persistAdminProgram,
 	persistAdminRules,
 	persistInvite,
 	removeAdminBooking,
@@ -62,6 +68,57 @@ export async function deleteMemberInvite(id: string) {
 export async function getCalendarReconnectUrl() {
 	const data = await beginCalendarOAuth()
 	return { ok: true, authUrl: data.authUrl, error: '' }
+}
+
+export async function loadAdminPrograms() {
+	const data = await fetchAdminPrograms()
+	return {
+		error: '',
+		programs: data.programs
+	}
+}
+
+export async function updateAdminProgram(input: { slug: string; enabled: boolean }) {
+	await persistAdminProgram(input)
+	return { ok: true, error: '' }
+}
+
+export async function loadAdminEventsData() {
+	const data = await fetchAdminEvents()
+	return {
+		error: '',
+		upcoming: data.upcoming,
+		recent: data.recent
+	}
+}
+
+export async function createAdminEventsBatch(input: {
+	activitySlug: string
+	title: string
+	startsAt: string
+	endsAt: string
+	capacity: number
+	costCents?: number
+	currency?: string
+	paymentProvider?: string
+	paymentHandle?: string
+	paymentNoteTemplate?: string
+	repeatWeeks?: number
+	location?: string
+	note?: string
+}) {
+	await persistAdminEvents(input)
+	return { ok: true, error: '' }
+}
+
+export async function updateAdminEventCapacityValue(eventId: number, capacity: number) {
+	await persistAdminEventCapacity(eventId, capacity)
+	return { ok: true, error: '' }
+}
+
+export async function updateAdminEventMemoryValue(eventId: number, input: { recapText?: string; heroImageUrl?: string }) {
+	await persistAdminEventMemory(eventId, input)
+	return { ok: true, error: '' }
 }
 
 export function createInviteShareLink(origin: string, code: string) {

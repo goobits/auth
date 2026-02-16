@@ -4,6 +4,7 @@ import path from 'node:path'
 
 const ROOT = process.cwd()
 const TARGET_DIRS = [
+  'src/styles',
   'src/lib/theme',
   'src/routes/admin/styles',
   'src/routes/calendar/styles',

@@ -6,8 +6,6 @@
 	import { filterAndSortLabs, labsCatalog } from '$lib/viewmodels/labs'
 	import { formatDateMmDdYyyy } from '$lib/utils/date'
 
-	const { data } = $props()
-
 	let searchQuery = $state('')
 	let sortBy = $state('title')
 	const sortOptions = [
@@ -39,15 +37,7 @@
 		return accentColors[idx]
 	}
 
-	function withDates(labs) {
-		return labs.map((lab) => {
-			const dateStr = data?.datesByHref?.[lab.href]
-			const date = dateStr ? new Date(dateStr) : null
-			return { ...lab, date, dateStr }
-		})
-	}
-
-	const filteredLabs = $derived(filterAndSortLabs(withDates(labsCatalog), searchQuery, 'all', sortBy))
+	const filteredLabs = $derived(filterAndSortLabs(labsCatalog, searchQuery, 'all', sortBy))
 </script>
 
 <svelte:head>
@@ -114,8 +104,9 @@
 								<div class="labs-page__card-head">
 									<h2 class="labs-page__card-title">{lab.title}</h2>
 									{#if lab.date}
-										<span class="labs-page__date" title={formatDateMmDdYyyy(lab.date)}>
-											{lab.date.getFullYear()}
+										{@const parsed = new Date(lab.date)}
+										<span class="labs-page__date" title={formatDateMmDdYyyy(parsed)}>
+											{parsed.getFullYear()}
 										</span>
 									{/if}
 								</div>
@@ -234,6 +225,7 @@
 		text-decoration: none;
 		color: var(--text);
 		background: color-mix(in srgb, var(--card-bg) 76%, transparent);
+		height: 100%;
 		transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
 			border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 	}
@@ -252,6 +244,10 @@
 
 	.labs-page__card-body {
 		padding: 1.25rem 1.375rem 1.375rem;
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 10.75rem;
 	}
 
 	.labs-page__card-head {
@@ -268,6 +264,11 @@
 		font-size: 1.1875rem;
 		letter-spacing: -0.015em;
 		line-height: 1.3;
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		overflow: hidden;
 	}
 
 	.labs-page__date {
@@ -289,10 +290,16 @@
 		font-size: var(--font-size-sm);
 		line-height: 1.5;
 		color: color-mix(in srgb, var(--muted) 88%, var(--text));
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 3;
+		line-clamp: 3;
+		overflow: hidden;
 	}
 
 	.labs-page__path {
 		margin: 0;
+		margin-top: auto;
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 		font-size: 0.75rem;
 		color: color-mix(in srgb, var(--muted) 92%, var(--text));

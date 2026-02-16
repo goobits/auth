@@ -10,6 +10,8 @@
 @import './lib/theme/admin.css';
 @import './lib/theme/about.css';
 @import './lib/theme/contact.css';
+/* New BEM component library consumes existing site tokens; no duplicate token system. */
+@import './styles/main.scss';
 
 @font-face {
 	font-family: 'Canela Deck';

@@ -126,7 +126,10 @@
 		overflow-x: auto;
 	}
 
-	.admin-page__sidebar-title {
+	.admin-page__sidebar-brand,
+	.admin-page__sidebar-label,
+	.admin-page__sidebar-spacer,
+	.admin-page__sidebar-logout {
 		display: none;
 	}
 

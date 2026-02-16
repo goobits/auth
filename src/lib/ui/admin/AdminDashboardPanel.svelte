@@ -1,10 +1,12 @@
 <script>
-	import { Check, RefreshCw, Save, Loader, ChevronRight } from '@lucide/svelte'
+	import { AlertTriangle, ChevronRight, RefreshCw } from '@lucide/svelte'
+
 	const { dashboard } = $props()
+	const needsCalendarAttention = $derived(dashboard.connectionExpired || !dashboard.connected)
 </script>
 
-<h1 class="admin-page__title">Dashboard</h1>
-<p class="admin-page__subtitle">Everything about your gym, at a glance.</p>
+<h1 class="admin-page__title">Overview</h1>
+<p class="admin-page__subtitle">A snapshot of booking and calendar health.</p>
 
 <div class="admin-page__stats">
 	<div class="admin-page__stat-card">
@@ -16,7 +18,12 @@
 		<div class="admin-page__stat-label">Seats reserved</div>
 	</div>
 	<div class="admin-page__stat-card">
-		<div class="admin-page__stat-value" class:admin-page__stat-value--synced={dashboard.connected && !dashboard.connectionExpired}>
+		<div
+			class="admin-page__stat-value"
+			class:admin-page__stat-value--synced={dashboard.connected && !dashboard.connectionExpired}
+			class:admin-page__stat-value--danger={dashboard.connected && dashboard.connectionExpired}
+			class:admin-page__stat-value--muted={!dashboard.connected}
+		>
 			{#if dashboard.connected && !dashboard.connectionExpired}Synced{:else if dashboard.connected && dashboard.connectionExpired}Expired{:else}Offline{/if}
 		</div>
 		<div class="admin-page__stat-label">Google Calendar</div>
@@ -25,83 +32,25 @@
 
 <div class="admin-page__section">
 	<div class="admin-page__section-head">
-		<h3 class="admin-page__section-title">Google Calendar</h3>
-		<span class="admin-page__status-badge" class:admin-page__status-badge--connected={dashboard.connected && !dashboard.connectionExpired}>
-			{#if dashboard.connected && !dashboard.connectionExpired}
-				<Check size={14} strokeWidth={2.5} />
-				Connected
-			{:else if dashboard.connected && dashboard.connectionExpired}
-				Token expired
-			{:else}
-				Not connected
-			{/if}
-		</span>
+		<h3 class="admin-page__section-title">Needs attention</h3>
 	</div>
-	<p class="admin-page__section-description">Availability and bookings stay in sync with your Google Calendar — automatically.</p>
-	<div class="admin-page__button-row">
-		<button class="admin-page__button-secondary" onclick={dashboard.reconnect}>
-			<RefreshCw size={14} />
-			{dashboard.connected ? 'Reconnect' : 'Connect'}
-		</button>
-	</div>
+	{#if needsCalendarAttention}
+		<div class="admin-page__attention-card">
+			<div class="admin-page__attention-main">
+				<AlertTriangle size={14} />
+				<span>{dashboard.connectionExpired ? 'Google Calendar token expired' : 'Google Calendar is not connected'}</span>
+			</div>
+			<button class="admin-page__button-secondary admin-page__button-secondary--compact" onclick={dashboard.reconnect}>
+				<RefreshCw size={12} />
+				Reconnect
+			</button>
+		</div>
+	{:else}
+		<p class="admin-page__section-description">No urgent issues right now.</p>
+	{/if}
 </div>
 
-<div class="admin-page__section">
-	<div class="admin-page__section-head">
-		<h3 class="admin-page__section-title">Availability rules</h3>
-	</div>
-	<p class="admin-page__section-description">Define when friends can book, and how much runway you need between sessions.</p>
-	<div class="admin-page__fields-grid">
-		<div class="admin-page__fields-row">
-			<div class="admin-page__field">
-				<span class="admin-page__field-label">Operating hours</span>
-				<div class="admin-page__time-row">
-					<input class="admin-page__input" type="time" bind:value={dashboard.hours.from} aria-label="Opening time" />
-					<span class="admin-page__time-separator">to</span>
-					<input class="admin-page__input" type="time" bind:value={dashboard.hours.to} aria-label="Closing time" />
-				</div>
-			</div>
-		</div>
-		<div class="admin-page__fields-row">
-			<div class="admin-page__field">
-				<label class="admin-page__field-label">
-					Buffer between slots
-					<div class="admin-page__input-wrap">
-						<input class="admin-page__input admin-page__input--number" type="number" min="0" bind:value={dashboard.buffer} />
-						<span class="admin-page__input-suffix">min</span>
-					</div>
-				</label>
-			</div>
-			<div class="admin-page__field">
-				<label class="admin-page__field-label">
-					Minimum notice
-					<div class="admin-page__input-wrap">
-						<input class="admin-page__input admin-page__input--number" type="number" min="1" bind:value={dashboard.notice} />
-						<span class="admin-page__input-suffix">hrs</span>
-					</div>
-				</label>
-			</div>
-			<div class="admin-page__field">
-				<label class="admin-page__field-label">
-					Capacity per slot
-					<div class="admin-page__input-wrap">
-						<input class="admin-page__input admin-page__input--number" type="number" min="1" bind:value={dashboard.capacity} />
-						<span class="admin-page__input-suffix">people</span>
-					</div>
-				</label>
-			</div>
-		</div>
-	</div>
-	<button class="admin-page__button-secondary" onclick={dashboard.save} disabled={dashboard.saving}>
-		{#if dashboard.saving}
-			<Loader size={12} class="admin-page__spin" />
-			Saving...
-		{:else}
-			<Save size={12} />
-			Save rules
-		{/if}
-	</button>
-</div>
+<div class="admin-page__divider" aria-hidden="true"></div>
 
 <div class="admin-page__section">
 	<div class="admin-page__section-head">

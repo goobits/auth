@@ -7,7 +7,10 @@
 	import AdminSidebar from '$lib/ui/admin/AdminSidebar.svelte'
 	import AdminDashboardPanel from '$lib/ui/admin/AdminDashboardPanel.svelte'
 	import AdminCalendarPanel from '$lib/ui/admin/AdminCalendarPanel.svelte'
+	import AdminProgramsPanel from '$lib/ui/admin/AdminProgramsPanel.svelte'
+	import AdminEventsPanel from '$lib/ui/admin/AdminEventsPanel.svelte'
 	import AdminMembersPanel from '$lib/ui/admin/AdminMembersPanel.svelte'
+	import AdminIntegrationsPanel from '$lib/ui/admin/AdminIntegrationsPanel.svelte'
 	import AdminBookingModal from '$lib/ui/admin/AdminBookingModal.svelte'
 	import AdminToast from '$lib/ui/admin/AdminToast.svelte'
 
@@ -31,6 +34,18 @@
 	$effect(() => {
 		if (tab === 'calendar-auth') {
 			members.load()
+		}
+	})
+
+	$effect(() => {
+		if (tab === 'programs') {
+			dashboard.loadPrograms()
+		}
+	})
+
+	$effect(() => {
+		if (tab === 'events') {
+			dashboard.loadEvents()
 		}
 	})
 </script>
@@ -57,6 +72,18 @@
 
 			{#if tab === 'calendar-auth'}
 				<AdminMembersPanel {members} formatDate={formatAdminDate} />
+			{/if}
+
+			{#if tab === 'programs'}
+				<AdminProgramsPanel {dashboard} />
+			{/if}
+
+			{#if tab === 'events'}
+				<AdminEventsPanel {dashboard} />
+			{/if}
+
+			{#if tab === 'integrations'}
+				<AdminIntegrationsPanel {dashboard} />
 			{/if}
 		</main>
 	</div>

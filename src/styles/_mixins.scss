@@ -1,0 +1,16 @@
+@mixin focus-ring($color: var(--color-primary-500), $offset: 2px) {
+	outline: 2px solid $color;
+	outline-offset: $offset;
+}
+
+@mixin card-surface {
+	background-color: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-xl);
+	box-shadow: var(--shadow-sm);
+}
+
+@mixin interactive-transition {
+	transition: var(--transition-colors), var(--transition-shadow), var(--transition-transform);
+}
+

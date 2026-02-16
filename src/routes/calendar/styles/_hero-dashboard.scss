@@ -208,6 +208,105 @@
 	}
 }
 
+.calendar-home__feed-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--calendar-size-12);
+	margin-bottom: var(--calendar-size-16);
+}
+
+.calendar-home__feed-title {
+	font-size: var(--calendar-size-24);
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	margin: 0;
+	color: var(--calendar-shell-text);
+}
+
+.calendar-home__feed-list {
+	display: grid;
+	gap: var(--calendar-size-12);
+	margin-bottom: var(--calendar-size-36);
+}
+
+.calendar-home__event-card {
+	@include ui.frosted-card(var(--calendar-size-16), var(--calendar-size-16) var(--calendar-size-18));
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--calendar-size-16);
+}
+
+.calendar-home__event-meta h3 {
+	font-size: var(--calendar-size-18);
+	margin: 0 0 var(--calendar-size-4);
+}
+
+.calendar-home__event-meta p {
+	font-size: var(--calendar-size-13);
+	color: color-mix(in srgb, var(--calendar-shell-text) 56%, transparent);
+	margin: 0;
+}
+
+.calendar-home__event-cost a {
+	color: var(--link-hover);
+}
+
+.calendar-home__event-label {
+	font-size: var(--calendar-size-11);
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--calendar-shell-text) 45%, transparent);
+	margin-bottom: var(--calendar-size-2);
+}
+
+.calendar-home__event-side {
+	display: grid;
+	gap: var(--calendar-size-10);
+	justify-items: end;
+}
+
+.calendar-home__facepile {
+	display: flex;
+	align-items: center;
+}
+
+.calendar-home__facepile img,
+.calendar-home__facepile span {
+	width: 1.7rem;
+	height: 1.7rem;
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, var(--calendar-shell-text) 18%, transparent);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.75rem;
+	background: color-mix(in srgb, var(--calendar-shell-text) 10%, transparent);
+	color: var(--calendar-shell-text);
+	margin-left: -0.4rem;
+}
+
+.calendar-home__facepile > *:first-child {
+	margin-left: 0;
+}
+
+.calendar-home__event-card--memory {
+	align-items: stretch;
+}
+
+.calendar-home__memory-image {
+	width: 9rem;
+	height: 6.2rem;
+	object-fit: cover;
+	border-radius: var(--calendar-size-10);
+	border: 1px solid color-mix(in srgb, var(--calendar-shell-text) 14%, transparent);
+}
+
+.calendar-home__memory-recap {
+	margin-top: var(--calendar-size-6);
+}
+
 // Buttons
 .calendar-page__primary-button {
 	@include ui.button-primary(var(--calendar-size-12), var(--calendar-size-12) var(--calendar-size-24));
@@ -265,5 +364,20 @@
 
 	.calendar-page__activity-grid {
 		grid-template-columns: 1fr;
+	}
+
+	.calendar-home__event-card {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.calendar-home__event-side {
+		width: 100%;
+		justify-items: start;
+	}
+
+	.calendar-home__memory-image {
+		width: 100%;
+		height: 10rem;
 	}
 }

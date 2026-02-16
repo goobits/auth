@@ -1,10 +1,11 @@
 <script>
 	import './Admin.scss'
 	import ShellNav from '$lib/ui/ShellNav.svelte'
+	import { enhance } from '$app/forms'
 	import { page } from '$app/stores'
 	import { goto } from '$app/navigation'
 
-	const { children } = $props()
+	const { children, data } = $props()
 	const connectedNow = $derived($page.url.searchParams.get('connected') === '1')
 
 	$effect(() => {
@@ -18,6 +19,11 @@
 	<ShellNav currentPath={$page.url.pathname}>
 		{#snippet right()}
 			<span class="shell-nav__badge">Admin</span>
+			{#if data.user}
+				<form method="POST" action="/admin?/logout" use:enhance>
+					<button class="shell-nav__button" type="submit">Logout</button>
+				</form>
+			{/if}
 		{/snippet}
 	</ShellNav>
 
