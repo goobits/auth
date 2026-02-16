@@ -65,7 +65,25 @@ const CalendarEventsResponseSchema = z.object({
 
 const CalendarJoinResponseSchema = z.object({
 	ok: z.literal(true),
-	status: z.union([z.literal('joined'), z.literal('waitlist')])
+	status: z.union([z.literal('joined'), z.literal('waitlist')]),
+	state: z.object({
+		seatsTaken: z.number(),
+		seatsLeft: z.number(),
+		waitlistCount: z.number(),
+		userStatus: z.union([z.literal('joined'), z.literal('waitlist'), z.null()]),
+		userGuestCount: z.number()
+	}).nullable().optional()
+})
+
+const CalendarLeaveResponseSchema = z.object({
+	ok: z.literal(true),
+	state: z.object({
+		seatsTaken: z.number(),
+		seatsLeft: z.number(),
+		waitlistCount: z.number(),
+		userStatus: z.union([z.literal('joined'), z.literal('waitlist'), z.null()]),
+		userGuestCount: z.number()
+	}).nullable().optional()
 })
 
 const CalendarProfileSchema = z.object({
@@ -85,6 +103,7 @@ export type CalendarInvitesResponse = z.infer<typeof CalendarInvitesResponseSche
 export type CalendarUsersResponse = z.infer<typeof CalendarUsersResponseSchema>
 export type CalendarEventsResponse = z.infer<typeof CalendarEventsResponseSchema>
 export type CalendarJoinResponse = z.infer<typeof CalendarJoinResponseSchema>
+export type CalendarLeaveResponse = z.infer<typeof CalendarLeaveResponseSchema>
 export type CalendarProfile = z.infer<typeof CalendarProfileSchema>
 
 export async function startCalendarOAuth() {
@@ -146,9 +165,9 @@ export async function joinCalendarEvent(eventId: number, input: { guestCount?: n
 }
 
 export async function leaveCalendarEvent(eventId: number) {
-	return requestApi<CalendarMutationOk>(`/api/calendar/events/${eventId}/leave`, {
+	return requestApi<CalendarLeaveResponse>(`/api/calendar/events/${eventId}/leave`, {
 		method: 'POST',
-		parse: (payload) => CalendarMutationOkSchema.parse(payload)
+		parse: (payload) => CalendarLeaveResponseSchema.parse(payload)
 	})
 }
 

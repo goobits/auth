@@ -1,5 +1,6 @@
 <script>
 	import { joinCalendarEvent, leaveCalendarEvent } from '$lib/client/api/calendarClient'
+	import { applyEventMutationState } from '$lib/booking/feed-state'
 	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	let { data } = $props()
 	let upcoming = $state([])
@@ -17,25 +18,7 @@
 		feedError = ''
 		try {
 			const result = await joinCalendarEvent(eventId, { guestCount })
-			upcoming = upcoming.map((event) => {
-				if (event.id !== eventId) return event
-				const nextStatus = result.status
-				const wasJoined = event.userStatus === 'joined'
-				const previousSeats = wasJoined ? 1 + (event.userGuestCount ?? 0) : 0
-				const nextSeats = nextStatus === 'joined' ? 1 + guestCount : 0
-				const seatsTakenDelta = nextSeats - previousSeats
-				const seatsTaken = event.seatsTaken + seatsTakenDelta
-				return {
-					...event,
-					userStatus: nextStatus,
-					userGuestCount: guestCount,
-					seatsTaken,
-					seatsLeft: Math.max(0, event.capacity - seatsTaken),
-					waitlistCount: nextStatus === 'waitlist' && event.userStatus !== 'waitlist'
-						? event.waitlistCount + 1
-						: event.waitlistCount
-				}
-			})
+			upcoming = applyEventMutationState(upcoming, eventId, result.state)
 		} catch (error) {
 			feedError = error instanceof Error ? error.message : 'Unable to join event'
 		} finally {
@@ -47,21 +30,8 @@
 		pendingEventId = eventId
 		feedError = ''
 		try {
-			await leaveCalendarEvent(eventId)
-			upcoming = upcoming.map((event) => {
-				if (event.id !== eventId) return event
-				const wasJoined = event.userStatus === 'joined'
-				const wasWaitlist = event.userStatus === 'waitlist'
-				const seatsToRelease = wasJoined ? 1 + (event.userGuestCount ?? 0) : 0
-				return {
-					...event,
-					userStatus: null,
-					userGuestCount: 0,
-					seatsTaken: wasJoined ? Math.max(0, event.seatsTaken - seatsToRelease) : event.seatsTaken,
-					seatsLeft: wasJoined ? Math.min(event.capacity, event.seatsLeft + seatsToRelease) : event.seatsLeft,
-					waitlistCount: wasWaitlist ? Math.max(0, event.waitlistCount - 1) : event.waitlistCount
-				}
-			})
+			const result = await leaveCalendarEvent(eventId)
+			upcoming = applyEventMutationState(upcoming, eventId, result.state)
 		} catch (error) {
 			feedError = error instanceof Error ? error.message : 'Unable to leave event'
 		} finally {

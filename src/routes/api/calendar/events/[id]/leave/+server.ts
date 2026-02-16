@@ -19,7 +19,7 @@ export async function POST(event: RequestEvent) {
 		}
 
 		const env = await buildEnv(event.platform)
-		await leaveEvent(env.DB, { eventId, userId })
+		const result = await leaveEvent(env.DB, { eventId, userId })
 		// Don't block member experience if queue write fails.
 		try {
 			await enqueueCalendarSyncJob(env.DB, {
@@ -33,7 +33,7 @@ export async function POST(event: RequestEvent) {
 		} catch (error) {
 			console.warn('Failed to enqueue calendar sync after leave:', error)
 		}
-		return json({ ok: true }, { headers: noStoreHeaders })
+		return json({ ok: true, state: result.state }, { headers: noStoreHeaders })
 	} catch (err) {
 		console.error('Calendar leave event error:', err)
 		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })

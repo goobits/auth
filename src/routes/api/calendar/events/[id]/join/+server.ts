@@ -46,7 +46,7 @@ export async function POST(event: RequestEvent) {
 		if (!result.ok) {
 			return json({ ok: false, error: { message: result.message, code: result.code } }, { status: 404, headers: noStoreHeaders })
 		}
-		return json({ ok: true, status: result.status }, { headers: noStoreHeaders })
+		return json({ ok: true, status: result.status, state: result.state }, { headers: noStoreHeaders })
 	} catch (err) {
 		if (err instanceof TransportValidationError) {
 			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
