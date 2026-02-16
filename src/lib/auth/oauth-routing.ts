@@ -1,29 +1,12 @@
 import type { Cookies } from '@sveltejs/kit'
 
-const AUTH_RESERVED = new Set(['auth', 'signin', 'signout', 'callback', 'logout', 'magic-link', 'passkey', 'sessions'])
-
-export function resolveLegacySigninPath(pathname: string) {
-	const parts = pathname.split('/').filter(Boolean)
-	if (parts.length < 3 || parts.length > 4) return null
-	if (parts[0] !== 'auth') return null
-	if (parts[1] !== 'signin') return null
-	const provider = parts[2]
-	if (!provider || provider === 'signout' || provider === 'callback') return null
-	if (parts.length === 3) return `/auth/${provider}`
-	if (parts.length === 4 && parts[3] === 'callback') return `/auth/${provider}/callback`
-	return null
-}
+const AUTH_RESERVED = new Set(['auth', 'signout', 'logout', 'magic-link', 'passkey', 'sessions'])
 
 export function resolveRequestedProvider(pathname: string) {
 	const parts = pathname.split('/').filter(Boolean)
 	if (parts[0] !== 'auth') return null
 	if (parts.length === 2) {
 		const provider = parts[1]
-		if (!provider || AUTH_RESERVED.has(provider)) return null
-		return provider
-	}
-	if (parts.length === 3 && parts[1] === 'signin') {
-		const provider = parts[2]
 		if (!provider || AUTH_RESERVED.has(provider)) return null
 		return provider
 	}
@@ -35,11 +18,6 @@ export function resolveCallbackProvider(pathname: string) {
 	if (parts[0] !== 'auth') return null
 	if (parts.length === 3 && parts[2] === 'callback') {
 		const provider = parts[1]
-		if (!provider || AUTH_RESERVED.has(provider)) return null
-		return provider
-	}
-	if (parts.length === 3 && parts[1] === 'callback') {
-		const provider = parts[2]
 		if (!provider || AUTH_RESERVED.has(provider)) return null
 		return provider
 	}
