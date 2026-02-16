@@ -19,16 +19,26 @@ type LayoutShiftEntryLike = PerformanceEntry & {
 	sources?: LayoutShiftSource[]
 }
 
+function toLayoutShiftEntry(entry: PerformanceEntry): LayoutShiftEntryLike {
+	const candidate = entry as LayoutShiftEntryLike
+	return {
+		...entry,
+		value: typeof candidate.value === 'number' ? candidate.value : 0,
+		hadRecentInput: Boolean(candidate.hadRecentInput),
+		sources: Array.isArray(candidate.sources) ? candidate.sources : []
+	}
+}
+
 export function enableLayoutShiftDebug() {
 	console.log('[layout-shift] debug enabled')
 
 	try {
 		const obs = new PerformanceObserver((list) => {
 			for (const entry of list.getEntries()) {
-				const ls = entry as unknown as LayoutShiftEntryLike
+				const ls = toLayoutShiftEntry(entry)
 				if (ls.hadRecentInput) continue
 
-				const sources = Array.isArray(ls.sources) ? ls.sources : []
+				const sources = ls.sources ?? []
 				const mapped = sources.map((s) => ({
 					selector: selectorFor((s?.node as Element) || null),
 					previousRect: s?.previousRect ?? null,
@@ -36,7 +46,7 @@ export function enableLayoutShiftDebug() {
 				}))
 
 				console.log('[layout-shift]', {
-					value: ls.value ?? 0,
+					value: ls.value,
 					sources: mapped
 				})
 			}
