@@ -38,15 +38,27 @@
 </div>
 
 <style lang="scss">
-	.calendar-activity__hero {
+	:global(.calendar-activity__hero) {
+		display: grid;
+		justify-items: center;
+		text-align: center;
+		margin-inline: auto;
+		width: min(100%, var(--calendar-size-720));
 		margin-bottom: 0.25rem;
 	}
 
-	.calendar-activity__title {
+	:global(.calendar-activity__hero .ui-hero__eyebrow),
+	:global(.calendar-activity__hero .ui-hero__title),
+	:global(.calendar-activity__hero .ui-hero__subtitle) {
+		text-align: center;
+		margin-inline: auto;
+	}
+
+	:global(.calendar-activity__title) {
 		text-wrap: balance;
 	}
 
-	.calendar-activity__subtitle {
+	:global(.calendar-activity__subtitle) {
 		text-wrap: pretty;
 	}
 

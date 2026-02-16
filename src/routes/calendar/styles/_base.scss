@@ -4,19 +4,22 @@
 	width: 100%;
 	min-height: 100svh;
 	min-height: 100vh;
-	display: flex;
-	flex-direction: column;
+	display: grid;
+	grid-template-rows: auto minmax(0, 1fr);
 	background: var(--calendar-shell-bg);
 }
 
 .calendar-shell__layout {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
+	display: grid;
+	grid-template-rows: minmax(0, 1fr);
+	min-height: 0;
 }
 
 .calendar-shell__main {
-	flex: 1;
+	display: grid;
+	grid-auto-rows: min-content;
+	align-content: start;
+	min-height: 0;
 }
 
 .calendar-page {
@@ -27,6 +30,9 @@
 	min-height: 100svh;
 	min-height: 100vh;
 	padding-bottom: 2rem;
+	display: grid;
+	grid-auto-rows: min-content;
+	align-content: start;
 	--calendar-size-2: 2px;
 	--calendar-size-4: 4px;
 	--calendar-size-6: 6px;

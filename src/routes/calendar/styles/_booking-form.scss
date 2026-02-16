@@ -6,9 +6,10 @@
 }
 
 .calendar-page__slots-header {
-	display: flex;
-	justify-content: space-between;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
 	align-items: baseline;
+	justify-content: normal;
 	margin-bottom: var(--calendar-size-16);
 
 	h3 {
@@ -362,10 +363,13 @@
 }
 
 .calendar-page__cancel-actions {
-	display: flex;
+	display: grid;
+	grid-auto-flow: column;
+	grid-auto-columns: max-content;
+	justify-content: start;
 	gap: var(--calendar-size-10);
 	margin-top: var(--calendar-size-12);
-	flex-wrap: wrap;
+	overflow-x: auto;
 }
 
 .calendar-page__cancel-status {
@@ -374,16 +378,27 @@
 }
 
 .calendar-page__cancel-inputs {
-	display: flex;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
 	gap: var(--calendar-size-12);
 	align-items: center;
-	flex-wrap: wrap;
 }
 
 .calendar-page__cancel-input {
-	flex: 1 1 var(--calendar-size-260);
 	@include ui.input-control(var(--calendar-size-10), 0.75rem 0.85rem, var(--calendar-shell-bg), var(--color-white-12));
 	color: var(--calendar-shell-text);
+}
+
+@media (max-width: 43.75em) {
+	.calendar-page__cancel-actions {
+		grid-auto-flow: row;
+		grid-auto-columns: auto;
+		overflow-x: visible;
+	}
+
+	.calendar-page__cancel-inputs {
+		grid-template-columns: 1fr;
+	}
 }
 
 .calendar-page__ghost-action {
