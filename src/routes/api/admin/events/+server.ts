@@ -1,8 +1,8 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
-import { createEventsBatch, listEventsFeed } from '$lib/server/calendar-social'
+import { createEventsBatch, listEventsFeed } from '@packages/calendar/src/services/social.ts'
 import { enforceSameOrigin, logAdminEvent, noStoreHeaders, requireAdminSession, unauthorized } from '../_helpers.ts'
-import { getCalendarProgramBySlug } from '$lib/server/calendar-programs'
+import { getCalendarProgramBySlug } from '@packages/calendar/src/services/programs.ts'
 
 export async function GET(event: RequestEvent) {
 	try {

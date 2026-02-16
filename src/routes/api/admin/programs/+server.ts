@@ -1,7 +1,7 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
-import { deleteCalendarProgram, getCalendarPrograms, upsertCalendarProgram } from '$lib/server/calendar-programs'
-import { isValidProgramSlug } from '$lib/booking/programs'
+import { deleteCalendarProgram, getCalendarPrograms, upsertCalendarProgram } from '@packages/calendar/src/services/programs.ts'
+import { isValidProgramSlug } from '@packages/calendar/src/social/programs.ts'
 import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
 
 export async function GET(event: RequestEvent) {

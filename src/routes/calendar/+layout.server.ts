@@ -5,7 +5,7 @@ type CalendarUser = {
 }
 
 import { buildEnv } from '../api/calendar/_bridge.ts'
-import { getEnabledCalendarPrograms } from '$lib/server/calendar-programs'
+import { getEnabledCalendarPrograms } from '@packages/calendar/src/services/programs.ts'
 
 export async function load({ locals, platform }: { locals: { user?: CalendarUser }; platform: App.Platform }) {
 	const rawUser = locals.user

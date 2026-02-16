@@ -1,6 +1,6 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../_bridge.ts'
-import { getCalendarProfile, saveCalendarProfile } from '$lib/server/calendar-social'
+import { getCalendarProfile, saveCalendarProfile } from '@packages/calendar/src/services/social.ts'
 import { getCalendarUserId, noStoreHeaders, unauthorizedCalendar } from '../_auth.ts'
 
 export async function GET(event: RequestEvent) {

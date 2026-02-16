@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Hero from '$lib/ui/Hero.svelte'
 	import BookingCalendar from '$lib/booking/BookingCalendar.svelte'
-	import type { CalendarActivityConfig } from '$lib/booking/activities'
+	import type { CalendarActivityConfig } from '@packages/calendar/src/social/activities.ts'
 	import type { CalendarEventsResponse } from '$lib/client/api/calendarClient'
 
 	const {
@@ -38,30 +38,6 @@
 </div>
 
 <style lang="scss">
-	:global(.calendar-activity__hero) {
-		display: grid;
-		justify-items: center;
-		text-align: center;
-		margin-inline: auto;
-		width: min(100%, var(--calendar-size-720));
-		margin-bottom: 0.25rem;
-	}
-
-	:global(.calendar-activity__hero .ui-hero__eyebrow),
-	:global(.calendar-activity__hero .ui-hero__title),
-	:global(.calendar-activity__hero .ui-hero__subtitle) {
-		text-align: center;
-		margin-inline: auto;
-	}
-
-	:global(.calendar-activity__title) {
-		text-wrap: balance;
-	}
-
-	:global(.calendar-activity__subtitle) {
-		text-wrap: pretty;
-	}
-
 	.calendar-activity__service-note {
 		margin: -0.4rem auto 1.2rem;
 		max-width: 42rem;

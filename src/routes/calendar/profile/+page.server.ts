@@ -1,5 +1,5 @@
 import { buildEnv } from '../../api/calendar/_bridge.ts'
-import { getCalendarProfile, listUpcomingEvents } from '$lib/server/calendar-social'
+import { getCalendarProfile, listUpcomingEvents } from '@packages/calendar/src/services/social.ts'
 
 export async function load({ platform, locals }: { platform: App.Platform; locals: { user?: { id?: string | number } } }) {
 	const rawUserId = locals.user?.id

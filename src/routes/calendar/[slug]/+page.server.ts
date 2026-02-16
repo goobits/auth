@@ -1,8 +1,8 @@
 import { error } from '@sveltejs/kit'
 import { buildEnv } from '../../api/calendar/_bridge.ts'
-import { getCalendarProgramBySlug } from '$lib/server/calendar-programs'
-import { listEventsFeed } from '$lib/server/calendar-social'
-import { buildPaymentLink } from '$lib/server/calendar-pay'
+import { getCalendarProgramBySlug } from '@packages/calendar/src/services/programs.ts'
+import { listEventsFeed } from '@packages/calendar/src/services/social.ts'
+import { buildPaymentLink } from '@packages/calendar/src/services/pay.ts'
 
 export async function load({
 	platform,

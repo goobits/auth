@@ -1,7 +1,7 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../_bridge.ts'
-import { joinEvent } from '$lib/server/calendar-social'
-import { enqueueCalendarSyncJob, processCalendarSyncQueue } from '$lib/server/calendar-sync-queue'
+import { joinEvent } from '@packages/calendar/src/services/social.ts'
+import { enqueueCalendarSyncJob, processCalendarSyncQueue } from '@packages/calendar/src/services/sync-queue.ts'
 import { getCalendarUserId, noStoreHeaders, unauthorizedCalendar } from '../../../_auth.ts'
 
 export async function POST(event: RequestEvent) {

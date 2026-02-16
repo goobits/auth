@@ -2,7 +2,7 @@ import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
 import { ensureValidGoogleToken, getConnection, saveConnection } from '../../../../../packages/calendar/src/index.ts'
 import { getTokenKey } from '../../../../../functions/api/calendar/_helpers.ts'
-import { getCalendarSyncQueueHealth } from '$lib/server/calendar-sync-queue'
+import { getCalendarSyncQueueHealth } from '@packages/calendar/src/services/sync-queue.ts'
 import { requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
 
 export async function GET(event: RequestEvent) {

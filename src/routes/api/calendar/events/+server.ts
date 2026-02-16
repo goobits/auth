@@ -1,7 +1,7 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../_bridge.ts'
-import { listEventsFeed } from '$lib/server/calendar-social'
-import { buildPaymentLink } from '$lib/server/calendar-pay'
+import { listEventsFeed } from '@packages/calendar/src/services/social.ts'
+import { buildPaymentLink } from '@packages/calendar/src/services/pay.ts'
 import { getCalendarUserId, noStoreHeaders, unauthorizedCalendar } from '../_auth.ts'
 
 export async function GET(event: RequestEvent) {

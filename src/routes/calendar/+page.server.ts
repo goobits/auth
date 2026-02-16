@@ -1,7 +1,7 @@
 import { buildEnv } from '../api/calendar/_bridge.ts'
-import { getEnabledCalendarPrograms } from '$lib/server/calendar-programs'
-import { listEventsFeed } from '$lib/server/calendar-social'
-import { buildPaymentLink } from '$lib/server/calendar-pay'
+import { getEnabledCalendarPrograms } from '@packages/calendar/src/services/programs.ts'
+import { listEventsFeed } from '@packages/calendar/src/services/social.ts'
+import { buildPaymentLink } from '@packages/calendar/src/services/pay.ts'
 
 export async function load({ platform, locals, url }: { platform: App.Platform; locals: { user?: { id?: string | number } }; url: URL }) {
 	const env = await buildEnv(platform)

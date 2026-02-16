@@ -1,6 +1,6 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../calendar/_bridge.ts'
-import { setAttendanceStatus, updateEventCapacity, updateEventMemory } from '$lib/server/calendar-social'
+import { setAttendanceStatus, updateEventCapacity, updateEventMemory } from '@packages/calendar/src/services/social.ts'
 import { enforceSameOrigin, logAdminEvent, noStoreHeaders, requireAdminSession, unauthorized } from '../../_helpers.ts'
 
 export async function POST(event: RequestEvent) {

@@ -1,6 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../_bridge.ts'
-import { listUpcomingEvents } from '$lib/server/calendar-social'
+import { listUpcomingEvents } from '@packages/calendar/src/services/social.ts'
 import { getCalendarUserId } from '../_auth.ts'
 
 function escapeIcsText(value: string) {

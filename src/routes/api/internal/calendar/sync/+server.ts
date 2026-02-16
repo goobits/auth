@@ -1,6 +1,6 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../calendar/_bridge.ts'
-import { processCalendarSyncQueue } from '$lib/server/calendar-sync-queue'
+import { processCalendarSyncQueue } from '@packages/calendar/src/services/sync-queue.ts'
 
 function unauthorized() {
 	return json({ ok: false, error: { message: 'Unauthorized' } }, { status: 401 })

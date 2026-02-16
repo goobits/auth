@@ -1,4 +1,4 @@
-import { CALENDAR_ACTIVITY_LIST, type CalendarActivityConfig } from '$lib/booking/activities'
+import { CALENDAR_ACTIVITY_LIST, type CalendarActivityConfig } from '@packages/calendar/src/social/activities.ts'
 import type { CalendarProviderName } from '$lib/auth/ui/providers'
 
 export function resolveCalendarLoginTargetActivity(path: string): CalendarActivityConfig | null {
