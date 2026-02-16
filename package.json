@@ -9,6 +9,7 @@
 		"preview": "vite preview",
 		"cf:dev": "pnpm build && wrangler pages dev .svelte-kit/cloudflare --ip 0.0.0.0 --port 3580",
 		"cf:deploy": "pnpm build && wrangler pages deploy .svelte-kit/cloudflare",
+		"cf:check": "./scripts/predeploy-check.sh",
 		"db:migrate:local": "wrangler d1 migrations apply DB --local",
 		"db:migrate:remote": "wrangler d1 migrations apply DB --remote",
 		"prepare": "svelte-kit sync || echo ''",

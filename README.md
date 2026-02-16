@@ -21,6 +21,7 @@ pnpm db:migrate:local
 - `pnpm preview` - preview production build
 - `pnpm cf:dev` - Cloudflare Pages local runtime (`http://127.0.0.1:3580`)
 - `pnpm cf:deploy` - build + deploy to Cloudflare Pages
+- `pnpm cf:check` - predeploy checks (auth, D1 IDs, validate, build output)
 - `pnpm db:migrate:local` - apply D1 migrations to local DB
 - `pnpm db:migrate:remote` - apply D1 migrations to remote DB
 - `pnpm lint` - ESLint (strict)
@@ -49,6 +50,12 @@ pnpm db:migrate:local
 - Build command: `pnpm install --frozen-lockfile && pnpm build`
 - Build output directory: `.svelte-kit/cloudflare`
 - Root directory: `/` (repo root)
+
+## Production deploy checklist
+
+1. `pnpm cf:check`
+2. `pnpm db:migrate:remote`
+3. `pnpm cf:deploy`
 
 ## Project layout
 
