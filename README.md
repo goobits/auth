@@ -5,10 +5,10 @@ Personal website and social calendar system built with SvelteKit 5, deployed to 
 ## ✨ Key Features
 
 - **📅 Social Calendar** - Event feed, join/waitlist flows, +1 support, and Google Calendar integration
-- **🔐 Authentication** - OAuth (Google, Apple), passkeys, MFA, and local credentials via `@goobits/auth`
+- **🔐 Authentication** - OAuth (Google, Apple) + credentials-based registration via `@goobits/auth`
 - **🛡️ Admin Dashboard** - Session-based admin access for managing events, programs, and settings
 - **🌐 Cloudflare D1** - Serverless SQLite with automatic migrations in development
-- **🎭 Theme System** - Dark mode support with cookie-based persistence
+- **🎭 Theme System** - Default, dark, and magic theme modes
 - **📝 Journal** - Markdown-powered blog with mdsvex
 
 ## 🚀 Quick Start
@@ -41,16 +41,16 @@ Event participation is written first; Google sync runs asynchronously via a retr
 
 ### @goobits/auth
 
-Pluggable authentication for SvelteKit — OAuth 2.0 (PKCE), Argon2id password hashing, rolling sessions, token encryption (AES-256-GCM), rate limiting, magic links, and passkeys.
+Auth library used by this repo for OAuth + sessions (shared by `/calendar`, `/admin`, and `/register`).
 
 ```bash
 # Auth package has its own test suite
-	cd repos/auth
-	pnpm test           # Unit tests (vitest)
-	pnpm test:watch     # Watch mode
-	pnpm test:ui        # Vitest UI
-	pnpm check:types    # TypeScript validation
-	```
+cd repos/auth
+pnpm test           # Unit tests (vitest)
+pnpm test:watch     # Watch mode
+pnpm test:ui        # Vitest UI
+pnpm check:types    # TypeScript validation
+```
 
 ## ⚙️ Configuration
 
@@ -61,11 +61,12 @@ Defined in `svelte.config.js`:
 | Alias | Path |
 |---|---|
 | `@components` | `./src/components` |
+| `@config` | `./src/config` |
 | `@lib` | `./src/lib` |
+| `@media` | `./src/media` |
 | `@src` | `./src` |
 | `@routes` | `./src/routes` |
 | `@packages` | `./packages` |
-| `@config` | `./src/config` |
 | `@static` | `./static` |
 
 ### Database
@@ -105,9 +106,10 @@ All env files live in `config/env/` and are encrypted at rest with [dotenvx](htt
 
 | File | Purpose |
 |---|---|
-| `.env.example` | Template with all variables and setup hints — copy to `.env` |
-| `.env` | Local dev values (encrypted, decryption key in `.env.keys`) |
-| `.env.production` | Production values pushed to Cloudflare secrets |
+| `config/env/.env.example` | Template with all variables and setup hints |
+| `config/env/.env` | Local dev values (encrypted) |
+| `config/env/.env.keys` | Private decryption key (never commit) |
+| `config/env/.env.production` | Production values pushed to Cloudflare secrets |
 
 ```bash
 # Decrypt for editing
@@ -119,8 +121,6 @@ pnpm exec dotenvx encrypt -f config/env/.env
 # Push production secrets to Cloudflare
 pnpm deploy:secrets
 ```
-
-> `.env.keys` holds the private decryption key — never commit it (already in `.gitignore`).
 
 For async calendar sync processing in production, run `pnpm calendar:sync` on a schedule
 (cron/worker) using `CALENDAR_SYNC_CRON_SECRET` and `PUBLIC_BASE_URL`.
