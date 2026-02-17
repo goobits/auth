@@ -5,9 +5,9 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build",
+		"build": "pnpm --filter @goobits/auth build && vite build",
 		"preview": "vite preview",
-		"cf:dev": "pnpm build && wrangler pages dev .svelte-kit/cloudflare --ip 0.0.0.0 --port 3580",
+		"cf:dev": "pnpm build && NODE_ENV=production wrangler pages dev .svelte-kit/cloudflare --ip 0.0.0.0 --port 3580",
 		"cf:deploy": "pnpm build && wrangler pages deploy .svelte-kit/cloudflare",
 		"cf:check": "./scripts/predeploy-check.sh",
 		"db:migrate:local": "wrangler d1 migrations apply DB --local",
@@ -46,6 +46,7 @@
 		"wrangler": "^4.65.0"
 	},
 	"dependencies": {
+		"@goobits/auth": "workspace:*",
 		"lucide-svelte": "^0.564.0"
 	}
 }

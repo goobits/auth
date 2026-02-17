@@ -11,8 +11,11 @@ export default tseslint.config(
 			'build/**',
 			'dist/**',
 			'coverage/**',
+			'scripts/e2e-server.mjs',
 			'playwright-report/**',
 			'test-results/**',
+			'auth/**',
+			'packages/**',
 			'node_modules/**'
 		]
 	},
@@ -34,6 +37,7 @@ export default tseslint.config(
 						'svelte.config.js',
 						'playwright.config.ts',
 						'vitest.config.ts',
+						'scripts/e2e-server.mjs',
 						'__tests__/unit/*.ts',
 						'__tests__/e2e/*.ts'
 					]

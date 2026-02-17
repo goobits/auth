@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { env } from '$env/dynamic/public';
 
-	let { action } = $props<{ action: 'join' | 'volunteer' | 'remind' }>();
+	let { action } = $props<{ action: 'join' | 'volunteer' | 'remind' | 'auth-signup' | 'auth-signin' }>();
 </script>
 
 {#if env.PUBLIC_TURNSTILE_SITE_KEY}

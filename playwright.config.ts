@@ -4,7 +4,10 @@ const baseURL = 'http://127.0.0.1:3580';
 
 export default defineConfig({
 	testDir: '__tests__/e2e',
-	fullyParallel: true,
+	// Local D1 (SQLite) used by `wrangler pages dev` can throw transient 500s under
+	// high parallelism (DB busy/locked). Keep E2E stable and deterministic.
+	fullyParallel: false,
+	workers: 1,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
 	reporter: [['list'], ['html', { open: 'never' }]],
@@ -13,10 +16,9 @@ export default defineConfig({
 		trace: 'retain-on-failure'
 	},
 	webServer: {
-		command:
-			'pnpm db:migrate:local && pnpm build && wrangler pages dev .svelte-kit/cloudflare --ip 0.0.0.0 --port 3580 --env-file .env.test',
+		command: 'node scripts/e2e-server.mjs',
 		url: baseURL,
-		reuseExistingServer: true,
+		reuseExistingServer: false,
 		timeout: 180_000
 	},
 	projects: [

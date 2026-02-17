@@ -19,7 +19,11 @@ export type ReminderSubmission = {
 };
 
 export type D1PreparedStatement = {
-	bind: (...values: unknown[]) => { run: () => Promise<unknown> };
+	bind: (...values: unknown[]) => {
+		run: () => Promise<unknown>;
+		first: () => Promise<Record<string, unknown> | null>;
+		all: () => Promise<{ results?: Record<string, unknown>[] }>;
+	};
 };
 
 export type D1DatabaseLike = {

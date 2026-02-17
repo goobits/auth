@@ -35,7 +35,7 @@ async function verifyToken(secret: string, token: string, ip: string | null): Pr
 export async function assertTurnstile(
 	request: Request,
 	form: FormData,
-	expectedAction: 'join' | 'volunteer' | 'remind',
+	expectedAction: 'join' | 'volunteer' | 'remind' | 'auth-signup' | 'auth-signin',
 	runtimeEnv?: TurnstileEnv
 ): Promise<void> {
 	const host = new URL(request.url).hostname;
