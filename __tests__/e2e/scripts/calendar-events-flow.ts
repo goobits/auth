@@ -74,6 +74,10 @@ export async function runCalendarEventsFlow() {
 	const page = await context.newPage()
 
 	try {
+		await context.request.post(`${BASE_URL}/api/test/calendar-cleanup`, {
+			headers: { authorization: `Bearer ${passcode}` }
+		})
+
 		await page.goto(ADMIN_URL, { waitUntil: 'domcontentloaded', timeout: 30000 })
 
 		const alreadyAuthed = (await page.locator('.admin-page__sidebar').count()) > 0
@@ -206,6 +210,9 @@ export async function runCalendarEventsFlow() {
 
 		console.log('[calendar-events-flow] PASS')
 	} finally {
+		await context.request.post(`${BASE_URL}/api/test/calendar-cleanup`, {
+			headers: { authorization: `Bearer ${passcode}` }
+		}).catch(() => null)
 		await context.close()
 		await contextB.close()
 		await browser.close()
