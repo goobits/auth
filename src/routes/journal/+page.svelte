@@ -128,10 +128,6 @@
 </PageShell>
 
 <style>
-	.journal-page__inner {
-		padding-inline: 1.5rem;
-	}
-
 	.journal-page__toolbar {
 		display: flex;
 		align-items: center;

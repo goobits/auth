@@ -127,10 +127,6 @@
 </PageShell>
 
 <style>
-	.labs-page__inner {
-		padding-inline: 1.5rem;
-	}
-
 	.labs-page__toolbar {
 		display: flex;
 		align-items: center;
