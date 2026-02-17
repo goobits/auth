@@ -4,8 +4,8 @@ SvelteKit site for PDX Dino Run, deployed on Cloudflare Pages with D1-backed for
 
 ## Requirements
 
-- Node.js 22+
-- pnpm 10+
+- Node.js (see `package.json#engines`)
+- pnpm (see `package.json#packageManager`)
 
 ## Setup
 
