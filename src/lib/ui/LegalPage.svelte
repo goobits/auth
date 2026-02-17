@@ -26,7 +26,7 @@
 </script>
 
 <PageShell className={`legal__shell ${className}`.trim()}>
-	<div class="legal__hero-shell" style="min-height: clamp(14rem, 26vw, 21.75rem);">
+	<div class="legal__hero-shell" style="min-height: clamp(24rem, 40vw, 30rem);">
 		<Hero eyebrow="Legal" title={title} subtitle={subtitle} icon={icon} />
 	</div>
 

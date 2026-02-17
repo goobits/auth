@@ -1,8 +1,9 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
+import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
 import { deleteCalendarProgram, getCalendarPrograms, upsertCalendarProgram } from '@packages/calendar/src/services/programs.ts'
 import { parseAdminProgramMutationInput, TransportValidationError } from '@packages/calendar/src/index.ts'
-import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
+import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized } from '../_helpers.ts'
+import { apiError, apiOk, apiValidationError, logApiError } from '$lib/server/http/api'
 
 export async function GET(event: RequestEvent) {
 	try {
@@ -13,10 +14,10 @@ export async function GET(event: RequestEvent) {
 		}
 
 		const programs = await getCalendarPrograms(env.DB)
-		return json({ ok: true, programs }, { headers: noStoreHeaders })
+		return apiOk({ programs })
 	} catch (err) {
-		console.error('Admin programs load error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('admin.programs.list', err)
+		return apiError('Internal server error')
 	}
 }
 
@@ -37,7 +38,7 @@ export async function POST(event: RequestEvent) {
 			const slug = input.slug
 			await deleteCalendarProgram(env.DB, slug)
 			logAdminEvent(event, 'program_delete', { slug })
-			return json({ ok: true }, { headers: noStoreHeaders })
+			return apiOk({})
 		}
 
 		if (input.action === 'toggle') {
@@ -45,7 +46,7 @@ export async function POST(event: RequestEvent) {
 			const existing = await getCalendarPrograms(env.DB)
 			const target = existing.find((program) => program.slug === slug)
 			if (!target) {
-				return json({ ok: false, error: { message: 'Program not found' } }, { status: 404, headers: noStoreHeaders })
+				return apiError('Program not found', { status: 404 })
 			}
 			await upsertCalendarProgram(env.DB, {
 				slug: target.slug,
@@ -66,7 +67,7 @@ export async function POST(event: RequestEvent) {
 				sortOrder: target.sortOrder
 			})
 			logAdminEvent(event, 'program_toggle', { slug, enabled: input.enabled })
-			return json({ ok: true }, { headers: noStoreHeaders })
+			return apiOk({})
 		}
 
 		const program = input.program
@@ -75,12 +76,12 @@ export async function POST(event: RequestEvent) {
 			...program
 		})
 		logAdminEvent(event, 'program_upsert', { slug: program.slug, enabled: program.enabled })
-		return json({ ok: true }, { headers: noStoreHeaders })
+		return apiOk({})
 	} catch (err) {
 		if (err instanceof TransportValidationError) {
-			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
+			return apiValidationError(err)
 		}
-		console.error('Admin programs update error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('admin.programs.mutate', err)
+		return apiError('Internal server error')
 	}
 }

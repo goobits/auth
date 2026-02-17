@@ -1,9 +1,10 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
+import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
 import { ensureValidGoogleToken, getConnection, saveConnection } from '../../../../../packages/calendar/src/index.ts'
 import { requireEnv } from '@packages/calendar/src/config/env.ts'
 import { getCalendarSyncQueueHealth } from '@packages/calendar/src/services/sync-queue.ts'
-import { requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
+import { requireAdminSession, unauthorized } from '../_helpers.ts'
+import { apiError, apiOk, logApiError } from '$lib/server/http/api'
 
 export async function GET(event: RequestEvent) {
 	try {
@@ -65,8 +66,7 @@ export async function GET(event: RequestEvent) {
 		}
 		const syncQueue = await getCalendarSyncQueueHealth(db)
 
-		return json({
-			ok: true,
+		return apiOk({
 			google: {
 				connected,
 				expired,
@@ -75,9 +75,9 @@ export async function GET(event: RequestEvent) {
 			},
 			syncQueue,
 			rules
-		}, { headers: noStoreHeaders })
+		})
 	} catch (err) {
-		console.error('Admin status error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('admin.status', err)
+		return apiError('Internal server error')
 	}
 }

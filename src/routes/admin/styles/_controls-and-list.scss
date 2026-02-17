@@ -30,6 +30,10 @@
 	margin: 1rem 0 1rem;
 }
 
+.admin-page__fields-grid--memory {
+	margin-top: 0.6rem;
+}
+
 .admin-page__fields-row {
 	display: flex;
 	gap: 1rem;
@@ -144,6 +148,10 @@
 	width: 5rem;
 }
 
+.admin-page__input--capacity {
+	width: 5rem;
+}
+
 // Bookings list
 .admin-page__bookings-list {
 	display: grid;
@@ -242,6 +250,10 @@
 
 .admin-page__members-main {
 	min-width: 0;
+}
+
+.admin-page__members-main--full {
+	width: 100%;
 }
 
 .admin-page__members-code-row {

@@ -1,9 +1,10 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
+import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../_bridge.ts'
 import { joinEvent } from '@packages/calendar/src/services/social.ts'
 import { enqueueCalendarSyncJob, processCalendarSyncQueue } from '@packages/calendar/src/services/sync-queue.ts'
 import { parseCalendarJoinEventInput, TransportValidationError } from '@packages/calendar/src/index.ts'
-import { getCalendarUserId, noStoreHeaders, unauthorizedCalendar } from '../../../_auth.ts'
+import { getCalendarUserId, unauthorizedCalendar } from '../../../_auth.ts'
+import { apiError, apiOk, apiValidationError, logApiError } from '$lib/server/http/api'
 
 export async function POST(event: RequestEvent) {
 	try {
@@ -12,11 +13,11 @@ export async function POST(event: RequestEvent) {
 
 		const eventParam = event.params['id']
 		if (!eventParam) {
-			return json({ ok: false, error: { message: 'Missing event id' } }, { status: 400, headers: noStoreHeaders })
+			return apiError('Missing event id', { status: 400 })
 		}
 		const eventId = Number.parseInt(eventParam, 10)
 		if (!Number.isFinite(eventId) || eventId <= 0) {
-			return json({ ok: false, error: { message: 'Invalid event id' } }, { status: 400, headers: noStoreHeaders })
+			return apiError('Invalid event id', { status: 400 })
 		}
 
 		const input = parseCalendarJoinEventInput(await event.request.json().catch(() => null))
@@ -44,14 +45,14 @@ export async function POST(event: RequestEvent) {
 		}
 
 		if (!result.ok) {
-			return json({ ok: false, error: { message: result.message, code: result.code } }, { status: 404, headers: noStoreHeaders })
+			return apiError(result.message, { status: 404, code: result.code })
 		}
-		return json({ ok: true, status: result.status, state: result.state }, { headers: noStoreHeaders })
+		return apiOk({ status: result.status, state: result.state })
 	} catch (err) {
 		if (err instanceof TransportValidationError) {
-			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
+			return apiValidationError(err)
 		}
-		console.error('Calendar join event error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('calendar.events.join', err)
+		return apiError('Internal server error')
 	}
 }

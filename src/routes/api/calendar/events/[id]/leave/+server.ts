@@ -1,8 +1,9 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
+import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../_bridge.ts'
 import { leaveEvent } from '@packages/calendar/src/services/social.ts'
 import { enqueueCalendarSyncJob, processCalendarSyncQueue } from '@packages/calendar/src/services/sync-queue.ts'
-import { getCalendarUserId, noStoreHeaders, unauthorizedCalendar } from '../../../_auth.ts'
+import { getCalendarUserId, unauthorizedCalendar } from '../../../_auth.ts'
+import { apiError, apiOk, logApiError } from '$lib/server/http/api'
 
 export async function POST(event: RequestEvent) {
 	try {
@@ -11,11 +12,11 @@ export async function POST(event: RequestEvent) {
 
 		const eventParam = event.params['id']
 		if (!eventParam) {
-			return json({ ok: false, error: { message: 'Missing event id' } }, { status: 400, headers: noStoreHeaders })
+			return apiError('Missing event id', { status: 400 })
 		}
 		const eventId = Number.parseInt(eventParam, 10)
 		if (!Number.isFinite(eventId) || eventId <= 0) {
-			return json({ ok: false, error: { message: 'Invalid event id' } }, { status: 400, headers: noStoreHeaders })
+			return apiError('Invalid event id', { status: 400 })
 		}
 
 		const env = await buildEnv(event.platform)
@@ -33,9 +34,9 @@ export async function POST(event: RequestEvent) {
 		} catch (error) {
 			console.warn('Failed to enqueue calendar sync after leave:', error)
 		}
-		return json({ ok: true, state: result.state }, { headers: noStoreHeaders })
+		return apiOk({ state: result.state })
 	} catch (err) {
-		console.error('Calendar leave event error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('calendar.events.leave', err)
+		return apiError('Internal server error')
 	}
 }

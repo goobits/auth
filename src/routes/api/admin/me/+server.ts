@@ -1,5 +1,5 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
-import { noStoreHeaders } from '../_helpers.ts'
+import type { RequestEvent } from '@sveltejs/kit'
+import { apiOk } from '$lib/server/http/api'
 
 export async function GET(event: RequestEvent) {
 	const locals = event.locals as {
@@ -10,16 +10,15 @@ export async function GET(event: RequestEvent) {
 	const authenticated = !!(locals.session && locals.user)
 
 	if (!authenticated) {
-		return json({ ok: true, authenticated: false }, { headers: noStoreHeaders })
+		return apiOk({ authenticated: false })
 	}
 
-	return json({
-		ok: true,
+	return apiOk({
 		authenticated: true,
 		user: {
 			id: locals.user?.id || null,
 			email: locals.user?.email || null,
 			name: locals.user?.name || null
 		}
-	}, { headers: noStoreHeaders })
+	})
 }

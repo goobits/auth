@@ -55,10 +55,10 @@
 
 	<section class="calendar-page__section calendar-home__section">
 		<div class="calendar-home__event-card">
-			<div class="calendar-home__event-meta" style="width: 100%">
+			<div class="calendar-home__event-meta calendar-profile__event-meta">
 				<h3>Safety + logistics</h3>
 				<p>Only admins can see this information.</p>
-				<div class="admin-page__fields-grid" style="margin-top: 0.9rem">
+				<div class="admin-page__fields-grid calendar-profile__fields-grid">
 					<div class="admin-page__field">
 						<label class="admin-page__field-label" for="profile-emergency-contact">Emergency contact</label>
 						<input id="profile-emergency-contact" class="admin-page__input" type="text" bind:value={emergencyContact} />
@@ -72,7 +72,7 @@
 						<input id="profile-chat-handle" class="admin-page__input" type="text" bind:value={chatHandle} />
 					</div>
 				</div>
-				<div style="display:flex; gap:0.75rem; align-items:center; margin-top:0.7rem">
+				<div class="calendar-profile__actions">
 					<PillButton className="calendar-page__primary-button" variant="primary" size="lg" onClick={save} disabled={saving}>
 						{saving ? 'Saving...' : 'Save profile'}
 					</PillButton>
@@ -112,3 +112,20 @@
 		{/if}
 	</section>
 </div>
+
+<style>
+	.calendar-profile__event-meta {
+		width: 100%;
+	}
+
+	.calendar-profile__fields-grid {
+		margin-top: 0.9rem;
+	}
+
+	.calendar-profile__actions {
+		display: flex;
+		gap: 0.75rem;
+		align-items: center;
+		margin-top: 0.7rem;
+	}
+</style>

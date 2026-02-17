@@ -1,7 +1,8 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
+import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../_bridge.ts'
 import { createOauthState, getGoogleAuthUrl } from '@packages/calendar/src/index.ts'
-import { enforceSameOrigin, noStoreHeaders, requireAdminSession, unauthorized } from '../../admin/_helpers.ts'
+import { enforceSameOrigin, requireAdminSession, unauthorized } from '../../admin/_helpers.ts'
+import { apiError, apiOk, logApiError } from '$lib/server/http/api'
 
 export async function GET(event: RequestEvent) {
 	try {
@@ -16,9 +17,9 @@ export async function GET(event: RequestEvent) {
 		await createOauthState({ db: env.DB, state })
 		const authUrl = getGoogleAuthUrl({ env, state })
 
-		return json({ ok: true, authUrl }, { headers: noStoreHeaders })
+		return apiOk({ authUrl })
 	} catch (err) {
-		console.error('OAuth start error:', err)
-		return json({ ok: false, error: { message: 'Failed to start OAuth' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('calendar.oauth.start', err)
+		return apiError('Failed to start OAuth')
 	}
 }

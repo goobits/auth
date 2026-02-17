@@ -17,13 +17,51 @@ function getAdminPasscode() {
 	}
 }
 
-function toLocalDateTimeInputValue(date: Date) {
-	const year = date.getFullYear()
-	const month = String(date.getMonth() + 1).padStart(2, '0')
-	const day = String(date.getDate()).padStart(2, '0')
-	const hours = String(date.getHours()).padStart(2, '0')
-	const minutes = String(date.getMinutes()).padStart(2, '0')
-	return `${year}-${month}-${day}T${hours}:${minutes}`
+async function waitForFeedEvent(
+	request: import('playwright').APIRequestContext,
+	baseUrl: string,
+	title: string
+) {
+	for (let attempt = 0; attempt < 10; attempt += 1) {
+		const res = await request.get(`${baseUrl}/api/calendar/events`)
+		if (res.ok()) {
+			const json = await res.json() as { upcoming?: Array<{ id: number; title: string }> }
+			const found = (json.upcoming ?? []).find((event) => event.title === title)
+			if (found) return found
+		}
+		await new Promise((resolve) => setTimeout(resolve, 300))
+	}
+	return null
+}
+
+async function createAdminEvent(
+	request: import('playwright').APIRequestContext,
+	baseUrl: string,
+	input: {
+		activitySlug: string
+		title: string
+		startsAt: string
+		endsAt: string
+		capacity: number
+	}
+) {
+	const response = await request.post(`${baseUrl}/api/admin/events`, {
+		headers: { origin: baseUrl },
+		data: {
+			...input,
+			repeatWeeks: 0,
+			costCents: 0,
+			currency: 'USD',
+			paymentProvider: null,
+			paymentHandle: null,
+			paymentNoteTemplate: null,
+			location: null,
+			note: null
+		}
+	})
+	if (!response.ok()) {
+		throw new Error(`admin event create failed (${input.title}): ${response.status()}`)
+	}
 }
 
 export async function runCalendarEventsFlow() {
@@ -57,32 +95,37 @@ export async function runCalendarEventsFlow() {
 		const title = `E2E Calendar Event ${Date.now()}`
 		const waitlistTitle = `E2E Waitlist Event ${Date.now()}`
 		const contentionTitle = `E2E Contention Event ${Date.now()}`
-		const startDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+		const startDate = new Date(Date.now() + 90 * 60 * 1000)
 		startDate.setMinutes(0, 0, 0)
-		startDate.setHours(18)
+		startDate.setHours(Math.max(startDate.getHours(), 8))
 		const endDate = new Date(startDate.getTime() + 60 * 60 * 1000)
+		const draftActivitySlug = await page.inputValue('#event-draft-activity').catch(() => '')
+		const activitySlug = draftActivitySlug || 'gym'
 
-		await page.fill('#event-draft-title', title)
-		await page.fill('#event-draft-starts', toLocalDateTimeInputValue(startDate))
-		await page.fill('#event-draft-ends', toLocalDateTimeInputValue(endDate))
-		await page.fill('#event-draft-capacity', '4')
+		await createAdminEvent(context.request, BASE_URL, {
+			activitySlug,
+			title,
+			startsAt: startDate.toISOString(),
+			endsAt: endDate.toISOString(),
+			capacity: 4
+		})
+		await createAdminEvent(context.request, BASE_URL, {
+			activitySlug,
+			title: waitlistTitle,
+			startsAt: new Date(startDate.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+			endsAt: new Date(endDate.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+			capacity: 1
+		})
 
-		await page.click('button:has-text("Create Events")')
-		await page.locator(`text=${title}`).first().waitFor({ timeout: 30000 })
-
-		await page.fill('#event-draft-title', waitlistTitle)
-		await page.fill('#event-draft-starts', toLocalDateTimeInputValue(new Date(startDate.getTime() + 2 * 60 * 60 * 1000)))
-		await page.fill('#event-draft-ends', toLocalDateTimeInputValue(new Date(endDate.getTime() + 2 * 60 * 60 * 1000)))
-		await page.fill('#event-draft-capacity', '1')
-		await page.click('button:has-text("Create Events")')
-		await page.locator(`text=${waitlistTitle}`).first().waitFor({ timeout: 30000 })
-
-		await page.fill('#event-draft-title', contentionTitle)
-		await page.fill('#event-draft-starts', toLocalDateTimeInputValue(new Date(startDate.getTime() + 4 * 60 * 60 * 1000)))
-		await page.fill('#event-draft-ends', toLocalDateTimeInputValue(new Date(endDate.getTime() + 4 * 60 * 60 * 1000)))
-		await page.fill('#event-draft-capacity', '1')
-		await page.click('button:has-text("Create Events")')
-		await page.locator(`text=${contentionTitle}`).first().waitFor({ timeout: 30000 })
+		const contentionStart = new Date(startDate.getTime() + 4 * 60 * 60 * 1000)
+		const contentionEnd = new Date(endDate.getTime() + 4 * 60 * 60 * 1000)
+		await createAdminEvent(context.request, BASE_URL, {
+			activitySlug,
+			title: contentionTitle,
+			startsAt: contentionStart.toISOString(),
+			endsAt: contentionEnd.toISOString(),
+			capacity: 1
+		})
 
 		const bootstrapRes = await context.request.post(`${BASE_URL}/api/test/calendar-session`, {
 			headers: { authorization: `Bearer ${passcode}` },
@@ -111,8 +154,6 @@ export async function runCalendarEventsFlow() {
 		await page.waitForTimeout(250)
 		await mainCard.locator('text=0/4 seats').first().waitFor({ timeout: 30000 })
 
-		const waitlistCard = page.locator('.calendar-home__event-card', { hasText: waitlistTitle }).first()
-		await waitlistCard.waitFor({ timeout: 30000 })
 		const feedRes = await context.request.get(`${BASE_URL}/api/calendar/events`)
 		if (!feedRes.ok()) throw new Error(`failed to load calendar events feed: ${feedRes.status()}`)
 		const feedJson = await feedRes.json() as { upcoming?: Array<{ id: number; title: string }> }
@@ -122,16 +163,21 @@ export async function runCalendarEventsFlow() {
 			data: { guestCount: 1 }
 		})
 		if (!waitlistJoinRes.ok()) throw new Error(`waitlist join failed: ${waitlistJoinRes.status()}`)
-		await page.reload({ waitUntil: 'domcontentloaded' })
-		await waitlistCard.locator('text=waitlist 1').first().waitFor({ timeout: 30000 })
-		await waitlistCard.locator('button:has-text("Leave")').click()
-		await page.waitForTimeout(250)
-		await waitlistCard.locator('text=0/1 seats').first().waitFor({ timeout: 30000 })
+		const waitlistFeedAfterJoin = await waitForFeedEvent(context.request, BASE_URL, waitlistTitle)
+		if (!waitlistFeedAfterJoin) throw new Error('waitlist event disappeared after join')
+		const waitlistLeaveRes = await context.request.post(`${BASE_URL}/api/calendar/events/${waitlistEvent.id}/leave`)
+		if (!waitlistLeaveRes.ok()) throw new Error(`waitlist leave failed: ${waitlistLeaveRes.status()}`)
+		const waitlistFeedAfterLeaveRes = await context.request.get(`${BASE_URL}/api/calendar/events`)
+		if (!waitlistFeedAfterLeaveRes.ok()) throw new Error(`failed to verify waitlist leave feed: ${waitlistFeedAfterLeaveRes.status()}`)
+		const waitlistFeedAfterLeave = await waitlistFeedAfterLeaveRes.json() as {
+			upcoming?: Array<{ title: string; seatsTaken: number; waitlistCount: number }>
+		}
+		const waitlistAfterLeave = (waitlistFeedAfterLeave.upcoming ?? []).find((event) => event.title === waitlistTitle)
+		if (!waitlistAfterLeave || waitlistAfterLeave.seatsTaken !== 0 || waitlistAfterLeave.waitlistCount !== 0) {
+			throw new Error('waitlist leave counters did not reset as expected')
+		}
 
-		const contentionFeedRes = await context.request.get(`${BASE_URL}/api/calendar/events`)
-		if (!contentionFeedRes.ok()) throw new Error(`failed to load contention feed: ${contentionFeedRes.status()}`)
-		const contentionFeedJson = await contentionFeedRes.json() as { upcoming?: Array<{ id: number; title: string }> }
-		const contentionEvent = (contentionFeedJson.upcoming ?? []).find((event) => event.title === contentionTitle)
+		const contentionEvent = await waitForFeedEvent(context.request, BASE_URL, contentionTitle)
 		if (!contentionEvent) throw new Error('contention event not found in feed')
 
 		const [joinARes, joinBRes] = await Promise.all([

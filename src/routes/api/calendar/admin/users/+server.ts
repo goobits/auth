@@ -1,7 +1,8 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
-import { requireAdminSession, unauthorized, noStoreHeaders } from '../../../admin/_helpers.ts'
+import type { RequestEvent } from '@sveltejs/kit'
+import { requireAdminSession, unauthorized } from '../../../admin/_helpers.ts'
 import { getAdminAuth } from '$lib/auth/admin.ts'
 import { listCalendarUsers } from '@packages/calendar/src/storage/d1.ts'
+import { apiError, apiOk, logApiError } from '$lib/server/http/api'
 
 export async function GET(event: RequestEvent) {
 	try {
@@ -20,9 +21,9 @@ export async function GET(event: RequestEvent) {
 			last_login_at: user.last_login_at,
 			provider: user.provider
 		}))
-		return json({ ok: true, users: sanitized }, { headers: noStoreHeaders })
+		return apiOk({ users: sanitized })
 	} catch (err) {
-		console.error('Admin users error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('admin.users.list', err)
+		return apiError('Internal server error')
 	}
 }

@@ -1,6 +1,6 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
+import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
-import { enforceSameOrigin, noStoreHeaders, requireAdminSession, unauthorized } from '../_helpers.ts'
+import { enforceSameOrigin, requireAdminSession, unauthorized } from '../_helpers.ts'
 import {
 	parseAdminSyncQueueActionInput,
 	processCalendarSyncQueue,
@@ -8,6 +8,7 @@ import {
 	retryCalendarSyncDeadLetters,
 	TransportValidationError
 } from '@packages/calendar/src/index.ts'
+import { apiError, apiOk, apiValidationError, logApiError } from '$lib/server/http/api'
 
 export async function POST(event: RequestEvent) {
 	try {
@@ -21,19 +22,19 @@ export async function POST(event: RequestEvent) {
 		const input = parseAdminSyncQueueActionInput(await event.request.json().catch(() => null))
 		if (input.action === 'retry_dead_letters') {
 			const result = await retryCalendarSyncDeadLetters(env.DB, input.limit)
-			return json({ ok: true, action: input.action, ...result }, { headers: noStoreHeaders })
+			return apiOk({ action: input.action, ...result })
 		}
 		if (input.action === 'purge_dead_letters') {
 			const result = await purgeCalendarSyncDeadLetters(env.DB, input.limit)
-			return json({ ok: true, action: input.action, ...result }, { headers: noStoreHeaders })
+			return apiOk({ action: input.action, ...result })
 		}
 		const result = await processCalendarSyncQueue(env.DB, env, input.limit)
-		return json({ ok: true, action: input.action, ...result }, { headers: noStoreHeaders })
+		return apiOk({ action: input.action, ...result })
 	} catch (err) {
 		if (err instanceof TransportValidationError) {
-			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
+			return apiValidationError(err)
 		}
-		console.error('Admin sync queue error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('admin.sync-queue', err)
+		return apiError('Internal server error')
 	}
 }

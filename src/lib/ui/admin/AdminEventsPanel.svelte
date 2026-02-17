@@ -173,13 +173,13 @@
 		<div class="admin-page__members-list">
 			{#each dashboard.recentEvents as session, i}
 				<div class="admin-page__members-row">
-					<div class="admin-page__members-main" style="width: 100%">
+					<div class="admin-page__members-main admin-page__members-main--full">
 						<div class="admin-page__members-code-row">
 							<strong>{session.title}</strong>
 							<span class="admin-page__members-meta"> · {session.activityLabel} · {formatDateTime(session.startsAt)}</span>
 						</div>
 						<div class="admin-page__members-meta">{session.seatsTaken}/{session.capacity} attended</div>
-						<div class="admin-page__fields-grid" style="margin-top: 0.6rem">
+						<div class="admin-page__fields-grid admin-page__fields-grid--memory">
 							<div class="admin-page__field">
 								<label class="admin-page__field-label" for={`memory-recap-${session.id}`}>Recap text</label>
 								<textarea
@@ -258,14 +258,13 @@
 					</div>
 					<div class="admin-page__members-actions">
 						<input
-							class="admin-page__input admin-page__input--number"
+							class="admin-page__input admin-page__input--number admin-page__input--capacity"
 							type="number"
 							min="1"
 							max="50"
 							value={session.capacity}
 							onchange={(event) => dashboard.updateEventCapacity(session.id, Number(event.currentTarget.value) || session.capacity)}
 							disabled={dashboard.eventUpdatingId === session.id}
-							style="width: 5rem"
 						/>
 					</div>
 				</div>

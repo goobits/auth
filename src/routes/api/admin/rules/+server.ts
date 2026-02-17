@@ -1,7 +1,8 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
+import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
 import { parseAdminRulesInput, TransportValidationError } from '@packages/calendar/src/index.ts'
-import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized, noStoreHeaders } from '../_helpers.ts'
+import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized } from '../_helpers.ts'
+import { apiError, apiOk, apiValidationError, logApiError } from '$lib/server/http/api'
 
 export async function POST(event: RequestEvent) {
 	try {
@@ -37,12 +38,12 @@ export async function POST(event: RequestEvent) {
 		}
 
 		logAdminEvent(event, 'rules_update', { hoursFrom, hoursTo, buffer, notice, capacity })
-		return json({ ok: true }, { headers: noStoreHeaders })
+		return apiOk({})
 	} catch (err) {
 		if (err instanceof TransportValidationError) {
-			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
+			return apiValidationError(err)
 		}
-		console.error('Admin rules save error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('admin.rules.save', err)
+		return apiError('Internal server error')
 	}
 }
