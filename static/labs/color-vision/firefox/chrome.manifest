@@ -1,4 +1,0 @@
-content	daltonize	content/
-locale	daltonize	en-US	locale/en-us/
-skin	daltonize	classic/1.0	skin/
-overlay	chrome://browser/content/browser.xul	chrome://daltonize/content/firefoxOverlay.xul

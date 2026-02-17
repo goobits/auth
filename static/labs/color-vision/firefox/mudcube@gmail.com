@@ -1,1 +1,0 @@
-/Users/mud/Downloads/daltonize/

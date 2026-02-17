@@ -1,87 +1,101 @@
-# 🎨 miko-art
-Personal website + invite-only social calendar built with **SvelteKit 5** and deployed to **Cloudflare Pages (D1)**.
+# @goobits/auth
 
-## ✨ Key Features
-- **📅 Social calendar** - Event feed, join/waitlist, +1, and “memories” recap cards
-- **🛡️ Admin dashboard** - Manage programs, events, rules, members, and integrations
-- **🔄 Google Calendar sync** - Asynchronous sync queue with retries and dead-letter handling
-- **🔐 Auth** - OAuth (Google/Apple) for calendar access + credentials-based registration
-- **🌗 Themes** - `default`, `dark`, and `magic`
+Pluggable authentication for SvelteKit with a class-first API.
 
-## 🚀 Quick Start
-```bash
-# Requirements
-node --version    # Node.js 22+
-pnpm --version    # pnpm 10+
+## Install
 
-pnpm install
+This package is designed to be used from a SvelteKit build pipeline.
 
-# Dev server (http://localhost:3610)
-pnpm dev
+- Workspace/git install (recommended while developing):
+  - `pnpm add @goobits/auth --workspace` (monorepo)
+  - or install from a git URL (if you publish a repo)
+- Registry install:
+  - Publish to npm/GitHub Packages first, then `pnpm add @goobits/auth`
 
-# Dev server with the local Cloudflare runtime (D1 bindings)
-pnpm dev:wrangler
+## 5-Minute Setup
+
+```ts
+// src/lib/auth.ts
+import { GoobitsAuth } from "@goobits/auth";
+import { drizzleAdapter } from "@goobits/auth/adapters/drizzle";
+import { GoogleProvider } from "@goobits/auth/providers";
+import { db, schema } from "$lib/server/db";
+import { env } from "$env/dynamic/private";
+
+export const auth = new GoobitsAuth({
+  profile: "secure",
+  adapter: drizzleAdapter(db, {
+    schema,
+    oauthTokenEncryptionKey: env.TOKEN_ENCRYPTION_KEY,
+  }),
+  providers: {
+    google: {
+      provider: new GoogleProvider({
+        clientId: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+        callbackUrl: `${env.APP_URL}/auth/callback/google`,
+      }),
+    },
+  },
+});
 ```
 
-## ⚙️ Configuration
-```bash
-# View the available env vars
-ls -la config/env/.env.example
+## Runtime Targets
 
-# Edit local dev secrets (encrypted at rest via dotenvx)
-pnpm exec dotenvx decrypt -f config/env/.env
-# edit config/env/.env
-pnpm exec dotenvx encrypt -f config/env/.env
+- Cloudflare Workers / Pages:
+  - Use default imports (`@goobits/auth`). Avoid WebAuthn.
+- Node runtime:
+  - Use Node-optimized entrypoints automatically via `exports` conditions.
+
+```ts
+// src/hooks.server.ts
+import { auth } from "$lib/auth";
+
+export const handle = auth.handle();
 ```
 
-### Path Aliases
-Defined in `svelte.config.js`:
+```ts
+// src/routes/auth/[...auth]/+server.ts
+import { auth } from "$lib/auth";
 
-| Alias | Path |
-|---|---|
-| `@components` | `./src/components` |
-| `@config` | `./src/config` |
-| `@lib` | `./src/lib` |
-| `@media` | `./src/media` |
-| `@packages` | `./packages` |
-| `@routes` | `./src/routes` |
-| `@src` | `./src` |
-| `@static` | `./static` |
-
-## 🧪 Testing & Code Quality
-```bash
-# Types + svelte-check + eslint + circular deps
-pnpm check
-
-# Full e2e suite (Vitest + Playwright)
-pnpm test
-
-# High-signal subset (CI gate)
-pnpm e2e:critical
+export const { GET, POST } = auth.handlers;
 ```
 
-## 🔧 Operations
-```bash
-# Process pending Google Calendar sync jobs
-pnpm calendar:sync
+## Guard Helpers
+
+- `await auth.requireUser(event)`
+- `await auth.requireRole(event, "admin")`
+- `await auth.getSession(event)`
+
+## Credentials Provider
+
+```ts
+import { CredentialsProvider } from "@goobits/auth/providers";
+
+const credentials = new CredentialsProvider({
+  identifierField: "nickname",
+  allowBoth: true,
+  normalizeIdentifier: (value) => value.trim().toLowerCase(),
+});
 ```
 
-## 🚢 Deployment
-```bash
-# Standard deploy (build + Pages deploy)
-pnpm deploy:prod
+## One-Stop Drizzle Adapter
 
-# Full deploy (push secrets + build + deploy)
-pnpm deploy:prod:full
-```
+`drizzleAdapter(db, { schema })` returns a unified bundle.
 
-## 📚 Documentation
-- **`AGENTS.md`** - Repo architecture notes and command map
-- **`ops/runbooks/calendar-sync.md`** - Calendar sync queue operations
+- Required tables: `users`, `sessions`
+- Optional tables: `oauthAccounts`, `oauthTokens`, `verificationTokens`, `magicLinkTokens`, `webauthnCredentials`, `webauthnChallenges`
 
-## 🔗 Related Packages
-- **`packages/calendar`** - Calendar domain logic (storage, services, transports, migrations)
-- **`repos/auth`** - Auth library used by this repo (its own README + tests)
+## Production Guarantees
 
-## 📝 License
-MIT
+- `hooks.onLogin` resolves identity only; framework-managed session issuance remains default.
+- If no principal is resolved in login flows (`OAuth`, `Magic Link`, `WebAuthn`), auth fails explicitly.
+- Session revoke capabilities are mapped to deterministic responses (`501` for unsupported operations).
+
+## Docs
+
+- `docs/quickstart.md`
+- `docs/public-api.md`
+- `docs/security-contract.md`
+- `docs/schema.md`
+- `docs/migrations/vnext-breaking.md`

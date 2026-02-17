@@ -1,0 +1,37 @@
+name: Security
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build (node + worker)
+        run: npm run build
+
+      - name: Smoke Import Worker Bundle
+        run: node -e "import('./dist/worker/index.js')"
+
+      - name: Test
+        run: npm test
+
+      - name: Dependency Audit
+        run: npm audit --omit=dev --audit-level=high

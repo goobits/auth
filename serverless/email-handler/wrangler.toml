@@ -1,8 +1,0 @@
-name = "email-handler"
-type = "webpack"
-webpack_config = "webpack.config.js"
-account_id = "bc941690c2260a5e7714be8ed5fa7a05"
-workers_dev = true
-route = "miko.art/api/email"
-compatibility_date = "2022-05-02"
-zone_id = "f6641c07bf72b430618190f643106b40"
