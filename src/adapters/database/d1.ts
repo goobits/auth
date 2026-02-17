@@ -34,6 +34,10 @@ export class D1UserAdapter extends UserAdapter {
 		avatar: string;
 		emailVerified: string;
 		password: string;
+		role: string;
+		settings: string;
+		createdAt: string;
+		updatedAt: string;
 	};
 	oauthColumns: {
 		userId: string;
@@ -55,6 +59,10 @@ export class D1UserAdapter extends UserAdapter {
 			avatar: options.columns?.["avatar"] || "avatar",
 			emailVerified: options.columns?.["emailVerified"] || "email_verified",
 			password: options.columns?.["password"] || "password",
+			role: options.columns?.["role"] || "role",
+			settings: options.columns?.["settings"] || "settings",
+			createdAt: options.columns?.["createdAt"] || "created_at",
+			updatedAt: options.columns?.["updatedAt"] || "updated_at",
 		};
 		this.oauthColumns = {
 			userId: options.oauthColumns?.["userId"] || "user_id",
@@ -62,13 +70,18 @@ export class D1UserAdapter extends UserAdapter {
 			providerAccountId:
 				options.oauthColumns?.["providerAccountId"] || "provider_account_id",
 		};
-		this.allowedFields = options.allowedFields || [
-			"email",
-			"name",
-			"avatar",
-			"emailVerified",
-			"password",
-		];
+		this.allowedFields =
+			options.allowedFields || [
+				"email",
+				"name",
+				"avatar",
+				"emailVerified",
+				"password",
+				"role",
+				"settings",
+				"createdAt",
+				"updatedAt",
+			];
 	}
 
 	private mapUser(row: D1Row | null): User | null {
@@ -78,6 +91,10 @@ export class D1UserAdapter extends UserAdapter {
 		const name = row[this.columns["name"]] ?? row["name"];
 		const avatar = row[this.columns["avatar"]] ?? row["avatar"];
 		const emailVerified = row[this.columns.emailVerified] ?? row["email_verified"];
+		const role = row[this.columns.role] ?? row["role"];
+		const settings = row[this.columns.settings] ?? row["settings"];
+		const createdAt = row[this.columns.createdAt] ?? row["created_at"];
+		const updatedAt = row[this.columns.updatedAt] ?? row["updated_at"];
 		if (typeof id !== "string" && typeof id !== "number") return null;
 		if (typeof email !== "string") return null;
 		if (typeof name !== "string") return null;
@@ -85,12 +102,49 @@ export class D1UserAdapter extends UserAdapter {
 		if (typeof emailVerified !== "boolean" && emailVerified !== 0 && emailVerified !== 1) {
 			return null;
 		}
+		if (role !== null && role !== undefined && typeof role !== "string") {
+			return null;
+		}
+		if (settings !== null && settings !== undefined && typeof settings !== "string") {
+			return null;
+		}
+		if (createdAt !== null && createdAt !== undefined && typeof createdAt !== "string") {
+			return null;
+		}
+		if (updatedAt !== null && updatedAt !== undefined && typeof updatedAt !== "string") {
+			return null;
+		}
+
+		let parsedSettings: Record<string, unknown> | undefined;
+		if (typeof settings === "string" && settings.trim().length > 0) {
+			try {
+				const decoded: unknown = JSON.parse(settings);
+				if (decoded && typeof decoded === "object" && !Array.isArray(decoded)) {
+					parsedSettings = decoded as Record<string, unknown>;
+				}
+			} catch {
+				// Ignore invalid JSON; caller can repair by overwriting settings.
+			}
+		}
+
+		const createdAtDate =
+			typeof createdAt === "string" && !Number.isNaN(new Date(createdAt).getTime())
+				? new Date(createdAt)
+				: undefined;
+		const updatedAtDate =
+			typeof updatedAt === "string" && !Number.isNaN(new Date(updatedAt).getTime())
+				? new Date(updatedAt)
+				: undefined;
 		return {
 			id: String(id),
 			email,
 			name,
 			avatar,
 			emailVerified: Boolean(emailVerified),
+			...(typeof role === "string" ? { role } : {}),
+			...(parsedSettings ? { settings: parsedSettings } : {}),
+			...(createdAtDate ? { createdAt: createdAtDate } : {}),
+			...(updatedAtDate ? { updatedAt: updatedAtDate } : {}),
 		};
 	}
 
@@ -98,23 +152,60 @@ export class D1UserAdapter extends UserAdapter {
 		return user;
 	}
 
+	private mapFieldToColumn(field: string): string {
+		if (field === "id") return this.columns.id;
+		if (field === "email") return this.columns.email;
+		if (field === "name") return this.columns.name;
+		if (field === "avatar") return this.columns.avatar;
+		if (field === "emailVerified") return this.columns.emailVerified;
+		if (field === "password") return this.columns.password;
+		if (field === "role") return this.columns.role;
+		if (field === "settings") return this.columns.settings;
+		if (field === "createdAt") return this.columns.createdAt;
+		if (field === "updatedAt") return this.columns.updatedAt;
+		return field;
+	}
+
+	private coerceDbValue(value: unknown): D1Value {
+		if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+			return value;
+		}
+		if (value === null || value === undefined) return null;
+		// Support structured settings by storing JSON in a text column.
+		if (value && typeof value === "object") {
+			try {
+				return JSON.stringify(value);
+			} catch {
+				return String(value);
+			}
+		}
+		return String(value);
+	}
+
 	async createUser(
 		profile: { email: string; name?: string; picture?: string; verified_email?: boolean },
 		metadata: Record<string, unknown> = {},
 	): Promise<User> {
-		const userData = {
+		const userData: Record<string, unknown> = {
 			email: profile.email,
 			name: profile.name ?? profile.email,
 			avatar: profile.picture ?? null,
 			emailVerified: Boolean(profile.verified_email),
-			...metadata,
 		};
 
-		const sql = `INSERT INTO ${this.usersTable} (${this.columns.email}, ${this.columns.name}, ${this.columns.avatar}, ${this.columns.emailVerified}) VALUES (?, ?, ?, ?)`;
-		const result = await this.db
-			.prepare(sql)
-			.bind(userData.email, userData.name, userData.avatar, userData.emailVerified)
-			.run();
+		// Persist only fields that are explicitly allowed (including password hash).
+		for (const [key, value] of Object.entries(metadata)) {
+			if (!this.allowedFields.includes(key)) continue;
+			userData[key] = value;
+		}
+
+		const fields = Object.keys(userData);
+		const columns = fields.map((field) => this.mapFieldToColumn(field));
+		const placeholders = fields.map(() => "?").join(", ");
+		const values = fields.map((field) => this.coerceDbValue(userData[field]));
+
+		const sql = `INSERT INTO ${this.usersTable} (${columns.join(", ")}) VALUES (${placeholders})`;
+		const result = await this.db.prepare(sql).bind(...values).run();
 		const id = result?.meta?.last_row_id;
 		if (id === undefined) throw new Error("Failed to create user");
 		const created = await this.getUserById(String(id), id);
@@ -161,32 +252,11 @@ export class D1UserAdapter extends UserAdapter {
 				throw new Error(`Field not allowed for update: ${field}`);
 			}
 		}
-		const mappedFields = fields.map((field) => {
-			if (field === "id") return this.columns.id;
-			if (field === "email") return this.columns.email;
-			if (field === "name") return this.columns.name;
-			if (field === "avatar") return this.columns.avatar;
-			if (field === "emailVerified") return this.columns.emailVerified;
-			if (field === "password") return this.columns.password;
-			return field;
-		});
+		const mappedFields = fields.map((field) => this.mapFieldToColumn(field));
 		const setClause = mappedFields.map((f) => `${f} = ?`).join(", ");
-		const values = fields.map((f) => data[f]);
+		const values = fields.map((field) => this.coerceDbValue(data[field]));
 		const sql = `UPDATE ${this.usersTable} SET ${setClause} WHERE ${this.columns.id} = ?`;
-		await this.db
-			.prepare(sql)
-			.bind(
-				...values.map((value) =>
-					typeof value === "string" ||
-					typeof value === "number" ||
-					typeof value === "boolean" ||
-					value === null
-						? value
-						: String(value),
-				),
-				id,
-			)
-			.run();
+		await this.db.prepare(sql).bind(...values, id).run();
 		const updated = await this.getUserById(id);
 		if (!updated) throw new Error("Updated user not found");
 		return updated;
