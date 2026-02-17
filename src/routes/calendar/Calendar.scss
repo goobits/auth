@@ -1,5 +1,5 @@
-@use './styles/base';
-@use './styles/hero-dashboard';
-@use './styles/login-calendar';
-@use './styles/booking-form';
-@use './styles/modal-responsive';
+@use '../../lib/theme/calendar/base';
+@use '../../lib/theme/calendar/hero-dashboard';
+@use '../../lib/theme/calendar/login-calendar';
+@use '../../lib/theme/calendar/booking-form';
+@use '../../lib/theme/calendar/modal-responsive';
