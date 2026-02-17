@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation'
 	import { ChevronRight } from '@lucide/svelte'
-	import Hero from '$lib/ui/Hero.svelte'
-	import PageShell from '$lib/ui/PageShell.svelte'
-	import PillButton from '$lib/ui/buttons/PillButton.svelte'
+	import { Hero, PageShell, PillButton } from '@miko/ui'
 	import { submitContact, toContactPayload } from '$lib/client/forms/contact'
 
 	let { data } = $props()

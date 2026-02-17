@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SuccessPage from '$lib/ui/SuccessPage.svelte'
+	import { SuccessPage } from '@miko/ui'
 </script>
 
 <svelte:head>

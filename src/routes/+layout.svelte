@@ -6,8 +6,7 @@
 	import { page } from '$app/stores'
 	import { browser } from '$app/environment'
 	import { onMount } from 'svelte'
-	import Topbar from '$lib/ui/Topbar.svelte'
-	import FooterNav from '$lib/ui/FooterNav.svelte'
+	import { Topbar, FooterNav } from '@miko/ui'
 	import { footerElsewhereItems, footerLegalItems, footerPrimaryItems, headerNavItems } from '$lib/layout/nav'
 	import { enableLayoutShiftDebug } from '$lib/client/debug/layoutShift'
 

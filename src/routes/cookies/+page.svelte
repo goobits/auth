@@ -1,5 +1,5 @@
 <script>
-	import LegalPage from '$lib/ui/LegalPage.svelte'
+	import { LegalPage } from '@miko/ui'
 </script>
 
 <svelte:head>

@@ -1,7 +1,5 @@
 <script>
-	import Hero from '$lib/ui/Hero.svelte'
-	import PageClosing from '$lib/ui/PageClosing.svelte'
-	import PageShell from '$lib/ui/PageShell.svelte'
+	import { Hero, PageClosing, PageShell } from '@miko/ui'
 
 	const works = [
 		{

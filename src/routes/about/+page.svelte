@@ -1,6 +1,5 @@
 <script>
-	import Hero from '$lib/ui/Hero.svelte'
-	import PageShell from '$lib/ui/PageShell.svelte'
+	import { Hero, PageShell } from '@miko/ui'
 
 	const exhibits = [
 		'Art Gallery Of Ontario: Illusions Exhibition',

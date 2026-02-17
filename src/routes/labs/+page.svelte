@@ -1,8 +1,6 @@
 <script>
 	import { Search } from '@lucide/svelte'
-	import Hero from '$lib/ui/Hero.svelte'
-	import PageShell from '$lib/ui/PageShell.svelte'
-	import ResultsEmpty from '$lib/ui/ResultsEmpty.svelte'
+	import { Hero, PageShell, ResultsEmpty } from '@miko/ui'
 	import { filterAndSortLabs, labsCatalog } from '$lib/viewmodels/labs'
 	import { formatDateMmDdYyyy } from '$lib/utils/date'
 

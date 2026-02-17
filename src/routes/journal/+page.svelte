@@ -1,8 +1,6 @@
 <script>
 	import { Search } from '@lucide/svelte'
-	import Hero from '$lib/ui/Hero.svelte'
-	import ResultsEmpty from '$lib/ui/ResultsEmpty.svelte'
-	import PageShell from '$lib/ui/PageShell.svelte'
+	import { Hero, ResultsEmpty, PageShell } from '@miko/ui'
 	import { slugify } from '$lib/utils/collections'
 	import { formatDateMonthDay } from '$lib/utils/date'
 	import {

@@ -10,14 +10,16 @@
 		Shield,
 		Wrench
 	} from '@lucide/svelte'
-	import FilterChipGroup from '$lib/ui/FilterChipGroup.svelte'
-	import FilterableCollection from '$lib/ui/FilterableCollection.svelte'
-	import Hero from '$lib/ui/Hero.svelte'
-	import PageContainer from '$lib/ui/PageContainer.svelte'
-	import PageShell from '$lib/ui/PageShell.svelte'
-	import SearchToolbar from '$lib/ui/SearchToolbar.svelte'
-	import SegmentedControl from '$lib/ui/SegmentedControl.svelte'
-	import SitemapCategory from '$lib/ui/SitemapCategory.svelte'
+	import {
+		FilterChipGroup,
+		FilterableCollection,
+		Hero,
+		PageContainer,
+		PageShell,
+		SearchToolbar,
+		SegmentedControl,
+		SitemapCategory
+	} from '@miko/ui'
 	import { formatDateMmDdYyyy } from '$lib/utils/date'
 	import {
 		getFilteredSitemapCount,

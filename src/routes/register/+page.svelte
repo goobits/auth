@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
-	import Hero from '$lib/ui/Hero.svelte'
-	import PillButton from '$lib/ui/buttons/PillButton.svelte'
+	import { Hero, PillButton } from '@miko/ui'
 
 	type ActionData = {
 		error?: string

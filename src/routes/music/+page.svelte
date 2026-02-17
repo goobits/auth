@@ -1,8 +1,5 @@
 <script>
-	import Hero from '$lib/ui/Hero.svelte'
-	import PageClosing from '$lib/ui/PageClosing.svelte'
-	import PageShell from '$lib/ui/PageShell.svelte'
-	import SectionLabel from '$lib/ui/SectionLabel.svelte'
+	import { Hero, PageClosing, PageShell, SectionLabel } from '@miko/ui'
 	import { formatDateMonthDayYearShort } from '$lib/utils/date'
 
 	const { data } = $props()
