@@ -1,7 +1,7 @@
-import { SessionAdapter } from "../adapters/session/base.ts";
-import { UserAdapter } from "../adapters/database/base.ts";
-import { TokenAdapter } from "../adapters/oauth-token/base.ts";
-import type { OAuthProfile, OAuthTokens, Session, User } from "../types/index.ts";
+import { SessionAdapter } from "../adapters/session/base.js";
+import { UserAdapter } from "../adapters/database/base.js";
+import { TokenAdapter } from "../adapters/oauth-token/base.js";
+import type { OAuthProfile, OAuthTokens, Session, User } from "../types/index.js";
 
 export class MockSessionAdapter extends SessionAdapter {
 	private sessions = new Map<string, Session>();

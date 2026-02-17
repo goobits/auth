@@ -1,6 +1,6 @@
-import { AuthPrincipalResolutionError } from "../errors/auth.ts";
-import type { RequestEventLike } from "../types/auth.ts";
-import type { Session } from "../types/index.ts";
+import { AuthPrincipalResolutionError } from "../errors/auth.js";
+import type { RequestEventLike } from "../types/auth.js";
+import type { Session } from "../types/index.js";
 
 type SessionAdapterLike = {
 	createSession: (userId: string) => Promise<Session>;

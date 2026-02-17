@@ -1,6 +1,6 @@
-import { TokenAdapter } from "./base.ts";
-import { encryptTokens, decryptTokens } from "../../utils/crypto.ts";
-import type { OAuthTokens } from "../../types/index.ts";
+import { TokenAdapter } from "./base.js";
+import { encryptTokens, decryptTokens } from "../../utils/crypto.js";
+import type { OAuthTokens } from "../../types/index.js";
 
 type D1Value = string | number | boolean | null;
 type D1Row = Record<string, D1Value>;
@@ -113,7 +113,7 @@ export class D1TokenAdapter extends TokenAdapter {
 	}
 
 	async refreshTokens(userId: string, provider: string) {
-		const { getLogger } = await import("../../utils/logger.ts");
+		const { getLogger } = await import("../../utils/logger.js");
 		getLogger().warn?.(
 			"refreshTokens not implemented - use provider-specific refresh logic",
 		);

@@ -1,8 +1,8 @@
-import { validateCsrfRequest } from "./csrf.ts";
-import { createRateLimiter } from "./rate-limit.ts";
-import { createAuthEvent, type AuthEventEmitter } from "./events.ts";
-import type { RequestEventLike } from "../types/auth.ts";
-import type { CsrfStore } from "./csrf.ts";
+import { validateCsrfRequest } from "./csrf.js";
+import { createRateLimiter } from "./rate-limit.js";
+import { createAuthEvent, type AuthEventEmitter } from "./events.js";
+import type { RequestEventLike } from "../types/auth.js";
+import type { CsrfStore } from "./csrf.js";
 import type { RequestHandler } from "@sveltejs/kit";
 
 type PolicyMode = "required" | "optional" | "off";

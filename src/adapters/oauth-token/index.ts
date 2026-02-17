@@ -1,5 +1,5 @@
-export { TokenAdapter } from "./base.ts";
-export { DrizzleTokenAdapter } from "./drizzle.ts";
-export { CookieTokenAdapter } from "./cookie.ts";
-export { D1TokenAdapter } from "./d1.ts";
-export { KVTokenAdapter } from "./kv.ts";
+export { TokenAdapter } from "./base.js";
+export { DrizzleTokenAdapter } from "./drizzle.js";
+export { CookieTokenAdapter } from "./cookie.js";
+export { D1TokenAdapter } from "./d1.js";
+export { KVTokenAdapter } from "./kv.js";

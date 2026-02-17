@@ -1,13 +1,13 @@
-import { UserAdapter } from "./base.ts";
+import { UserAdapter } from "./base.js";
 import { and, eq } from "drizzle-orm";
-import type { OAuthProfile, User } from "../../types/index.ts";
+import type { OAuthProfile, User } from "../../types/index.js";
 import {
 	requireCondition,
 	type DrizzleDbLike,
 	type DrizzleJson,
 	type DrizzleRow,
 	type DrizzleTable,
-} from "../drizzle-types.ts";
+} from "../drizzle-types.js";
 
 type UsersTable = DrizzleTable & {
 	id: DrizzleTable[string];

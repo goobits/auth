@@ -13,16 +13,16 @@ import { decodeBase64url, encodeBase64url } from "@oslojs/encoding";
 import { redirect } from "@sveltejs/kit";
 import { z } from "zod";
 import type { RequestHandler } from "@sveltejs/kit";
-import type { SessionAdapter } from "../adapters/session/base.ts";
-import type { WebAuthnAdapter } from "../adapters/webauthn/base.ts";
-import type { AuthHooks, RequestEventLike } from "../types/auth.ts";
-import type { User } from "../types/index.ts";
-import { generateRandomUUID } from "../utils/crypto.ts";
-import { jsonResponse, parseRequestDataWithSchema } from "../utils/http.ts";
-import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.ts";
-import { ensureSessionAfterLogin, type OnLoginMode } from "../utils/session-lifecycle.ts";
-import { AuthPrincipalResolutionError } from "../errors/auth.ts";
-import { auditAuthEvent } from "../security/audit.ts";
+import type { SessionAdapter } from "../adapters/session/base.js";
+import type { WebAuthnAdapter } from "../adapters/webauthn/base.js";
+import type { AuthHooks, RequestEventLike } from "../types/auth.js";
+import type { User } from "../types/index.js";
+import { generateRandomUUID } from "../utils/crypto.js";
+import { jsonResponse, parseRequestDataWithSchema } from "../utils/http.js";
+import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.js";
+import { ensureSessionAfterLogin, type OnLoginMode } from "../utils/session-lifecycle.js";
+import { AuthPrincipalResolutionError } from "../errors/auth.js";
+import { auditAuthEvent } from "../security/audit.js";
 
 type ChallengeRecord = {
 	id: string;

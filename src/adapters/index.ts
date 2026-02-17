@@ -4,10 +4,10 @@ export {
 	DrizzleSessionAdapter,
 	CookieSessionAdapter,
 	D1SessionAdapter,
-} from "./session/index.ts";
+} from "./session/index.js";
 
 // Database Adapters
-export { UserAdapter, DrizzleUserAdapter, D1UserAdapter } from "./database/index.ts";
+export { UserAdapter, DrizzleUserAdapter, D1UserAdapter } from "./database/index.js";
 
 // Token Adapters (OAuth tokens)
 export {
@@ -15,33 +15,33 @@ export {
 	DrizzleTokenAdapter,
 	CookieTokenAdapter,
 	D1TokenAdapter,
-} from "./oauth-token/index.ts";
+} from "./oauth-token/index.js";
 
 // Verification Token Adapters (email verification, password reset, etc.)
 export {
 	VerificationTokenAdapter,
 	DrizzleVerificationTokenAdapter,
 	D1VerificationTokenAdapter,
-} from "./verification-token/index.ts";
+} from "./verification-token/index.js";
 
 // Magic Link Adapters
 export {
 	MagicLinkAdapter,
 	DrizzleMagicLinkAdapter,
 	D1MagicLinkAdapter,
-} from "./magic-link/index.ts";
+} from "./magic-link/index.js";
 
 // WebAuthn Adapters
 export {
 	WebAuthnAdapter,
 	DrizzleWebAuthnAdapter,
 	D1WebAuthnAdapter,
-} from "./webauthn/index.ts";
+} from "./webauthn/index.js";
 
 // One-stop Drizzle adapter bundle
-export { drizzleAdapter } from "./drizzle/index.ts";
+export { drizzleAdapter } from "./drizzle/index.js";
 export type {
 	DrizzleAdapterBundle,
 	DrizzleAdapterOptions,
 	DrizzleAuthSchema,
-} from "./drizzle/index.ts";
+} from "./drizzle/index.js";

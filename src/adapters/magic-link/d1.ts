@@ -1,5 +1,5 @@
-import { MagicLinkAdapter } from "./base.ts";
-import type { MagicLinkToken } from "../../types/index.ts";
+import { MagicLinkAdapter } from "./base.js";
+import type { MagicLinkToken } from "../../types/index.js";
 
 type D1Value = string | number | boolean | null;
 type D1Row = Record<string, D1Value>;

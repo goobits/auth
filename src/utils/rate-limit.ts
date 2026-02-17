@@ -2,4 +2,4 @@ export {
 	MemoryRateLimitStore,
 	KVRateLimitStore,
 	createRateLimiter,
-} from "../security/rate-limit.ts";
+} from "../security/rate-limit.js";

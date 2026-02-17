@@ -1,3 +1,3 @@
-export { MagicLinkAdapter } from "./base.ts";
-export { DrizzleMagicLinkAdapter } from "./drizzle.ts";
-export { D1MagicLinkAdapter } from "./d1.ts";
+export { MagicLinkAdapter } from "./base.js";
+export { DrizzleMagicLinkAdapter } from "./drizzle.js";
+export { D1MagicLinkAdapter } from "./d1.js";

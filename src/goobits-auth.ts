@@ -1,7 +1,7 @@
 import { error, redirect, type Handle, type RequestHandler } from "@sveltejs/kit";
-import { createAuth } from "./createAuth.ts";
-import type { AuthConfig, AuthLocals, RequestEventLike } from "./types/auth.ts";
-import type { Session, User } from "./types/index.ts";
+import { createAuth } from "./createAuth.js";
+import type { AuthConfig, AuthLocals, RequestEventLike } from "./types/auth.js";
+import type { Session, User } from "./types/index.js";
 
 type HandlerMethod = "GET" | "POST";
 
