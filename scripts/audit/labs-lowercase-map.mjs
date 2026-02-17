@@ -4,7 +4,7 @@ import path from 'node:path'
 
 const ROOT = process.cwd()
 const LABS_ROOT = path.join(ROOT, 'static', 'labs')
-const REPORT_PATH = path.join(ROOT, 'docs', 'labs-lowercase-collisions.txt')
+const REPORT_PATH = path.join(ROOT, '.llm', 'scratch', 'labs-lowercase-collisions.txt')
 
 async function walk(dir) {
   const out = []

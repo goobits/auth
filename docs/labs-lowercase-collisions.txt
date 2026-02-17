@@ -1,6 +1,0 @@
-Uppercase directories found: 0
-Safe rename candidates: 0
-Collision targets: 0
-
-Collision details:
-(none)

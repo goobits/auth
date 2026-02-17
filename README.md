@@ -85,7 +85,9 @@ pnpm preview          # Preview build (port 3000)
 pnpm dev:stop         # Stop dev server
 pnpm dev:restart      # Restart dev server
 pnpm check            # Types + svelte-check + lint + circular deps
+pnpm ci:gate          # check + critical e2e gate (CI default)
 pnpm test             # Full Vitest + Playwright e2e suite (__tests__/e2e)
+pnpm e2e:critical     # Fast high-signal e2e subset (no visual/sitemap drift-heavy checks)
 pnpm calendar:sync    # Process pending calendar Google-sync jobs (ops/cron/calendar-sync.mjs)
 pnpm deploy:secrets   # Push production secrets only (no site deploy)
 pnpm deploy:prod      # Build + Cloudflare Pages deploy (standard)

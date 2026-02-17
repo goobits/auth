@@ -6,7 +6,7 @@ const ROOT = process.cwd()
 const STATIC_DIR = path.join(ROOT, 'static')
 const SEARCH_DIRS = [path.join(ROOT, 'src'), path.join(ROOT, 'static')]
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif', '.ico'])
-const REPORT_PATH = path.join(ROOT, 'docs', 'unused-image-candidates.txt')
+const REPORT_PATH = path.join(ROOT, '.llm', 'scratch', 'unused-image-candidates.txt')
 const RELATIVE_IMAGE_RE = /["'`(]((?:\.\.?\/)?[^"'`\s)]+\.(?:png|jpe?g|gif|webp|svg|avif|ico))(?:[?#][^"'`\s)]*)?["'`)]/gi
 const ABSOLUTE_IMAGE_RE = /\/static\/[\w./-]+\.(?:png|jpe?g|gif|webp|svg|avif|ico)|\/[\w./-]+\.(?:png|jpe?g|gif|webp|svg|avif|ico)/gi
 

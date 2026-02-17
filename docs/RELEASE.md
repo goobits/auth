@@ -35,3 +35,29 @@ Add these to your environment and rotate secrets periodically:
 4. Verify `/verify-email` link activation path.
 5. Monitor rejection rates and tune limits.
 6. Rotate Turnstile secret on schedule or incident.
+
+## OAuth callback checklist
+
+Ensure these exact callback URLs are configured in provider dashboards:
+
+- Google/Auth app redirect: `https://<your-domain>/auth/google/callback`
+- Local dev redirect: `http://localhost:3610/auth/google/callback`
+- Calendar admin OAuth callback: `https://<your-domain>/api/calendar/oauth-callback`
+- Local dev calendar callback: `http://localhost:3610/api/calendar/oauth-callback`
+
+If callbacks mismatch, Google returns `redirect_uri_mismatch` and sign-in fails before app code runs.
+
+## Pre-launch quality gate
+
+Run this exact sequence before each release:
+
+1. `pnpm ci:gate`
+2. `pnpm audit:css-vars`
+3. `pnpm e2e:sitemap`
+4. `pnpm e2e:visual`
+
+## Rollback plan
+
+1. Re-deploy previous successful build via Cloudflare Pages.
+2. Re-apply prior secrets set only if env was changed (`pnpm deploy:secrets` with previous encrypted env).
+3. Verify auth callback routes and `/calendar/login` flow after rollback.

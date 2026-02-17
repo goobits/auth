@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-02-17
+
+### Added
+- Social-first calendar experience with event feed actions (`Join`, `Join +1`, `Waitlist`, `Leave`), facepile participants, and memory recap support.
+- Dynamic, database-backed calendar programs with admin CRUD and slug-driven member routes.
+- Async Google Calendar sync queue with admin queue health, retries, dead-letter handling, and recovery actions.
+- Expanded E2E coverage for calendar/admin/auth/sitemap flows, including contention, dead links/images, and sync queue smoke checks.
+
+### Changed
+- Reworked admin information architecture to URL-backed sections (overview, availability, events, programs, members, integrations) with persistent deep links.
+- Refactored calendar/admin UI into shared shell/page components and centralized transport parsing to reduce duplication.
+- Moved calendar domain logic into package-owned services and slimmed route handlers into a thin application layer.
+- Consolidated ops tooling under `ops/` and aligned cron/deploy workflows with forward-only structure.
+
+### Fixed
+- Corrected admin login submit behavior and session stickiness issues in local dev.
+- Fixed sitemap route clickability and multiple dead image/dead link regressions across journal and related pages.
+- Fixed calendar button state styling regressions where enabled actions could appear visually disabled.
+
+### Security
+- Enforced strict OAuth callback state validation and removed legacy auth/signin callback compatibility paths.
+- Tightened API response validation/logging paths and eliminated unsafe compatibility casts in sync/auth flow.
+
 ## [1.1.0] - 2026-02-04
 
 ### Added
