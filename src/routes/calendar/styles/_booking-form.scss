@@ -223,7 +223,7 @@
 	}
 }
 
-.calendar-page .calendar-page__primary-button {
+.calendar-page__form-card .calendar-page__primary-button {
 	width: 100%;
 	padding: var(--calendar-size-12) var(--calendar-size-20);
 	border-radius: var(--calendar-size-12);
@@ -231,21 +231,23 @@
 	font-size: var(--calendar-size-15);
 	font-weight: 600;
 	font-family: inherit;
-	cursor: default;
-	background: var(--color-white-06);
-	color: var(--color-white-24);
 	transition: all 0.3s ease;
 	letter-spacing: -0.01em;
+	cursor: pointer;
+	background: var(--gradient-action);
+	color: var(--color-white);
+	box-shadow: 0 var(--calendar-size-2) var(--calendar-size-20) color-mix(in srgb, var(--calendar-slot-selected-bg) 25%, transparent);
 
-	&.calendar-page__primary-button--enabled {
-		cursor: pointer;
-		background: var(--gradient-action);
-		color: var(--color-white);
-		box-shadow: 0 var(--calendar-size-2) var(--calendar-size-20) color-mix(in srgb, var(--calendar-slot-selected-bg) 25%, transparent);
+	&:not(.ui-button--disabled):hover {
+		transform: scale(1.01);
+	}
 
-		&:hover {
-			transform: scale(1.01);
-		}
+	&.ui-button--disabled {
+		cursor: default;
+		background: var(--color-white-06);
+		color: var(--color-white-24);
+		box-shadow: none;
+		transform: none;
 	}
 }
 
