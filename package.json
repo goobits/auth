@@ -110,6 +110,7 @@
     }
   },
   "scripts": {
+    "prepare": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:ui": "vitest --ui",
