@@ -11,7 +11,7 @@
 
 	let acknowledged = $state(false)
 	let copyStatus = $state('')
-	let modalEl
+	let modalEl = $state(null)
 
 	function handleDownload() {
 		if (!backupCodes || backupCodes.length === 0) return
@@ -86,19 +86,21 @@
 	})
 </script>
 
-{#if visible}
-	<div class="modal-overlay" role="dialog" aria-modal="true" onclick={close}>
-		<div
-			class="modal-content"
-			bind:this={modalEl}
-			tabindex="-1"
-			onclick={(e) => e.stopPropagation()}
-		>
-			<div class="modal-header">
-				<h2>
-					{isNewEnrollment ? 'Save Your Backup Codes' : 'New Backup Codes Generated'}
-				</h2>
-			</div>
+	{#if visible}
+		<div class="modal-overlay" role="presentation">
+			<div
+				class="modal-content"
+				bind:this={modalEl}
+				tabindex="-1"
+				role="dialog"
+				aria-modal="true"
+			>
+				<div class="modal-header">
+					<h2>
+						{isNewEnrollment ? 'Save Your Backup Codes' : 'New Backup Codes Generated'}
+					</h2>
+					<button type="button" class="close-button" onclick={close} aria-label="Close dialog">×</button>
+				</div>
 
 			<div class="modal-body">
 				<div class="warning-box">
@@ -171,15 +173,33 @@
 		overflow-y: auto;
 		outline: none;
 	}
-	.modal-header {
-		padding: 1.5rem;
-		border-bottom: 1px solid var(--auth-border, rgba(255,255,255,0.1));
-	}
-	.modal-header h2 {
-		margin: 0;
-		color: var(--auth-text-primary, #f5f5f5);
-		font-size: 1.5rem;
-	}
+		.modal-header {
+			padding: 1.5rem;
+			border-bottom: 1px solid var(--auth-border, rgba(255,255,255,0.1));
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 1rem;
+		}
+		.modal-header h2 {
+			margin: 0;
+			color: var(--auth-text-primary, #f5f5f5);
+			font-size: 1.5rem;
+		}
+		.close-button {
+			appearance: none;
+			border: 0;
+			background: transparent;
+			color: var(--auth-text-primary, #f5f5f5);
+			font-size: 1.5rem;
+			line-height: 1;
+			cursor: pointer;
+			padding: 0.25rem 0.5rem;
+			border-radius: 0.5rem;
+		}
+		.close-button:hover {
+			background: var(--auth-bg-secondary, rgba(255,255,255,0.06));
+		}
 	.modal-body {
 		padding: 1.5rem;
 	}

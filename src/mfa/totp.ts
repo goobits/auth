@@ -40,25 +40,22 @@ async function hmacSha1(
 	keyBytes: Uint8Array,
 	messageBytes: Uint8Array,
 ): Promise<Uint8Array> {
-	if (globalThis.crypto?.subtle) {
-		const key = await crypto.subtle.importKey(
-			"raw",
-			keyBytes as unknown as BufferSource,
-			{ name: "HMAC", hash: "SHA-1" },
-			false,
-			["sign"],
-		);
-		const sig = await crypto.subtle.sign(
-			"HMAC",
-			key,
-			messageBytes as unknown as BufferSource,
-		);
-		return new Uint8Array(sig);
+	if (!globalThis.crypto?.subtle) {
+		throw new Error("WebCrypto is required");
 	}
-	const { createHmac } = await import("node:crypto");
-	const h = createHmac("sha1", Buffer.from(keyBytes));
-	h.update(Buffer.from(messageBytes));
-	return new Uint8Array(h.digest());
+	const key = await crypto.subtle.importKey(
+		"raw",
+		keyBytes as unknown as BufferSource,
+		{ name: "HMAC", hash: "SHA-1" },
+		false,
+		["sign"],
+	);
+	const sig = await crypto.subtle.sign(
+		"HMAC",
+		key,
+		messageBytes as unknown as BufferSource,
+	);
+	return new Uint8Array(sig);
 }
 
 function intToBytes(num: number): Uint8Array {

@@ -24,6 +24,12 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Build (node + worker)
+        run: npm run build
+
+      - name: Smoke Import Worker Bundle
+        run: node -e "import('./dist/worker/index.js')"
+
       - name: Test
         run: npm test
 

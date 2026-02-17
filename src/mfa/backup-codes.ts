@@ -22,15 +22,14 @@ export function generateBackupCodes({
 }
 
 async function sha256Hex(value: string): Promise<string> {
-	if (globalThis.crypto?.subtle) {
-		const data = new TextEncoder().encode(value);
-		const digest = await crypto.subtle.digest("SHA-256", data);
-		return Array.from(new Uint8Array(digest))
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("");
+	if (!globalThis.crypto?.subtle) {
+		throw new Error("WebCrypto is required");
 	}
-	const { createHash } = await import("node:crypto");
-	return createHash("sha256").update(value).digest("hex");
+	const data = new TextEncoder().encode(value);
+	const digest = await crypto.subtle.digest("SHA-256", data);
+	return Array.from(new Uint8Array(digest))
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("");
 }
 
 export async function hashBackupCodes(codes: string[]): Promise<string[]> {

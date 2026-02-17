@@ -28,12 +28,11 @@ function timingSafeEqual(a: string, b: string): boolean {
 
 async function sha256Hex(value: string): Promise<string> {
 	const data = new TextEncoder().encode(value);
-	if (globalThis.crypto?.subtle) {
-		const digest = await globalThis.crypto.subtle.digest("SHA-256", data);
-		return bytesToHex(new Uint8Array(digest));
+	if (!globalThis.crypto?.subtle) {
+		throw new Error("WebCrypto is required");
 	}
-	const { createHash } = await import("node:crypto");
-	return createHash("sha256").update(data).digest("hex");
+	const digest = await globalThis.crypto.subtle.digest("SHA-256", data);
+	return bytesToHex(new Uint8Array(digest));
 }
 
 export async function createAdminApiKey({
