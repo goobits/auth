@@ -23,7 +23,9 @@
 		subtitle = '',
 		icon = '',
 		iconAlt = '',
-		iconSize = 'var(--hero-icon-size)',
+		// Only override --hero-icon-size when explicitly provided.
+		// A default of `var(--hero-icon-size)` would create a self-referential var when assigned inline.
+		iconSize = '',
 		className = '',
 		heroClass = '',
 		glowClass = '',
@@ -59,7 +61,7 @@
 								loading="eager"
 								fetchpriority="high"
 								decoding="async"
-								style={`--hero-icon-size: ${iconSize}; width: ${iconSize}; height: ${iconSize};`}
+								style={`${iconSize ? `--hero-icon-size: ${iconSize};` : ''} width: var(--hero-icon-size); height: var(--hero-icon-size);`}
 							/></span
 						></span
 					>
@@ -81,7 +83,7 @@
 								loading="eager"
 								fetchpriority="high"
 								decoding="async"
-								style={`--hero-icon-size: ${iconSize}; width: ${iconSize}; height: ${iconSize};`}
+								style={`${iconSize ? `--hero-icon-size: ${iconSize};` : ''} width: var(--hero-icon-size); height: var(--hero-icon-size);`}
 							/></span
 						></span
 				>
