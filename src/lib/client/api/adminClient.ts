@@ -283,3 +283,10 @@ export async function mutateAdminSyncQueue(action: AdminSyncQueueAction, limit =
 		parse: (payload) => AdminSyncQueueMutationSchema.parse(payload)
 	})
 }
+
+export async function disconnectAdminGoogleIntegration() {
+	return requestApi<AdminMutationOk>('/api/admin/integrations/google/disconnect', {
+		method: 'POST',
+		parse: (payload) => AdminMutationOkSchema.parse(payload)
+	})
+}

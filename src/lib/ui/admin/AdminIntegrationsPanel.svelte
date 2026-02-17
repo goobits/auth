@@ -32,5 +32,15 @@
 			<RefreshCw size={14} />
 			{dashboard.connected ? 'Reconnect' : 'Connect'}
 		</PillButton>
+		{#if dashboard.connected}
+			<PillButton
+				className="admin-page__button-secondary admin-page__button-secondary--danger"
+				variant="danger"
+				onClick={dashboard.disconnect}
+				disabled={dashboard.disconnecting}
+			>
+				{dashboard.disconnecting ? 'Disconnecting...' : 'Disconnect'}
+			</PillButton>
+		{/if}
 	</div>
 </div>

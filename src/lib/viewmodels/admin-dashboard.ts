@@ -1,6 +1,7 @@
 import {
 	beginCalendarOAuth,
 	buildInviteLink,
+	disconnectCalendarOAuth,
 	fetchAdminEvents,
 	fetchAdminPrograms,
 	fetchAdminStatus,
@@ -81,6 +82,11 @@ export async function deleteMemberInvite(id: string) {
 export async function getCalendarReconnectUrl() {
 	const data = await beginCalendarOAuth()
 	return { ok: true, authUrl: data.authUrl, error: '' }
+}
+
+export async function disconnectCalendarReconnect() {
+	await disconnectCalendarOAuth()
+	return { ok: true, error: '' }
 }
 
 export async function loadAdminPrograms() {

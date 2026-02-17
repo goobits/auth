@@ -5,6 +5,7 @@ import {
 import {
 	createAdminEventsBatch,
 	deleteDashboardProgram,
+	disconnectCalendarReconnect,
 	getCalendarReconnectUrl,
 	loadAdminEventsData,
 	loadAdminPrograms,
@@ -38,6 +39,7 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 	let connected = $state(false)
 	let connectionExpired = $state(false)
 	let connectionRefreshFailed = $state(false)
+	let disconnecting = $state(false)
 	let syncQueue = $state({
 		pending: 0,
 		processing: 0,
@@ -228,6 +230,26 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 		} catch (err) {
 			if (onUnauthorized?.(err)) return
 			error = err instanceof Error ? err.message : 'Failed to connect to Google'
+		}
+	}
+
+	async function disconnect() {
+		disconnecting = true
+		try {
+			const disconnectResult = await disconnectCalendarReconnect()
+			if (disconnectResult.ok) {
+				connected = false
+				connectionExpired = false
+				connectionRefreshFailed = false
+				await loadStatus()
+			} else {
+				error = disconnectResult.error
+			}
+		} catch (err) {
+			if (onUnauthorized?.(err)) return
+			error = err instanceof Error ? err.message : 'Failed to disconnect Google'
+		} finally {
+			disconnecting = false
 		}
 	}
 
@@ -541,6 +563,7 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 		get connected() { return connected },
 		get connectionExpired() { return connectionExpired },
 		get connectionRefreshFailed() { return connectionRefreshFailed },
+		get disconnecting() { return disconnecting },
 		get syncQueue() { return syncQueue },
 		get bookings() { return bookings },
 		get stats() { return stats },
@@ -569,6 +592,7 @@ export function createAdminDashboardController(options: DashboardControllerOptio
 		loadEvents,
 		save,
 		reconnect,
+		disconnect,
 		toggleProgram,
 		selectProgram,
 		newProgramDraft,

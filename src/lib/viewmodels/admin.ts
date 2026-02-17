@@ -1,5 +1,6 @@
 import {
 	createAdminEvents,
+	disconnectAdminGoogleIntegration,
 	deleteAdminProgram,
 	getAdminEvents,
 	getAdminPrograms,
@@ -124,6 +125,10 @@ export async function persistAdminRules(state: AdminRulesState) {
 
 export async function beginCalendarOAuth() {
 	return startCalendarOAuth()
+}
+
+export async function disconnectCalendarOAuth() {
+	return disconnectAdminGoogleIntegration()
 }
 
 export async function fetchAdminPrograms() {
