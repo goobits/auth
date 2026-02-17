@@ -1,5 +1,5 @@
-import { generateRandomUUID, sha256Hex } from "./crypto.ts";
-import { VerificationTokenAdapter } from "../adapters/verification-token/base.ts";
+import { generateRandomUUID, sha256Hex } from "./crypto.js";
+import { VerificationTokenAdapter } from "../adapters/verification-token/base.js";
 
 const DEFAULT_TOKEN_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 

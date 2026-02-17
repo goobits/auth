@@ -2,23 +2,23 @@ export {
 	encryptTokens,
 	decryptTokens,
 	generateEncryptionKey,
-} from "./crypto.ts";
-export { sanitizeUser } from "./sanitize.ts";
-export { hashPassword, verifyPassword, validatePasswordStrength } from "./password.ts";
+} from "./crypto.js";
+export { sanitizeUser } from "./sanitize.js";
+export { hashPassword, verifyPassword, validatePasswordStrength } from "./password.js";
 export {
 	createOAuthCookies,
 	cleanupOAuthCookies,
 	validateOAuthCallback,
 	getOAuthCallbackParams,
 	handleOAuthCallback,
-} from "./oauth.ts";
+} from "./oauth.js";
 export {
 	VERIFICATION_TOKEN_TYPES,
 	createVerificationToken,
 	consumeVerificationToken,
 	getUserForVerificationToken,
-} from "./tokens.ts";
-export { VerificationTokenAdapter } from "../adapters/verification-token/base.ts";
-export { MemoryRateLimitStore, createRateLimiter } from "./rate-limit.ts";
-export { redactObject, DEFAULT_REDACT_KEYS } from "./redact.ts";
-export { isSafeRedirectPath } from "./redirect.ts";
+} from "./tokens.js";
+export { VerificationTokenAdapter } from "../adapters/verification-token/base.js";
+export { MemoryRateLimitStore, createRateLimiter } from "./rate-limit.js";
+export { redactObject, DEFAULT_REDACT_KEYS } from "./redact.js";
+export { isSafeRedirectPath } from "./redirect.js";

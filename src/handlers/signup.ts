@@ -1,9 +1,9 @@
 import { redirect } from "@sveltejs/kit";
-import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.ts";
-import type { RequestEventLike } from "../types/auth.ts";
-import { getLogger } from "../utils/logger.ts";
-import type { User } from "../types/index.ts";
-import type { VerificationTokenAdapter } from "../adapters/verification-token/base.ts";
+import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.js";
+import type { RequestEventLike } from "../types/auth.js";
+import { getLogger } from "../utils/logger.js";
+import type { User } from "../types/index.js";
+import type { VerificationTokenAdapter } from "../adapters/verification-token/base.js";
 
 type RateLimitConfig = {
 	check?: (key: string) => Promise<{ allowed: boolean }>;
@@ -23,10 +23,10 @@ function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
 /**
  * Create a signup handler for credentials-based authentication
  * @param {Object} config - Handler configuration
- * @param {import('../providers/credentials.ts').CredentialsProvider} config.credentialsProvider - Credentials provider
- * @param {import('../adapters/database/base.ts').UserAdapter} config.userAdapter - User adapter
- * @param {import('../adapters/session/base.ts').SessionAdapter} config.sessionAdapter - Session adapter
- * @param {import('../adapters/verification-token/base.ts').VerificationTokenAdapter} [config.verificationTokenAdapter] - Verification token adapter (optional)
+ * @param {import('../providers/credentials.js').CredentialsProvider} config.credentialsProvider - Credentials provider
+ * @param {import('../adapters/database/base.js').UserAdapter} config.userAdapter - User adapter
+ * @param {import('../adapters/session/base.js').SessionAdapter} config.sessionAdapter - Session adapter
+ * @param {import('../adapters/verification-token/base.js').VerificationTokenAdapter} [config.verificationTokenAdapter] - Verification token adapter (optional)
  * @param {Function} [config.onSignup] - Callback after user creation (user) => Promise<void>
  * @param {Function} [config.sendVerificationEmail] - Function to send verification email (email, token) => Promise<void>
  * @param {Object} [config.csrf] - CSRF validation config
@@ -181,7 +181,7 @@ export function createSignupHandler(config: {
 			if (verificationTokenAdapter && sendVerificationEmail) {
 				try {
 					const { createVerificationToken, VERIFICATION_TOKEN_TYPES } =
-						await import("../utils/tokens.ts");
+						await import("../utils/tokens.js");
 
 					const token = await createVerificationToken({
 						adapter: verificationTokenAdapter,

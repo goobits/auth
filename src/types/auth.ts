@@ -1,21 +1,21 @@
 import type { Cookies, RequestEvent, RequestHandler } from "@sveltejs/kit";
-import type { OAuthProvider } from "../providers/base.ts";
+import type { OAuthProvider } from "../providers/base.js";
 import type {
 	OAuthProfile,
 	OAuthTokens,
 	Session,
 	SessionSummary,
 	User,
-} from "./index.ts";
-import type { SessionAdapter } from "../adapters/session/base.ts";
-import type { UserAdapter } from "../adapters/database/base.ts";
-import type { TokenAdapter } from "../adapters/oauth-token/base.ts";
-import type { MagicLinkAdapter } from "../adapters/magic-link/base.ts";
-import type { WebAuthnAdapter } from "../adapters/webauthn/base.ts";
-import type { VerificationTokenAdapter } from "../adapters/verification-token/base.ts";
-import type { Logger } from "../utils/logger.ts";
-import type { AuthEventEmitter } from "../security/events.ts";
-import type { SecurityAlertHandler } from "../security/alerts.ts";
+} from "./index.js";
+import type { SessionAdapter } from "../adapters/session/base.js";
+import type { UserAdapter } from "../adapters/database/base.js";
+import type { TokenAdapter } from "../adapters/oauth-token/base.js";
+import type { MagicLinkAdapter } from "../adapters/magic-link/base.js";
+import type { WebAuthnAdapter } from "../adapters/webauthn/base.js";
+import type { VerificationTokenAdapter } from "../adapters/verification-token/base.js";
+import type { Logger } from "../utils/logger.js";
+import type { AuthEventEmitter } from "../security/events.js";
+import type { SecurityAlertHandler } from "../security/alerts.js";
 
 export type AuthLocals = {
 	user?: User | null;

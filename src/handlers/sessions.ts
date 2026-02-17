@@ -1,7 +1,7 @@
-import { jsonResponse, parseRequestData } from "../utils/http.ts";
-import type { AuthLocals, RequestEventLike } from "../types/auth.ts";
-import type { SessionSummary, Session } from "../types/index.ts";
-import { AuthAdapterCapabilityError } from "../errors/auth.ts";
+import { jsonResponse, parseRequestData } from "../utils/http.js";
+import type { AuthLocals, RequestEventLike } from "../types/auth.js";
+import type { SessionSummary, Session } from "../types/index.js";
+import { AuthAdapterCapabilityError } from "../errors/auth.js";
 
 type SessionAdapterLike = {
 	listSessions?: (userId: string) => Promise<SessionSummary[]>;

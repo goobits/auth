@@ -1,5 +1,5 @@
 <script>
-	import { auth } from "./auth-store.ts";
+	import { auth } from "./auth-store.js";
 
 	export let user = undefined;
 	export let loading = undefined;

@@ -1,4 +1,4 @@
-import type { AuthEvent } from "./events.ts";
+import type { AuthEvent } from "./events.js";
 
 type AlertSeverity = "warn" | "error";
 

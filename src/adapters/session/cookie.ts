@@ -1,4 +1,4 @@
-import { SessionAdapter } from "./base.ts";
+import { SessionAdapter } from "./base.js";
 import { encodeBase64url } from "@oslojs/encoding";
 import type { Cookies } from "@sveltejs/kit";
 

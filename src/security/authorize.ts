@@ -1,5 +1,5 @@
-import type { AuthLocals, RequestEventLike } from "../types/auth.ts";
-import { createAuthEvent, type AuthEventEmitter } from "./events.ts";
+import type { AuthLocals, RequestEventLike } from "../types/auth.js";
+import { createAuthEvent, type AuthEventEmitter } from "./events.js";
 
 type Actor = {
 	id: string | number;

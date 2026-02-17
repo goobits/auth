@@ -1,7 +1,7 @@
-import { TokenAdapter } from "./base.ts";
-import { encryptTokens, decryptTokens } from "../../utils/crypto.ts";
+import { TokenAdapter } from "./base.js";
+import { encryptTokens, decryptTokens } from "../../utils/crypto.js";
 import type { Cookies } from "@sveltejs/kit";
-import type { OAuthTokens } from "../../types/index.ts";
+import type { OAuthTokens } from "../../types/index.js";
 
 /**
  * Cookie-based Token Adapter
@@ -83,7 +83,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 	async refreshTokens(
 		userId: string,
 		provider: string,
-	): Promise<import("../../types/index.ts").OAuthTokens | null> {
+	): Promise<import("../../types/index.js").OAuthTokens | null> {
 		throw new Error(
 			"refreshTokens not implemented - use provider-specific refresh logic",
 		);

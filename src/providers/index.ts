@@ -1,4 +1,4 @@
-export { OAuthProvider } from "./base.ts";
-export { GoogleProvider } from "./google.ts";
-export { AppleProvider } from "./apple.ts";
-export { CredentialsProvider } from "./credentials.ts";
+export { OAuthProvider } from "./base.js";
+export { GoogleProvider } from "./google.js";
+export { AppleProvider } from "./apple.js";
+export { CredentialsProvider } from "./credentials.js";

@@ -97,4 +97,4 @@ export type SessionSummary = {
 	current?: boolean;
 };
 
-export * from "./auth.ts";
+export * from "./auth.js";

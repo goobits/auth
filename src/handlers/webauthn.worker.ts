@@ -3,7 +3,7 @@ import type {
 	WebAuthnLoginVerifyHandlerConfig,
 	WebAuthnRegisterOptionsHandlerConfig,
 	WebAuthnRegisterVerifyHandlerConfig,
-} from "./webauthn.ts";
+} from "./webauthn.js";
 
 function notSupported() {
 	return new Response("WebAuthn is not supported on this runtime.", { status: 501 });

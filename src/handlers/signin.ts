@@ -1,8 +1,8 @@
 import { redirect } from "@sveltejs/kit";
-import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.ts";
-import type { RequestEventLike } from "../types/auth.ts";
-import { getLogger } from "../utils/logger.ts";
-import type { User } from "../types/index.ts";
+import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.js";
+import type { RequestEventLike } from "../types/auth.js";
+import { getLogger } from "../utils/logger.js";
+import type { User } from "../types/index.js";
 
 type RateLimitConfig = {
 	check?: (key: string) => Promise<{ allowed: boolean }>;
@@ -22,9 +22,9 @@ function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
 /**
  * Create a signin handler for credentials-based authentication
  * @param {Object} config - Handler configuration
- * @param {import('../providers/credentials.ts').CredentialsProvider} config.credentialsProvider - Credentials provider
- * @param {import('../adapters/database/base.ts').UserAdapter} config.userAdapter - User adapter
- * @param {import('../adapters/session/base.ts').SessionAdapter} config.sessionAdapter - Session adapter
+ * @param {import('../providers/credentials.js').CredentialsProvider} config.credentialsProvider - Credentials provider
+ * @param {import('../adapters/database/base.js').UserAdapter} config.userAdapter - User adapter
+ * @param {import('../adapters/session/base.js').SessionAdapter} config.sessionAdapter - Session adapter
  * @param {Function} [config.onSignin] - Callback after successful signin (user) => Promise<void>
  * @param {Object} [config.csrf] - CSRF validation config
  * @param {Function} [config.csrf.validate] - Async function (event) => boolean

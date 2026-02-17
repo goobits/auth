@@ -1,10 +1,10 @@
-import { createLoginHandler } from "./handlers/login.ts";
-import { createCallbackHandler } from "./handlers/callback.ts";
-import { createLogoutHandler } from "./handlers/logout.ts";
+import { createLoginHandler } from "./handlers/login.js";
+import { createCallbackHandler } from "./handlers/callback.js";
+import { createLogoutHandler } from "./handlers/logout.js";
 import {
 	createMagicLinkRequestHandler,
 	createMagicLinkVerifyHandler,
-} from "./handlers/magic-link.ts";
+} from "./handlers/magic-link.js";
 import {
 	createWebAuthnRegisterOptionsHandler,
 	createWebAuthnRegisterVerifyHandler,
@@ -14,11 +14,11 @@ import {
 	type WebAuthnLoginVerifyHandlerConfig,
 	type WebAuthnRegisterOptionsHandlerConfig,
 	type WebAuthnRegisterVerifyHandlerConfig,
-} from "./handlers/webauthn.ts";
+} from "./handlers/webauthn.js";
 import {
 	createSessionListHandler,
 	createSessionRevokeHandler,
-} from "./handlers/sessions.ts";
+} from "./handlers/sessions.js";
 import type {
 	AuthConfig,
 	AuthHandlers,
@@ -31,15 +31,15 @@ import type {
 	OAuthProviderConfig,
 	RequestEventLike,
 	SecurityProfile,
-} from "./types/auth.ts";
-import type { User } from "./types/index.ts";
-import { getLogger, setLogger } from "./utils/logger.ts";
-import { ensureSessionAfterLogin } from "./utils/session-lifecycle.ts";
-import { MemoryCsrfStore, CSRF_COOKIE_NAME, CSRF_HEADER_NAME, issueCsrfToken } from "./security/csrf.ts";
-import { applySecurityPolicy, type SecurityPolicySettings } from "./security/policy.ts";
-import { createSecurityAlertObserver } from "./security/alerts.ts";
-import { createWebhookAlerter } from "./security/alerting.ts";
-import { createAuthEvent } from "./security/events.ts";
+} from "./types/auth.js";
+import type { User } from "./types/index.js";
+import { getLogger, setLogger } from "./utils/logger.js";
+import { ensureSessionAfterLogin } from "./utils/session-lifecycle.js";
+import { MemoryCsrfStore, CSRF_COOKIE_NAME, CSRF_HEADER_NAME, issueCsrfToken } from "./security/csrf.js";
+import { applySecurityPolicy, type SecurityPolicySettings } from "./security/policy.js";
+import { createSecurityAlertObserver } from "./security/alerts.js";
+import { createWebhookAlerter } from "./security/alerting.js";
+import { createAuthEvent } from "./security/events.js";
 
 type ResolvedDefaults = {
 	urlConfig: {

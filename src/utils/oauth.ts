@@ -1,9 +1,9 @@
 import { generateState, generateCodeVerifier } from "arctic";
 import type { RequestEvent } from "@sveltejs/kit";
 import type { Cookies } from "@sveltejs/kit";
-import type { OAuthProvider } from "../providers/base.ts";
-import type { OAuthProfile, OAuthTokens } from "../types/index.ts";
-import type { RequestEventLike } from "../types/auth.ts";
+import type { OAuthProvider } from "../providers/base.js";
+import type { OAuthProfile, OAuthTokens } from "../types/index.js";
+import type { RequestEventLike } from "../types/auth.js";
 
 type CookiesLike = Pick<Cookies, "set" | "get" | "delete">;
 
@@ -131,7 +131,7 @@ export function getOAuthCallbackParams(
  * @param {Object} params
  * @param {import('@sveltejs/kit').RequestEvent} params.event - SvelteKit request event
  * @param {string} params.provider - Provider name
- * @param {import('../providers/base.ts').OAuthProvider} params.providerInstance - Provider instance
+ * @param {import('../providers/base.js').OAuthProvider} params.providerInstance - Provider instance
  * @param {Object} params.callbacks - Lifecycle callbacks
  * @param {Function} params.callbacks.onAuthenticated - Called with (profile, tokens) after successful auth
  * @param {Function} [params.callbacks.onError] - Optional error handler

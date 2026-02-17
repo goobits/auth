@@ -1,4 +1,4 @@
-import { redactObject, DEFAULT_REDACT_KEYS } from "../utils/redact.ts";
+import { redactObject, DEFAULT_REDACT_KEYS } from "../utils/redact.js";
 import type { RequestEvent } from "@sveltejs/kit";
 
 type AuditLogger = {

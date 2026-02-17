@@ -1,13 +1,13 @@
 import { eq } from "drizzle-orm";
-import { WebAuthnAdapter } from "./base.ts";
-import type { WebAuthnCredential } from "../../types/index.ts";
+import { WebAuthnAdapter } from "./base.js";
+import type { WebAuthnCredential } from "../../types/index.js";
 import {
 	requireColumn,
 	type DrizzleDbLike,
 	type DrizzleJson,
 	type DrizzleRow,
 	type DrizzleTable,
-} from "../drizzle-types.ts";
+} from "../drizzle-types.js";
 
 type CredentialsTable = DrizzleTable;
 type ChallengesTable = DrizzleTable;

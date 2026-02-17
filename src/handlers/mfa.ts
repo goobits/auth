@@ -1,6 +1,6 @@
-import { generateSecret, createOtpAuthURL, verifyTOTP } from "../mfa/totp.ts";
-import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from "../mfa/backup-codes.ts";
-import type { RequestEventLike } from "../types/auth.ts";
+import { generateSecret, createOtpAuthURL, verifyTOTP } from "../mfa/totp.js";
+import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from "../mfa/backup-codes.js";
+import type { RequestEventLike } from "../types/auth.js";
 
 type MfaStore = {
 	setSecret: (userId: string, secret: string) => Promise<void>;
