@@ -56,7 +56,7 @@ export function createLogoutHandler(config: {
 				await onLogout(event);
 			}
 
-			throw redirect(302, redirectAfterLogout);
+			redirect(302, redirectAfterLogout);
 		} catch (error) {
 			// Re-throw redirects
 			if (
@@ -69,7 +69,7 @@ export function createLogoutHandler(config: {
 			}
 
 			log.error?.("Error during logout:", error);
-			throw redirect(302, redirectAfterLogout);
+			redirect(302, redirectAfterLogout);
 		}
 	};
 }
