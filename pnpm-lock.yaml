@@ -18,14 +18,23 @@ importers:
         specifier: ^3.990.0
         version: 3.990.0
       '@goobits/auth':
-        specifier: file:./repos/auth
-        version: file:repos/auth(@sveltejs/kit@2.51.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(drizzle-orm@0.44.7(@cloudflare/workers-types@4.20260214.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(pg@8.18.0)(postgres@3.4.8))
+        specifier: workspace:*
+        version: link:packages/auth
       '@goobits/themes':
         specifier: ^1.3.2
         version: 1.3.2(@lucide/svelte@0.564.0(svelte@5.51.1))(@sveltejs/kit@2.51.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)
       '@lucide/svelte':
         specifier: ^0.564.0
         version: 0.564.0(svelte@5.51.1)
+      '@miko/calendar':
+        specifier: workspace:*
+        version: link:packages/calendar
+      '@miko/calendar-ui':
+        specifier: workspace:*
+        version: link:packages/calendar-ui
+      '@miko/ui':
+        specifier: workspace:*
+        version: link:packages/ui
       argon2-wasm-edge:
         specifier: ^1.0.23
         version: 1.0.23
@@ -142,11 +151,75 @@ importers:
         specifier: ^4.65.0
         version: 4.65.0(@cloudflare/workers-types@4.20260214.0)
 
+  packages/auth:
+    dependencies:
+      '@node-rs/argon2':
+        specifier: ^2.0.2
+        version: 2.0.2
+      '@oslojs/crypto':
+        specifier: ^1.0.1
+        version: 1.0.1
+      '@oslojs/encoding':
+        specifier: ^1.1.0
+        version: 1.1.0
+      '@simplewebauthn/server':
+        specifier: ^13.0.0
+        version: 13.2.2
+      '@sveltejs/kit':
+        specifier: ^2.0.0
+        version: 2.51.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(typescript@5.9.3)(vite@7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))
+      arctic:
+        specifier: ^3.7.0
+        version: 3.7.0
+      drizzle-orm:
+        specifier: ^0.44.0
+        version: 0.44.7(@cloudflare/workers-types@4.20260214.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(pg@8.18.0)(postgres@3.4.8)
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.4
+        version: 22.19.11
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+
   packages/calendar:
     dependencies:
       '@goobits/auth':
-        specifier: file:../../repos/auth
-        version: file:repos/auth(@sveltejs/kit@2.51.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(drizzle-orm@0.44.7(@cloudflare/workers-types@4.20260214.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(pg@8.18.0)(postgres@3.4.8))
+        specifier: workspace:*
+        version: link:../auth
+
+  packages/calendar-ui:
+    dependencies:
+      '@lucide/svelte':
+        specifier: ^0.564.0
+        version: 0.564.0(svelte@5.51.1)
+      '@miko/calendar':
+        specifier: workspace:*
+        version: link:../calendar
+      '@miko/ui':
+        specifier: workspace:*
+        version: link:../ui
+      svelte:
+        specifier: ^5.0.0
+        version: 5.51.1
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+
+  packages/ui:
+    dependencies:
+      '@goobits/themes':
+        specifier: ^1.3.2
+        version: 1.3.2(@lucide/svelte@0.564.0(svelte@5.51.1))(@sveltejs/kit@2.51.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)
+      '@lucide/svelte':
+        specifier: ^0.564.0
+        version: 0.564.0(svelte@5.51.1)
+      svelte:
+        specifier: ^5.0.0
+        version: 5.51.1
 
 packages:
 
@@ -783,12 +856,6 @@ packages:
 
   '@exodus/schemasafe@1.3.0':
     resolution: {integrity: sha512-5Aap/GaRupgNx/feGBwLLTVv8OQFfv3pq2lPRzPg9R+IOBnDgghTGW7l7EuVXOvg5cc/xSAlRW8rBrjIC3Nvqw==}
-
-  '@goobits/auth@file:repos/auth':
-    resolution: {directory: repos/auth, type: directory}
-    peerDependencies:
-      '@sveltejs/kit': ^2.0.0
-      drizzle-orm: ^0.44.0
 
   '@goobits/themes@1.3.2':
     resolution: {integrity: sha512-RKk2jTfip7Z1JsTLDVsAr2JEm8Xz+AUtMBTbO5XtLCxCnWrzMmwb0kuWPunKQhvmp2FiftD504JXDa43F+N+kw==}
@@ -1846,6 +1913,9 @@ packages:
 
   '@types/mdast@4.0.4':
     resolution: {integrity: sha512-kGaNbPh1k7AFzgpud/gMdvIm5xuECykRR+JnWKQno9TAXVa6WIVCGTPvYGekIDL4uwCZQSYbUxNBSb1aUo79oA==}
+
+  '@types/node@22.19.11':
+    resolution: {integrity: sha512-BH7YwL6rA93ReqeQS1c4bsPpcfOmJasG+Fkr6Y59q83f9M1WcBRHR2vM+P9eOisYRcN3ujQoiZY8uk5W+1WL8w==}
 
   '@types/node@25.2.3':
     resolution: {integrity: sha512-m0jEgYlYz+mDJZ2+F4v8D1AyQb+QzsNqRuI7xg1VQX/KlKS0qT9r1Mo16yo5F/MtifXFgaofIFsdFMox2SxIbQ==}
@@ -3668,6 +3738,9 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  undici-types@6.21.0:
+    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
 
@@ -4760,17 +4833,6 @@ snapshots:
   '@exodus/schemasafe@1.3.0':
     optional: true
 
-  '@goobits/auth@file:repos/auth(@sveltejs/kit@2.51.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(drizzle-orm@0.44.7(@cloudflare/workers-types@4.20260214.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(pg@8.18.0)(postgres@3.4.8))':
-    dependencies:
-      '@node-rs/argon2': 2.0.2
-      '@oslojs/crypto': 1.0.1
-      '@oslojs/encoding': 1.1.0
-      '@simplewebauthn/server': 13.2.2
-      '@sveltejs/kit': 2.51.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))
-      arctic: 3.7.0
-      drizzle-orm: 0.44.7(@cloudflare/workers-types@4.20260214.0)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.6.2)(pg@8.18.0)(postgres@3.4.8)
-      zod: 3.25.76
-
   '@goobits/themes@1.3.2(@lucide/svelte@0.564.0(svelte@5.51.1))(@sveltejs/kit@2.51.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)':
     dependencies:
       '@sveltejs/kit': 2.51.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))
@@ -5741,6 +5803,27 @@ snapshots:
     transitivePeerDependencies:
       - rollup
 
+  '@sveltejs/kit@2.51.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(typescript@5.9.3)(vite@7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      '@sveltejs/acorn-typescript': 1.0.9(acorn@8.15.0)
+      '@sveltejs/vite-plugin-svelte': 6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))
+      '@types/cookie': 0.6.0
+      acorn: 8.15.0
+      cookie: 0.6.0
+      devalue: 5.6.2
+      esm-env: 1.2.2
+      kleur: 4.1.5
+      magic-string: 0.30.21
+      mrmime: 2.0.1
+      sade: 1.8.1
+      set-cookie-parser: 3.0.1
+      sirv: 3.0.2
+      svelte: 5.51.1
+      vite: 7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)
+    optionalDependencies:
+      typescript: 5.9.3
+
   '@sveltejs/kit@2.51.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))':
     dependencies:
       '@standard-schema/spec': 1.1.0
@@ -5762,12 +5845,29 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.3
 
+  '@sveltejs/vite-plugin-svelte-inspector@5.0.2(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(vite@7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))':
+    dependencies:
+      '@sveltejs/vite-plugin-svelte': 6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))
+      obug: 2.1.1
+      svelte: 5.51.1
+      vite: 7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)
+
   '@sveltejs/vite-plugin-svelte-inspector@5.0.2(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))':
     dependencies:
       '@sveltejs/vite-plugin-svelte': 6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))
       obug: 2.1.1
       svelte: 5.51.1
       vite: 7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)
+
+  '@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))':
+    dependencies:
+      '@sveltejs/vite-plugin-svelte-inspector': 5.0.2(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(vite@7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))
+      deepmerge: 4.3.1
+      magic-string: 0.30.21
+      obug: 2.1.1
+      svelte: 5.51.1
+      vite: 7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)
+      vitefu: 1.1.1(vite@7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))
 
   '@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))':
     dependencies:
@@ -5823,6 +5923,10 @@ snapshots:
   '@types/mdast@4.0.4':
     dependencies:
       '@types/unist': 2.0.11
+
+  '@types/node@22.19.11':
+    dependencies:
+      undici-types: 6.21.0
 
   '@types/node@25.2.3':
     dependencies:
@@ -7704,6 +7808,8 @@ snapshots:
 
   typescript@5.9.3: {}
 
+  undici-types@6.21.0: {}
+
   undici-types@7.16.0: {}
 
   undici@7.18.2: {}
@@ -7794,6 +7900,21 @@ snapshots:
       - tsx
       - yaml
 
+  vite@7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0):
+    dependencies:
+      esbuild: 0.27.2
+      fdir: 6.5.0(picomatch@4.0.3)
+      picomatch: 4.0.3
+      postcss: 8.5.6
+      rollup: 4.57.1
+      tinyglobby: 0.2.15
+    optionalDependencies:
+      '@types/node': 22.19.11
+      fsevents: 2.3.3
+      sass: 1.97.3
+      sass-embedded: 1.97.3
+      stylus: 0.64.0
+
   vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0):
     dependencies:
       esbuild: 0.27.2
@@ -7808,6 +7929,10 @@ snapshots:
       sass: 1.97.3
       sass-embedded: 1.97.3
       stylus: 0.64.0
+
+  vitefu@1.1.1(vite@7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)):
+    optionalDependencies:
+      vite: 7.3.1(@types/node@22.19.11)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)
 
   vitefu@1.1.1(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)):
     optionalDependencies:

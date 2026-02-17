@@ -11,7 +11,12 @@ export function getViteRuntimeConfig(
 		host: runtime.host,
 		open: false,
 		port: runtime.port,
-		proxy: {}
+		proxy: {},
+		// Vite blocks dot-directories by default. SvelteKit dev client dynamically imports
+		// from `/.svelte-kit/...`, so explicitly allow it to avoid 403s and broken hydration.
+		fs: {
+			allow: [path.resolve('.'), path.resolve('.svelte-kit')]
+		}
 	}
 
 	if (runtime.httpsKey && runtime.httpsCert) {
