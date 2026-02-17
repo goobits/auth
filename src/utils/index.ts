@@ -21,3 +21,4 @@ export {
 export { VerificationTokenAdapter } from "../adapters/verification-token/base.ts";
 export { MemoryRateLimitStore, createRateLimiter } from "./rate-limit.ts";
 export { redactObject, DEFAULT_REDACT_KEYS } from "./redact.ts";
+export { isSafeRedirectPath } from "./redirect.ts";

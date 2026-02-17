@@ -9,21 +9,19 @@ type WebCrypto = {
 };
 
 async function getWebCrypto(): Promise<WebCrypto> {
-	if (globalThis.crypto?.subtle) {
+	if (typeof globalThis.crypto !== "undefined" && globalThis.crypto.subtle) {
 		return globalThis.crypto as WebCrypto;
 	}
-	const { webcrypto } = await import("node:crypto");
-	return webcrypto as unknown as WebCrypto;
+	throw new Error("WebCrypto is required");
 }
 
 async function getRandomBytes(length: number): Promise<Uint8Array> {
 	const bytes = new Uint8Array(length);
-	if (globalThis.crypto?.getRandomValues) {
-		globalThis.crypto.getRandomValues(bytes);
-		return bytes;
+	if (typeof globalThis.crypto === "undefined") {
+		throw new Error("crypto.getRandomValues is required");
 	}
-	const { randomFillSync } = await import("node:crypto");
-	return randomFillSync(bytes);
+	globalThis.crypto.getRandomValues(bytes);
+	return bytes;
 }
 
 // Optimization: Pre-computed lookup table for byte-to-hex conversion.
