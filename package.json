@@ -1,57 +1,173 @@
 {
-	"name": "pdx-run",
-	"private": true,
-	"version": "0.1.0",
-	"type": "module",
-	"packageManager": "pnpm@10.11.1",
-	"engines": {
-		"node": ">=22.0.0",
-		"pnpm": ">=10.0.0"
-	},
-	"scripts": {
-		"dev": "vite dev",
-		"build": "pnpm --filter @goobits/auth build && vite build",
-		"preview": "vite preview",
-		"cf:dev": "pnpm build && NODE_ENV=production wrangler pages dev .svelte-kit/cloudflare --ip 0.0.0.0 --port 3580",
-		"cf:deploy": "pnpm build && wrangler pages deploy .svelte-kit/cloudflare",
-		"cf:check": "./scripts/predeploy-check.sh",
-		"db:migrate:local": "wrangler d1 migrations apply DB --local",
-		"db:migrate:remote": "wrangler d1 migrations apply DB --remote",
-		"prepare": "svelte-kit sync || echo ''",
-		"lint": "eslint .",
-		"lint:fix": "eslint . --fix",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"test:unit": "vitest run --coverage",
-		"test:unit:watch": "vitest",
-		"test:e2e": "playwright test",
-		"test:e2e:ui": "playwright test --ui",
-		"test": "pnpm test:unit",
-		"test:all": "pnpm test:unit && pnpm test:e2e",
-		"validate": "pnpm lint && pnpm check && pnpm build"
-	},
-	"devDependencies": {
-		"@playwright/test": "^1.55.0",
-		"@vitest/coverage-v8": "^3.2.4",
-		"@eslint/js": "^10.0.1",
-		"@sveltejs/adapter-cloudflare": "^7.2.7",
-		"@sveltejs/kit": "^2.52.0",
-		"@sveltejs/vite-plugin-svelte": "^6.2.4",
-		"@types/node": "^25.2.3",
-		"eslint": "^10.0.0",
-		"eslint-plugin-svelte": "^3.15.0",
-		"globals": "^17.3.0",
-		"sass": "^1.97.3",
-		"svelte": "^5.51.2",
-		"svelte-check": "^4.4.0",
-		"typescript": "^5.9.3",
-		"typescript-eslint": "^8.56.0",
-		"vite": "^7.3.1",
-		"vitest": "^3.2.4",
-		"wrangler": "^4.65.0"
-	},
-	"dependencies": {
-		"@goobits/auth": "workspace:*",
-		"lucide-svelte": "^0.564.0"
-	}
+  "name": "@goobits/auth",
+  "version": "0.2.0",
+  "description": "Pluggable authentication system for SvelteKit applications",
+  "type": "module",
+  "main": "./dist/node/index.js",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "node": "./dist/node/index.js",
+      "default": "./dist/worker/index.js"
+    },
+    "./adapters": {
+      "types": "./dist/types/adapters/index.d.ts",
+      "node": "./dist/node/adapters/index.js",
+      "default": "./dist/worker/adapters/index.js"
+    },
+    "./adapters/database": {
+      "types": "./dist/types/adapters/database/index.d.ts",
+      "node": "./dist/node/adapters/database/index.js",
+      "default": "./dist/worker/adapters/database/index.js"
+    },
+    "./adapters/session": {
+      "types": "./dist/types/adapters/session/index.d.ts",
+      "node": "./dist/node/adapters/session/index.js",
+      "default": "./dist/worker/adapters/session/index.js"
+    },
+    "./adapters/oauth-token": {
+      "types": "./dist/types/adapters/oauth-token/index.d.ts",
+      "node": "./dist/node/adapters/oauth-token/index.js",
+      "default": "./dist/worker/adapters/oauth-token/index.js"
+    },
+    "./adapters/drizzle": {
+      "types": "./dist/types/adapters/drizzle/index.d.ts",
+      "node": "./dist/node/adapters/drizzle/index.js",
+      "default": "./dist/worker/adapters/drizzle/index.js"
+    },
+    "./adapters/verification-token": {
+      "types": "./dist/types/adapters/verification-token/index.d.ts",
+      "node": "./dist/node/adapters/verification-token/index.js",
+      "default": "./dist/worker/adapters/verification-token/index.js"
+    },
+    "./adapters/magic-link": {
+      "types": "./dist/types/adapters/magic-link/index.d.ts",
+      "node": "./dist/node/adapters/magic-link/index.js",
+      "default": "./dist/worker/adapters/magic-link/index.js"
+    },
+    "./adapters/webauthn": {
+      "types": "./dist/types/adapters/webauthn/index.d.ts",
+      "node": "./dist/node/adapters/webauthn/index.js",
+      "default": "./dist/worker/adapters/webauthn/index.js"
+    },
+    "./providers": {
+      "types": "./dist/types/providers/index.d.ts",
+      "node": "./dist/node/providers/index.js",
+      "default": "./dist/worker/providers/index.js"
+    },
+    "./handlers": {
+      "types": "./dist/types/handlers/index.d.ts",
+      "node": "./dist/node/handlers/index.js",
+      "default": "./dist/worker/handlers/index.js"
+    },
+    "./utils": {
+      "types": "./dist/types/utils/index.d.ts",
+      "node": "./dist/node/utils/index.js",
+      "default": "./dist/worker/utils/index.js"
+    },
+    "./client": {
+      "types": "./dist/types/client/index.d.ts",
+      "node": "./dist/node/client/index.js",
+      "default": "./dist/worker/client/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/types/index.d.ts",
+      "node": "./dist/node/types/index.js",
+      "default": "./dist/worker/types/index.js"
+    },
+    "./testing": {
+      "types": "./dist/types/testing/index.d.ts",
+      "node": "./dist/node/testing/index.js",
+      "default": "./dist/worker/testing/index.js"
+    },
+    "./mfa": {
+      "types": "./dist/types/mfa/index.d.ts",
+      "node": "./dist/node/mfa/index.js",
+      "default": "./dist/worker/mfa/index.js"
+    },
+    "./ui": {
+      "types": "./dist/types/ui/index.d.ts",
+      "node": "./dist/node/ui/index.js",
+      "default": "./dist/worker/ui/index.js"
+    },
+    "./ui/theme.css": "./dist/worker/ui/theme.css",
+    "./security": {
+      "types": "./dist/types/security/index.d.ts",
+      "node": "./dist/node/security/index.js",
+      "default": "./dist/worker/security/index.js"
+    },
+    "./errors": {
+      "types": "./dist/types/errors/index.d.ts",
+      "node": "./dist/node/errors/index.js",
+      "default": "./dist/worker/errors/index.js"
+    }
+  },
+  "scripts": {
+    "prepare": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:ui": "vitest --ui",
+    "test:integration": "vitest run --testPathPattern=integration",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "rm -rf dist && tsup && node scripts/copy-assets.mjs && npm run build:types",
+    "build:types": "tsc -p tsconfig.build.json",
+    "audit": "npm audit --omit=dev --audit-level=high",
+    "security:check": "npm run typecheck && npm test && npm run audit",
+    "api:scan": "npx @goobits/codeatlas . --format json --out .codeatlas --suggest --entrypoints src/index.ts,src/adapters/index.ts,src/adapters/drizzle/index.ts,src/adapters/database/index.ts,src/adapters/session/index.ts,src/adapters/oauth-token/index.ts,src/adapters/verification-token/index.ts,src/adapters/magic-link/index.ts,src/adapters/webauthn/index.ts,src/providers/index.ts,src/handlers/index.ts,src/utils/index.ts,src/types/index.ts,src/testing/index.ts,src/mfa/index.ts,src/ui/index.ts,src/security/index.ts,src/errors/index.ts",
+    "api:map": "npx @goobits/codeatlas . --format mermaid --out .codeatlas --entrypoints src/index.ts,src/adapters/index.ts,src/adapters/drizzle/index.ts,src/adapters/database/index.ts,src/adapters/session/index.ts,src/adapters/oauth-token/index.ts,src/adapters/verification-token/index.ts,src/adapters/magic-link/index.ts,src/adapters/webauthn/index.ts,src/providers/index.ts,src/handlers/index.ts,src/utils/index.ts,src/types/index.ts,src/testing/index.ts,src/mfa/index.ts,src/ui/index.ts,src/security/index.ts,src/errors/index.ts",
+    "prepublishOnly": "npm run build && npm run security:check"
+  },
+  "keywords": [
+    "auth",
+    "authentication",
+    "oauth",
+    "sveltekit",
+    "session",
+    "drizzle"
+  ],
+  "author": "@goobits",
+  "license": "MIT",
+  "peerDependencies": {
+    "@sveltejs/kit": "^2.0.0",
+    "drizzle-orm": "^0.44.0"
+  },
+  "dependencies": {
+    "@oslojs/crypto": "^1.0.1",
+    "@oslojs/encoding": "^1.1.0",
+    "@simplewebauthn/server": "^13.0.0",
+    "arctic": "^3.7.0",
+    "hash-wasm": "^4.12.0",
+    "zod": "^3.25.76"
+  },
+  "optionalDependencies": {
+    "@node-rs/argon2": "^2.0.2"
+  },
+  "overrides": {
+    "cookie": "^0.7.0"
+  },
+  "devDependencies": {
+    "@sveltejs/kit": "^2.52.0",
+    "@types/node": "^22.13.4",
+    "pg": "^8.18.0",
+    "pg-mem": "^3.0.8",
+    "pg-server": "^0.1.8",
+    "postgres": "^3.4.8",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.2",
+    "vitest": "^4.0.6"
+  },
+  "vitest": {
+    "test": {
+      "setupFiles": [
+        "./vitest.setup.js"
+      ]
+    }
+  }
 }
