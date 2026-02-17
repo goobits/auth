@@ -12,7 +12,7 @@
 	<div class="admin-page__sidebar-items">
 		{#each ADMIN_NAV as n}
 			<PillButton
-				className={`admin-page__sidebar-item ${tab === n.id ? 'admin-page__sidebar-item--active' : ''}`}
+				className={`admin-page__sidebar-item ui-button--start ${tab === n.id ? 'admin-page__sidebar-item--active' : ''}`}
 				variant="secondary"
 				size="sm"
 				href={getAdminTabHref(n.id)}

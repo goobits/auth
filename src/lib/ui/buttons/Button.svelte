@@ -126,6 +126,10 @@
 		width: 100%;
 	}
 
+	.ui-button--start {
+		justify-content: flex-start;
+	}
+
 	.ui-button--primary {
 		background: var(--button-bg);
 		border-color: color-mix(in srgb, var(--button-bg) 70%, var(--text));

@@ -289,6 +289,7 @@ $grid-unit: 0.5rem;
 .admin-page__sidebar-item {
 	display: flex;
 	align-items: center;
+	justify-content: flex-start;
 	gap: 0.625rem;
 	padding: 0.5625rem 0.625rem;
 	border-radius: 0.5rem;
@@ -320,6 +321,10 @@ $grid-unit: 0.5rem;
 		height: 1rem;
 		color: currentColor;
 	}
+}
+
+.admin-page__sidebar-item.ui-button {
+	justify-content: flex-start;
 }
 
 .admin-page__sidebar-logout {

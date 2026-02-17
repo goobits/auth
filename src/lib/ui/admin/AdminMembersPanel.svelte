@@ -2,6 +2,17 @@
 	import { Loader } from '@lucide/svelte'
 	import PillButton from '$lib/ui/buttons/PillButton.svelte'
 	const { members, formatDate } = $props()
+
+	function initialsFor(user) {
+		const source = (user?.name || user?.email || '').trim()
+		if (!source) return '??'
+		const words = source.split(/\s+/).filter(Boolean)
+		if (words.length >= 2) {
+			return `${words[0][0] || ''}${words[1][0] || ''}`.toUpperCase()
+		}
+		const compact = source.replace(/[^a-zA-Z0-9]/g, '')
+		return (compact.slice(0, 2) || source.slice(0, 2)).toUpperCase()
+	}
 </script>
 
 <h1 class="admin-page__title">Members</h1>
@@ -109,6 +120,8 @@
 					<div class="admin-page__members-user">
 						{#if user.avatar_url}
 							<img src={user.avatar_url} alt="" class="admin-page__members-avatar" />
+						{:else}
+							<span class="admin-page__members-avatar-fallback">{initialsFor(user)}</span>
 						{/if}
 						<span class="admin-page__members-user-name">{user.name || user.email}</span>
 					</div>
