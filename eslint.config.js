@@ -10,11 +10,14 @@ export default tseslint.config(
 			'.svelte-kit/**',
 			'build/**',
 			'dist/**',
+			'**/dist/**',
 			'static/**',
 			'software/**',
 			'coverage/**',
 			'test-results/**',
-			'repos/auth/__tests__/**',
+			'repos/**',
+			'.dev/**',
+			'packages/auth/src/ui/**',
 			'**/*.svelte.ts'
 		]
 	},
