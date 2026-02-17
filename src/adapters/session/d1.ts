@@ -119,7 +119,9 @@ export class D1SessionAdapter extends SessionAdapter {
 	_generateSessionId(): string {
 		const bytes = new Uint8Array(20);
 		crypto.getRandomValues(bytes);
-		return encodeBase64url(bytes);
+		// Cookie values are not reliably percent-decoded by all runtimes. Avoid '=' padding
+		// so we never emit values that need encoding like `%3D`.
+		return encodeBase64url(bytes).replace(/=+$/g, "");
 	}
 
 	private _coerceDbId(id: string): string | number {
@@ -193,7 +195,11 @@ export class D1SessionAdapter extends SessionAdapter {
 		const id = row[this.userColumns["id"]] ?? row["id"];
 		const email = row[this.userColumns["email"]] ?? row["email"];
 		const name = row[this.userColumns["name"]] ?? row["name"];
-		const avatar = row[this.userColumns["avatar"]] ?? row["avatar"];
+		// Preserve explicit NULLs from the DB (e.g. avatar_url = null).
+		// Using `??` would treat `null` as "missing" and fall back to undefined, failing validation.
+		const avatar = Object.prototype.hasOwnProperty.call(row, this.userColumns["avatar"])
+			? row[this.userColumns["avatar"]]
+			: row["avatar"];
 		const emailVerified =
 			row[this.userColumns.emailVerified] ?? row["email_verified"];
 		const role = row[this.userColumns.role] ?? row["role"];
