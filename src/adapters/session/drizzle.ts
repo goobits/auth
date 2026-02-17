@@ -1,9 +1,9 @@
-import { SessionAdapter } from "./base.ts";
+import { SessionAdapter } from "./base.js";
 import { encodeBase64url } from "@oslojs/encoding";
 import { eq } from "drizzle-orm";
 import type { Cookies } from "@sveltejs/kit";
-import type { Session, User } from "../../types/index.ts";
-import type { DrizzleDbLike, DrizzleJson, DrizzleRow, DrizzleTable } from "../drizzle-types.ts";
+import type { Session, User } from "../../types/index.js";
+import type { DrizzleDbLike, DrizzleJson, DrizzleRow, DrizzleTable } from "../drizzle-types.js";
 
 type SessionsTable = DrizzleTable & {
 	id: DrizzleTable[string];

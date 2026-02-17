@@ -1,5 +1,5 @@
-import { UserAdapter } from "./base.ts";
-import type { User } from "../../types/index.ts";
+import { UserAdapter } from "./base.js";
+import type { User } from "../../types/index.js";
 
 type D1Value = string | number | boolean | null;
 type D1Row = Record<string, D1Value>;

@@ -1,7 +1,7 @@
-import { SessionAdapter } from "./base.ts";
-import { generateRandomUUID } from "../../utils/crypto.ts";
+import { SessionAdapter } from "./base.js";
+import { generateRandomUUID } from "../../utils/crypto.js";
 import type { Cookies } from "@sveltejs/kit";
-import type { Session, User } from "../../types/index.ts";
+import type { Session, User } from "../../types/index.js";
 
 type KVNamespaceLike = {
 	put: (key: string, value: string, options?: { expirationTtl?: number }) => Promise<void>;

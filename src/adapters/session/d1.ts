@@ -1,7 +1,7 @@
-import { SessionAdapter } from "./base.ts";
+import { SessionAdapter } from "./base.js";
 import { encodeBase64url } from "@oslojs/encoding";
 import type { Cookies } from "@sveltejs/kit";
-import type { Session, User } from "../../types/index.ts";
+import type { Session, User } from "../../types/index.js";
 
 type D1Value = string | number | boolean | null;
 type D1Row = Record<string, D1Value>;

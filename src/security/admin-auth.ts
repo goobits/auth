@@ -1,4 +1,4 @@
-import { getRandomBytes } from "../utils/crypto.ts";
+import { getRandomBytes } from "../utils/crypto.js";
 
 function bytesToHex(bytes: Uint8Array): string {
 	return Array.from(bytes)

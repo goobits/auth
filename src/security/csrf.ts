@@ -1,4 +1,4 @@
-import { getRandomBytes } from "../utils/crypto.ts";
+import { getRandomBytes } from "../utils/crypto.js";
 import type { Cookies } from "@sveltejs/kit";
 type CsrfStoreRecord = { value: boolean; expiresAt: number | null };
 

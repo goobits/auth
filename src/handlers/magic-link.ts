@@ -3,22 +3,22 @@ import {
 	generateMagicLinkToken,
 	generateOtp,
 	hashToken,
-} from "../utils/magic-link.ts";
-import { createRateLimiter } from "../utils/rate-limit.ts";
-import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.ts";
-import { jsonResponse, parseRequestData } from "../utils/http.ts";
+} from "../utils/magic-link.js";
+import { createRateLimiter } from "../utils/rate-limit.js";
+import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.js";
+import { jsonResponse, parseRequestData } from "../utils/http.js";
 import type { RequestHandler } from "@sveltejs/kit";
 import type {
 	AuthLocals,
 	AuthHooks,
 	RequestEventLike,
-} from "../types/auth.ts";
-import type { User } from "../types/index.ts";
-import type { Session } from "../types/index.ts";
-import { ensureSessionAfterLogin, type OnLoginMode } from "../utils/session-lifecycle.ts";
-import { AuthPrincipalResolutionError } from "../errors/auth.ts";
-import { auditAuthEvent } from "../security/audit.ts";
-import { isSafeRedirectPath } from "../utils/redirect.ts";
+} from "../types/auth.js";
+import type { User } from "../types/index.js";
+import type { Session } from "../types/index.js";
+import { ensureSessionAfterLogin, type OnLoginMode } from "../utils/session-lifecycle.js";
+import { AuthPrincipalResolutionError } from "../errors/auth.js";
+import { auditAuthEvent } from "../security/audit.js";
+import { isSafeRedirectPath } from "../utils/redirect.js";
 
 type MagicLinkAdapterLike = {
 	createToken: (params: {

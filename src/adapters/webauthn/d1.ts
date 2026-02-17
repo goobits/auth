@@ -1,5 +1,5 @@
-import { WebAuthnAdapter } from "./base.ts";
-import type { WebAuthnCredential } from "../../types/index.ts";
+import { WebAuthnAdapter } from "./base.js";
+import type { WebAuthnCredential } from "../../types/index.js";
 
 type D1Value = string | number | boolean | null;
 type D1Row = Record<string, D1Value>;

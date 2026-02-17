@@ -1,5 +1,5 @@
-import { TokenAdapter } from "./base.ts";
-import { encryptTokens, decryptTokens } from "../../utils/crypto.ts";
+import { TokenAdapter } from "./base.js";
+import { encryptTokens, decryptTokens } from "../../utils/crypto.js";
 
 type KVNamespaceLike = {
 	put: (key: string, value: string) => Promise<void>;
@@ -56,7 +56,7 @@ export class KVTokenAdapter extends TokenAdapter {
 	async refreshTokens(
 		userId: string,
 		provider: string,
-	): Promise<import("../../types/index.ts").OAuthTokens | null> {
+	): Promise<import("../../types/index.js").OAuthTokens | null> {
 		throw new Error(
 			"refreshTokens not implemented - use provider-specific refresh logic",
 		);

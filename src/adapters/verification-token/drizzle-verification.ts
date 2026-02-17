@@ -1,13 +1,13 @@
 import { and, eq } from "drizzle-orm";
-import { VerificationTokenAdapter } from "./base.ts";
-import type { User, VerificationToken } from "../../types/index.ts";
+import { VerificationTokenAdapter } from "./base.js";
+import type { User, VerificationToken } from "../../types/index.js";
 import {
 	requireCondition,
 	requireColumn,
 	type DrizzleDbLike,
 	type DrizzleRow,
 	type DrizzleTable,
-} from "../drizzle-types.ts";
+} from "../drizzle-types.js";
 
 type TokensTable = DrizzleTable & {
 	id: DrizzleTable[string];

@@ -1,5 +1,5 @@
-import { hashPassword, verifyPassword } from "../utils/password.ts";
-import type { UserAdapter } from "../adapters/database/base.ts";
+import { hashPassword, verifyPassword } from "../utils/password.js";
+import type { UserAdapter } from "../adapters/database/base.js";
 
 type PasswordValidationResult = { valid: boolean; errors: string[] };
 type ValidatePasswordFn = (password: string) => PasswordValidationResult;
@@ -66,7 +66,7 @@ export class CredentialsProvider {
 	 * @param {Object} params
 	 * @param {string} params.email - User email
 	 * @param {string} params.password - Plain text password
-	 * @param {import('../adapters/database/base.ts').UserAdapter} params.userAdapter - User adapter
+	 * @param {import('../adapters/database/base.js').UserAdapter} params.userAdapter - User adapter
 	 * @returns {Promise<{user: Object, valid: boolean}>}
 	 */
 	async authenticate({
@@ -149,7 +149,7 @@ export class CredentialsProvider {
 	 * @param {string} params.password - Plain text password
 	 * @param {string} [params.name] - User name
 	 * @param {Object} [params.metadata] - Additional user data
-	 * @param {import('../adapters/database/base.ts').UserAdapter} params.userAdapter - User adapter
+	 * @param {import('../adapters/database/base.js').UserAdapter} params.userAdapter - User adapter
 	 * @returns {Promise<Object>} Created user (sanitized)
 	 */
 	async signUp({
@@ -214,7 +214,7 @@ export class CredentialsProvider {
 	 * @param {Object} params
 	 * @param {string} params.userId - User ID
 	 * @param {string} params.newPassword - New plain text password
-	 * @param {import('../adapters/database/base.ts').UserAdapter} params.userAdapter - User adapter
+	 * @param {import('../adapters/database/base.js').UserAdapter} params.userAdapter - User adapter
 	 * @returns {Promise<Object>} Updated user (sanitized)
 	 */
 	async updatePassword({
@@ -255,7 +255,7 @@ export class CredentialsProvider {
 	 * @param {string} params.email - User email
 	 * @param {string} params.currentPassword - Current plain text password
 	 * @param {string} params.newPassword - New plain text password
-	 * @param {import('../adapters/database/base.ts').UserAdapter} params.userAdapter - User adapter
+	 * @param {import('../adapters/database/base.js').UserAdapter} params.userAdapter - User adapter
 	 * @returns {Promise<{user: Object, valid: boolean}>}
 	 */
 	async changePassword({
