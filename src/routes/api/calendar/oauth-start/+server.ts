@@ -1,6 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../_bridge.ts'
-import { createOauthState, getGoogleAuthUrl } from '@packages/calendar/src/index.ts'
+import { createOauthState, getGoogleAuthUrl } from '@miko/calendar'
 import { enforceSameOrigin, requireAdminSession, unauthorized } from '../../admin/_helpers.ts'
 import { apiError, apiOk, logApiError } from '$lib/server/http/api'
 

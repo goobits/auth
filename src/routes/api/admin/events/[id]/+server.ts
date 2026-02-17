@@ -1,7 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../calendar/_bridge.ts'
-import { setAttendanceStatus, updateEventCapacity, updateEventMemory } from '@packages/calendar/src/services/social.ts'
-import { parseAdminEventUpdateInput, TransportValidationError } from '@packages/calendar/src/index.ts'
+import { parseAdminEventUpdateInput, setAttendanceStatus, TransportValidationError, updateEventCapacity, updateEventMemory } from '@miko/calendar'
 import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized } from '../../_helpers.ts'
 import { apiOk, apiError, apiValidationError, logApiError } from '$lib/server/http/api'
 

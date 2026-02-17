@@ -1,7 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../_bridge.ts'
-import { getCalendarProfile, saveCalendarProfile } from '@packages/calendar/src/services/social.ts'
-import { parseCalendarProfileInput, TransportValidationError } from '@packages/calendar/src/index.ts'
+import { getCalendarProfile, parseCalendarProfileInput, saveCalendarProfile, TransportValidationError } from '@miko/calendar'
 import { getCalendarUserId, unauthorizedCalendar } from '../_auth.ts'
 import { apiOk, apiValidationError, apiError, logApiError } from '$lib/server/http/api'
 

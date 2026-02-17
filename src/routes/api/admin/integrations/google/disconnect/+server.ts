@@ -1,7 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../../calendar/_bridge.ts'
-import { deleteConnection } from '@packages/calendar/src/index.ts'
-import { requireEnv } from '@packages/calendar/src/config/env.ts'
+import { deleteConnection, requireEnv } from '@miko/calendar'
 import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized } from '../../../_helpers.ts'
 import { apiError, apiOk, logApiError } from '$lib/server/http/api'
 

@@ -1,6 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../_bridge.ts'
-import { listUpcomingEvents } from '@packages/calendar/src/services/social.ts'
+import { listUpcomingEvents } from '@miko/calendar'
 import { getCalendarUserId } from '../_auth.ts'
 
 function escapeIcsText(value: string) {
@@ -53,4 +53,3 @@ export async function GET(event: RequestEvent) {
 		}
 	})
 }
-

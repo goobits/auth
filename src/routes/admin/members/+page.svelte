@@ -1,5 +1,5 @@
 <script>
-	import AdminPageShell from '$lib/ui/admin/AdminPageShell.svelte'
+	import { AdminPageShell } from '@miko/calendar-ui'
 	let { data, form } = $props()
 </script>
 

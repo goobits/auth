@@ -1,9 +1,8 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
-import { createEventsBatch, listEventsFeed } from '@packages/calendar/src/services/social.ts'
+import { createEventsBatch, listEventsFeed } from '@miko/calendar'
 import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized } from '../_helpers.ts'
-import { getCalendarProgramBySlug } from '@packages/calendar/src/services/programs.ts'
-import { parseAdminCreateEventsBatchInput, TransportValidationError } from '@packages/calendar/src/index.ts'
+import { getCalendarProgramBySlug, parseAdminCreateEventsBatchInput, TransportValidationError } from '@miko/calendar'
 import { apiOk, apiError, apiValidationError, logApiError } from '$lib/server/http/api'
 
 export async function GET(event: RequestEvent) {

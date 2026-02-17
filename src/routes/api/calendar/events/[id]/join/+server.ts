@@ -1,8 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../_bridge.ts'
-import { joinEvent } from '@packages/calendar/src/services/social.ts'
-import { enqueueCalendarSyncJob, processCalendarSyncQueue } from '@packages/calendar/src/services/sync-queue.ts'
-import { parseCalendarJoinEventInput, TransportValidationError } from '@packages/calendar/src/index.ts'
+import { enqueueCalendarSyncJob, joinEvent, parseCalendarJoinEventInput, processCalendarSyncQueue, TransportValidationError } from '@miko/calendar'
 import { getCalendarUserId, unauthorizedCalendar } from '../../../_auth.ts'
 import { apiError, apiOk, apiValidationError, logApiError } from '$lib/server/http/api'
 

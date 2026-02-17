@@ -1,6 +1,6 @@
 import { getAdminAuth, ensureAdminAccount } from '$lib/auth/admin.ts'
 import { createSigninHandler, createLogoutHandler } from '@goobits/auth/handlers'
-import { checkRateLimit } from '@packages/calendar/src/index.ts'
+import { checkRateLimit } from '@miko/calendar'
 import { logAdminEvent } from '../api/admin/_helpers.ts'
 import { redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'

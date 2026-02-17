@@ -1,6 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
-import { parseAdminRulesInput, TransportValidationError } from '@packages/calendar/src/index.ts'
+import { parseAdminRulesInput, TransportValidationError } from '@miko/calendar'
 import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized } from '../_helpers.ts'
 import { apiError, apiOk, apiValidationError, logApiError } from '$lib/server/http/api'
 

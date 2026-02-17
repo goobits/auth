@@ -1,5 +1,5 @@
 <script>
-	import ActivityBookingPage from '$lib/booking/ActivityBookingPage.svelte'
+	import { ActivityBookingPage } from '@miko/calendar-ui'
 	const { data } = $props()
 </script>
 

@@ -1,7 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../_bridge.ts'
-import { leaveEvent } from '@packages/calendar/src/services/social.ts'
-import { enqueueCalendarSyncJob, processCalendarSyncQueue } from '@packages/calendar/src/services/sync-queue.ts'
+import { enqueueCalendarSyncJob, leaveEvent, processCalendarSyncQueue } from '@miko/calendar'
 import { getCalendarUserId, unauthorizedCalendar } from '../../../_auth.ts'
 import { apiError, apiOk, logApiError } from '$lib/server/http/api'
 

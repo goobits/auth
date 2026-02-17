@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types'
-import type { AdminTabId } from '$lib/viewmodels/admin'
+import type { AdminTabId } from '@miko/calendar-ui/features/admin/admin'
 
 export function createAdminSectionLoad(initialTab: AdminTabId): PageServerLoad {
 	return async (event) => {

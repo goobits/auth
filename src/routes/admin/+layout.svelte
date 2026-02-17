@@ -1,5 +1,6 @@
 <script>
-	import AdminShellLayout from '$lib/ui/admin/AdminShellLayout.svelte'
+	import './Admin.scss'
+	import { AdminShellLayout } from '@miko/calendar-ui'
 
 	const { children, data } = $props()
 </script>

@@ -7,7 +7,7 @@ import {
 	purgeCalendarSyncDeadLetters,
 	retryCalendarSyncDeadLetters,
 	TransportValidationError
-} from '@packages/calendar/src/index.ts'
+} from '@miko/calendar'
 import { apiError, apiOk, apiValidationError, logApiError } from '$lib/server/http/api'
 
 export async function POST(event: RequestEvent) {

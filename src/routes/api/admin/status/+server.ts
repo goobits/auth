@@ -1,8 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
-import { ensureValidGoogleToken, getConnection, saveConnection } from '../../../../../packages/calendar/src/index.ts'
-import { requireEnv } from '@packages/calendar/src/config/env.ts'
-import { getCalendarSyncQueueHealth } from '@packages/calendar/src/services/sync-queue.ts'
+import { ensureValidGoogleToken, getConnection, saveConnection, requireEnv, getCalendarSyncQueueHealth } from '@miko/calendar'
 import { requireAdminSession, unauthorized } from '../_helpers.ts'
 import { apiError, apiOk, logApiError } from '$lib/server/http/api'
 

@@ -7,7 +7,7 @@ import {
 	listInvites,
 	parseCalendarInviteCreateInput,
 	TransportValidationError
-} from '@packages/calendar/src/index.ts'
+} from '@miko/calendar'
 import { apiOk, apiError, apiValidationError, logApiError } from '$lib/server/http/api'
 
 export async function GET(event: RequestEvent) {

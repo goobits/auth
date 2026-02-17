@@ -1,5 +1,5 @@
 import { buildEnv } from '../../api/calendar/_bridge.ts'
-import { loadCalendarMemberProfileData } from '@packages/calendar/src/index.ts'
+import { loadCalendarMemberProfileData } from '@miko/calendar'
 
 export async function load({ platform, locals }: { platform: App.Platform; locals: { user?: { id?: string | number } } }) {
 	const rawUserId = locals.user?.id

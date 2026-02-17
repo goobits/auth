@@ -1,6 +1,6 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../calendar/_bridge.ts'
-import { parseSyncQueueProcessLimitInput, processCalendarSyncQueue, TransportValidationError } from '@packages/calendar/src/index.ts'
+import { parseSyncQueueProcessLimitInput, processCalendarSyncQueue, TransportValidationError } from '@miko/calendar'
 
 function unauthorized() {
 	return json({ ok: false, error: { message: 'Unauthorized' } }, { status: 401 })

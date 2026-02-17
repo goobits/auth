@@ -1,5 +1,5 @@
 <script>
-	import CalendarHomePage from '$lib/booking/CalendarHomePage.svelte'
+	import { CalendarHomePage } from '@miko/calendar-ui'
 
 	let { data } = $props()
 </script>

@@ -1,5 +1,6 @@
 <script>
-	import CalendarShellLayout from '$lib/ui/calendar/CalendarShellLayout.svelte'
+	import './Calendar.scss'
+	import { CalendarShellLayout } from '@miko/calendar-ui'
 
 	const { data, children } = $props()
 </script>

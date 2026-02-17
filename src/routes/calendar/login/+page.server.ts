@@ -1,5 +1,5 @@
 import { dev } from '$app/environment'
-import { mergeAuthEnv, resolveCalendarProviders } from '$lib/auth/ui/providers'
+import { mergeAuthEnv, resolveCalendarProviders } from '@miko/calendar-ui/auth/ui/providers'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ platform }) => {

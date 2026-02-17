@@ -1,5 +1,5 @@
 import { buildEnv } from '../api/calendar/_bridge.ts'
-import { loadCalendarMemberShellData } from '@packages/calendar/src/index.ts'
+import { loadCalendarMemberShellData } from '@miko/calendar'
 
 type CalendarUser = {
 	avatarUrl?: string

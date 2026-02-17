@@ -1,7 +1,7 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { requireAdminSession, unauthorized } from '../../../admin/_helpers.ts'
 import { getAdminAuth } from '$lib/auth/admin.ts'
-import { listCalendarUsers } from '@packages/calendar/src/storage/d1.ts'
+import { listCalendarUsers } from '@miko/calendar'
 import { apiError, apiOk, logApiError } from '$lib/server/http/api'
 
 export async function GET(event: RequestEvent) {

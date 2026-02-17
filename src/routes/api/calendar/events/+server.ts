@@ -1,7 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../_bridge.ts'
-import { listEventsFeed } from '@packages/calendar/src/services/social.ts'
-import { buildPaymentLink } from '@packages/calendar/src/services/pay.ts'
+import { buildPaymentLink, listEventsFeed } from '@miko/calendar'
 import { getCalendarUserId, unauthorizedCalendar } from '../_auth.ts'
 import { apiOk, apiError, logApiError } from '$lib/server/http/api'
 

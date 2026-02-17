@@ -1,7 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../_bridge.ts'
-import { consumeOauthState, exchangeGoogleCode, saveConnection } from '@packages/calendar/src/index.ts'
-import { requireEnv } from '@packages/calendar/src/config/env.ts'
+import { consumeOauthState, exchangeGoogleCode, requireEnv, saveConnection } from '@miko/calendar'
 
 export async function GET(event: RequestEvent) {
 	try {
