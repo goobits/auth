@@ -1,5 +1,5 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
-import { buildEnv } from '../../../calendar/_bridge.ts'
+import { buildEnv } from '@miko/calendar-kit'
 import { parseSyncQueueProcessLimitInput, processCalendarSyncQueue, TransportValidationError } from '@miko/calendar'
 
 function unauthorized() {

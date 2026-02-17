@@ -1,4 +1,4 @@
-import { buildEnv } from '../api/calendar/_bridge.ts'
+import { buildEnv } from '@miko/calendar-kit'
 import { loadCalendarMemberShellData } from '@miko/calendar'
 
 type CalendarUser = {

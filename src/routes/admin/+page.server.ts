@@ -1,4 +1,4 @@
-import { getAdminAuth, ensureAdminAccount } from '$lib/auth/admin.ts'
+import { getAdminAuth, ensureAdminAccount } from '@miko/calendar-kit'
 import { createSigninHandler, createLogoutHandler } from '@goobits/auth/handlers'
 import { checkRateLimit } from '@miko/calendar'
 import { logAdminEvent } from '../api/admin/_helpers.ts'

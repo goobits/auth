@@ -1,8 +1,8 @@
 import type { RequestEvent } from '@sveltejs/kit'
-import { buildEnv } from '../../../calendar/_bridge.ts'
-import type { D1DatabaseLike } from '$lib/dev/devDb'
+import { buildEnv } from '@miko/calendar-kit'
+import type { D1DatabaseLike } from '@miko/calendar-kit'
 import { enforceSameOrigin, requireAdminSession, unauthorized, forbidden, logAdminEvent } from '../../_helpers'
-import { apiError, apiOk, logApiError } from '$lib/server/http/api'
+import { apiError, apiOk, logApiError } from '@miko/calendar-kit'
 
 type CleanupResult = {
 	events: { before: number; after: number }

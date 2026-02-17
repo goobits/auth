@@ -1,6 +1,6 @@
 import { json, type RequestEvent } from '@sveltejs/kit'
 import { D1SessionAdapter } from '@goobits/auth/adapters'
-import { buildEnv } from '../../calendar/_bridge.ts'
+import { buildEnv } from '@miko/calendar-kit'
 import { parseCalendarSessionBootstrapInput, TransportValidationError } from '@miko/calendar'
 
 type CalendarUserRow = { id: string | number }
@@ -13,6 +13,7 @@ export async function POST(event: RequestEvent) {
 	try {
 		const env = await buildEnv(event.platform)
 		if (env['NODE_ENV'] !== 'development') return unauthorized()
+		if (env['E2E_RUN'] !== '1') return unauthorized()
 
 		const expected = String(env['E2E_TEST_TOKEN'] || env['ADMIN_PASSCODE'] || '')
 		if (!expected) return unauthorized()

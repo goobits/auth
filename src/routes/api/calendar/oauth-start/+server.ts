@@ -1,8 +1,8 @@
 import type { RequestEvent } from '@sveltejs/kit'
-import { buildEnv } from '../_bridge.ts'
+import { buildEnv } from '@miko/calendar-kit'
 import { createOauthState, getGoogleAuthUrl } from '@miko/calendar'
 import { enforceSameOrigin, requireAdminSession, unauthorized } from '../../admin/_helpers.ts'
-import { apiError, apiOk, logApiError } from '$lib/server/http/api'
+import { apiError, apiOk, logApiError } from '@miko/calendar-kit'
 
 export async function GET(event: RequestEvent) {
 	try {

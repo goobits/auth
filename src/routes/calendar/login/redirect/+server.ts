@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit'
-import { getCalendarRedirect } from '$lib/auth/calendar.ts'
+import { getCalendarRedirect } from '@miko/calendar-kit'
 import type { RequestHandler } from './$types'
 
 export const GET: RequestHandler = ({ cookies }) => {

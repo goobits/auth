@@ -1,6 +1,6 @@
 import { CredentialsProvider } from '@goobits/auth/providers'
 import { D1UserAdapter } from '@goobits/auth/adapters'
-import type { D1DatabaseLike } from '$lib/dev/devDb'
+import type { D1DatabaseLike } from '@miko/calendar-kit'
 import { issueEmailVerification } from '$lib/server/email/verification'
 
 export type RegisterUserInput = {

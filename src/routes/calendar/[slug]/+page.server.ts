@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit'
-import { buildEnv } from '../../api/calendar/_bridge.ts'
+import { buildEnv } from '@miko/calendar-kit'
 import { buildPaymentLink, getCalendarProgramBySlug, listEventsFeed } from '@miko/calendar'
 
 export async function load({

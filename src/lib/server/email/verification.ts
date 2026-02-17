@@ -1,4 +1,4 @@
-import type { D1DatabaseLike } from '$lib/dev/devDb'
+import type { D1DatabaseLike } from '@miko/calendar-kit'
 
 const EMAIL_VERIFICATION_TTL_MS = 1000 * 60 * 60 * 24
 

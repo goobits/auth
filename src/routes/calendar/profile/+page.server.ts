@@ -1,4 +1,4 @@
-import { buildEnv } from '../../api/calendar/_bridge.ts'
+import { buildEnv } from '@miko/calendar-kit'
 import { loadCalendarMemberProfileData } from '@miko/calendar'
 
 export async function load({ platform, locals }: { platform: App.Platform; locals: { user?: { id?: string | number } } }) {

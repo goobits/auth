@@ -1,7 +1,7 @@
 import type { RequestEvent } from '@sveltejs/kit'
-import { buildEnv } from '../_bridge.ts'
+import { buildEnv } from '@miko/calendar-kit'
 import { listUpcomingEvents } from '@miko/calendar'
-import { getCalendarUserId } from '../_auth.ts'
+import { getCalendarUserId } from '@miko/calendar-kit'
 
 function escapeIcsText(value: string) {
 	return value

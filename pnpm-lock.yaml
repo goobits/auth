@@ -29,6 +29,9 @@ importers:
       '@miko/calendar':
         specifier: workspace:*
         version: link:packages/calendar
+      '@miko/calendar-kit':
+        specifier: workspace:*
+        version: link:packages/calendar-kit
       '@miko/calendar-ui':
         specifier: workspace:*
         version: link:packages/calendar-ui
@@ -190,6 +193,24 @@ importers:
       '@goobits/auth':
         specifier: workspace:*
         version: link:../auth
+
+  packages/calendar-kit:
+    dependencies:
+      '@goobits/auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@miko/calendar':
+        specifier: workspace:*
+        version: link:../calendar
+      '@sveltejs/kit':
+        specifier: ^2.0.0
+        version: 2.51.0(@sveltejs/vite-plugin-svelte@6.2.4(svelte@5.51.1)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0)))(svelte@5.51.1)(typescript@5.9.3)(vite@7.3.1(@types/node@25.2.3)(sass-embedded@1.97.3)(sass@1.97.3)(stylus@0.64.0))
+      better-sqlite3:
+        specifier: ^12.6.2
+        version: 12.6.2
+      svelte:
+        specifier: ^5.0.0
+        version: 5.51.1
 
   packages/calendar-ui:
     dependencies:

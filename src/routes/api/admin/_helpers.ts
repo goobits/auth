@@ -1,5 +1,5 @@
 import type { RequestEvent } from '@sveltejs/kit'
-import { apiError, noStoreHeaders as sharedNoStoreHeaders } from '$lib/server/http/api'
+import { apiError, noStoreHeaders as sharedNoStoreHeaders } from '@miko/calendar-kit'
 
 export const noStoreHeaders = sharedNoStoreHeaders
 

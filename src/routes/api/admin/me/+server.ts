@@ -1,5 +1,5 @@
 import type { RequestEvent } from '@sveltejs/kit'
-import { apiOk } from '$lib/server/http/api'
+import { apiOk } from '@miko/calendar-kit'
 
 export async function GET(event: RequestEvent) {
 	const locals = event.locals as {

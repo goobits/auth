@@ -1,8 +1,7 @@
 import type { RequestEvent } from '@sveltejs/kit'
-import { buildEnv } from '../../../_bridge.ts'
+import { buildEnv } from '@miko/calendar-kit'
 import { enqueueCalendarSyncJob, joinEvent, parseCalendarJoinEventInput, processCalendarSyncQueue, TransportValidationError } from '@miko/calendar'
-import { getCalendarUserId, unauthorizedCalendar } from '../../../_auth.ts'
-import { apiError, apiOk, apiValidationError, logApiError } from '$lib/server/http/api'
+import { apiError, apiOk, apiValidationError, getCalendarUserId, logApiError, unauthorizedCalendar } from '@miko/calendar-kit'
 
 export async function POST(event: RequestEvent) {
 	try {

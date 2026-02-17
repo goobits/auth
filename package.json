@@ -83,6 +83,7 @@
 		"@aws-sdk/client-ses": "^3.990.0",
 		"@aws-sdk/s3-request-presigner": "^3.990.0",
 		"@miko/calendar": "workspace:*",
+		"@miko/calendar-kit": "workspace:*",
 		"@miko/calendar-ui": "workspace:*",
 		"@miko/ui": "workspace:*",
 		"@goobits/auth": "workspace:*",

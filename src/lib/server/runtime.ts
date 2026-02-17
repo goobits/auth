@@ -1,5 +1,5 @@
 import { dev } from '$app/environment'
-import { getDevDb, type D1DatabaseLike } from '$lib/dev/devDb'
+import { getDevDb, type D1DatabaseLike } from '@miko/calendar-kit'
 
 type PlatformEnv = {
 	DB?: D1DatabaseLike

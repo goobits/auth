@@ -1,5 +1,5 @@
 import type { RequestEvent } from '@sveltejs/kit'
-import { buildEnv } from '../../calendar/_bridge.ts'
+import { buildEnv } from '@miko/calendar-kit'
 import { enforceSameOrigin, requireAdminSession, unauthorized } from '../_helpers.ts'
 import {
 	parseAdminSyncQueueActionInput,
@@ -8,7 +8,7 @@ import {
 	retryCalendarSyncDeadLetters,
 	TransportValidationError
 } from '@miko/calendar'
-import { apiError, apiOk, apiValidationError, logApiError } from '$lib/server/http/api'
+import { apiError, apiOk, apiValidationError, logApiError } from '@miko/calendar-kit'
 
 export async function POST(event: RequestEvent) {
 	try {

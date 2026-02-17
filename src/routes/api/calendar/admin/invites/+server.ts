@@ -1,6 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit'
 import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized } from '../../../admin/_helpers.ts'
-import { getAdminAuth } from '$lib/auth/admin.ts'
+import { getAdminAuth } from '@miko/calendar-kit'
 import {
 	createInvite,
 	deleteInvite,
@@ -8,7 +8,7 @@ import {
 	parseCalendarInviteCreateInput,
 	TransportValidationError
 } from '@miko/calendar'
-import { apiOk, apiError, apiValidationError, logApiError } from '$lib/server/http/api'
+import { apiOk, apiError, apiValidationError, logApiError } from '@miko/calendar-kit'
 
 export async function GET(event: RequestEvent) {
 	try {

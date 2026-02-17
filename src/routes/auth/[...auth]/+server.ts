@@ -1,4 +1,4 @@
-import { getCalendarAuth, setCalendarLoginContext } from '$lib/auth/calendar.ts'
+import { getCalendarAuth, setCalendarLoginContext } from '@miko/calendar-kit'
 import {
 	buildCalendarLoginErrorPath,
 	getRedirectLocationFromError,

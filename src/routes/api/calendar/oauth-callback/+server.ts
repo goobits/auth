@@ -1,5 +1,5 @@
 import type { RequestEvent } from '@sveltejs/kit'
-import { buildEnv } from '../_bridge.ts'
+import { buildEnv } from '@miko/calendar-kit'
 import { consumeOauthState, exchangeGoogleCode, requireEnv, saveConnection } from '@miko/calendar'
 
 export async function GET(event: RequestEvent) {
