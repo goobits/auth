@@ -1,84 +1,80 @@
-# pdx.run
-
+# 🦖 pdx.run
 SvelteKit site for PDX Dino Run, deployed on Cloudflare Pages with D1-backed form submissions.
 
-## Requirements
+## ✨ Key Features
+- **☁️ Cloudflare Pages runtime** - `@sveltejs/adapter-cloudflare` build output at `.svelte-kit/cloudflare`
+- **🗄️ D1 persistence** - store form submissions in Cloudflare D1
+- **🛡️ Turnstile protection** - optional bot protection on public forms
+- **🧭 Internal routes** - attendee/volunteer/donate/routes/code-of-conduct/thanks pages
+- **🧪 Tests** - Vitest unit tests + Playwright e2e tests
+- **🔧 Strict lint/typecheck** - ESLint (type-aware) + `svelte-check`
 
-- Node.js (see `package.json#engines`)
-- pnpm (see `package.json#packageManager`)
-
-## Setup
-
+## 🚀 Quick Start
 ```bash
+# Requirements
+# - Node.js: see package.json#engines
+# - pnpm: see package.json#packageManager
+
 pnpm install
+
+# Local D1 (Wrangler) migrations
 pnpm db:migrate:local
+
+# Cloudflare Pages local runtime (recommended for full functionality)
+pnpm cf:dev
+# http://127.0.0.1:3580
 ```
 
-## Scripts
+## 🌐 App Routes
+- **`/`** - homepage
+- **`/join`** - attendee signup (writes to D1)
+- **`/volunteer`** - volunteer signup (writes to D1)
+- **`/donate`** - donation options
+- **`/routes`** - route details + downloads
+- **`/code-of-conduct`** - event conduct policy
+- **`/thanks`** - post-submit confirmation
 
-- `pnpm dev` - run Vite dev server
-- `pnpm build` - production build
-- `pnpm preview` - preview production build
-- `pnpm cf:dev` - Cloudflare Pages local runtime (`http://127.0.0.1:3580`)
-- `pnpm cf:deploy` - build + deploy to Cloudflare Pages
-- `pnpm cf:check` - predeploy checks (auth, D1 IDs, validate, build output)
-- `pnpm db:migrate:local` - apply D1 migrations to local DB
-- `pnpm db:migrate:remote` - apply D1 migrations to remote DB
-- `pnpm lint` - ESLint (strict)
-- `pnpm check` - `svelte-check` + TypeScript
-- `pnpm test:unit` - Vitest unit tests (`__tests__/unit`)
-- `pnpm test:e2e` - Playwright e2e tests (`__tests__/e2e`)
-- `pnpm test:all` - unit + e2e
-- `pnpm validate` - lint + check + build
+## ⚙️ Configuration
+```bash
+# Cloudflare bindings are configured in wrangler.toml
+# - D1 binding name: DB
+# - nodejs_compat enabled
 
-## Runtime config
+# Turnstile (set in Cloudflare Pages env vars or local env)
+PUBLIC_TURNSTILE_SITE_KEY=...
+TURNSTILE_SECRET_KEY=...
 
-- Cloudflare adapter: `@sveltejs/adapter-cloudflare`
-- Wrangler config: `wrangler.toml` (`nodejs_compat` enabled, D1 binding `DB`)
-- Turnstile env vars:
-- `PUBLIC_TURNSTILE_SITE_KEY` - client widget site key
-- `TURNSTILE_SECRET_KEY` - server verification secret
-- `TURNSTILE_BYPASS` - optional test/dev bypass (`true` only outside production)
+# Optional: bypass Turnstile for local testing only
+TURNSTILE_BYPASS=true
+```
 
-## Internal routes
+## 🛠️ Cloudflare Pages Build Settings
+- **Framework preset**: `None`
+- **Build command**: `pnpm install --frozen-lockfile && pnpm build`
+- **Build output directory**: `.svelte-kit/cloudflare`
+- **Root directory**: `/`
 
-- `/` - homepage
-- `/join` - attendee signup form (writes to D1)
-- `/volunteer` - volunteer signup form (writes to D1)
-- `/donate` - donation options
-- `/routes` - route details + downloads
-- `/code-of-conduct` - event conduct policy
-- `/thanks` - post-submit confirmation
-- `/api/remind` (POST) - reminder email capture (writes to D1)
+## 🧪 Development
+```bash
+# Lint + typecheck + build
+pnpm validate
 
-## Cloudflare Pages build settings
+# Unit tests
+pnpm test:unit
 
-- Framework preset: `None`
-- Build command: `pnpm install --frozen-lockfile && pnpm build`
-- Build output directory: `.svelte-kit/cloudflare`
-- Root directory: `/` (repo root)
+# E2E tests
+pnpm exec playwright install
+pnpm test:e2e
 
-## Production deploy checklist
+# Everything
+pnpm test:all
+```
 
-1. `pnpm cf:check`
-2. `pnpm db:migrate:remote`
-3. `pnpm cf:deploy`
+## 📖 Documentation
+- **`CHANGELOG.md`** - release notes
+- **`README.md`** - setup, routes, and Cloudflare build settings
 
-## Recommended branch protection
-
-Protect `main` and require these GitHub checks before merge:
-
-- `Lint, Typecheck, Build, Unit`
-- `E2E (Playwright)`
-
-Also recommended:
-
-- Require pull request before merging
-- Require branches to be up to date before merging
-- Include administrators
-
-## Project layout
-
+## 🗂️ Project Layout
 - `src/routes/` - page and server routes
 - `src/lib/content/site.ts` - canonical homepage content
 - `src/lib/components/` - section components
@@ -86,12 +82,5 @@ Also recommended:
 - `src/lib/server/submissions.ts` - form validation + D1 persistence
 - `migrations/` - D1 schema migrations
 - `static/` - static assets, route files, OG image
-- `__tests__/unit/` - fast logic and server tests
+- `__tests__/unit/` - unit tests
 - `__tests__/e2e/` - browser interaction tests
-
-## Test setup
-
-```bash
-pnpm exec playwright install
-pnpm test:all
-```
