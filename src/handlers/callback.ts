@@ -70,14 +70,14 @@ export function createCallbackHandler(config: CallbackConfig) {
 		try {
 			// Already authenticated - redirect
 			if (isAuthenticated(locals)) {
-				throw redirect(302, redirectAfterLogin);
+				redirect(302, redirectAfterLogin);
 			}
 
 			const providerName = String(params["provider"] ?? "");
 			const providerInstance = providers[providerName];
 
 			if (!providerInstance) {
-				throw error(400, "Invalid OAuth provider");
+				error(400, "Invalid OAuth provider");
 			}
 
 			// Extract Apple user data and callback params if present (POST form data)
@@ -110,11 +110,11 @@ export function createCallbackHandler(config: CallbackConfig) {
 				callbacks,
 			});
 
-			throw redirect(302, redirectAfterLogin);
+			redirect(302, redirectAfterLogin);
 		} catch (err) {
 			// Handle OAuth2 errors
 			if (err instanceof OAuth2RequestError) {
-				throw error(400, "OAuth authentication failed");
+				error(400, "OAuth authentication failed");
 			}
 
 			// Re-throw redirects and errors
@@ -122,12 +122,12 @@ export function createCallbackHandler(config: CallbackConfig) {
 				throw err;
 			}
 			if (err instanceof AuthPrincipalResolutionError) {
-				throw error(err.status, err.message);
+				error(err.status, err.message);
 			}
 
 			// Log and throw generic error
 			log.error?.("Authentication error:", err);
-			throw error(500, "Authentication system error");
+			error(500, "Authentication system error");
 		}
 	};
 }

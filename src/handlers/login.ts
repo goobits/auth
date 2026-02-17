@@ -50,7 +50,7 @@ export function createLoginHandler(config: LoginHandlerConfig) {
 	return async ({ cookies, params, locals }: RequestEventLike) => {
 		// Check if already authenticated
 		if (isAuthenticated(locals)) {
-			throw redirect(302, redirectAfterLogin);
+			redirect(302, redirectAfterLogin);
 		}
 
 		const providerName = String(params["provider"] ?? "");
@@ -81,6 +81,6 @@ export function createLoginHandler(config: LoginHandlerConfig) {
 			authUrl.searchParams.set("response_mode", "form_post");
 		}
 
-		throw redirect(302, authUrl);
+		redirect(302, authUrl);
 	};
 }

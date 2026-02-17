@@ -8,7 +8,8 @@ import type { Cookies } from "@sveltejs/kit";
  * Best for stateless applications or serverless deployments
  */
 export class CookieSessionAdapter extends SessionAdapter {
-	private cookieName: string;
+	// Exposed for auth hook resolution (`createAuth` reads adapter.cookieName).
+	cookieName: string;
 	private secureCookies: boolean;
 	private sessionLifetime: number;
 	private _sessions: Map<string, { id: string; userId: string; expiresAt: Date; [key: string]: unknown }>;

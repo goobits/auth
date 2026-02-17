@@ -566,7 +566,7 @@ export function createWebAuthnLoginVerifyHandler(
 		}
 
 		if (event.request.method === "GET") {
-			throw redirect(302, redirectAfterLogin);
+			redirect(302, redirectAfterLogin);
 		}
 
 		return jsonResponse({ ok: true, user: sanitizeUser(user) });
