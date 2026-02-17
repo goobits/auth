@@ -10,4 +10,6 @@ export type Route = {
 	accent: 'hatchling' | 'raptor' | 'trex';
 	pdf: string;
 	gpx: string;
+	mapImage: string;
+	mapAlt: string;
 };

@@ -1,16 +1,27 @@
-export const donation = {
+export type DonationContent = {
+	headline: string;
+	body: string;
+	bullets: string[];
+	disclaimer: string;
+	onlineUrl: string | null;
+	venmoUrl: string | null;
+	paypalUrl: string | null;
+};
+
+export const donation: DonationContent = {
 	headline: 'Donate (if you can)',
 	body:
-		'This event is donation-based so it stays welcoming and accessible. Your donation helps cover permits, insurance, performer tips, and supports our beneficiary mission.',
+		'This event is donation-based so it stays welcoming and accessible. If you are able, your donation helps cover permits, insurance, performer tips, and supports youth science education.',
 	bullets: [
 		'Permits + insurance are covered first',
 		'Aerial tips go directly to performers',
 		'Remainder supports next year’s event operations'
 	],
-	disclaimer: 'Donations are community-managed and transparency updates are posted after the event.',
-	onlineUrl: '/donate#online',
-	venmoUrl: '/donate#venmo',
-	paypalUrl: '/donate#paypal'
+	disclaimer:
+		'Benefiting OMSI youth science education. PDX Dino Run is independently organized and not sponsored by or affiliated with OMSI unless explicitly stated.',
+	onlineUrl: null,
+	venmoUrl: null,
+	paypalUrl: null
 };
 
 export const volunteer = {

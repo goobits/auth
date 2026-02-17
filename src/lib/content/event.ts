@@ -62,7 +62,9 @@ export const routes: Route[] = [
 		note: 'Stroller-friendly',
 		accent: 'hatchling',
 		pdf: '/routes/hatchling.pdf',
-		gpx: '/routes/hatchling.gpx'
+		gpx: '/routes/hatchling.gpx',
+		mapImage: '/routes/hatchling-map.svg',
+		mapAlt: 'Simple loop map for the Hatchling route around Mt. Tabor.'
 	},
 	{
 		id: 'raptor',
@@ -75,7 +77,9 @@ export const routes: Route[] = [
 		note: 'Good workout',
 		accent: 'raptor',
 		pdf: '/routes/raptor.pdf',
-		gpx: '/routes/raptor.gpx'
+		gpx: '/routes/raptor.gpx',
+		mapImage: '/routes/raptor-map.svg',
+		mapAlt: 'Simple loop map for the Raptor route with moderate hills.'
 	},
 	{
 		id: 'trex',
@@ -88,7 +92,9 @@ export const routes: Route[] = [
 		note: 'Summit views',
 		accent: 'trex',
 		pdf: '/routes/trex.pdf',
-		gpx: '/routes/trex.gpx'
+		gpx: '/routes/trex.gpx',
+		mapImage: '/routes/trex-map.svg',
+		mapAlt: 'Simple loop map for the T-Rex route covering the full park loop.'
 	}
 ];
 

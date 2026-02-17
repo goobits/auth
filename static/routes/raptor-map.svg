@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">Raptor route map</title>
+  <desc id="desc">An orange medium loop with one hill marker and a start marker.</desc>
+  <rect width="640" height="360" fill="#f3ede4"/>
+  <rect x="60" y="40" width="520" height="280" rx="24" fill="#ffffff" stroke="#e4dfd6"/>
+  <path d="M150 204c6-78 76-140 156-140 98 0 178 80 178 178 0 63-33 119-82 151" fill="none" stroke="#d97b2f" stroke-width="16" stroke-linecap="round"/>
+  <path d="M402 293c-18 9-38 15-58 18-102 16-198-55-214-157" fill="none" stroke="#d97b2f" stroke-width="16" stroke-linecap="round"/>
+  <path d="M382 158l14 22h-28l14-22z" fill="#1f6b42"/>
+  <text x="404" y="178" font-family="system-ui, sans-serif" font-size="15" fill="#145c3b">Hill</text>
+  <circle cx="170" cy="205" r="10" fill="#145c3b"/>
+  <text x="186" y="211" font-family="system-ui, sans-serif" font-size="16" fill="#145c3b">Start</text>
+</svg>

@@ -19,6 +19,9 @@
 						<h3 class="routes__card-title">{route.title}</h3>
 						<p class="routes__distance">{route.distance}</p>
 						<p class="routes__description">{route.description}</p>
+						<a class="routes__map-link" href={route.pdf}>
+							<img class="routes__map-image" src={route.mapImage} alt={route.mapAlt} loading="lazy" />
+						</a>
 						<div class="routes__meta">
 							<span class="routes__meta-item"><i class="routes__meta-dot"></i>{route.surface}</span>
 							<span class="routes__meta-item"><i class="routes__meta-dot"></i>{route.hills}</span>

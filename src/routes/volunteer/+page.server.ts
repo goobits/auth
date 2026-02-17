@@ -7,7 +7,7 @@ export const actions = {
 	default: async (event) => {
 		const form = await event.request.formData();
 		assertHoneypot(form);
-		await assertTurnstile(event.request, form, 'volunteer');
+		await assertTurnstile(event.request, form, 'volunteer', event.platform?.env);
 		await saveVolunteer(event.platform, form);
 		redirect(303, '/thanks?type=volunteer');
 	}
