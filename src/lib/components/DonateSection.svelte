@@ -1,15 +1,13 @@
 <script lang="ts">
+	import type { DonationContent } from '$lib/content/engagement';
+
 	let { donation } = $props<{
-		donation: {
-			headline: string;
-			body: string;
-			bullets: string[];
-			disclaimer: string;
-			onlineUrl: string;
-			venmoUrl: string;
-			paypalUrl: string;
-		};
+		donation: DonationContent;
 	}>();
+
+	const hasDonateLink = $derived.by(
+		() => Boolean(donation.onlineUrl ?? donation.venmoUrl ?? donation.paypalUrl)
+	);
 </script>
 
 <section class="layout__section donate" id="donate">
@@ -26,9 +24,20 @@
 				<p class="donate__disclaimer">{donation.disclaimer}</p>
 			</div>
 			<div class="donate__actions">
-				<a class="c-button c-button--accent c-button--large" href={donation.onlineUrl}>Donate Online</a>
-				<a class="c-button c-button--secondary" href={donation.venmoUrl}>Venmo</a>
-				<a class="c-button c-button--secondary" href={donation.paypalUrl}>PayPal</a>
+				{#if donation.onlineUrl}
+					<a class="c-button c-button--accent c-button--large" href={donation.onlineUrl}>Donate Online</a>
+				{/if}
+				{#if donation.venmoUrl}
+					<a class="c-button c-button--secondary" href={donation.venmoUrl}>Venmo</a>
+				{/if}
+				{#if donation.paypalUrl}
+					<a class="c-button c-button--secondary" href={donation.paypalUrl}>PayPal</a>
+				{/if}
+				{#if !hasDonateLink}
+					<p class="donate__coming-soon">
+						Donations open soon. Want a reminder when they go live? Use the reminder form below.
+					</p>
+				{/if}
 			</div>
 		</div>
 	</div>

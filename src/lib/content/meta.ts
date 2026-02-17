@@ -13,6 +13,7 @@ export const nav = [
 	{ id: 'schedule', label: 'Schedule' },
 	{ id: 'routes', label: 'Routes' },
 	{ id: 'donate', label: 'Donate' },
+	{ id: 'volunteer', label: 'Volunteer' },
 	{ id: 'faq', label: 'FAQ' }
 ];
 
@@ -21,7 +22,7 @@ export const hero = {
 	title: 'PDX Dino Run',
 	subhead:
 		'A wholesome family movement day - bike in, fun run/walk, dino yoga, and a donation-based aerial showcase.',
-	dateLine: 'Saturday TBD · 10am - 1pm',
+	dateLine: 'Spring 2026 • Mt. Tabor Park • 10:00am-1:00pm',
 	chips: ['All paces', 'Costumes encouraged', 'Family-friendly', 'Donation-based', 'Rain-or-shine'],
 	reassurance: 'Not a race. No pressure. Just joyful movement and community.'
 };
