@@ -2,12 +2,16 @@ import { describe, expect, it, vi } from 'vitest';
 import { saveJoin, saveReminder, saveVolunteer } from '../../src/lib/server/submissions/service';
 
 type RunFn = ReturnType<typeof vi.fn>;
+type FirstFn = ReturnType<typeof vi.fn>;
+type AllFn = ReturnType<typeof vi.fn>;
 type BindFn = ReturnType<typeof vi.fn>;
 type PrepareFn = ReturnType<typeof vi.fn>;
 
 function makePlatform() {
 	const run: RunFn = vi.fn(() => Promise.resolve({}));
-	const bind: BindFn = vi.fn(() => ({ run }));
+	const first: FirstFn = vi.fn(() => Promise.resolve(null));
+	const all: AllFn = vi.fn(() => Promise.resolve({ results: [] }));
+	const bind: BindFn = vi.fn(() => ({ run, first, all }));
 	const prepare: PrepareFn = vi.fn(() => ({ bind }));
 
 	const platform = {

@@ -19,6 +19,12 @@
     margin-bottom: var(--space-6);
   }
 
+  &__error {
+    color: var(--color-danger-700);
+    margin: calc(var(--space-6) * -0.5) 0 var(--space-6);
+    font-weight: var(--font-weight-semibold);
+  }
+
   &__stack {
     display: grid;
     gap: var(--space-4);
@@ -69,6 +75,12 @@
       outline: 2px solid var(--color-accent-soft);
       outline-offset: 1px;
     }
+  }
+
+  &__help {
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
   }
 
   &__actions {

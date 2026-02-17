@@ -34,3 +34,27 @@ test('reminder form redirects to thanks', async ({ page }) => {
 	await expect(page).toHaveURL(/\/thanks\?type=remind$/);
 	await expect(page.getByRole('heading', { name: /reminder saved/i })).toBeVisible();
 });
+
+test('account signup + signin flow works', async ({ page }) => {
+	const seed = String(Date.now());
+	const email = `playwright+auth-${seed}@example.com`;
+	const password = 'SvelteKit!2026';
+
+	await page.goto('/auth/sign-up');
+	await page.getByLabel(/name \(optional\)/i).fill('Playwright Dino');
+	await page.getByLabel(/email/i).fill(email);
+	await page.getByLabel(/password/i).fill(password);
+	await page.getByRole('button', { name: /create account/i }).click();
+
+	await expect(page).toHaveURL(/\/account$/);
+	await expect(page.getByRole('heading', { name: /you are signed in/i })).toBeVisible();
+
+	await page.getByRole('button', { name: /sign out/i }).click();
+	await expect(page).toHaveURL(/\/$/);
+
+	await page.goto('/auth/sign-in');
+	await page.getByLabel(/email/i).fill(email);
+	await page.getByLabel(/password/i).fill(password);
+	await page.getByRole('button', { name: /^sign in$/i }).click();
+	await expect(page).toHaveURL(/\/account$/);
+});

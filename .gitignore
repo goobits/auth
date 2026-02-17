@@ -10,6 +10,7 @@ node_modules
 coverage
 playwright-report
 test-results
+auth/
 
 # OS
 .DS_Store
