@@ -1,86 +1,101 @@
-# 🦖 pdx.run
-SvelteKit site for PDX Dino Run, deployed on Cloudflare Pages with D1-backed form submissions.
+# @goobits/auth
 
-## ✨ Key Features
-- **☁️ Cloudflare Pages runtime** - `@sveltejs/adapter-cloudflare` build output at `.svelte-kit/cloudflare`
-- **🗄️ D1 persistence** - store form submissions in Cloudflare D1
-- **🛡️ Turnstile protection** - optional bot protection on public forms
-- **🧭 Internal routes** - attendee/volunteer/donate/routes/code-of-conduct/thanks pages
-- **🧪 Tests** - Vitest unit tests + Playwright e2e tests
-- **🔧 Strict lint/typecheck** - ESLint (type-aware) + `svelte-check`
+Pluggable authentication for SvelteKit with a class-first API.
 
-## 🚀 Quick Start
-```bash
-# Requirements
-# - Node.js: see package.json#engines
-# - pnpm: see package.json#packageManager
+## Install
 
-pnpm install
+This package is designed to be used from a SvelteKit build pipeline.
 
-# Local D1 (Wrangler) migrations
-pnpm db:migrate:local
+- Workspace/git install (recommended while developing):
+  - `pnpm add @goobits/auth --workspace` (monorepo)
+  - or install from a git URL (if you publish a repo)
+- Registry install:
+  - Publish to npm/GitHub Packages first, then `pnpm add @goobits/auth`
 
-# Cloudflare Pages local runtime (recommended for full functionality)
-pnpm cf:dev
-# http://127.0.0.1:3580
+## 5-Minute Setup
+
+```ts
+// src/lib/auth.ts
+import { GoobitsAuth } from "@goobits/auth";
+import { drizzleAdapter } from "@goobits/auth/adapters/drizzle";
+import { GoogleProvider } from "@goobits/auth/providers";
+import { db, schema } from "$lib/server/db";
+import { env } from "$env/dynamic/private";
+
+export const auth = new GoobitsAuth({
+  profile: "secure",
+  adapter: drizzleAdapter(db, {
+    schema,
+    oauthTokenEncryptionKey: env.TOKEN_ENCRYPTION_KEY,
+  }),
+  providers: {
+    google: {
+      provider: new GoogleProvider({
+        clientId: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+        callbackUrl: `${env.APP_URL}/auth/callback/google`,
+      }),
+    },
+  },
+});
 ```
 
-## 🌐 App Routes
-- **`/`** - homepage
-- **`/join`** - attendee signup (writes to D1)
-- **`/volunteer`** - volunteer signup (writes to D1)
-- **`/donate`** - donation options
-- **`/routes`** - route details + downloads
-- **`/code-of-conduct`** - event conduct policy
-- **`/thanks`** - post-submit confirmation
+## Runtime Targets
 
-## ⚙️ Configuration
-```bash
-# Cloudflare bindings are configured in wrangler.toml
-# - D1 binding name: DB
-# - nodejs_compat enabled
+- Cloudflare Workers / Pages:
+  - Use default imports (`@goobits/auth`). Avoid WebAuthn.
+- Node runtime:
+  - Use Node-optimized entrypoints automatically via `exports` conditions.
 
-# Turnstile (set in Cloudflare Pages env vars or local env)
-PUBLIC_TURNSTILE_SITE_KEY=...
-TURNSTILE_SECRET_KEY=...
+```ts
+// src/hooks.server.ts
+import { auth } from "$lib/auth";
 
-# Optional: bypass Turnstile for local testing only
-TURNSTILE_BYPASS=true
+export const handle = auth.handle();
 ```
 
-## 🛠️ Cloudflare Pages Build Settings
-- **Framework preset**: `None`
-- **Build command**: `pnpm install --frozen-lockfile && pnpm build`
-- **Build output directory**: `.svelte-kit/cloudflare`
-- **Root directory**: `/`
+```ts
+// src/routes/auth/[...auth]/+server.ts
+import { auth } from "$lib/auth";
 
-## 🧪 Development
-```bash
-# Lint + typecheck + build
-pnpm validate
-
-# Unit tests
-pnpm test:unit
-
-# E2E tests
-pnpm exec playwright install
-pnpm test:e2e
-
-# Everything
-pnpm test:all
+export const { GET, POST } = auth.handlers;
 ```
 
-## 📖 Documentation
-- **`CHANGELOG.md`** - release notes
-- **`README.md`** - setup, routes, and Cloudflare build settings
+## Guard Helpers
 
-## 🗂️ Project Layout
-- `src/routes/` - page and server routes
-- `src/lib/content/site.ts` - canonical homepage content
-- `src/lib/components/` - section components
-- `src/lib/styles/` - design tokens + BEM SCSS
-- `src/lib/server/submissions.ts` - form validation + D1 persistence
-- `migrations/` - D1 schema migrations
-- `static/` - static assets, route files, OG image
-- `__tests__/unit/` - unit tests
-- `__tests__/e2e/` - browser interaction tests
+- `await auth.requireUser(event)`
+- `await auth.requireRole(event, "admin")`
+- `await auth.getSession(event)`
+
+## Credentials Provider
+
+```ts
+import { CredentialsProvider } from "@goobits/auth/providers";
+
+const credentials = new CredentialsProvider({
+  identifierField: "nickname",
+  allowBoth: true,
+  normalizeIdentifier: (value) => value.trim().toLowerCase(),
+});
+```
+
+## One-Stop Drizzle Adapter
+
+`drizzleAdapter(db, { schema })` returns a unified bundle.
+
+- Required tables: `users`, `sessions`
+- Optional tables: `oauthAccounts`, `oauthTokens`, `verificationTokens`, `magicLinkTokens`, `webauthnCredentials`, `webauthnChallenges`
+
+## Production Guarantees
+
+- `hooks.onLogin` resolves identity only; framework-managed session issuance remains default.
+- If no principal is resolved in login flows (`OAuth`, `Magic Link`, `WebAuthn`), auth fails explicitly.
+- Session revoke capabilities are mapped to deterministic responses (`501` for unsupported operations).
+
+## Docs
+
+- `docs/quickstart.md`
+- `docs/public-api.md`
+- `docs/security-contract.md`
+- `docs/schema.md`
+- `docs/migrations/vnext-breaking.md`
