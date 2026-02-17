@@ -40,6 +40,10 @@ type D1SessionOptions = {
 		avatar: string;
 		password: string;
 		emailVerified: string;
+		role: string;
+		settings: string;
+		createdAt: string;
+		updatedAt: string;
 	}>;
 };
 
@@ -68,6 +72,10 @@ export class D1SessionAdapter extends SessionAdapter {
 		avatar: string;
 		password: string;
 		emailVerified: string;
+		role: string;
+		settings: string;
+		createdAt: string;
+		updatedAt: string;
 	};
 
 	constructor(db: D1DatabaseLike, options: D1SessionOptions = {}) {
@@ -97,6 +105,10 @@ export class D1SessionAdapter extends SessionAdapter {
 			avatar: options.userColumns?.avatar || "avatar",
 			password: options.userColumns?.password || "password",
 			emailVerified: options.userColumns?.emailVerified || "email_verified",
+			role: options.userColumns?.role || "role",
+			settings: options.userColumns?.settings || "settings",
+			createdAt: options.userColumns?.createdAt || "created_at",
+			updatedAt: options.userColumns?.updatedAt || "updated_at",
 		};
 	}
 
@@ -184,6 +196,10 @@ export class D1SessionAdapter extends SessionAdapter {
 		const avatar = row[this.userColumns["avatar"]] ?? row["avatar"];
 		const emailVerified =
 			row[this.userColumns.emailVerified] ?? row["email_verified"];
+		const role = row[this.userColumns.role] ?? row["role"];
+		const settings = row[this.userColumns.settings] ?? row["settings"];
+		const createdAt = row[this.userColumns.createdAt] ?? row["created_at"];
+		const updatedAt = row[this.userColumns.updatedAt] ?? row["updated_at"];
 		if (typeof id !== "string" && typeof id !== "number") return null;
 		if (typeof email !== "string") return null;
 		if (typeof name !== "string") return null;
@@ -195,12 +211,40 @@ export class D1SessionAdapter extends SessionAdapter {
 		) {
 			return null;
 		}
+		if (role !== null && role !== undefined && typeof role !== "string") return null;
+		if (settings !== null && settings !== undefined && typeof settings !== "string") return null;
+		if (createdAt !== null && createdAt !== undefined && typeof createdAt !== "string") return null;
+		if (updatedAt !== null && updatedAt !== undefined && typeof updatedAt !== "string") return null;
+
+		let parsedSettings: Record<string, unknown> | undefined;
+		if (typeof settings === "string" && settings.trim().length > 0) {
+			try {
+				const decoded: unknown = JSON.parse(settings);
+				if (decoded && typeof decoded === "object" && !Array.isArray(decoded)) {
+					parsedSettings = decoded as Record<string, unknown>;
+				}
+			} catch {
+				// Ignore invalid JSON.
+			}
+		}
+		const createdAtDate =
+			typeof createdAt === "string" && !Number.isNaN(new Date(createdAt).getTime())
+				? new Date(createdAt)
+				: undefined;
+		const updatedAtDate =
+			typeof updatedAt === "string" && !Number.isNaN(new Date(updatedAt).getTime())
+				? new Date(updatedAt)
+				: undefined;
 		return {
 			id: String(id),
 			email,
 			name,
 			avatar,
 			emailVerified: Boolean(emailVerified),
+			...(typeof role === "string" ? { role } : {}),
+			...(parsedSettings ? { settings: parsedSettings } : {}),
+			...(createdAtDate ? { createdAt: createdAtDate } : {}),
+			...(updatedAtDate ? { updatedAt: updatedAtDate } : {}),
 		};
 	}
 
