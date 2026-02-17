@@ -76,23 +76,22 @@ export function createWebhookAlerter({
 }
 
 async function signPayload(body: string, secret: string): Promise<string> {
-	if (globalThis.crypto?.subtle) {
-		const key = await globalThis.crypto.subtle.importKey(
-			"raw",
-			new TextEncoder().encode(secret),
-			{ name: "HMAC", hash: "SHA-256" },
-			false,
-			["sign"],
-		);
-		const sig = await globalThis.crypto.subtle.sign(
-			"HMAC",
-			key,
-			new TextEncoder().encode(body),
-		);
-		return toHex(new Uint8Array(sig));
+	if (!globalThis.crypto?.subtle) {
+		throw new Error("WebCrypto is required");
 	}
-	const { createHmac } = await import("node:crypto");
-	return createHmac("sha256", secret).update(body).digest("hex");
+	const key = await globalThis.crypto.subtle.importKey(
+		"raw",
+		new TextEncoder().encode(secret),
+		{ name: "HMAC", hash: "SHA-256" },
+		false,
+		["sign"],
+	);
+	const sig = await globalThis.crypto.subtle.sign(
+		"HMAC",
+		key,
+		new TextEncoder().encode(body),
+	);
+	return toHex(new Uint8Array(sig));
 }
 
 function toHex(bytes: Uint8Array): string {

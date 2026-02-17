@@ -2,9 +2,15 @@
 
 Pluggable authentication for SvelteKit with a class-first API.
 
-```bash
-pnpm add @goobits/auth
-```
+## Install
+
+This package is designed to be used from a SvelteKit build pipeline.
+
+- Workspace/git install (recommended while developing):
+  - `pnpm add @goobits/auth --workspace` (monorepo)
+  - or install from a git URL (if you publish a repo)
+- Registry install:
+  - Publish to npm/GitHub Packages first, then `pnpm add @goobits/auth`
 
 ## 5-Minute Setup
 
@@ -33,6 +39,13 @@ export const auth = new GoobitsAuth({
   },
 });
 ```
+
+## Runtime Targets
+
+- Cloudflare Workers / Pages:
+  - Use default imports (`@goobits/auth`). Avoid WebAuthn.
+- Node runtime:
+  - Use Node-optimized entrypoints automatically via `exports` conditions.
 
 ```ts
 // src/hooks.server.ts

@@ -18,6 +18,7 @@ import type { Session } from "../types/index.ts";
 import { ensureSessionAfterLogin, type OnLoginMode } from "../utils/session-lifecycle.ts";
 import { AuthPrincipalResolutionError } from "../errors/auth.ts";
 import { auditAuthEvent } from "../security/audit.ts";
+import { isSafeRedirectPath } from "../utils/redirect.ts";
 
 type MagicLinkAdapterLike = {
 	createToken: (params: {
@@ -202,7 +203,8 @@ export function createMagicLinkRequestHandler(
 			metadata,
 		});
 
-		const redirectTo = typeof data["redirectTo"] === "string" ? data["redirectTo"] : "";
+		const redirectToRaw = typeof data["redirectTo"] === "string" ? data["redirectTo"] : "";
+		const redirectTo = isSafeRedirectPath(redirectToRaw) ? redirectToRaw : "";
 		const origin = baseUrl || event.url.origin;
 		const url = new URL(magicLinkPath, origin);
 		url.searchParams.set("token", token);
