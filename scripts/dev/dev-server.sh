@@ -4,9 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 export PATH="${ROOT_DIR}/node_modules/.bin:${PATH}"
 DEV_DIR="${ROOT_DIR}/.dev"
-PID_FILE="${DEV_DIR}/dev-server.pid"
-LOG_FILE="${DEV_DIR}/dev-server.log"
-PORT="3610"
+PORT="${PORT:-3610}"
+PID_FILE="${DEV_DIR}/dev-server.${PORT}.pid"
+LOG_FILE="${DEV_DIR}/dev-server.${PORT}.log"
 STOP_TIMEOUT=5
 START_TIMEOUT=35
 
@@ -54,7 +54,7 @@ start_server() {
 
 	echo "starting dev server on port ${PORT}..."
 	: > "${LOG_FILE}"
-	setsid bash -lc "cd '${ROOT_DIR}' && NODE_ENV=development dotenvx run -f config/env/.env -- vite dev --host 0.0.0.0 --port '${PORT}' --strictPort" >>"${LOG_FILE}" 2>&1 < /dev/null &
+	setsid bash -lc "cd '${ROOT_DIR}' && NODE_ENV=development DEV_DB_FILE='${DEV_DB_FILE:-}' CALENDAR_SYNC_MODE='${CALENDAR_SYNC_MODE:-}' dotenvx run -f config/env/.env -- vite dev --host 0.0.0.0 --port '${PORT}' --strictPort" >>"${LOG_FILE}" 2>&1 < /dev/null &
 	local daemon_pid=$!
 	echo "${daemon_pid}" > "${PID_FILE}"
 

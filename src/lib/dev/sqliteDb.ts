@@ -3,11 +3,18 @@ import path from 'path'
 import Database from 'better-sqlite3'
 import type { D1DatabaseLike, D1PreparedStatement } from './devDb'
 
-const DB_PATH = path.join(process.cwd(), '.dev', 'db.sqlite')
+const DEFAULT_DB_PATH = path.join(process.cwd(), '.dev', 'db.sqlite')
 const MIGRATIONS_DIR = path.join(process.cwd(), 'packages', 'calendar', 'migrations')
 
-function ensureDbDir() {
-	const dir = path.dirname(DB_PATH)
+function resolveDbPath(dbPath?: string) {
+	const fromEnv = (process.env['DEV_DB_FILE'] || process.env['DEV_DB_PATH'] || '').trim()
+	const raw = (dbPath || fromEnv || DEFAULT_DB_PATH).trim()
+	if (!raw) return DEFAULT_DB_PATH
+	return path.isAbsolute(raw) ? raw : path.join(process.cwd(), raw)
+}
+
+function ensureDbDir(dbPath: string) {
+	const dir = path.dirname(dbPath)
 	if (!fs.existsSync(dir)) {
 		fs.mkdirSync(dir, { recursive: true })
 	}
@@ -60,9 +67,10 @@ function wrapStatement(stmt: Database.Statement): D1PreparedStatement {
 	return statement
 }
 
-export function createSqliteDb(): D1DatabaseLike {
-	ensureDbDir()
-	const db = new Database(DB_PATH)
+export function createSqliteDb(options?: { dbPath?: string }): D1DatabaseLike {
+	const dbPath = resolveDbPath(options?.dbPath)
+	ensureDbDir(dbPath)
+	const db = new Database(dbPath)
 	runMigrations(db)
 
 	return {
