@@ -86,39 +86,39 @@ export class D1UserAdapter extends UserAdapter {
 
 	private mapUser(row: D1Row | null): User | null {
 		if (!row) return null;
-		const id = row[this.columns["id"]] ?? row["id"];
+		const rawId = row[this.columns["id"]] ?? row["id"];
 		const email = row[this.columns["email"]] ?? row["email"];
-		const name = row[this.columns["name"]] ?? row["name"];
-		const avatar = row[this.columns["avatar"]] ?? row["avatar"];
-		const emailVerified = row[this.columns.emailVerified] ?? row["email_verified"];
-		const role = row[this.columns.role] ?? row["role"];
-		const settings = row[this.columns.settings] ?? row["settings"];
-		const createdAt = row[this.columns.createdAt] ?? row["created_at"];
-		const updatedAt = row[this.columns.updatedAt] ?? row["updated_at"];
-		if (typeof id !== "string" && typeof id !== "number") return null;
+		const rawName = row[this.columns["name"]] ?? row["name"];
+		const rawAvatar = row[this.columns["avatar"]] ?? row["avatar"];
+		const rawEmailVerified = row[this.columns.emailVerified] ?? row["email_verified"];
+		const rawRole = row[this.columns.role] ?? row["role"];
+		const rawSettings = row[this.columns.settings] ?? row["settings"];
+		const rawCreatedAt = row[this.columns.createdAt] ?? row["created_at"];
+		const rawUpdatedAt = row[this.columns.updatedAt] ?? row["updated_at"];
+
+		if (rawId === null || rawId === undefined) return null;
 		if (typeof email !== "string") return null;
-		if (typeof name !== "string") return null;
-		if (avatar !== null && typeof avatar !== "string") return null;
-		if (typeof emailVerified !== "boolean" && emailVerified !== 0 && emailVerified !== 1) {
-			return null;
-		}
-		if (role !== null && role !== undefined && typeof role !== "string") {
-			return null;
-		}
-		if (settings !== null && settings !== undefined && typeof settings !== "string") {
-			return null;
-		}
-		if (createdAt !== null && createdAt !== undefined && typeof createdAt !== "string") {
-			return null;
-		}
-		if (updatedAt !== null && updatedAt !== undefined && typeof updatedAt !== "string") {
-			return null;
-		}
+
+		// Normalize data from SQLite/D1 which may represent values as numbers/strings.
+		const id =
+			typeof rawId === "string" || typeof rawId === "number"
+				? String(rawId)
+				: null;
+		if (!id) return null;
+
+		const name = typeof rawName === "string" ? rawName : email;
+		const avatar = typeof rawAvatar === "string" ? rawAvatar : null;
+		let emailVerified = false;
+		if (typeof rawEmailVerified === "boolean") emailVerified = rawEmailVerified;
+		else if (rawEmailVerified === 0 || rawEmailVerified === 1) emailVerified = Boolean(rawEmailVerified);
+		else if (rawEmailVerified === "0" || rawEmailVerified === "1") emailVerified = rawEmailVerified === "1";
+
+		const role = typeof rawRole === "string" ? rawRole : undefined;
 
 		let parsedSettings: Record<string, unknown> | undefined;
-		if (typeof settings === "string" && settings.trim().length > 0) {
+		if (typeof rawSettings === "string" && rawSettings.trim().length > 0) {
 			try {
-				const decoded: unknown = JSON.parse(settings);
+				const decoded: unknown = JSON.parse(rawSettings);
 				if (decoded && typeof decoded === "object" && !Array.isArray(decoded)) {
 					parsedSettings = decoded as Record<string, unknown>;
 				}
@@ -127,24 +127,25 @@ export class D1UserAdapter extends UserAdapter {
 			}
 		}
 
-		const createdAtDate =
-			typeof createdAt === "string" && !Number.isNaN(new Date(createdAt).getTime())
-				? new Date(createdAt)
+		const createdAt =
+			typeof rawCreatedAt === "string" && !Number.isNaN(new Date(rawCreatedAt).getTime())
+				? new Date(rawCreatedAt)
 				: undefined;
-		const updatedAtDate =
-			typeof updatedAt === "string" && !Number.isNaN(new Date(updatedAt).getTime())
-				? new Date(updatedAt)
+		const updatedAt =
+			typeof rawUpdatedAt === "string" && !Number.isNaN(new Date(rawUpdatedAt).getTime())
+				? new Date(rawUpdatedAt)
 				: undefined;
+
 		return {
-			id: String(id),
+			id,
 			email,
 			name,
 			avatar,
-			emailVerified: Boolean(emailVerified),
-			...(typeof role === "string" ? { role } : {}),
+			emailVerified,
+			...(role ? { role } : {}),
 			...(parsedSettings ? { settings: parsedSettings } : {}),
-			...(createdAtDate ? { createdAt: createdAtDate } : {}),
-			...(updatedAtDate ? { updatedAt: updatedAtDate } : {}),
+			...(createdAt ? { createdAt } : {}),
+			...(updatedAt ? { updatedAt } : {}),
 		};
 	}
 
@@ -166,11 +167,10 @@ export class D1UserAdapter extends UserAdapter {
 		return field;
 	}
 
-	private coerceDbValue(value: unknown): D1Value {
-		if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-			return value;
-		}
+	private toD1Value(value: unknown): D1Value {
 		if (value === null || value === undefined) return null;
+		if (typeof value === "boolean") return value ? 1 : 0;
+		if (typeof value === "string" || typeof value === "number") return value;
 		// Support structured settings by storing JSON in a text column.
 		if (value && typeof value === "object") {
 			try {
@@ -202,15 +202,23 @@ export class D1UserAdapter extends UserAdapter {
 		const fields = Object.keys(userData);
 		const columns = fields.map((field) => this.mapFieldToColumn(field));
 		const placeholders = fields.map(() => "?").join(", ");
-		const values = fields.map((field) => this.coerceDbValue(userData[field]));
+		const values = fields.map((field) => this.toD1Value(userData[field]));
 
 		const sql = `INSERT INTO ${this.usersTable} (${columns.join(", ")}) VALUES (${placeholders})`;
 		const result = await this.db.prepare(sql).bind(...values).run();
+
+		// Prefer looking up by email (works even when table IDs aren't rowid-backed).
+		const createdByEmail = await this.getUserByEmail(profile.email);
+		if (createdByEmail) return createdByEmail;
+
+		// Fallback for environments where email is not unique.
 		const id = result?.meta?.last_row_id;
-		if (id === undefined) throw new Error("Failed to create user");
-		const created = await this.getUserById(String(id), id);
-		if (!created) throw new Error("Created user not found");
-		return created;
+		if (id !== undefined) {
+			const created = await this.getUserById(String(id), id);
+			if (created) return created;
+		}
+
+		throw new Error("Created user not found");
 	}
 
 	async getUserById(id: string, rawId?: string | number): Promise<User | null> {
@@ -254,9 +262,15 @@ export class D1UserAdapter extends UserAdapter {
 		}
 		const mappedFields = fields.map((field) => this.mapFieldToColumn(field));
 		const setClause = mappedFields.map((f) => `${f} = ?`).join(", ");
-		const values = fields.map((field) => this.coerceDbValue(data[field]));
+		const values = fields.map((field) => this.toD1Value(data[field]));
 		const sql = `UPDATE ${this.usersTable} SET ${setClause} WHERE ${this.columns.id} = ?`;
-		await this.db.prepare(sql).bind(...values, id).run();
+		await this.db
+			.prepare(sql)
+			.bind(
+				...values,
+				this.toD1Value(id),
+			)
+			.run();
 		const updated = await this.getUserById(id);
 		if (!updated) throw new Error("Updated user not found");
 		return updated;
