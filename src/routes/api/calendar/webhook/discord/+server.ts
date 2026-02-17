@@ -1,7 +1,8 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
+import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../_bridge.ts'
-import { enforceSameOrigin, noStoreHeaders, requireAdminSession, unauthorized } from '../../../admin/_helpers.ts'
+import { enforceSameOrigin, requireAdminSession, unauthorized } from '../../../admin/_helpers.ts'
 import { parseDiscordWebhookTextInput, TransportValidationError } from '@packages/calendar/src/index.ts'
+import { apiOk, apiError, apiValidationError, logApiError } from '$lib/server/http/api'
 
 export async function POST(event: RequestEvent) {
 	try {
@@ -15,7 +16,7 @@ export async function POST(event: RequestEvent) {
 		const discordWebhook = env['DISCORD_WEBHOOK_URL']
 		const webhookUrl = typeof discordWebhook === 'string' ? discordWebhook : ''
 		if (!webhookUrl) {
-			return json({ ok: false, error: { message: 'DISCORD_WEBHOOK_URL not configured' } }, { status: 400, headers: noStoreHeaders })
+			return apiError('DISCORD_WEBHOOK_URL not configured', { status: 400 })
 		}
 
 		const { text } = parseDiscordWebhookTextInput(await event.request.json().catch(() => null))
@@ -26,15 +27,15 @@ export async function POST(event: RequestEvent) {
 			body: JSON.stringify({ content: text })
 		})
 		if (!response.ok) {
-			return json({ ok: false, error: { message: `Discord webhook failed (${response.status})` } }, { status: 502, headers: noStoreHeaders })
+			return apiError(`Discord webhook failed (${response.status})`, { status: 502 })
 		}
 
-		return json({ ok: true }, { headers: noStoreHeaders })
+		return apiOk({})
 	} catch (err) {
 		if (err instanceof TransportValidationError) {
-			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
+			return apiValidationError(err)
 		}
-		console.error('Discord webhook error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('calendar.webhook.discord', err)
+		return apiError('Internal server error')
 	}
 }

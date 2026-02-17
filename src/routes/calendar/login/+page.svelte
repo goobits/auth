@@ -7,7 +7,6 @@ import {
 	resolveCalendarLoginTargetActivity,
 	resolveFirstAvailableProvider
 } from '$lib/viewmodels/calendar-login'
-import '../Calendar.scss'
 
 	const { data } = $props<{
 		data: {

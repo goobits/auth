@@ -1,5 +1,5 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
-import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized, noStoreHeaders } from '../../../admin/_helpers.ts'
+import type { RequestEvent } from '@sveltejs/kit'
+import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized } from '../../../admin/_helpers.ts'
 import { getAdminAuth } from '$lib/auth/admin.ts'
 import {
 	createInvite,
@@ -8,6 +8,7 @@ import {
 	parseCalendarInviteCreateInput,
 	TransportValidationError
 } from '@packages/calendar/src/index.ts'
+import { apiOk, apiError, apiValidationError, logApiError } from '$lib/server/http/api'
 
 export async function GET(event: RequestEvent) {
 	try {
@@ -16,10 +17,10 @@ export async function GET(event: RequestEvent) {
 
 		const { db } = await getAdminAuth({ event })
 		const invites = await listInvites({ db })
-		return json({ ok: true, invites }, { headers: noStoreHeaders })
+		return apiOk({ invites })
 	} catch (err) {
-		console.error('Admin invites error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('admin.invites.list', err)
+		return apiError('Internal server error')
 	}
 }
 
@@ -47,13 +48,13 @@ export async function POST(event: RequestEvent) {
 		})
 
 		logAdminEvent(event, 'invite_create', { inviteId: invite?.id, email: invite?.email ?? null })
-		return json({ ok: true, invite }, { headers: noStoreHeaders })
+		return apiOk({ invite })
 	} catch (err) {
 		if (err instanceof TransportValidationError) {
-			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
+			return apiValidationError(err)
 		}
-		console.error('Admin invite create error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('admin.invites.create', err)
+		return apiError('Internal server error')
 	}
 }
 
@@ -67,15 +68,15 @@ export async function DELETE(event: RequestEvent) {
 
 		const inviteId = Number(event.url.searchParams.get('id'))
 		if (!inviteId) {
-			return json({ ok: false, error: { message: 'Missing invite id' } }, { status: 400, headers: noStoreHeaders })
+			return apiError('Missing invite id', { status: 400 })
 		}
 
 		const { db } = await getAdminAuth({ event })
 		await deleteInvite({ db, inviteId })
 		logAdminEvent(event, 'invite_delete', { inviteId })
-		return json({ ok: true }, { headers: noStoreHeaders })
+		return apiOk({})
 	} catch (err) {
-		console.error('Admin invite delete error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('admin.invites.delete', err)
+		return apiError('Internal server error')
 	}
 }

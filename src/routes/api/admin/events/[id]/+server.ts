@@ -1,8 +1,9 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
+import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../../calendar/_bridge.ts'
 import { setAttendanceStatus, updateEventCapacity, updateEventMemory } from '@packages/calendar/src/services/social.ts'
 import { parseAdminEventUpdateInput, TransportValidationError } from '@packages/calendar/src/index.ts'
-import { enforceSameOrigin, logAdminEvent, noStoreHeaders, requireAdminSession, unauthorized } from '../../_helpers.ts'
+import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized } from '../../_helpers.ts'
+import { apiOk, apiError, apiValidationError, logApiError } from '$lib/server/http/api'
 
 export async function POST(event: RequestEvent) {
 	try {
@@ -13,11 +14,11 @@ export async function POST(event: RequestEvent) {
 
 		const eventParam = event.params['id']
 		if (!eventParam) {
-			return json({ ok: false, error: { message: 'Missing event id' } }, { status: 400, headers: noStoreHeaders })
+			return apiError('Missing event id', { status: 400 })
 		}
 		const eventId = Number.parseInt(eventParam, 10)
 		if (!Number.isFinite(eventId) || eventId <= 0) {
-			return json({ ok: false, error: { message: 'Invalid event id' } }, { status: 400, headers: noStoreHeaders })
+			return apiError('Invalid event id', { status: 400 })
 		}
 
 		const env = await buildEnv(event.platform)
@@ -25,13 +26,13 @@ export async function POST(event: RequestEvent) {
 		if (input.action === 'capacity') {
 			await updateEventCapacity(env.DB, { eventId, capacity: input.capacity })
 			logAdminEvent(event, 'event_capacity_update', { eventId, capacity: input.capacity })
-			return json({ ok: true }, { headers: noStoreHeaders })
+			return apiOk({})
 		}
 
 		if (input.action === 'attendance') {
 			await setAttendanceStatus(env.DB, { eventId, userId: input.userId, attendanceStatus: input.attendanceStatus })
 			logAdminEvent(event, 'event_attendance_update', { eventId, userId: input.userId, attendanceStatus: input.attendanceStatus })
-			return json({ ok: true }, { headers: noStoreHeaders })
+			return apiOk({})
 		}
 
 		if (input.action === 'memory') {
@@ -41,15 +42,15 @@ export async function POST(event: RequestEvent) {
 				heroImageUrl: input.heroImageUrl
 			})
 			logAdminEvent(event, 'event_memory_update', { eventId })
-			return json({ ok: true }, { headers: noStoreHeaders })
+			return apiOk({})
 		}
 
-		return json({ ok: false, error: { message: 'Unknown action' } }, { status: 400, headers: noStoreHeaders })
+		return apiError('Unknown action', { status: 400 })
 	} catch (err) {
 		if (err instanceof TransportValidationError) {
-			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
+			return apiValidationError(err)
 		}
-		console.error('Admin event update error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('admin.events.update', err)
+		return apiError('Internal server error')
 	}
 }

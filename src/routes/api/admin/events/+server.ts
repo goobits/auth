@@ -1,9 +1,10 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
+import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../../calendar/_bridge.ts'
 import { createEventsBatch, listEventsFeed } from '@packages/calendar/src/services/social.ts'
-import { enforceSameOrigin, logAdminEvent, noStoreHeaders, requireAdminSession, unauthorized } from '../_helpers.ts'
+import { enforceSameOrigin, logAdminEvent, requireAdminSession, unauthorized } from '../_helpers.ts'
 import { getCalendarProgramBySlug } from '@packages/calendar/src/services/programs.ts'
 import { parseAdminCreateEventsBatchInput, TransportValidationError } from '@packages/calendar/src/index.ts'
+import { apiOk, apiError, apiValidationError, logApiError } from '$lib/server/http/api'
 
 export async function GET(event: RequestEvent) {
 	try {
@@ -11,10 +12,10 @@ export async function GET(event: RequestEvent) {
 		if (!auth.ok) return unauthorized()
 		const env = await buildEnv(event.platform)
 		const feed = await listEventsFeed(env.DB, '__admin__', false)
-		return json({ ok: true, upcoming: feed.upcoming, recent: feed.recent }, { headers: noStoreHeaders })
+		return apiOk({ upcoming: feed.upcoming, recent: feed.recent })
 	} catch (err) {
-		console.error('Admin events load error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('admin.events.list', err)
+		return apiError('Internal server error')
 	}
 }
 
@@ -31,7 +32,7 @@ export async function POST(event: RequestEvent) {
 		const env = await buildEnv(event.platform)
 		const program = await getCalendarProgramBySlug(env.DB, input.activitySlug, { includeDisabled: true })
 		if (!program) {
-			return json({ ok: false, error: { message: 'Program not found' } }, { status: 404, headers: noStoreHeaders })
+			return apiError('Program not found', { status: 404 })
 		}
 		const ids = await createEventsBatch(env.DB, {
 			activitySlug: program.slug,
@@ -50,12 +51,12 @@ export async function POST(event: RequestEvent) {
 		})
 
 		logAdminEvent(event, 'events_create_batch', { count: ids.length, activitySlug: input.activitySlug })
-		return json({ ok: true, ids }, { headers: noStoreHeaders })
+		return apiOk({ ids })
 	} catch (err) {
 		if (err instanceof TransportValidationError) {
-			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
+			return apiValidationError(err)
 		}
-		console.error('Admin events create error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('admin.events.create', err)
+		return apiError('Internal server error')
 	}
 }

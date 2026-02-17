@@ -1,8 +1,9 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
+import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../_bridge.ts'
 import { getCalendarProfile, saveCalendarProfile } from '@packages/calendar/src/services/social.ts'
 import { parseCalendarProfileInput, TransportValidationError } from '@packages/calendar/src/index.ts'
-import { getCalendarUserId, noStoreHeaders, unauthorizedCalendar } from '../_auth.ts'
+import { getCalendarUserId, unauthorizedCalendar } from '../_auth.ts'
+import { apiOk, apiValidationError, apiError, logApiError } from '$lib/server/http/api'
 
 export async function GET(event: RequestEvent) {
 	try {
@@ -10,10 +11,10 @@ export async function GET(event: RequestEvent) {
 		if (!userId) return unauthorizedCalendar()
 		const env = await buildEnv(event.platform)
 		const profile = await getCalendarProfile(env.DB, userId)
-		return json({ ok: true, profile }, { headers: noStoreHeaders })
+		return apiOk({ profile })
 	} catch (err) {
-		console.error('Calendar profile load error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('calendar.profile.get', err)
+		return apiError('Internal server error')
 	}
 }
 
@@ -29,12 +30,12 @@ export async function POST(event: RequestEvent) {
 			dietaryRestrictions: input.dietaryRestrictions,
 			chatHandle: input.chatHandle
 		})
-		return json({ ok: true }, { headers: noStoreHeaders })
+		return apiOk({})
 	} catch (err) {
 		if (err instanceof TransportValidationError) {
-			return json({ ok: false, error: { message: err.message } }, { status: err.status, headers: noStoreHeaders })
+			return apiValidationError(err)
 		}
-		console.error('Calendar profile save error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('calendar.profile.save', err)
+		return apiError('Internal server error')
 	}
 }

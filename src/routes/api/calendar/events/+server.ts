@@ -1,8 +1,9 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
+import type { RequestEvent } from '@sveltejs/kit'
 import { buildEnv } from '../_bridge.ts'
 import { listEventsFeed } from '@packages/calendar/src/services/social.ts'
 import { buildPaymentLink } from '@packages/calendar/src/services/pay.ts'
-import { getCalendarUserId, noStoreHeaders, unauthorizedCalendar } from '../_auth.ts'
+import { getCalendarUserId, unauthorizedCalendar } from '../_auth.ts'
+import { apiOk, apiError, logApiError } from '$lib/server/http/api'
 
 export async function GET(event: RequestEvent) {
 	try {
@@ -25,9 +26,9 @@ export async function GET(event: RequestEvent) {
 			})),
 			recent: feed.recent
 		}
-		return json({ ok: true, ...withPayLinks }, { headers: noStoreHeaders })
+		return apiOk(withPayLinks)
 	} catch (err) {
-		console.error('Calendar events list error:', err)
-		return json({ ok: false, error: { message: 'Internal server error' } }, { status: 500, headers: noStoreHeaders })
+		logApiError('calendar.events.list', err)
+		return apiError('Internal server error')
 	}
 }

@@ -1,20 +1,19 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
+import type { RequestEvent } from '@sveltejs/kit'
+import { apiError, noStoreHeaders as sharedNoStoreHeaders } from '$lib/server/http/api'
+
+export const noStoreHeaders = sharedNoStoreHeaders
 
 export function requireAdminSession({ event }: { event: RequestEvent }) {
 	const locals = event.locals as { user?: unknown; session?: unknown }
 	return { ok: !!(locals.session && locals.user) }
 }
 
-export const noStoreHeaders = {
-	'Cache-Control': 'no-store, max-age=0'
-}
-
 export function unauthorized() {
-	return json({ ok: false, error: { message: 'Unauthorized' } }, { status: 401, headers: noStoreHeaders })
+	return apiError('Unauthorized', { status: 401 })
 }
 
 export function forbidden() {
-	return json({ ok: false, error: { message: 'Forbidden' } }, { status: 403, headers: noStoreHeaders })
+	return apiError('Forbidden', { status: 403 })
 }
 
 function isSameOrigin(event: RequestEvent) {

@@ -1,8 +1,6 @@
-import { json, type RequestEvent } from '@sveltejs/kit'
-
-export const noStoreHeaders = {
-	'Cache-Control': 'no-store, max-age=0'
-}
+import type { RequestEvent } from '@sveltejs/kit'
+import { apiError } from '$lib/server/http/api'
+export { noStoreHeaders } from '$lib/server/http/api'
 
 type CalendarLocals = {
 	user?: {
@@ -20,6 +18,5 @@ export function getCalendarUserId(event: RequestEvent) {
 }
 
 export function unauthorizedCalendar() {
-	return json({ ok: false, error: { message: 'Unauthorized' } }, { status: 401, headers: noStoreHeaders })
+	return apiError('Unauthorized', { status: 401 })
 }
-
