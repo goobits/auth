@@ -54,7 +54,20 @@ start_server() {
 
 	echo "starting dev server on port ${PORT}..."
 	: > "${LOG_FILE}"
-	setsid bash -lc "cd '${ROOT_DIR}' && NODE_ENV=development DEV_DB_FILE='${DEV_DB_FILE:-}' CALENDAR_SYNC_MODE='${CALENDAR_SYNC_MODE:-}' dotenvx run -f config/env/.env -- vite dev --host 0.0.0.0 --port '${PORT}' --strictPort" >>"${LOG_FILE}" 2>&1 < /dev/null &
+	local -a env_overrides
+	env_overrides=("NODE_ENV=development")
+	if [[ "${DEV_DB_FILE+x}" == "x" ]]; then env_overrides+=("DEV_DB_FILE=${DEV_DB_FILE}"); fi
+	if [[ "${CALENDAR_SYNC_MODE+x}" == "x" ]]; then env_overrides+=("CALENDAR_SYNC_MODE=${CALENDAR_SYNC_MODE}"); fi
+	if [[ "${CONTACT_WEBHOOK_URL+x}" == "x" ]]; then env_overrides+=("CONTACT_WEBHOOK_URL=${CONTACT_WEBHOOK_URL}"); fi
+	if [[ "${TURNSTILE_SECRET_KEY+x}" == "x" ]]; then env_overrides+=("TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY}"); fi
+	if [[ "${PUBLIC_TURNSTILE_SITE_KEY+x}" == "x" ]]; then env_overrides+=("PUBLIC_TURNSTILE_SITE_KEY=${PUBLIC_TURNSTILE_SITE_KEY}"); fi
+	if [[ "${ANTIABUSE_ENABLED+x}" == "x" ]]; then env_overrides+=("ANTIABUSE_ENABLED=${ANTIABUSE_ENABLED}"); fi
+	if [[ "${E2E_RUN+x}" == "x" ]]; then env_overrides+=("E2E_RUN=${E2E_RUN}"); fi
+
+	local env_cmd
+	env_cmd="$(printf "%q " "${env_overrides[@]}")"
+
+	setsid bash -lc "cd '${ROOT_DIR}' && dotenvx run -f config/env/.env -- env ${env_cmd} vite dev --host 0.0.0.0 --port '${PORT}' --strictPort" >>"${LOG_FILE}" 2>&1 < /dev/null &
 	local daemon_pid=$!
 	echo "${daemon_pid}" > "${PID_FILE}"
 

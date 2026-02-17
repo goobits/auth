@@ -27,6 +27,10 @@ rm -f "${E2E_DB_FILE}" || true
 PORT="${E2E_PORT}" \
 DEV_DB_FILE="${E2E_DB_FILE}" \
 CALENDAR_SYNC_MODE="mock" \
+CONTACT_WEBHOOK_URL="" \
+TURNSTILE_SECRET_KEY="" \
+PUBLIC_TURNSTILE_SITE_KEY="" \
+E2E_RUN="1" \
 bash scripts/dev/dev-server.sh start
 
 case "${SUITE}" in
