@@ -44,6 +44,11 @@ function getBaseUrl({ env, url }: { env: Record<string, string | undefined>; url
 	return env['PUBLIC_BASE_URL'] || env['BASE_URL'] || url?.origin || ''
 }
 
+function normalizeRedirectUri(value: string) {
+	// OAuth providers require exact string matching; remove trailing slashes to avoid mismatch.
+	return value.endsWith('/') ? value.slice(0, -1) : value
+}
+
 function normalizeRedirect(redirectTo: unknown) {
 	if (!redirectTo || typeof redirectTo !== 'string') return null
 	const trimmed = redirectTo.trim()
@@ -107,24 +112,26 @@ export async function getCalendarAuth({ event }: { event: { platform?: PlatformL
 		apple?: { provider: InstanceType<typeof AppleProvider> }
 	} = {}
 	if (env['GOOGLE_CLIENT_ID'] && env['GOOGLE_CLIENT_SECRET']) {
+		const callbackUrl = normalizeRedirectUri(env['GOOGLE_AUTH_REDIRECT_URI'] || `${baseUrl}/auth/google/callback`)
 		providers['google'] = {
 			provider: new GoogleProvider({
 				clientId: env['GOOGLE_CLIENT_ID'],
 				clientSecret: env['GOOGLE_CLIENT_SECRET'],
-				callbackUrl: env['GOOGLE_AUTH_REDIRECT_URI'] || `${baseUrl}/auth/google/callback`
+				callbackUrl
 			}),
 			scopes: ['openid', 'profile', 'email']
 		}
 	}
 
 	if (env['APPLE_CLIENT_ID'] && env['APPLE_TEAM_ID'] && env['APPLE_KEY_ID'] && env['APPLE_PRIVATE_KEY']) {
+		const callbackUrl = normalizeRedirectUri(env['APPLE_AUTH_REDIRECT_URI'] || `${baseUrl}/auth/apple/callback`)
 		providers['apple'] = {
 			provider: new AppleProvider({
 				clientId: env['APPLE_CLIENT_ID'],
 				teamId: env['APPLE_TEAM_ID'],
 				keyId: env['APPLE_KEY_ID'],
 				privateKey: env['APPLE_PRIVATE_KEY'],
-				callbackUrl: env['APPLE_AUTH_REDIRECT_URI'] || `${baseUrl}/auth/apple/callback`
+				callbackUrl
 			})
 		}
 	}

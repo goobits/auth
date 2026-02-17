@@ -64,12 +64,30 @@ export async function GET(event: RequestEvent) {
 		}
 		const syncQueue = await getCalendarSyncQueueHealth(db)
 
+		const baseUrl =
+			(typeof env['PUBLIC_BASE_URL'] === 'string' && env['PUBLIC_BASE_URL']) ||
+			(typeof env['BASE_URL'] === 'string' && env['BASE_URL']) ||
+			event.url.origin
+		const normalize = (value: string) => (value.endsWith('/') ? value.slice(0, -1) : value)
+
 		return apiOk({
 			google: {
 				connected,
 				expired,
 				expiresAt,
 				refreshFailed
+			},
+			oauth: {
+				googleCalendarRedirectUri:
+					typeof env['GOOGLE_REDIRECT_URI'] === 'string' ? normalize(env['GOOGLE_REDIRECT_URI']) : null,
+				googleLoginRedirectUri:
+					typeof env['GOOGLE_AUTH_REDIRECT_URI'] === 'string'
+						? normalize(env['GOOGLE_AUTH_REDIRECT_URI'])
+						: normalize(`${baseUrl}/auth/google/callback`),
+				appleLoginRedirectUri:
+					typeof env['APPLE_AUTH_REDIRECT_URI'] === 'string'
+						? normalize(env['APPLE_AUTH_REDIRECT_URI'])
+						: normalize(`${baseUrl}/auth/apple/callback`)
 			},
 			syncQueue,
 			rules

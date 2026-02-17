@@ -12,6 +12,10 @@
 /build
 node_modules/
 
+# Workspace build artifacts (never commit)
+packages/**/dist/
+packages/**/.tsbuildinfo
+
 # External repos
 /repos/*
 !/repos/*.revision
