@@ -73,7 +73,6 @@
 		title="Say hello"
 		icon="/media/contact-email-heart.png"
 		iconAlt="Email heart icon"
-		iconSize="0.95em"
 		subtitle="Got a question, a project idea, or just want to chat? Drop me a line."
 		compact
 	/>

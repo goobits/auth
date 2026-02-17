@@ -48,7 +48,6 @@
 			title="Songs, sketches, and sound experiments"
 			icon="/media/music-notes-flow.png"
 			iconAlt="Music notes icon"
-			iconSize="0.95em"
 			subtitle="Melody has always been part of the build process. Tracks, demos, and music-related experiments from Miko."
 		/>
 

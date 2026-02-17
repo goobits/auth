@@ -41,7 +41,6 @@
 			title="Journal"
 			icon="/media/journal-journaling.png"
 			iconAlt="Journal icon"
-			iconSize="0.95em"
 			subtitle="Thoughts, process notes, and little breakthroughs."
 		/>
 

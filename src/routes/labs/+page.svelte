@@ -51,7 +51,6 @@
 			title="Labs"
 			icon="/media/labs-flask.png"
 			iconAlt="Flask icon"
-			iconSize="0.95em"
 			subtitle="Playful experiments, sketches, and odd ideas."
 		/>
 
