@@ -1,61 +1,40 @@
 # 🎨 miko-art
-
-Personal website and social calendar system built with SvelteKit 5, deployed to Cloudflare Pages.
+Personal website + invite-only social calendar built with **SvelteKit 5** and deployed to **Cloudflare Pages (D1)**.
 
 ## ✨ Key Features
-
-- **📅 Social Calendar** - Event feed, join/waitlist flows, +1 support, and Google Calendar integration
-- **🔐 Authentication** - OAuth (Google, Apple) + credentials-based registration via `@goobits/auth`
-- **🛡️ Admin Dashboard** - Session-based admin access for managing events, programs, and settings
-- **🌐 Cloudflare D1** - Serverless SQLite with automatic migrations in development
-- **🎭 Theme System** - Default, dark, and magic theme modes
-- **📝 Journal** - Markdown-powered blog with mdsvex
+- **📅 Social calendar** - Event feed, join/waitlist, +1, and “memories” recap cards
+- **🛡️ Admin dashboard** - Manage programs, events, rules, members, and integrations
+- **🔄 Google Calendar sync** - Asynchronous sync queue with retries and dead-letter handling
+- **🔐 Auth** - OAuth (Google/Apple) for calendar access + credentials-based registration
+- **🌗 Themes** - `default`, `dark`, and `magic`
 
 ## 🚀 Quick Start
-
 ```bash
-# Requirements: Node.js 22+, pnpm 10+
+# Requirements
+node --version    # Node.js 22+
+pnpm --version    # pnpm 10+
+
 pnpm install
 
-# Start dev server (port 3610)
+# Dev server (http://localhost:3610)
 pnpm dev
 
-# Or with full Cloudflare D1 runtime
+# Dev server with the local Cloudflare runtime (D1 bindings)
 pnpm dev:wrangler
 ```
 
-```bash
-# Production build (auto version bump)
-pnpm build:patch
-
-# Preview production build (port 3000)
-pnpm preview
-```
-
-## 📦 Internal Packages
-
-### @miko/calendar
-
-Google Calendar integration, event/participant storage, program routing, and invite management.
-Event participation is written first; Google sync runs asynchronously via a retry queue.
-
-### @goobits/auth
-
-Auth library used by this repo for OAuth + sessions (shared by `/calendar`, `/admin`, and `/register`).
-
-```bash
-# Auth package has its own test suite
-cd repos/auth
-pnpm test           # Unit tests (vitest)
-pnpm test:watch     # Watch mode
-pnpm test:ui        # Vitest UI
-pnpm check:types    # TypeScript validation
-```
-
 ## ⚙️ Configuration
+```bash
+# View the available env vars
+ls -la config/env/.env.example
+
+# Edit local dev secrets (encrypted at rest via dotenvx)
+pnpm exec dotenvx decrypt -f config/env/.env
+# edit config/env/.env
+pnpm exec dotenvx encrypt -f config/env/.env
+```
 
 ### Path Aliases
-
 Defined in `svelte.config.js`:
 
 | Alias | Path |
@@ -64,93 +43,45 @@ Defined in `svelte.config.js`:
 | `@config` | `./src/config` |
 | `@lib` | `./src/lib` |
 | `@media` | `./src/media` |
-| `@src` | `./src` |
-| `@routes` | `./src/routes` |
 | `@packages` | `./packages` |
+| `@routes` | `./src/routes` |
+| `@src` | `./src` |
 | `@static` | `./static` |
 
-### Database
-
-- **Production:** Cloudflare D1 (`miko-art-db`)
-- **Development:** Local SQLite (`.dev/db.sqlite`, auto-migrates)
-- **Migrations:** `packages/calendar/migrations/`
-
-## 🛠️ Scripts
-
+## 🧪 Testing & Code Quality
 ```bash
-pnpm dev              # Vite dev server (port 3610)
-pnpm dev:wrangler     # Dev with Cloudflare D1 runtime
-pnpm build            # Production build
-pnpm build:patch      # Patch bump + build
-pnpm preview          # Preview build (port 3000)
-pnpm dev:stop         # Stop dev server
-pnpm dev:restart      # Restart dev server
-pnpm check            # Types + svelte-check + lint + circular deps
-pnpm ci:gate          # check + critical e2e gate (CI default)
-pnpm test             # Full Vitest + Playwright e2e suite (__tests__/e2e)
-pnpm e2e:critical     # Fast high-signal e2e subset (no visual/sitemap drift-heavy checks)
-pnpm calendar:sync    # Process pending calendar Google-sync jobs (ops/cron/calendar-sync.mjs)
-pnpm deploy:secrets   # Push production secrets only (no site deploy)
-pnpm deploy:prod      # Build + Cloudflare Pages deploy (standard)
-pnpm deploy:prod:full # Secrets + build + Cloudflare Pages deploy
+# Types + svelte-check + eslint + circular deps
+pnpm check
 
-# Versioning
-pnpm version:patch    # Bump patch version
-pnpm version:minor    # Bump minor version
-pnpm version:major    # Bump major version
+# Full e2e suite (Vitest + Playwright)
+pnpm test
+
+# High-signal subset (CI gate)
+pnpm e2e:critical
 ```
 
-## 🔐 Environment
-
-All env files live in `config/env/` and are encrypted at rest with [dotenvx](https://dotenvx.com/encryption).
-
-| File | Purpose |
-|---|---|
-| `config/env/.env.example` | Template with all variables and setup hints |
-| `config/env/.env` | Local dev values (encrypted) |
-| `config/env/.env.keys` | Private decryption key (never commit) |
-| `config/env/.env.production` | Production values pushed to Cloudflare secrets |
-
+## 🔧 Operations
 ```bash
-# Decrypt for editing
-pnpm exec dotenvx decrypt -f config/env/.env
-
-# Re-encrypt after editing
-pnpm exec dotenvx encrypt -f config/env/.env
-
-# Push production secrets to Cloudflare
-pnpm deploy:secrets
+# Process pending Google Calendar sync jobs
+pnpm calendar:sync
 ```
-
-For async calendar sync processing in production, run `pnpm calendar:sync` on a schedule
-(cron/worker) using `CALENDAR_SYNC_CRON_SECRET` and `PUBLIC_BASE_URL`.
-
-Ops runbooks/scripts live under `ops/`:
-- `ops/cron/calendar-sync.mjs`
-- `ops/runbooks/calendar-sync.md`
-
-`pnpm deploy:secrets` only updates runtime secrets and does not deploy site code.
 
 ## 🚢 Deployment
-
-Deployed to Cloudflare Pages via `wrangler pages deploy`.
-
-Requires:
-- D1 database (`miko-art-db`) provisioned
-- Production secrets encrypted in `config/env/.env.production` and pushed via `pnpm deploy:secrets`
-
-### One-command deploy
-
 ```bash
-# Standard deploy (most common)
+# Standard deploy (build + Pages deploy)
 pnpm deploy:prod
 
-# Full deploy (when secrets changed)
+# Full deploy (push secrets + build + deploy)
 pnpm deploy:prod:full
 ```
 
-`deploy:prod` uses Pages project `miko-art` by default. Override with `CF_PAGES_PROJECT=<project-name>`.
+## 📚 Documentation
+- **`AGENTS.md`** - Repo architecture notes and command map
+- **`ops/runbooks/calendar-sync.md`** - Calendar sync queue operations
+
+## 🔗 Related Packages
+- **`packages/calendar`** - Calendar domain logic (storage, services, transports, migrations)
+- **`repos/auth`** - Auth library used by this repo (its own README + tests)
 
 ## 📝 License
-
 MIT
