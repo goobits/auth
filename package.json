@@ -153,7 +153,6 @@
     "cookie": "^0.7.0"
   },
   "devDependencies": {
-    "@sveltejs/kit": "^2.52.0",
     "@types/node": "^22.13.4",
     "pg": "^8.18.0",
     "pg-mem": "^3.0.8",

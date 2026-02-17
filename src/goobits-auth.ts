@@ -193,7 +193,7 @@ export class GoobitsAuth {
 	async requireUser(event: RequestEventLike): Promise<User> {
 		const principal = await this.getSession(event);
 		if (!principal) {
-			throw redirect(302, this.routing.signInPath);
+			redirect(302, this.routing.signInPath);
 		}
 		return principal.user;
 	}
@@ -207,7 +207,7 @@ export class GoobitsAuth {
 		const roles = options?.resolveRoles ? options.resolveRoles(user) : resolveUserRoles(user);
 		const required = Array.isArray(role) ? role : [role];
 		const allowed = required.some((entry) => roles.includes(entry));
-		if (!allowed) {
+			if (!allowed) {
 			const emitter = this.core.security.audit.emitter;
 			await emitter?.({
 				name: "authz.denied",
@@ -223,10 +223,10 @@ export class GoobitsAuth {
 				},
 				timestamp: new Date().toISOString(),
 			});
-			throw error(403, "Forbidden");
+				error(403, "Forbidden");
+			}
+			return user;
 		}
-		return user;
-	}
 
 	private resolveTarget(input: {
 		event: RequestEventLike;

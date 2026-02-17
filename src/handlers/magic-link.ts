@@ -271,7 +271,7 @@ export function createMagicLinkVerifyHandler(
 
 	return async (event: RequestEventLike) => {
 		if (isAuthenticated(event.locals)) {
-			throw redirect(302, redirectAfterLogin);
+			redirect(302, redirectAfterLogin);
 		}
 
 		const data = await parseRequestData(event.request);
@@ -403,7 +403,7 @@ export function createMagicLinkVerifyHandler(
 		}
 
 		if (event.request.method === "GET") {
-			throw redirect(302, redirectAfterLogin);
+			redirect(302, redirectAfterLogin);
 		}
 
 		return jsonResponse({ ok: true, user: sanitizeUser(user) });
