@@ -35,6 +35,10 @@ pnpm db:migrate:local
 
 - Cloudflare adapter: `@sveltejs/adapter-cloudflare`
 - Wrangler config: `wrangler.toml` (`nodejs_compat` enabled, D1 binding `DB`)
+- Turnstile env vars:
+- `PUBLIC_TURNSTILE_SITE_KEY` - client widget site key
+- `TURNSTILE_SECRET_KEY` - server verification secret
+- `TURNSTILE_BYPASS` - optional test/dev bypass (`true` only outside production)
 
 ## Internal routes
 
