@@ -1,11 +1,13 @@
 import { redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import { assertHoneypot, saveJoin } from '$lib/server/submissions';
+import { assertTurnstile } from '$lib/server/turnstile';
 
 export const actions = {
 	default: async (event) => {
 		const form = await event.request.formData();
 		assertHoneypot(form);
+		await assertTurnstile(event.request, form, 'join');
 		await saveJoin(event.platform, form);
 		redirect(303, '/thanks?type=join');
 	}

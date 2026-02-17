@@ -1,4 +1,6 @@
 <script lang="ts">
+	import TurnstileField from '$lib/components/TurnstileField.svelte';
+
 	let { remind } = $props<{ remind: { title: string; text: string; ctaLabel: string } }>();
 </script>
 
@@ -12,6 +14,7 @@
 			<form class="remind__form" method="POST" action="/api/remind">
 				<input class="flow-form__honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
 				<input class="remind__input" type="email" name="email" placeholder="your@email.com" aria-label="Email address" required />
+				<TurnstileField action="remind" />
 				<button class="c-button c-button--primary" type="submit">{remind.ctaLabel}</button>
 			</form>
 		</div>

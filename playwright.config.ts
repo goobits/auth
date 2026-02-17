@@ -15,6 +15,9 @@ export default defineConfig({
 	webServer: {
 		command: 'pnpm db:migrate:local && pnpm cf:dev',
 		url: baseURL,
+		env: {
+			TURNSTILE_BYPASS: 'true'
+		},
 		reuseExistingServer: true,
 		timeout: 180_000
 	},

@@ -6,6 +6,6 @@ pages_build_output_dir = ".svelte-kit/cloudflare"
 [[d1_databases]]
 binding = "DB"
 database_name = "pdx-run"
-database_id = "00000000-0000-0000-0000-000000000000"
-preview_database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "8bd4a693-c380-4711-b29a-0f90ad2da06b"
+preview_database_id = "8bd4a693-c380-4711-b29a-0f90ad2da06b"
 migrations_dir = "migrations"

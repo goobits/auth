@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import TurnstileField from '$lib/components/TurnstileField.svelte';
 </script>
 
 <svelte:head>
@@ -39,6 +40,7 @@
 					<span class="flow-form__label">Notes (optional)</span>
 					<textarea class="flow-form__control" name="notes" rows="4" maxlength="1200"></textarea>
 				</label>
+				<TurnstileField action="join" />
 				<div class="flow-form__actions">
 					<button class="c-button c-button--primary c-button--large" type="submit">Submit Signup</button>
 					<a class="c-button c-button--secondary" href="/">Back Home</a>
