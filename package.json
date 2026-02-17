@@ -1,117 +1,173 @@
 {
-	"name": "miko-art",
-	"version": "1.2.0",
-	"private": true,
-	"workspaces": [
-		"packages/*"
-	],
-	"scripts": {
-		"dev": "dotenvx run -f config/env/.env -- bash scripts/dev/dev-server.sh start",
-		"dev:restart": "dotenvx run -f config/env/.env -- bash scripts/dev/dev-server.sh restart",
-		"dev:stop": "bash scripts/dev/dev-server.sh stop",
-		"dev:wrangler": "NODE_OPTIONS='--dns-result-order=ipv4first' dotenvx run -f config/env/.env -- wrangler dev --local",
-		"build": "NODE_ENV=production dotenvx run -f config/env/.env -- vite build",
-		"build:patch": "pnpm run version:patch && pnpm run build",
-		"preview": "vite preview --port 3000",
-		"serve:prod": "NODE_ENV=production dotenvx run -f config/env/.env -- node build",
-		"check": "pnpm run check:types && pnpm run check:svelte && pnpm run check:lint && pnpm run check:circular",
-		"check:types": "pnpm exec tsc --noEmit",
-		"check:svelte": "pnpm exec svelte-check --tsconfig ./tsconfig.json",
-		"check:lint": "pnpm exec eslint --no-error-on-unmatched-pattern src packages repos serverless scripts ops *.config.js *.config.ts",
-		"check:circular": "pnpm exec madge --circular --extensions ts,js,svelte src packages serverless ops --exclude \"(^|/)dist/\"",
-		"ci:gate": "pnpm run check && pnpm run e2e:critical",
-		"test": "pnpm run e2e",
-		"e2e": "pnpm run e2e:run -- full",
-		"e2e:admin": "pnpm exec svelte-kit sync && pnpm exec vitest run --maxWorkers=1 packages/calendar/__tests__/e2e/admin-login-smoke.test.ts",
-		"e2e:admin:sync": "pnpm exec svelte-kit sync && pnpm exec vitest run --maxWorkers=1 packages/calendar/__tests__/e2e/admin-sync-queue-smoke.test.ts",
-		"e2e:calendar": "pnpm exec svelte-kit sync && pnpm exec vitest run --maxWorkers=1 packages/calendar/__tests__/e2e/calendar-events-flow.test.ts",
-		"e2e:critical": "pnpm run e2e:run -- critical",
-		"e2e:critical:suite": "pnpm run e2e:links && pnpm run e2e:auth && pnpm run e2e:admin && pnpm run e2e:admin:sync && pnpm run e2e:calendar && pnpm run e2e:contact && pnpm run e2e:layout:cls",
-		"e2e:auth": "pnpm exec svelte-kit sync && pnpm exec vitest run --maxWorkers=1 __tests__/e2e/auth-register-smoke.test.ts",
-		"e2e:contact": "pnpm exec svelte-kit sync && pnpm exec vitest run --maxWorkers=1 __tests__/e2e/contact-submit-smoke.test.ts",
-		"e2e:layout:cls": "pnpm exec svelte-kit sync && pnpm exec vitest run --maxWorkers=1 __tests__/e2e/layout-shift.test.ts",
-		"e2e:layout:drift": "pnpm exec svelte-kit sync && pnpm exec vitest run --maxWorkers=1 __tests__/e2e/layout-drift.test.ts",
-		"e2e:links": "pnpm exec svelte-kit sync && pnpm exec vitest run --maxWorkers=1 __tests__/e2e/dead-links.test.ts",
-		"e2e:run": "bash scripts/e2e/run.sh",
-		"e2e:suite": "pnpm run e2e:links && pnpm run e2e:sitemap && pnpm run e2e:auth && pnpm run e2e:admin && pnpm run e2e:admin:sync && pnpm run e2e:calendar && pnpm run e2e:contact && pnpm run e2e:visual && pnpm run e2e:layout:cls && pnpm run e2e:layout:drift",
-		"e2e:sitemap": "pnpm exec svelte-kit sync && pnpm exec vitest run --maxWorkers=1 __tests__/e2e/sitemap-smoke.test.ts",
-		"e2e:visual": "pnpm exec svelte-kit sync && pnpm exec vitest run --maxWorkers=1 __tests__/e2e/visual-snapshots.test.ts",
-		"seed:calendar": "node scripts/seed/calendar-social.mjs",
-		"calendar:sync": "node ops/cron/calendar-sync.mjs",
-		"deploy:secrets": "dotenvx run -f config/env/.env.production -- node ops/deploy/deploy-secrets.mjs",
-		"deploy:prod": "node ops/deploy/deploy-prod.mjs",
-		"deploy:prod:full": "node ops/deploy/deploy-prod.mjs --full",
-		"version:minor": "npm version minor --no-git-tag-version",
-		"version:patch": "npm version patch --no-git-tag-version",
-		"version:major": "npm version major --no-git-tag-version",
-		"audit:css-vars": "node scripts/audit/check-css-tokens.mjs",
-		"audit:static-orphans": "node scripts/audit/report-orphan-static-assets.mjs",
-		"audit:labs-lowercase": "node scripts/audit/labs-lowercase-map.mjs"
-	},
-	"devDependencies": {
-		"@dotenvx/dotenvx": "^1.52.0",
-		"@eslint/js": "^9.39.2",
-		"@node-rs/argon2": "^2.0.2",
-		"@node-rs/bcrypt": "^1.10.7",
-		"@sveltejs/adapter-cloudflare": "^7.2.7",
-		"@sveltejs/enhanced-img": "^0.9.3",
-		"@sveltejs/kit": "^2.51.0",
-		"@sveltejs/vite-plugin-svelte": "^6.2.4",
-		"@types/better-sqlite3": "^7.6.13",
-		"@types/node": "^25.2.3",
-		"better-sqlite3": "^12.6.2",
-		"eslint": "^9.39.2",
-		"eslint-config-prettier": "^10.1.8",
-		"eslint-plugin-svelte": "^3.15.0",
-		"globals": "^17.3.0",
-		"madge": "^8.0.0",
-		"mdsvex": "^0.12.6",
-		"playwright": "^1.58.2",
-		"prettier": "^3.8.1",
-		"prettier-plugin-svelte": "^3.4.1",
-		"sass-embedded": "^1.97.3",
-		"stylus": "^0.64.0",
-		"svelte": "^5.51.1",
-		"svelte-check": "^4.4.0",
-		"typescript": "^5.9.3",
-		"typescript-eslint": "^8.55.0",
-		"vitest": "^3.2.4",
-		"wrangler": "^4.65.0"
-	},
-	"dependencies": {
-		"@aws-sdk/client-s3": "^3.990.0",
-		"@aws-sdk/client-ses": "^3.990.0",
-		"@aws-sdk/s3-request-presigner": "^3.990.0",
-		"@goobits/auth": "workspace:*",
-		"@goobits/themes": "^1.3.2",
-		"@lucide/svelte": "^0.564.0",
-		"@miko/calendar": "workspace:*",
-		"@miko/calendar-kit": "workspace:*",
-		"@miko/calendar-ui": "workspace:*",
-		"@miko/ui": "workspace:*",
-		"argon2-wasm-edge": "^1.0.23",
-		"bcryptjs": "^3.0.2",
-		"dotenv": "^17.3.1",
-		"formsnap": "^2.0.1",
-		"rehype-slug": "^6.0.0",
-		"remark-toc": "^9.0.0",
-		"svelte-forms": "^2.3.1",
-		"sveltekit-superforms": "^2.29.1",
-		"vite": "^7.3.1",
-		"zod": "^4.3.6"
-	},
-	"type": "module",
-	"packageManager": "pnpm@10.28.2",
-	"pnpm": {
-		"onlyBuiltDependencies": [
-			"@parcel/watcher",
-			"better-sqlite3",
-			"esbuild",
-			"sharp",
-			"workerd"
-		],
-		"patchedDependencies": {
-			"svelte": "patches/svelte.patch"
-		}
-	}
+  "name": "@goobits/auth",
+  "version": "0.2.0",
+  "description": "Pluggable authentication system for SvelteKit applications",
+  "type": "module",
+  "main": "./dist/node/index.js",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "node": "./dist/node/index.js",
+      "default": "./dist/worker/index.js"
+    },
+    "./adapters": {
+      "types": "./dist/types/adapters/index.d.ts",
+      "node": "./dist/node/adapters/index.js",
+      "default": "./dist/worker/adapters/index.js"
+    },
+    "./adapters/database": {
+      "types": "./dist/types/adapters/database/index.d.ts",
+      "node": "./dist/node/adapters/database/index.js",
+      "default": "./dist/worker/adapters/database/index.js"
+    },
+    "./adapters/session": {
+      "types": "./dist/types/adapters/session/index.d.ts",
+      "node": "./dist/node/adapters/session/index.js",
+      "default": "./dist/worker/adapters/session/index.js"
+    },
+    "./adapters/oauth-token": {
+      "types": "./dist/types/adapters/oauth-token/index.d.ts",
+      "node": "./dist/node/adapters/oauth-token/index.js",
+      "default": "./dist/worker/adapters/oauth-token/index.js"
+    },
+    "./adapters/drizzle": {
+      "types": "./dist/types/adapters/drizzle/index.d.ts",
+      "node": "./dist/node/adapters/drizzle/index.js",
+      "default": "./dist/worker/adapters/drizzle/index.js"
+    },
+    "./adapters/verification-token": {
+      "types": "./dist/types/adapters/verification-token/index.d.ts",
+      "node": "./dist/node/adapters/verification-token/index.js",
+      "default": "./dist/worker/adapters/verification-token/index.js"
+    },
+    "./adapters/magic-link": {
+      "types": "./dist/types/adapters/magic-link/index.d.ts",
+      "node": "./dist/node/adapters/magic-link/index.js",
+      "default": "./dist/worker/adapters/magic-link/index.js"
+    },
+    "./adapters/webauthn": {
+      "types": "./dist/types/adapters/webauthn/index.d.ts",
+      "node": "./dist/node/adapters/webauthn/index.js",
+      "default": "./dist/worker/adapters/webauthn/index.js"
+    },
+    "./providers": {
+      "types": "./dist/types/providers/index.d.ts",
+      "node": "./dist/node/providers/index.js",
+      "default": "./dist/worker/providers/index.js"
+    },
+    "./handlers": {
+      "types": "./dist/types/handlers/index.d.ts",
+      "node": "./dist/node/handlers/index.js",
+      "default": "./dist/worker/handlers/index.js"
+    },
+    "./utils": {
+      "types": "./dist/types/utils/index.d.ts",
+      "node": "./dist/node/utils/index.js",
+      "default": "./dist/worker/utils/index.js"
+    },
+    "./client": {
+      "types": "./dist/types/client/index.d.ts",
+      "node": "./dist/node/client/index.js",
+      "default": "./dist/worker/client/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/types/index.d.ts",
+      "node": "./dist/node/types/index.js",
+      "default": "./dist/worker/types/index.js"
+    },
+    "./testing": {
+      "types": "./dist/types/testing/index.d.ts",
+      "node": "./dist/node/testing/index.js",
+      "default": "./dist/worker/testing/index.js"
+    },
+    "./mfa": {
+      "types": "./dist/types/mfa/index.d.ts",
+      "node": "./dist/node/mfa/index.js",
+      "default": "./dist/worker/mfa/index.js"
+    },
+    "./ui": {
+      "types": "./dist/types/ui/index.d.ts",
+      "node": "./dist/node/ui/index.js",
+      "default": "./dist/worker/ui/index.js"
+    },
+    "./ui/theme.css": "./dist/worker/ui/theme.css",
+    "./security": {
+      "types": "./dist/types/security/index.d.ts",
+      "node": "./dist/node/security/index.js",
+      "default": "./dist/worker/security/index.js"
+    },
+    "./errors": {
+      "types": "./dist/types/errors/index.d.ts",
+      "node": "./dist/node/errors/index.js",
+      "default": "./dist/worker/errors/index.js"
+    }
+  },
+  "scripts": {
+    "prepare": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:ui": "vitest --ui",
+    "test:integration": "vitest run --testPathPattern=integration",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "rm -rf dist && tsup && node scripts/copy-assets.mjs && npm run build:types",
+    "build:types": "tsc -p tsconfig.build.json",
+    "audit": "npm audit --omit=dev --audit-level=high",
+    "security:check": "npm run typecheck && npm test && npm run audit",
+    "api:scan": "npx @goobits/codeatlas . --format json --out .codeatlas --suggest --entrypoints src/index.ts,src/adapters/index.ts,src/adapters/drizzle/index.ts,src/adapters/database/index.ts,src/adapters/session/index.ts,src/adapters/oauth-token/index.ts,src/adapters/verification-token/index.ts,src/adapters/magic-link/index.ts,src/adapters/webauthn/index.ts,src/providers/index.ts,src/handlers/index.ts,src/utils/index.ts,src/types/index.ts,src/testing/index.ts,src/mfa/index.ts,src/ui/index.ts,src/security/index.ts,src/errors/index.ts",
+    "api:map": "npx @goobits/codeatlas . --format mermaid --out .codeatlas --entrypoints src/index.ts,src/adapters/index.ts,src/adapters/drizzle/index.ts,src/adapters/database/index.ts,src/adapters/session/index.ts,src/adapters/oauth-token/index.ts,src/adapters/verification-token/index.ts,src/adapters/magic-link/index.ts,src/adapters/webauthn/index.ts,src/providers/index.ts,src/handlers/index.ts,src/utils/index.ts,src/types/index.ts,src/testing/index.ts,src/mfa/index.ts,src/ui/index.ts,src/security/index.ts,src/errors/index.ts",
+    "prepublishOnly": "npm run build && npm run security:check"
+  },
+  "keywords": [
+    "auth",
+    "authentication",
+    "oauth",
+    "sveltekit",
+    "session",
+    "drizzle"
+  ],
+  "author": "@goobits",
+  "license": "MIT",
+  "peerDependencies": {
+    "@sveltejs/kit": "^2.0.0",
+    "drizzle-orm": "^0.44.0"
+  },
+  "dependencies": {
+    "@oslojs/crypto": "^1.0.1",
+    "@oslojs/encoding": "^1.1.0",
+    "@simplewebauthn/server": "^13.0.0",
+    "arctic": "^3.7.0",
+    "hash-wasm": "^4.12.0",
+    "zod": "^3.25.76"
+  },
+  "optionalDependencies": {
+    "@node-rs/argon2": "^2.0.2"
+  },
+  "overrides": {
+    "cookie": "^0.7.0"
+  },
+  "devDependencies": {
+    "@sveltejs/kit": "^2.52.0",
+    "@types/node": "^22.13.4",
+    "pg": "^8.18.0",
+    "pg-mem": "^3.0.8",
+    "pg-server": "^0.1.8",
+    "postgres": "^3.4.8",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.2",
+    "vitest": "^4.0.6"
+  },
+  "vitest": {
+    "test": {
+      "setupFiles": [
+        "./vitest.setup.js"
+      ]
+    }
+  }
 }

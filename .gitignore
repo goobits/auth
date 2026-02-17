@@ -1,36 +1,39 @@
-/.idea
-/.parcel-cache
-/dist
-/public/build
-/public/labs/sketchpad-1.0/dist
-/public/labs/sketchpad-1.0/.parcel-cache
-/software/sketchpad-1.0/.parcel-cache
-/software/zen-bg/dist
-/software/zen-bg/.parcel-cache
-/.yarn
-/.svelte-kit
-/build
+# Dependencies
 node_modules/
 
-# Workspace build artifacts (never commit)
-packages/**/dist/
-packages/**/.tsbuildinfo
+# Build outputs
+dist/
+build/
+.svelte-kit/
+*.tsbuildinfo
 
-# External repos
-/repos/*
-!/repos/*.revision
+# Environment variables
+.env
+.env.*
+!.env.example
 
-# Dotenvx private keys (decryption keys — never commit)
-.env.keys
-
-# Local dev artifacts
+# OS files
 .DS_Store
-.dev/
-.pnpm-store/
-.wrangler/
-tasks/
-temp/
-test-results/
-vm.yaml
-.artifacts/
-.llm/scratch/
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Temporary files
+*.tmp
+.cache/
