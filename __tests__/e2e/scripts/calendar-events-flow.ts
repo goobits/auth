@@ -88,10 +88,6 @@ export async function runCalendarEventsFlow() {
 	const page = await context.newPage()
 
 	try {
-		await context.request.post(`${BASE_URL}/api/test/calendar-cleanup`, {
-			headers: { authorization: `Bearer ${passcode}` }
-		})
-
 		await page.goto(ADMIN_URL, { waitUntil: 'domcontentloaded', timeout: 30000 })
 
 			const alreadyAuthed = (await page.locator('.admin-page__sidebar').count()) > 0
@@ -109,6 +105,11 @@ export async function runCalendarEventsFlow() {
 			const cookies = await context.cookies(ADMIN_URL)
 			const hasSessionCookie = cookies.some((cookie) => cookie.name === 'admin_session')
 		if (!hasSessionCookie) throw new Error('admin session cookie missing after login')
+
+		// Clean prior E2E spam using the real admin session (dev-only endpoint).
+		await context.request
+			.post(`${BASE_URL}/api/admin/dev/cleanup-e2e`, { headers: { origin: BASE_URL } })
+			.catch(() => null)
 
 		await page.goto(`${BASE_URL}/admin/events`, { waitUntil: 'domcontentloaded', timeout: 30000 })
 		await page.locator('.admin-page__sidebar').first().waitFor({ timeout: 30000 })
@@ -254,9 +255,9 @@ export async function runCalendarEventsFlow() {
 
 		console.log('[calendar-events-flow] PASS')
 	} finally {
-		await context.request.post(`${BASE_URL}/api/test/calendar-cleanup`, {
-			headers: { authorization: `Bearer ${passcode}` }
-		}).catch(() => null)
+		await context.request
+			.post(`${BASE_URL}/api/admin/dev/cleanup-e2e`, { headers: { origin: BASE_URL } })
+			.catch(() => null)
 		await context.close()
 		await contextB.close()
 		await browser.close()
