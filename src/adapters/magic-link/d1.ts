@@ -62,13 +62,14 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 		expiresAt: Date;
 		metadata?: Record<string, unknown>;
 	}) {
-		const sql = `INSERT INTO ${this.tokensTable} (${this.columns.userId}, ${this.columns.email}, ${this.columns.tokenHash}, ${this.columns.otpHash}, ${this.columns.expiresAt}) VALUES (?, ?, ?, ?, ?)`;
+		const id = crypto.randomUUID();
+		const sql = `INSERT INTO ${this.tokensTable} (${this.columns.id}, ${this.columns.userId}, ${this.columns.email}, ${this.columns.tokenHash}, ${this.columns.otpHash}, ${this.columns.expiresAt}) VALUES (?, ?, ?, ?, ?, ?)`;
 		await this.db
 			.prepare(sql)
-			.bind(userId, email, tokenHash, otpHash ?? null, expiresAt.toISOString())
+			.bind(id, userId, email, tokenHash, otpHash ?? null, expiresAt.toISOString())
 			.run();
 		return {
-			id: crypto.randomUUID(),
+			id,
 			userId,
 			email,
 			tokenHash,
