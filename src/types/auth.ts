@@ -6,7 +6,7 @@ import type {
 	Session,
 	SessionSummary,
 	User,
-} from "./index.js";
+} from "./core.js";
 import type { SessionAdapter } from "../adapters/session/base.js";
 import type { UserAdapter } from "../adapters/database/base.js";
 import type { TokenAdapter } from "../adapters/oauth-token/base.js";
