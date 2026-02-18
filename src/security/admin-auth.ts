@@ -68,4 +68,4 @@ export function parseApiKeyHeader(value: string | null): string | null {
 	return value;
 }
 
-export { timingSafeEqual, hexToBytes, bytesToHex };
+export { timingSafeEqual };

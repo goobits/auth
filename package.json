@@ -139,7 +139,6 @@
     "drizzle-orm": "^0.44.0"
   },
   "dependencies": {
-    "@oslojs/crypto": "^1.0.1",
     "@oslojs/encoding": "^1.1.0",
     "@simplewebauthn/server": "^13.0.0",
     "arctic": "^3.7.0",
@@ -155,7 +154,6 @@
   "devDependencies": {
     "@sveltejs/kit": "^2.52.0",
     "@types/node": "^22.13.4",
-    "pg": "^8.18.0",
     "pg-mem": "^3.0.8",
     "pg-server": "^0.1.8",
     "postgres": "^3.4.8",
