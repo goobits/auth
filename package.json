@@ -140,7 +140,7 @@
   },
   "dependencies": {
     "@oslojs/encoding": "^1.1.0",
-    "@simplewebauthn/server": "^13.0.0",
+    "@simplewebauthn/server": "^13.2.2",
     "arctic": "^3.7.0",
     "hash-wasm": "^4.12.0",
     "zod": "^3.25.76"
@@ -152,13 +152,14 @@
     "cookie": "^0.7.0"
   },
   "devDependencies": {
-    "@types/node": "^22.13.4",
-    "pg-mem": "^3.0.8",
+    "@sveltejs/kit": "^2.52.0",
+    "@types/node": "^22.19.11",
+    "pg-mem": "^3.0.13",
     "pg-server": "^0.1.8",
     "postgres": "^3.4.8",
-    "tsup": "^8.5.0",
-    "typescript": "^5.8.2",
-    "vitest": "^4.0.6"
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   },
   "vitest": {
     "test": {
