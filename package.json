@@ -143,7 +143,7 @@
     "@simplewebauthn/server": "^13.2.2",
     "arctic": "^3.7.0",
     "hash-wasm": "^4.12.0",
-    "zod": "^3.25.76"
+    "zod": "^4.3.6"
   },
   "optionalDependencies": {
     "@node-rs/argon2": "^2.0.2"
