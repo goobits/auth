@@ -34,15 +34,15 @@ export class OAuthProvider {
 	 * Validate authorization code and get user profile + tokens
 	 * @param {string} code - Authorization code from callback
 	 * @param {string} codeVerifier - PKCE code verifier
-	 * @returns {Promise<{profile: import('../types.js').OAuthProfile, tokens: import('../types.js').OAuthTokens}>}
+	 * @returns {Promise<{profile: import('../types/core.js').OAuthProfile, tokens: import('../types/core.js').OAuthTokens}>}
 	 */
 	async getUserProfile(
 		code: string,
 		codeVerifier: string,
 		userData?: string | null,
 	): Promise<{
-		profile: import("../types/index.js").OAuthProfile;
-		tokens: import("../types/index.js").OAuthTokens;
+		profile: import("../types/core.js").OAuthProfile;
+		tokens: import("../types/core.js").OAuthTokens;
 	}> {
 		throw new Error("getUserProfile must be implemented");
 	}
@@ -50,11 +50,11 @@ export class OAuthProvider {
 	/**
 	 * Refresh access token using refresh token
 	 * @param {string} refreshToken - OAuth refresh token
-	 * @returns {Promise<import('../types.js').OAuthTokens>}
+	 * @returns {Promise<import('../types/core.js').OAuthTokens>}
 	 */
 	async refreshAccessToken(
 		refreshToken: string,
-	): Promise<import("../types/index.js").OAuthTokens> {
+	): Promise<import("../types/core.js").OAuthTokens> {
 		throw new Error("refreshAccessToken must be implemented");
 	}
 }
