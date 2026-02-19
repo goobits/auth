@@ -147,5 +147,3 @@ export async function verifyTOTP({
 	}
 	return false;
 }
-
-export { toBase32, fromBase32 };
