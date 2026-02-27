@@ -154,7 +154,7 @@
   "devDependencies": {
     "@sveltejs/kit": "^2.52.0",
     "@types/node": "^22.19.11",
-    "pg-mem": "^3.0.13",
+    "pg-mem": "^3.0.14",
     "pg-server": "^0.1.8",
     "postgres": "^3.4.8",
     "tsup": "^8.5.1",
