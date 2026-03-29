@@ -70,7 +70,7 @@ export function createCallbackHandler(config: CallbackConfig) {
 		try {
 			// Already authenticated - redirect
 			if (isAuthenticated(locals)) {
-				redirect(302, redirectAfterLogin);
+				throw redirect(302, redirectAfterLogin);
 			}
 
 			const providerName = String(params["provider"] ?? "");
@@ -110,7 +110,7 @@ export function createCallbackHandler(config: CallbackConfig) {
 				callbacks,
 			});
 
-			redirect(302, redirectAfterLogin);
+			throw redirect(302, redirectAfterLogin);
 		} catch (err) {
 			// Handle OAuth2 errors
 			if (err instanceof OAuth2RequestError) {
