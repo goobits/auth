@@ -172,7 +172,7 @@ export function createSigninHandler(config: {
 
 			// Redirect if configured
 			if (redirectTo) {
-				redirect(303, redirectTo);
+				throw redirect(303, redirectTo);
 			}
 
 			return {
