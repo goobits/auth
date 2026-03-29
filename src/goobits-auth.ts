@@ -193,7 +193,7 @@ export class GoobitsAuth {
 	async requireUser(event: RequestEventLike): Promise<User> {
 		const principal = await this.getSession(event);
 		if (!principal) {
-			redirect(302, this.routing.signInPath);
+			throw redirect(302, this.routing.signInPath);
 		}
 		return principal.user;
 	}
