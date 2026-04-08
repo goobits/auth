@@ -23,13 +23,10 @@ export type GoobitsAuthRoutingConfig = {
 	signOutPath?: string;
 };
 
-export type GoobitsAuthConfig = Omit<AuthConfig, "adapters"> &
-	(
-		| { adapter: AuthConfig["adapters"]; adapters?: AuthConfig["adapters"] }
-		| { adapter?: never; adapters: AuthConfig["adapters"] }
-	) & {
-		routing?: GoobitsAuthRoutingConfig;
-	};
+export type GoobitsAuthConfig = Omit<AuthConfig, "adapters"> & {
+	adapter: AuthConfig["adapters"];
+	routing?: GoobitsAuthRoutingConfig;
+};
 
 type HandlerTarget = {
 	method: HandlerMethod;
@@ -88,14 +85,10 @@ export class GoobitsAuth {
 	private readonly defaultHandlers: AuthHandlersBundle;
 
 	constructor(config: GoobitsAuthConfig) {
-		const { routing, adapter, adapters, ...rest } = config;
-		const resolvedAdapters = adapter ?? adapters;
-		if (!resolvedAdapters) {
-			throw new Error("GoobitsAuth requires 'adapter' (or legacy 'adapters') configuration");
-		}
+		const { routing, adapter, ...rest } = config;
 		const authConfig = {
 			...rest,
-			adapters: resolvedAdapters,
+			adapters: adapter,
 		} as AuthConfig;
 		this.core = createAuth(authConfig);
 		const basePath = normalizeBasePath(routing?.basePath);
