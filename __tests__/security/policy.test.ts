@@ -2,21 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applySecurityPolicy } from "../../src/security/policy.ts";
 import { MemoryCsrfStore } from "../../src/security/csrf.ts";
 import type { RequestEventLike } from "../../src/types/auth.ts";
-
-function createCookies(initial: Record<string, string> = {}) {
-	const data = new Map(Object.entries(initial));
-	return {
-		get: (name: string) => data.get(name) ?? null,
-		set: (name: string, value: string) => {
-			data.set(name, value);
-		},
-		delete: (name: string) => {
-			data.delete(name);
-		},
-		getAll: () => [],
-		serialize: () => "",
-	};
-}
+import { createCookies, createRequestEvent } from "../test-kit.ts";
 
 function createEvent({
 	method = "POST",
@@ -28,11 +14,13 @@ function createEvent({
 	cookies?: ReturnType<typeof createCookies>;
 } = {}): RequestEventLike {
 	return {
-		request: new Request("http://localhost/auth/test", { method, headers }),
-		cookies,
-		params: {},
-		locals: { user: null, session: null },
-		url: new URL("http://localhost/auth/test"),
+		...createRequestEvent({
+			url: "http://localhost/auth/test",
+			method,
+			headers,
+			cookies,
+			locals: { user: null, session: null },
+		}),
 		getClientAddress: () => "127.0.0.1",
 	};
 }

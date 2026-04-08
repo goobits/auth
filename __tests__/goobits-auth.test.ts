@@ -4,29 +4,7 @@ import type { OAuthProvider } from "../src/providers/base.ts";
 import type { SessionAdapter } from "../src/adapters/session/base.ts";
 import type { RequestEventLike } from "../src/types/auth.ts";
 import type { Session, User } from "../src/types/index.ts";
-
-function createCookies() {
-	const store = new Map<string, string>();
-	return {
-		get: (name: string) => store.get(name) ?? null,
-		set: (name: string, value: string) => {
-			store.set(name, value);
-		},
-		delete: (name: string) => {
-			store.delete(name);
-		},
-	};
-}
-
-function createEvent(url: string, method: "GET" | "POST" = "GET"): RequestEventLike {
-	return {
-		request: new Request(url, { method }),
-		cookies: createCookies(),
-		locals: {},
-		params: {},
-		url: new URL(url),
-	};
-}
+import { createRequestEvent } from "./test-kit.ts";
 
 function createProvider(): OAuthProvider {
 	return {
@@ -78,7 +56,7 @@ describe("GoobitsAuth", () => {
 			adapter: { session: createSessionAdapter({ session, user }) },
 			providers: { google: { provider: createProvider() } },
 		});
-		const event = createEvent("http://localhost/account");
+		const event = createRequestEvent({ url: "http://localhost/account" });
 		event.cookies.set("session", "s1");
 
 		const handle = auth.handle();
@@ -99,7 +77,10 @@ describe("GoobitsAuth", () => {
 			providers: { google: { provider: createProvider() } },
 		});
 
-		const event = createEvent("http://localhost/auth/signin/google", "GET");
+		const event = createRequestEvent({
+			url: "http://localhost/auth/signin/google",
+			params: { provider: "google" },
+		});
 		await expect(auth.handlers.GET(event as never)).rejects.toMatchObject({
 			status: 302,
 			location: "https://provider.example/auth",
@@ -123,7 +104,7 @@ describe("GoobitsAuth", () => {
 		const auth = new GoobitsAuth({
 			adapter: { session: createSessionAdapter({ session, user }) },
 		});
-		const event = createEvent("http://localhost/protected");
+		const event = createRequestEvent({ url: "http://localhost/protected" });
 		event.locals.session = session;
 		event.locals.user = user;
 		await expect(auth.requireRole(event, "admin")).rejects.toMatchObject({ status: 403 });

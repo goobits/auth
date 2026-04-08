@@ -1,31 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createSignupHandler } from '../../src/handlers/signup.ts'
-
-function createCookies() {
-	const store = new Map<string, { value: string; options: Record<string, unknown> }>()
-	return {
-		set: (name: string, value: string, options: Record<string, unknown>) => store.set(name, { value, options }),
-		get: (name: string) => store.get(name)?.value ?? null,
-		delete: (name: string) => store.delete(name),
-		_store: store
-	}
-}
-
-function createEvent({ email = 'a@b.com', password = 'pw', name = 'A' } = {}) {
-	return {
-		cookies: createCookies(),
-		request: new Request('http://localhost/signup', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-			body: new URLSearchParams({ email, password, name })
-		}),
-		locals: {}
-	}
-}
-
-function getRedirectLocation(err: { location?: string; headers?: Headers } | null) {
-	return err?.location || err?.headers?.get?.('location')
-}
+import { captureRejected, createRequestEvent, getRedirectLocation } from '../test-kit.ts'
 
 describe('createSignupHandler', () => {
 	it('rejects if email already exists', async () => {
@@ -34,7 +9,13 @@ describe('createSignupHandler', () => {
 		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
 
 		const handler = createSignupHandler({ credentialsProvider, userAdapter, sessionAdapter })
-		const result = await handler(createEvent())
+		const result = await handler(
+			createRequestEvent({
+				url: 'http://localhost/signup',
+				method: 'POST',
+				form: { email: 'a@b.com', password: 'pw', name: 'A' }
+			})
+		)
 
 		expect(result.success).toBe(false)
 		expect(credentialsProvider.signUp).not.toHaveBeenCalled()
@@ -67,13 +48,17 @@ describe('createSignupHandler', () => {
 			redirectTo: '/welcome'
 		})
 
-		try {
-			await handler(createEvent())
-		} catch (err) {
-			const error = err as { status?: number; headers?: Headers; location?: string }
-			expect(error.status).toBe(303)
-			expect(getRedirectLocation(error)).toBe('/welcome')
-		}
+		const error = await captureRejected<{ status?: number; headers?: Headers; location?: string }>(
+			handler(
+				createRequestEvent({
+					url: 'http://localhost/signup',
+					method: 'POST',
+					form: { email: 'a@b.com', password: 'pw', name: 'A' }
+				})
+			)
+		)
+		expect(error.status).toBe(303)
+		expect(getRedirectLocation(error)).toBe('/welcome')
 
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
