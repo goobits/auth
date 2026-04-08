@@ -1,18 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
 import { CookieSessionAdapter } from '../../src/adapters/session/cookie.ts'
+import { createCookies } from '../test-kit.ts'
 
 type CookieSessionAdapterInternals = {
 	_sessions: Map<string, unknown>;
-}
-
-function createCookies() {
-	const store = new Map<string, { value: string; options: Record<string, unknown> }>()
-	return {
-		set: (name: string, value: string, options: Record<string, unknown>) => store.set(name, { value, options }),
-		get: (name: string) => store.get(name)?.value ?? null,
-		delete: (name: string) => store.delete(name),
-		_store: store
-	}
 }
 
 describe('CookieSessionAdapter', () => {
