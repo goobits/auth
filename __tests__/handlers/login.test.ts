@@ -1,29 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createLoginHandler } from '../../src/handlers/login.ts'
 import type { OAuthProvider } from '../../src/providers/base.ts'
-
-function createCookies() {
-	const store = new Map<string, { value: string; options: Record<string, unknown> }>()
-	return {
-		set: (name: string, value: string, options: Record<string, unknown>) => store.set(name, { value, options }),
-		get: (name: string) => store.get(name)?.value ?? null,
-		delete: (name: string) => store.delete(name),
-		_store: store
-	}
-}
-
-function createEvent({ provider = 'google', locals = {}, url = 'http://localhost/' } = {}) {
-	return {
-		cookies: createCookies(),
-		params: { provider },
-		locals,
-		url: new URL(url)
-	}
-}
-
-function getRedirectLocation(err: { location?: string; headers?: Headers } | null) {
-	return err?.location || err?.headers?.get?.('location')
-}
+import { captureRejected, createRequestEvent, getRedirectLocation } from '../test-kit.ts'
 
 function createProvider(createAuthorizationURL?: () => URL): OAuthProvider {
 	return {
@@ -38,7 +16,7 @@ function createProvider(createAuthorizationURL?: () => URL): OAuthProvider {
 describe('createLoginHandler', () => {
 	it('rejects unknown provider', async () => {
 		const handler = createLoginHandler({ providers: {} })
-		const response = await handler(createEvent({ provider: 'unknown' }))
+		const response = await handler(createRequestEvent({ params: { provider: 'unknown' } }))
 		expect(response.status).toBe(400)
 	})
 
@@ -49,7 +27,10 @@ describe('createLoginHandler', () => {
 			isAuthenticated: () => true
 		})
 
-		await expect(handler(createEvent())).rejects.toMatchObject({ status: 302 })
+		const error = await captureRejected<{ status?: number }>(
+			handler(createRequestEvent({ params: { provider: 'google' } }))
+		)
+		expect(error.status).toBe(302)
 	})
 
 	it('sets apple response_mode to form_post', async () => {
@@ -60,16 +41,14 @@ describe('createLoginHandler', () => {
 			}
 		})
 
-		try {
-			await handler(createEvent({ provider: 'apple' }))
-		} catch (err: unknown) {
-			const error = err as { status?: number; headers?: Headers; location?: string }
-			const location = getRedirectLocation(error)
-			expect(error.status).toBe(302)
-			expect(location).toBeTruthy()
-			if (!location) throw new Error('Missing redirect location')
-			expect(new URL(location).searchParams.get('response_mode')).toBe('form_post')
-		}
+		const error = await captureRejected<{ status?: number; headers?: Headers; location?: string }>(
+			handler(createRequestEvent({ params: { provider: 'apple' } }))
+		)
+		const location = getRedirectLocation(error)
+		expect(error.status).toBe(302)
+		expect(location).toBeTruthy()
+		if (!location) throw new Error('Missing redirect location')
+		expect(new URL(location).searchParams.get('response_mode')).toBe('form_post')
 		expect(createAuthorizationURL).toHaveBeenCalled()
 	})
 })

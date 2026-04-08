@@ -4,26 +4,7 @@ import type { Session } from '../src/types/index.ts'
 import type { SessionAdapter } from '../src/adapters/session/base.ts'
 import type { OAuthProvider } from '../src/providers/base.ts'
 import type { RequestEventLike } from '../src/types/auth.ts'
-
-function createCookies() {
-	const store = new Map<string, { value: string; options: Record<string, unknown> }>()
-	return {
-		get: (name: string) => store.get(name)?.value ?? null,
-		set: (name: string, value: string, options: Record<string, unknown> = {}) => store.set(name, { value, options }),
-		delete: (name: string) => store.delete(name),
-		_store: store
-	}
-}
-
-function createEvent() {
-	return {
-		request: new Request('http://localhost/', { method: 'GET' }),
-		cookies: createCookies(),
-		locals: {} as Record<string, unknown>,
-		params: {},
-		url: new URL('http://localhost/')
-	}
-}
+import { createRequestEvent } from './test-kit.ts'
 
 function createSessionAdapter({
 	cookieName = 'session',
@@ -77,7 +58,7 @@ describe('createAuth', () => {
 			providers: { google: { provider: createProvider() } }
 		})
 
-		const event = createEvent()
+		const event = createRequestEvent()
 		event.cookies.set('auth_session', 'deadbeef')
 
 		await auth.handlers.hooks({
@@ -101,7 +82,7 @@ describe('createAuth', () => {
 			providers: { google: { provider: createProvider() } }
 		})
 
-		const event = createEvent()
+		const event = createRequestEvent()
 		event.cookies.set('session', 's1')
 
 		await auth.handlers.hooks({
