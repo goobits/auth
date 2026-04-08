@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { OAuth2RequestError } from 'arctic'
 import type { OAuthProvider } from '../../src/providers/base.ts'
 import type { OAuthProfile, OAuthTokens } from '../../src/types/index.ts'
+import { captureRejected, createRequestEvent, getRedirectLocation } from '../test-kit.ts'
 
 type OAuthCallbackHandlers = {
 	onAuthenticated?: (profile: OAuthProfile, tokens: OAuthTokens) => Promise<void> | void;
@@ -24,28 +25,6 @@ vi.mock('../../src/utils/oauth.ts', () => ({
 
 import { createCallbackHandler } from '../../src/handlers/callback.ts'
 
-function createEvent({ provider = 'google', method = 'GET', form = {} } = {}) {
-	const headers = new Headers()
-	if (method === 'POST') {
-		headers.set('Content-Type', 'application/x-www-form-urlencoded')
-	}
-	const request = new Request('http://localhost/callback', {
-		method,
-		headers,
-		body: method === 'POST' ? new URLSearchParams(form as Record<string, string>) : null
-	})
-	return {
-		params: { provider },
-		locals: {},
-		url: new URL('http://localhost/callback?code=abc&state=123'),
-		request
-	}
-}
-
-function getRedirectLocation(err: { location?: string; headers?: Headers } | null) {
-	return err?.location || err?.headers?.get?.('location')
-}
-
 function createProvider(): OAuthProvider {
 	return {
 		createAuthorizationURL: () => new URL('https://example.com/auth'),
@@ -67,7 +46,10 @@ describe('createCallbackHandler', () => {
 			onAuthenticated: vi.fn()
 		})
 
-		await expect(handler(createEvent({ provider: 'unknown' })))
+		await expect(handler(createRequestEvent({
+			url: 'http://localhost/callback?code=abc&state=123',
+			params: { provider: 'unknown' }
+		})))
 			.rejects.toMatchObject({ status: 400 })
 	})
 
@@ -81,7 +63,10 @@ describe('createCallbackHandler', () => {
 			onAuthenticated: vi.fn()
 		})
 
-		await expect(handler(createEvent({ provider: 'google' })))
+		await expect(handler(createRequestEvent({
+			url: 'http://localhost/callback?code=abc&state=123',
+			params: { provider: 'google' }
+		})))
 			.rejects.toMatchObject({ status: 400 })
 	})
 
@@ -93,17 +78,16 @@ describe('createCallbackHandler', () => {
 			onAuthenticated
 		})
 
-		try {
-			await handler(createEvent({
-				provider: 'apple',
+		const error = await captureRejected<{ status?: number; headers?: Headers; location?: string }>(
+			handler(createRequestEvent({
+				url: 'http://localhost/callback?code=abc&state=123',
 				method: 'POST',
+				params: { provider: 'apple' },
 				form: { code: 'code123', state: 'state123', user: JSON.stringify({}) }
 			}))
-		} catch (err) {
-			const error = err as { status?: number; headers?: Headers; location?: string }
-			expect(error.status).toBe(302)
-			expect(getRedirectLocation(error)).toBe('/')
-		}
+		)
+		expect(error.status).toBe(302)
+		expect(getRedirectLocation(error)).toBe('/')
 
 		expect(handleOAuthCallback).toHaveBeenCalledWith(expect.objectContaining({
 			provider: 'apple',
