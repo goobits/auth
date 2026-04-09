@@ -1,16 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { issueCsrfToken, validateCsrfRequest, MemoryCsrfStore } from '../../src/security/csrf.ts'
-
-function createCookies() {
-	const store = new Map<string, { value: string; options?: Record<string, unknown> }>()
-	return {
-		set: (name: string, value: string, options?: Record<string, unknown>) =>
-			store.set(name, { value, options }),
-		get: (name: string) => store.get(name)?.value ?? null,
-		delete: (name: string) => store.delete(name),
-		_store: store
-	}
-}
+import { createCookies } from '../test-kit.ts'
 
 describe('csrf', () => {
 	it('issues token and validates matching header', async () => {

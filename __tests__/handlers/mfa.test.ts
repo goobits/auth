@@ -14,16 +14,15 @@ vi.mock('../../src/mfa/backup-codes.ts', () => ({
 import * as totp from '../../src/mfa/totp.ts'
 import * as backup from '../../src/mfa/backup-codes.ts'
 import { createMfaEnrollHandler, createMfaVerifyHandler, createMfaBackupCodeHandler } from '../../src/handlers/mfa.ts'
+import { createRequestEvent } from '../test-kit.ts'
 
 function createEvent({ locals = {}, form = {} } = {}) {
-	return {
-		locals,
-		request: new Request('http://localhost/mfa', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-			body: new URLSearchParams(form)
-		})
-	}
+	return createRequestEvent({
+		url: 'http://localhost/mfa',
+		method: 'POST',
+		form,
+		locals
+	})
 }
 
 beforeEach(() => {
