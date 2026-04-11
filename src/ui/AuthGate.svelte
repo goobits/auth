@@ -1,22 +1,37 @@
 <script>
+	import type { Snippet } from 'svelte'
 	import { auth } from "./auth-store.js";
 
-	export let user = undefined;
-	export let loading = undefined;
-	export let onUnauthenticated = null;
+	let {
+		user = undefined,
+		loading = undefined,
+		onUnauthenticated = null,
+		children,
+		loadingContent,
+		unauthenticated
+	}: {
+		user?: unknown
+		loading?: boolean | undefined
+		onUnauthenticated?: (() => void) | null
+		children?: Snippet
+		loadingContent?: Snippet
+		unauthenticated?: Snippet
+	} = $props()
 
-	$: resolvedUser = user ?? $auth.user ?? null;
-	$: resolvedLoading = loading ?? $auth.loading ?? false;
+	const resolvedUser = $derived(user ?? $auth.user ?? null);
+	const resolvedLoading = $derived(loading ?? $auth.loading ?? false);
 
-	$: if (!resolvedLoading && !resolvedUser && typeof onUnauthenticated === "function") {
+	$effect(() => {
+		if (!resolvedLoading && !resolvedUser && typeof onUnauthenticated === "function") {
 		onUnauthenticated();
-	}
+		}
+	})
 </script>
 
 {#if resolvedLoading}
-	<slot name="loading">Loading…</slot>
+	{@render loadingContent?.() ?? 'Loading…'}
 {:else if resolvedUser}
-	<slot />
+	{@render children?.()}
 {:else}
-	<slot name="unauthenticated">Sign in required.</slot>
+	{@render unauthenticated?.() ?? 'Sign in required.'}
 {/if}

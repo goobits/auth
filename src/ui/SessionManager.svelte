@@ -1,9 +1,11 @@
 <script>
-	export let listEndpoint = "/auth/sessions";
-	export let revokeEndpoint = "/auth/sessions";
-	export let fetcher = fetch;
-	export let headers = {};
-	export let sessions = null;
+	let {
+		listEndpoint = "/auth/sessions",
+		revokeEndpoint = "/auth/sessions",
+		fetcher = fetch,
+		headers = {},
+		sessions = null,
+	} = $props();
 
 	let loading = false;
 	let revokingId = null;
@@ -82,7 +84,7 @@
 							type="button"
 							disabled={revokingId === session.id}
 							aria-label="Revoke session {session.ip || 'Unknown IP'}"
-							on:click={() => revoke(session.id)}
+							onclick={() => revoke(session.id)}
 						>
 							{revokingId === session.id ? 'Revoking…' : 'Revoke'}
 						</button>
