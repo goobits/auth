@@ -1,62 +1,86 @@
-<script>
+<script lang="ts">
+	type SessionRecord = {
+		id: string
+		current?: boolean
+		ip?: string | null
+		expiresAt: string
+	}
+
 	let {
-		listEndpoint = "/auth/sessions",
-		revokeEndpoint = "/auth/sessions",
+		listEndpoint = '/auth/sessions',
+		revokeEndpoint = '/auth/sessions',
 		fetcher = fetch,
 		headers = {},
-		sessions = null,
-	} = $props();
+		sessions: initialSessions = null
+	}: {
+		listEndpoint?: string
+		revokeEndpoint?: string
+		fetcher?: typeof fetch
+		headers?: Record<string, string>
+		sessions?: SessionRecord[] | null
+	} = $props()
 
-	let loading = false;
-	let revokingId = null;
-	let error = null;
+	let sessions = $state<SessionRecord[] | null>(null)
+	let loading = $state(false)
+	let revokingId = $state<string | null>(null)
+	let error = $state<string | null>(null)
+	let didApplyInitialSessions = false
+	let didRequestInitialSessions = false
 
 	async function loadSessions() {
-		loading = true;
-		error = null;
+		loading = true
+		error = null
 		try {
 			const response = await fetcher(listEndpoint, {
-				headers,
-			});
-			const data = await response.json();
+				headers
+			})
+			const data = await response.json()
 			if (!response.ok || !data.ok) {
-				throw new Error(data.error || "Failed to load sessions");
+				throw new Error(data.error || 'Failed to load sessions')
 			}
-			sessions = data.sessions;
+			sessions = data.sessions as SessionRecord[]
 		} catch (err) {
-			error = err.message;
+			error = err instanceof Error ? err.message : 'Failed to load sessions'
 		} finally {
-			loading = false;
+			loading = false
 		}
 	}
 
-	async function revoke(sessionId) {
-		revokingId = sessionId;
-		error = null;
+	async function revoke(sessionId: string) {
+		revokingId = sessionId
+		error = null
 		try {
 			const response = await fetcher(revokeEndpoint, {
-				method: "POST",
+				method: 'POST',
 				headers: {
-					"content-type": "application/json",
-					...headers,
+					'content-type': 'application/json',
+					...headers
 				},
-				body: JSON.stringify({ sessionId }),
-			});
-			const data = await response.json();
+				body: JSON.stringify({ sessionId })
+			})
+			const data = await response.json()
 			if (!response.ok || !data.ok) {
-				throw new Error(data.error || "Failed to revoke session");
+				throw new Error(data.error || 'Failed to revoke session')
 			}
-			await loadSessions();
+			await loadSessions()
 		} catch (err) {
-			error = err.message;
+			error = err instanceof Error ? err.message : 'Failed to revoke session'
 		} finally {
-			revokingId = null;
+			revokingId = null
 		}
 	}
 
-	if (!sessions) {
-		loadSessions();
-	}
+	$effect(() => {
+		if (!didApplyInitialSessions) {
+			sessions = initialSessions
+			didApplyInitialSessions = true
+		}
+
+		if (!didRequestInitialSessions && !sessions) {
+			didRequestInitialSessions = true
+			void loadSessions()
+		}
+	})
 </script>
 
 <div class="auth-session-manager">
@@ -72,7 +96,7 @@
 					<div>
 						<p class="auth-session-meta">
 							{session.current ? "Current session" : "Session"} ·
-							{session.ip || "Unknown IP"}
+							{session.ip || 'Unknown IP'}
 						</p>
 						<p class="auth-session-sub">
 							Expires {new Date(session.expiresAt).toLocaleString()}
