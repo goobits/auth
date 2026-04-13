@@ -5,6 +5,67 @@
   "type": "module",
   "main": "./dist/node/index.js",
   "types": "./dist/types/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "": [
+        "./dist/types/index.d.ts"
+      ],
+      "adapters": [
+        "./dist/types/adapters/index.d.ts"
+      ],
+      "adapters/database": [
+        "./dist/types/adapters/database/index.d.ts"
+      ],
+      "adapters/session": [
+        "./dist/types/adapters/session/index.d.ts"
+      ],
+      "adapters/oauth-token": [
+        "./dist/types/adapters/oauth-token/index.d.ts"
+      ],
+      "adapters/drizzle": [
+        "./dist/types/adapters/drizzle/index.d.ts"
+      ],
+      "adapters/verification-token": [
+        "./dist/types/adapters/verification-token/index.d.ts"
+      ],
+      "adapters/magic-link": [
+        "./dist/types/adapters/magic-link/index.d.ts"
+      ],
+      "adapters/webauthn": [
+        "./dist/types/adapters/webauthn/index.d.ts"
+      ],
+      "providers": [
+        "./dist/types/providers/index.d.ts"
+      ],
+      "handlers": [
+        "./dist/types/handlers/index.d.ts"
+      ],
+      "utils": [
+        "./dist/types/utils/index.d.ts"
+      ],
+      "client": [
+        "./dist/types/client/index.d.ts"
+      ],
+      "types": [
+        "./dist/types/types/index.d.ts"
+      ],
+      "testing": [
+        "./dist/types/testing/index.d.ts"
+      ],
+      "mfa": [
+        "./dist/types/mfa/index.d.ts"
+      ],
+      "ui": [
+        "./dist/types/ui/index.d.ts"
+      ],
+      "security": [
+        "./dist/types/security/index.d.ts"
+      ],
+      "errors": [
+        "./dist/types/errors/index.d.ts"
+      ]
+    }
+  },
   "files": [
     "dist",
     "README.md",
