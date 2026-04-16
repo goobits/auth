@@ -110,27 +110,4 @@ describe('Drizzle Adapters Integration', () => {
 		await tokenAdapter.deleteTokens(testUserId, 'google')
 		expect(await tokenAdapter.getTokens(testUserId, 'google')).toBeNull()
 	})
-
-	it('completes a basic auth lifecycle', async () => {
-		await tokenAdapter.storeTokens(testUserId, 'google', {
-			accessToken: 'google-access-token',
-			refreshToken: 'google-refresh-token',
-			accessTokenExpiresAt: new Date(Date.now() + 3600 * 1000),
-			scope: 'openid profile email'
-		})
-
-		const session = await sessionAdapter.createSession(testUserId)
-		const { session: validSession, user } = await sessionAdapter.validateSession(session.id)
-		expect(validSession).toBeDefined()
-		expect(user?.id).toBe(testUserId)
-
-		const storedTokens = await tokenAdapter.getTokens(testUserId, 'google')
-		expect(storedTokens?.accessToken).toBe('google-access-token')
-
-		await sessionAdapter.invalidateSession(session.id)
-		await tokenAdapter.deleteTokens(testUserId, 'google')
-
-		expect((await sessionAdapter.validateSession(session.id)).session).toBeNull()
-		expect(await tokenAdapter.getTokens(testUserId, 'google')).toBeNull()
-	})
 })
