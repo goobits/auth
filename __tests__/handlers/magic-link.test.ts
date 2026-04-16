@@ -217,4 +217,49 @@ describe("magic link handlers", () => {
 		expect(payload.error).toContain("Unable to resolve authenticated principal");
 		expect(sessionAdapter.createSession).not.toHaveBeenCalled();
 	});
+
+	it("redirects GET verification to redirectTo when provided", async () => {
+		const magicLinkAdapter = createMagicLinkAdapter();
+		const sendEmail = vi.fn();
+		const databaseAdapter = {
+			getUserByEmail: vi.fn(async (email) => ({ id: "u1", email })),
+			getUserById: vi.fn(async (id) => ({ id, email: "u1@example.com" })),
+			updateUser: vi.fn(async () => {}),
+		};
+		const sessionAdapter = {
+			createSession: vi.fn(async (userId) => ({ id: "s1", userId })),
+			setSessionCookie: vi.fn(),
+		};
+
+		const requestHandler = createMagicLinkRequestHandler({
+			magicLinkAdapter,
+			databaseAdapter,
+			sendEmail,
+			exposeToken: true,
+		});
+
+		const requestResponse = await requestHandler(
+			createEvent({ body: { email: "u1@example.com", redirectTo: "/dashboard" } }) as RequestEventLike,
+		);
+		const { token } = await requestResponse.json();
+
+		const verifyHandler = createMagicLinkVerifyHandler({
+			magicLinkAdapter,
+			databaseAdapter,
+			sessionAdapter,
+			redirectAfterLogin: "/fallback",
+		});
+
+		await expect(
+			verifyHandler(
+				createEvent({
+					method: "GET",
+					url: `http://localhost/auth/magic?token=${token}&redirectTo=%2Fdashboard`,
+				}) as RequestEventLike,
+			),
+		).rejects.toMatchObject({
+			status: 302,
+			location: "/dashboard",
+		});
+	});
 });

@@ -156,13 +156,13 @@
         {/if}
 
         <div class="acknowledgment">
-          <label class="ui-form-check checkbox-label">
+          <label class="checkbox-label">
             <input
-              class="ui-form-check__control"
+              class="checkbox-label__control"
               type="checkbox"
               bind:checked={acknowledged}
             />
-            <span>I have saved these backup codes in a secure location</span>
+            <span class="checkbox-label__text">I have saved these backup codes in a secure location</span>
           </label>
         </div>
       </div>
@@ -319,12 +319,22 @@
   }
   .checkbox-label {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.75rem;
     cursor: pointer;
     user-select: none;
     color: var(--auth-text-primary, #f5f5f5);
     font-weight: 500;
+  }
+  .checkbox-label__control {
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.15rem;
+    accent-color: var(--auth-accent, #8b5cf6);
+    flex-shrink: 0;
+  }
+  .checkbox-label__text {
+    line-height: 1.45;
   }
   .modal-footer {
     padding: 1.5rem;

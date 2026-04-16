@@ -87,6 +87,26 @@ describe("GoobitsAuth", () => {
 		});
 	});
 
+	it("dispatches POST /auth/callback/:provider via handlers", async () => {
+		const auth = new GoobitsAuth({
+			adapter: {
+				session: createSessionAdapter({ session: null, user: null }),
+			},
+			providers: { apple: { provider: createProvider() } },
+		});
+
+		const event = createRequestEvent({
+			url: "http://localhost/auth/callback/apple",
+			method: "POST",
+			form: { code: "test-code", state: "test-state" },
+			params: { provider: "apple" },
+		});
+
+		await expect(auth.handlers.POST(event as never)).rejects.not.toMatchObject({
+			status: 404,
+		});
+	});
+
 	it("enforces requireRole", async () => {
 		const user: User = {
 			id: "u2",

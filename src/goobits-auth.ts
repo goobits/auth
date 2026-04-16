@@ -234,11 +234,15 @@ export class GoobitsAuth {
 			event.params["provider"] = provider;
 			return { method: "GET", handler: handlers.login };
 		}
-		if (segments.length === 2 && segments[0] === "callback" && method === "GET") {
+		if (
+			segments.length === 2 &&
+			segments[0] === "callback" &&
+			(method === "GET" || method === "POST")
+		) {
 			const provider = segments[1];
 			if (!provider || !handlers.callback) return null;
 			event.params["provider"] = provider;
-			return { method: "GET", handler: handlers.callback };
+			return { method, handler: handlers.callback };
 		}
 		if (segments.length === 1 && (segments[0] === "signout" || segments[0] === "logout")) {
 			return { method: "POST", handler: handlers.logout };
@@ -281,11 +285,16 @@ export class GoobitsAuth {
 			event.params["provider"] = provider;
 			return { method: "GET", handler: handlers.login };
 		}
-		if (segments.length === 2 && handlers.callback && method === "GET" && segments[1] === "callback") {
+		if (
+			segments.length === 2 &&
+			handlers.callback &&
+			(method === "GET" || method === "POST") &&
+			segments[1] === "callback"
+		) {
 			const provider = segments[0];
 			if (!provider) return null;
 			event.params["provider"] = provider;
-			return { method: "GET", handler: handlers.callback };
+			return { method, handler: handlers.callback };
 		}
 		return null;
 	}
