@@ -171,19 +171,19 @@
     }
   },
   "scripts": {
-    "prepare": "npm run build",
+    "prepare": "pnpm run build",
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:ui": "vitest --ui",
     "test:integration": "vitest run --testPathPattern=integration",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "build": "rm -rf dist && tsup && node scripts/copy-assets.mjs && npm run build:types",
+    "build": "rm -rf dist && tsup && node scripts/copy-assets.mjs && pnpm run build:types",
     "build:types": "tsc -p tsconfig.build.json",
     "audit": "npm audit --omit=dev --audit-level=high",
-    "security:check": "npm run typecheck && npm test && npm run audit",
+    "security:check": "pnpm run typecheck && pnpm test && pnpm run audit",
     "api:scan": "npx @goobits/codeatlas . --format json --out .codeatlas --suggest --entrypoints src/index.ts,src/adapters/index.ts,src/adapters/drizzle/index.ts,src/adapters/database/index.ts,src/adapters/session/index.ts,src/adapters/oauth-token/index.ts,src/adapters/verification-token/index.ts,src/adapters/magic-link/index.ts,src/adapters/webauthn/index.ts,src/providers/index.ts,src/handlers/index.ts,src/utils/index.ts,src/types/index.ts,src/testing/index.ts,src/mfa/index.ts,src/ui/index.ts,src/security/index.ts,src/errors/index.ts",
     "api:map": "npx @goobits/codeatlas . --format mermaid --out .codeatlas --entrypoints src/index.ts,src/adapters/index.ts,src/adapters/drizzle/index.ts,src/adapters/database/index.ts,src/adapters/session/index.ts,src/adapters/oauth-token/index.ts,src/adapters/verification-token/index.ts,src/adapters/magic-link/index.ts,src/adapters/webauthn/index.ts,src/providers/index.ts,src/handlers/index.ts,src/utils/index.ts,src/types/index.ts,src/testing/index.ts,src/mfa/index.ts,src/ui/index.ts,src/security/index.ts,src/errors/index.ts",
-    "prepublishOnly": "npm run build && npm run security:check"
+    "prepublishOnly": "pnpm run build && pnpm run security:check"
   },
   "keywords": [
     "auth",
@@ -201,10 +201,10 @@
   },
   "dependencies": {
     "@oslojs/encoding": "^1.1.0",
-    "@simplewebauthn/server": "^13.2.2",
+    "@simplewebauthn/server": "^13.3.0",
     "arctic": "^3.7.0",
     "hash-wasm": "^4.12.0",
-    "zod": "^3.25.76"
+    "zod": "^4.3.6"
   },
   "optionalDependencies": {
     "@node-rs/argon2": "^2.0.2"
@@ -213,14 +213,14 @@
     "cookie": "^0.7.0"
   },
   "devDependencies": {
-    "@sveltejs/kit": "^2.52.0",
-    "@types/node": "^22.19.11",
-    "pg-mem": "^3.0.13",
+    "@sveltejs/kit": "^2.57.1",
+    "@types/node": "^25.6.0",
+    "pg-mem": "^3.0.14",
     "pg-server": "^0.1.8",
-    "postgres": "^3.4.8",
+    "postgres": "^3.4.9",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4"
   },
   "vitest": {
     "test": {
