@@ -134,7 +134,7 @@ export function createSignupHandler(config: {
 			const existingUser = await userAdapter.getUserByEmail(email);
 			if (existingUser) {
 				return {
-					error: "An account with this email already exists",
+					error: "Unable to create account with those details",
 					success: false,
 				};
 			}
