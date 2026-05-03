@@ -33,6 +33,7 @@ const entries = [
 	"src/adapters/webauthn/index.ts",
 	"src/providers/index.ts",
 	"src/handlers/index.ts",
+	"src/login-context/index.ts",
 	"src/utils/index.ts",
 	"src/client/index.ts",
 	"src/types/index.ts",

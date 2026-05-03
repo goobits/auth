@@ -1,5 +1,6 @@
 export { CSRF_COOKIE_NAME, CSRF_HEADER_NAME, MemoryCsrfStore, createCsrfToken, issueCsrfToken, validateCsrfRequest } from "./csrf.js";
 export { MemoryRateLimitStore, KVRateLimitStore, createRateLimiter } from "./rate-limit.js";
+export type { RateLimitStore } from "./rate-limit.js";
 export { auditLog, withAuditLogging, auditAuthEvent } from "./audit.js";
 export { createSecurityAlertObserver } from "./alerts.js";
 export { applySecurityPolicy } from "./policy.js";

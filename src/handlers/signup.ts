@@ -228,12 +228,10 @@ export function createSignupHandler(config: {
 				throw error;
 			}
 
-			return {
-				error:
-					(error instanceof Error ? error.message : undefined) ||
-					"An error occurred during signup",
-				success: false,
-			};
+				return {
+					error: "An error occurred during signup",
+					success: false,
+				};
 		}
 	};
 }
