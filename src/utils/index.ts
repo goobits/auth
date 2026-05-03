@@ -21,4 +21,4 @@ export {
 export { VerificationTokenAdapter } from "../adapters/verification-token/base.js";
 export { MemoryRateLimitStore, createRateLimiter } from "./rate-limit.js";
 export { redactObject, DEFAULT_REDACT_KEYS } from "./redact.js";
-export { isSafeRedirectPath } from "./redirect.js";
+export { isSafeRedirectPath, normalizeSafeRedirectPath } from "./redirect.js";

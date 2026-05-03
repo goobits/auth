@@ -15,6 +15,7 @@ import type { WebAuthnAdapter } from "../adapters/webauthn/base.js";
 import type { VerificationTokenAdapter } from "../adapters/verification-token/base.js";
 import type { Logger } from "../utils/logger.js";
 import type { AuthEventEmitter } from "../security/events.js";
+import type { RateLimitStore } from "../security/rate-limit.js";
 import type { SecurityAlertHandler } from "../security/alerts.js";
 
 export type AuthLocals = {
@@ -136,13 +137,14 @@ export type AuthSecurityConfig = {
 		headerName?: string;
 		checkExpiry?: boolean;
 	};
-	rateLimit?: {
-		mode?: SecurityMode;
-		max?: number;
-		windowMs?: number;
-		keyPrefix?: string;
-		trustProxyHeader?: boolean;
-	};
+		rateLimit?: {
+			mode?: SecurityMode;
+			max?: number;
+			windowMs?: number;
+			keyPrefix?: string;
+			trustProxyHeader?: boolean;
+			store?: RateLimitStore;
+		};
 	audit?: {
 		mode?: SecurityMode;
 		emitter?: AuthEventEmitter;
