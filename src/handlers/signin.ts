@@ -193,12 +193,10 @@ export function createSigninHandler(config: {
 				throw error;
 			}
 
-			return {
-				error:
-					(error instanceof Error ? error.message : undefined) ||
-					"An error occurred during signin",
-				success: false,
-			};
+				return {
+					error: "An error occurred during signin",
+					success: false,
+				};
 		}
 	};
 }
