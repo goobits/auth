@@ -160,13 +160,14 @@ function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			checkExpiry: merged.csrf?.checkExpiry ?? false,
 			store: csrfStore,
 		},
-		rateLimit: {
-			mode: merged.rateLimit?.mode ?? "optional",
-			max: merged.rateLimit?.max ?? 20,
-			windowMs: merged.rateLimit?.windowMs ?? 60_000,
-			keyPrefix: merged.rateLimit?.keyPrefix ?? "auth",
-			trustProxyHeader: merged.rateLimit?.trustProxyHeader ?? false,
-		},
+			rateLimit: {
+				mode: merged.rateLimit?.mode ?? "optional",
+				max: merged.rateLimit?.max ?? 20,
+				windowMs: merged.rateLimit?.windowMs ?? 60_000,
+				keyPrefix: merged.rateLimit?.keyPrefix ?? "auth",
+				trustProxyHeader: merged.rateLimit?.trustProxyHeader ?? false,
+				...(merged.rateLimit?.store ? { store: merged.rateLimit.store } : {}),
+			},
 		audit: {
 			mode: merged.audit?.mode ?? "optional",
 			emitter,
@@ -367,14 +368,18 @@ function createHandlers(
 						user = null;
 					}
 
-					const canLinkByEmail = profile.email
-						? requireVerifiedEmailForLinking
-							? profile.verified_email === true
-							: true
-						: false;
-					if (!user && canLinkByEmail) {
-						user = await adapters.user.getUserByEmail(profile.email);
-					}
+						const canLookupByEmail = profile.email
+							? requireVerifiedEmailForLinking
+								? profile.verified_email === true
+								: true
+							: false;
+						if (!user && canLookupByEmail) {
+							const existingByEmail = await adapters.user.getUserByEmail(profile.email);
+							if (existingByEmail && requireVerifiedEmailForLinking && existingByEmail.emailVerified !== true) {
+								throw new Error("Existing account email must be verified before OAuth linking");
+							}
+							user = existingByEmail;
+						}
 					if (!user) {
 						user = await adapters.user.createUser(profile);
 					}

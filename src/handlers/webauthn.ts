@@ -508,8 +508,14 @@ export function createWebAuthnLoginVerifyHandler(config: WebAuthnLoginVerifyHand
 		});
 		await webauthnAdapter.deleteChallenge(challengeId);
 
-		const user = databaseAdapter ? await databaseAdapter.getUserById(storedCredential.userId) : null;
-		let userId = storedCredential.userId;
+			const user = databaseAdapter ? await databaseAdapter.getUserById(storedCredential.userId) : null;
+			let userId = storedCredential.userId;
+			if (!userId) {
+				return jsonResponse({ ok: false, error: "Unable to resolve authenticated principal" }, 401);
+			}
+			if (!user && !onLogin) {
+				return jsonResponse({ ok: false, error: "Unable to resolve authenticated principal" }, 401);
+			}
 
 		if (onLogin) {
 			const profile = {
