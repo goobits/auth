@@ -89,6 +89,10 @@ async function assertUiBarrelUsesRawSvelte() {
 		await assertFileExists(join("dist/node/ui", component));
 		await assertFileExists(join("dist/worker/ui", component));
 	}
+	const authStore = await readFile(new URL("dist/node/ui/auth-store.js", root), "utf8");
+	if (authStore.includes("$app/")) {
+		throw new Error("dist/node/ui/auth-store.js contains a SvelteKit ambient import");
+	}
 }
 
 await importBuiltNodeSubpaths();

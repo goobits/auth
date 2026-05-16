@@ -112,6 +112,9 @@ export class GoobitsAuth {
 		return this.defaultHandlers;
 	}
 
+	/**
+	 * Creates a SvelteKit handle hook that validates sessions and populates auth locals.
+	 */
 	handle(): Handle {
 		return async ({ event, resolve }) => {
 			const baseEvent = event as unknown as RequestEventLike;
@@ -162,6 +165,9 @@ export class GoobitsAuth {
 		};
 	}
 
+	/**
+	 * Reads the current request session and caches the principal on event locals.
+	 */
 	async getSession(event: RequestEventLike): Promise<AuthPrincipal | null> {
 		if (hasSessionPrincipal(event.locals)) {
 			return {
@@ -183,6 +189,9 @@ export class GoobitsAuth {
 		return locals.auth;
 	}
 
+	/**
+	 * Returns the current user or redirects to the configured sign-in route.
+	 */
 	async requireUser(event: RequestEventLike): Promise<User> {
 		const principal = await this.getSession(event);
 		if (!principal) {
@@ -191,6 +200,9 @@ export class GoobitsAuth {
 		return principal.user;
 	}
 
+	/**
+	 * Returns the current user when they have any required role, otherwise throws a 403.
+	 */
 	async requireRole(
 		event: RequestEventLike,
 		role: string | string[],
@@ -200,7 +212,7 @@ export class GoobitsAuth {
 		const roles = options?.resolveRoles ? options.resolveRoles(user) : resolveUserRoles(user);
 		const required = Array.isArray(role) ? role : [role];
 		const allowed = required.some((entry) => roles.includes(entry));
-			if (!allowed) {
+		if (!allowed) {
 			const emitter = this.core.security.audit.emitter;
 			await emitter?.({
 				name: "authz.denied",
@@ -216,10 +228,10 @@ export class GoobitsAuth {
 				},
 				timestamp: new Date().toISOString(),
 			});
-				error(403, "Forbidden");
-			}
-			return user;
+			error(403, "Forbidden");
 		}
+		return user;
+	}
 
 	private resolveTarget(input: {
 		event: RequestEventLike;

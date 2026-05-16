@@ -20,7 +20,13 @@ const auth = new GoobitsAuth({
   profile: "secure",
   adapter,
   security: {
-    alerts: { enabled: true },
+    alerts: {
+      enabled: true,
+      webhook: {
+        url: env.SECURITY_WEBHOOK_URL,
+        secret: env.SECURITY_WEBHOOK_SECRET,
+      },
+    },
   },
 });
 ```
@@ -41,6 +47,29 @@ const auth = new GoobitsAuth({
 
 1. Set secure cookies in production.
 2. Configure trusted proxy behavior explicitly.
-3. Enable alert sink (`SECURITY_WEBHOOK_URL` or custom `alerts.onAlert`).
+3. Enable an alert sink with `security.alerts.webhook` or `security.alerts.onAlert`.
 4. Validate secrets at deploy-time (`TOKEN_ENCRYPTION_KEY`, OAuth secrets).
 5. Keep dependency and secret scanning enabled in CI.
+
+## Alert Webhooks
+
+The preferred configuration is explicit:
+
+```ts
+security: {
+  alerts: {
+    enabled: true,
+    webhook: {
+      url: env.SECURITY_WEBHOOK_URL,
+      secret: env.SECURITY_WEBHOOK_SECRET,
+      cooldownMs: 10 * 60 * 1000,
+      maxPerHour: 10,
+      timeoutMs: 5000,
+    },
+  },
+}
+```
+
+For compatibility, `SECURITY_WEBHOOK_URL` and `SECURITY_WEBHOOK_SECRET` are
+read from `process.env` when `security.alerts.webhook.url` or `.secret` is not
+set. New integrations should pass the webhook config directly.

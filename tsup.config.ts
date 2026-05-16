@@ -57,7 +57,7 @@ const common: Options = {
 	format: ["esm"],
 	target: "es2022",
 	splitting: false,
-	sourcemap: true,
+	sourcemap: false,
 	treeshake: true,
 	clean: false,
 	skipNodeModulesBundle: true,

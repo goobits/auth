@@ -15,6 +15,8 @@ export type SafeRedirectOptions = {
 	baseUrl?: string;
 };
 
+const SAFE_REDIRECT_PARSE_BASE_URL = "http://localhost";
+
 export function normalizeSafeRedirectPath(
 	value: unknown,
 	options: SafeRedirectOptions = {},
@@ -25,7 +27,7 @@ export function normalizeSafeRedirectPath(
 
 	let parsed: URL;
 	try {
-		parsed = new URL(trimmed, options.baseUrl ?? "https://auth.local");
+		parsed = new URL(trimmed, options.baseUrl ?? SAFE_REDIRECT_PARSE_BASE_URL);
 	} catch {
 		return null;
 	}
