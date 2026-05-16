@@ -4,7 +4,7 @@ import type { OAuthProvider } from '../providers/base.js'
 import type { AuthLocals, RequestEventLike } from '../types/auth.js'
 import { createOAuthCookies, resolveSafeReturnTo } from '../utils/oauth.js'
 
-type LoginHandlerConfig = {
+export type LoginHandlerConfig = {
 	allowedReturnToOrigins?: string[];
 	providers: Record<string, { provider: OAuthProvider; scopes?: string[] }>;
 	redirectAfterLogin?: string;

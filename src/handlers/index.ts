@@ -1,6 +1,8 @@
 // OAuth handlers
 export { createLoginHandler } from "./login.js";
+export type { LoginHandlerConfig } from "./login.js";
 export { createCallbackHandler } from "./callback.js";
+export type { CallbackConfig } from "./callback.js";
 export { createLogoutHandler, createLogoutAction } from "./logout.js";
 
 // Credentials handlers
@@ -18,11 +20,19 @@ export {
 	createMfaDisableHandler,
 	createMfaBackupCodeHandler,
 } from "./mfa.js";
+export type { MfaConfig, MfaStore } from "./mfa.js";
 
 // Magic link handlers
 export {
 	createMagicLinkRequestHandler,
 	createMagicLinkVerifyHandler,
+} from "./magic-link.js";
+export type {
+	MagicLinkAdapterLike,
+	MagicLinkRequestConfig,
+	MagicLinkSessionAdapterLike,
+	MagicLinkUserAdapterLike,
+	MagicLinkVerifyConfig,
 } from "./magic-link.js";
 
 // WebAuthn handlers
@@ -35,3 +45,4 @@ export {
 
 // Session management handlers
 export { createSessionListHandler, createSessionRevokeHandler } from "./sessions.js";
+export type { SessionAdapterLike, SessionHandlerConfig } from "./sessions.js";
