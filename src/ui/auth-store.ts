@@ -1,4 +1,4 @@
-import { derived, writable } from 'svelte/store';
+import { writable } from 'svelte/store';
 
 type AuthUser = Record<string, unknown> | null;
 type AuthSession = Record<string, unknown> | null;
@@ -23,6 +23,7 @@ type AuthHeaders =
 	| Record<string, string>
 	| (() => Record<string, string> | Promise<Record<string, string>>);
 
+/** Options for the Svelte auth store helper. */
 export type AuthStoreOptions = {
 	baseUrl?: string;
 	endpoints?: Partial<AuthEndpoints>;
@@ -58,6 +59,12 @@ async function resolveHeaders(headers?: AuthHeaders): Promise<Record<string, str
 	return typeof headers === 'function' ? headers() : headers;
 }
 
+/**
+ * Create a Svelte store for generic auth session state and basic auth actions.
+ *
+ * @param options Store endpoints, headers, fetch implementation, and startup behavior.
+ * @returns A Svelte-readable store with sign-in, sign-up, sign-out, session, and profile helpers.
+ */
 export function createAuthStore(options: AuthStoreOptions = {}) {
 	const {
 		baseUrl = '',
@@ -262,7 +269,3 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 
 	return api;
 }
-
-export const auth = createAuthStore();
-export const isAuthenticated = derived(auth, ($auth) => $auth.isAuthenticated);
-export const user = derived(auth, ($auth) => $auth.user);

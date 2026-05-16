@@ -23,8 +23,8 @@ export type LoginHandlerConfig = {
  * @returns {import('@sveltejs/kit').RequestHandler}
  *
  * @example
- * // In src/routes/auth/[provider]/+server.ts
- * import { createLoginHandler } from '@goobits/auth/handlers';
+ * // Internal handler wiring
+ * import { createLoginHandler } from './handlers/login.js';
  * import { GoogleProvider, AppleProvider } from '@goobits/auth/providers';
  *
  * const googleProvider = new GoogleProvider({

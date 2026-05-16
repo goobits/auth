@@ -1,29 +1,33 @@
+/** In-memory rate-limit counter store for tests, development, and single-process apps. */
 export class MemoryRateLimitStore {
-	private _data: Map<string, { count: number; resetAt: number }>;
+	#data: Map<string, { count: number; resetAt: number }>;
 
 	constructor() {
-		this._data = new Map();
+		this.#data = new Map();
 	}
 
+	/** Read a counter and expire it if its reset time has passed. */
 	async get(key: string): Promise<{ count: number; resetAt: number } | null> {
-		const record = this._data.get(key);
+		const record = this.#data.get(key);
 		if (!record) return null;
 		if (record.resetAt && Date.now() > record.resetAt) {
-			this._data.delete(key);
+			this.#data.delete(key);
 			return null;
 		}
 		return record;
 	}
 
+	/** Store a counter value. */
 	async set(
 		key: string,
 		value: { count: number; resetAt: number },
 	): Promise<void> {
-		this._data.set(key, value);
+		this.#data.set(key, value);
 	}
 
+	/** Delete a counter value. */
 	async delete(key: string): Promise<void> {
-		this._data.delete(key);
+		this.#data.delete(key);
 	}
 }
 
@@ -33,25 +37,28 @@ type KVNamespaceLike = {
 	delete: (key: string) => Promise<void>;
 };
 
+/** Rate-limit counter store backed by a Cloudflare Workers-style KV namespace. */
 export class KVRateLimitStore {
-	private namespace: KVNamespaceLike;
-	private ttlSeconds: number | null;
+	#namespace: KVNamespaceLike;
+	#ttlSeconds: number | null;
 
 	constructor(
 		namespace: KVNamespaceLike,
 		options: { ttlSeconds?: number | null } = {},
 	) {
-		this.namespace = namespace;
-		this.ttlSeconds = options.ttlSeconds || null;
+		this.#namespace = namespace;
+		this.#ttlSeconds = options.ttlSeconds || null;
 	}
 
+	/** Read a counter from KV. */
 	async get(key: string): Promise<{ count: number; resetAt: number } | null> {
-		const value = (await this.namespace.get(key, { type: "json" })) as
+		const value = (await this.#namespace.get(key, { type: "json" })) as
 			| { count: number; resetAt: number }
 			| null;
 		return value || null;
 	}
 
+	/** Store a counter in KV using the configured or per-write TTL. */
 	async set(
 		key: string,
 		value: { count: number; resetAt: number },
@@ -60,13 +67,14 @@ export class KVRateLimitStore {
 		const ttl =
 			ttlMs != null
 				? Math.ceil(ttlMs / 1000)
-				: this.ttlSeconds;
+				: this.#ttlSeconds;
 		const options = ttl ? { expirationTtl: ttl } : undefined;
-		await this.namespace.put(key, JSON.stringify(value), options);
+		await this.#namespace.put(key, JSON.stringify(value), options);
 	}
 
+	/** Delete a counter from KV. */
 	async delete(key: string): Promise<void> {
-		await this.namespace.delete(key);
+		await this.#namespace.delete(key);
 	}
 }
 
@@ -83,6 +91,12 @@ type RateLimitResult = {
 	resetAt: number;
 };
 
+/**
+ * Create a fixed-window rate limiter.
+ *
+ * @param config Store, window, maximum count, and key prefix settings.
+ * @returns A function that checks and increments the counter for a key.
+ */
 export function createRateLimiter({
 	store = new MemoryRateLimitStore(),
 	windowMs = 60 * 1000,

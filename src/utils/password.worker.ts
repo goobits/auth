@@ -10,6 +10,12 @@ const DEFAULTS = {
 	saltLength: 16,
 } as const;
 
+/**
+ * Hash a password using the worker-safe Argon2id WASM implementation.
+ *
+ * @param password Plaintext password.
+ * @returns Encoded password hash.
+ */
 export async function hashPassword(password: string): Promise<string> {
 	if (!password || typeof password !== "string") {
 		throw new Error("Password must be a non-empty string");
@@ -29,6 +35,13 @@ export async function hashPassword(password: string): Promise<string> {
 	});
 }
 
+/**
+ * Verify a password against an encoded hash.
+ *
+ * @param storedHash Encoded password hash.
+ * @param password Plaintext password.
+ * @returns Whether the password matches.
+ */
 export async function verifyPassword(storedHash: string, password: string): Promise<boolean> {
 	if (!storedHash || !password) return false;
 	try {
@@ -43,6 +56,12 @@ export async function verifyPassword(storedHash: string, password: string): Prom
 	}
 }
 
+/**
+ * Validate the default password-strength policy.
+ *
+ * @param password Plaintext password.
+ * @returns Validation result and user-facing errors.
+ */
 export function validatePasswordStrength(password: string): {
 	valid: boolean;
 	errors: string[];
@@ -73,4 +92,3 @@ export function validatePasswordStrength(password: string): {
 
 	return { valid: errors.length === 0, errors };
 }
-

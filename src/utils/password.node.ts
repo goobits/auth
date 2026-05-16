@@ -1,7 +1,10 @@
 import { hash, verify } from "@node-rs/argon2";
 
 /**
- * Hash a password using Argon2id (native Node module)
+ * Hash a password using native Argon2id in Node.
+ *
+ * @param password Plaintext password.
+ * @returns Encoded password hash.
  */
 export async function hashPassword(password: string): Promise<string> {
 	if (!password || typeof password !== "string") {
@@ -12,7 +15,11 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 /**
- * Verify a password against its hash
+ * Verify a password against an encoded hash.
+ *
+ * @param storedHash Encoded password hash.
+ * @param password Plaintext password.
+ * @returns Whether the password matches.
  */
 export async function verifyPassword(
 	storedHash: string,
@@ -32,7 +39,10 @@ export async function verifyPassword(
 }
 
 /**
- * Validate password strength (basic policy; apps may enforce stricter rules).
+ * Validate the default password-strength policy.
+ *
+ * @param password Plaintext password.
+ * @returns Validation result and user-facing errors.
  */
 export function validatePasswordStrength(password: string): {
 	valid: boolean;
@@ -66,4 +76,3 @@ export function validatePasswordStrength(password: string): {
 		errors,
 	};
 }
-

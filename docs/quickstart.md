@@ -79,4 +79,4 @@ export const POST = async (event) => {
 
 - `auth.handle()` populates `event.locals.user`, `event.locals.session`, and `event.locals.auth`.
 - `auth.handlers` supports `/auth/signin/:provider`, `/auth/callback/:provider`, `/auth/signout`, and feature routes for magic links, passkeys, and sessions.
-- For low-level control, keep using manual handlers/adapters from `@goobits/auth/handlers` and `@goobits/auth/adapters`.
+- For lower-level control, use the explicit adapter subpaths and `auth.createHandlers({ basePath })`.
