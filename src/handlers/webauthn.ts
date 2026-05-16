@@ -67,7 +67,7 @@ const registrationResponseSchema = z.custom<RegistrationResponseJSON>(
 		typeof (value as Record<string, unknown>)["id"] === "string" &&
 		((typeof (value as Record<string, unknown>)["rawId"] === "string" &&
 			(value as Record<string, unknown>)["type"] === "public-key") ||
-			!("rawId" in (value as Record<string, unknown>) || "type" in (value as Record<string, unknown>))),
+			!(("rawId" in (value as Record<string, unknown>)) || ("type" in (value as Record<string, unknown>)))),
 );
 
 const authenticationResponseSchema = z.custom<AuthenticationResponseJSON>(
@@ -77,7 +77,7 @@ const authenticationResponseSchema = z.custom<AuthenticationResponseJSON>(
 		typeof (value as Record<string, unknown>)["id"] === "string" &&
 		((typeof (value as Record<string, unknown>)["rawId"] === "string" &&
 			(value as Record<string, unknown>)["type"] === "public-key") ||
-			!("rawId" in (value as Record<string, unknown>) || "type" in (value as Record<string, unknown>))),
+			!(("rawId" in (value as Record<string, unknown>)) || ("type" in (value as Record<string, unknown>)))),
 );
 
 const registerVerifyRequestSchema = z.object({
@@ -108,7 +108,11 @@ function toChallengeRecord(value: Record<string, unknown> | null): ChallengeReco
 	}
 	if (typeof challenge !== "string") return null;
 	if (typeof type !== "string") return null;
-	if (typeof expiresAt !== "string" && typeof expiresAt !== "number" && !(expiresAt instanceof Date)) {
+	if (
+		typeof expiresAt !== "string" &&
+		typeof expiresAt !== "number" &&
+		!(expiresAt instanceof Date)
+	) {
 		return null;
 	}
 	return {
@@ -157,15 +161,14 @@ function credentialDescriptorFromRecord(
 		if (!Array.isArray(transports) || transports.some((entry) => typeof entry !== "string")) {
 			return { id };
 		}
-		const filtered = transports.filter(
-			(entry): entry is AuthenticatorTransportFuture =>
-				entry === "ble" ||
-				entry === "cable" ||
-				entry === "hybrid" ||
-				entry === "internal" ||
-				entry === "nfc" ||
-				entry === "smart-card" ||
-				entry === "usb",
+		const filtered = transports.filter((entry): entry is AuthenticatorTransportFuture =>
+			entry === "ble" ||
+			entry === "cable" ||
+			entry === "hybrid" ||
+			entry === "internal" ||
+			entry === "nfc" ||
+			entry === "smart-card" ||
+			entry === "usb",
 		);
 		return filtered.length > 0 ? { id, transports: filtered } : { id };
 	}
@@ -176,15 +179,14 @@ function toAuthenticatorTransports(
 	transports: string[] | null | undefined,
 ): AuthenticatorTransportFuture[] | undefined {
 	if (!transports) return undefined;
-	const filtered = transports.filter(
-		(entry): entry is AuthenticatorTransportFuture =>
-			entry === "ble" ||
-			entry === "cable" ||
-			entry === "hybrid" ||
-			entry === "internal" ||
-			entry === "nfc" ||
-			entry === "smart-card" ||
-			entry === "usb",
+	const filtered = transports.filter((entry): entry is AuthenticatorTransportFuture =>
+		entry === "ble" ||
+		entry === "cable" ||
+		entry === "hybrid" ||
+		entry === "internal" ||
+		entry === "nfc" ||
+		entry === "smart-card" ||
+		entry === "usb",
 	);
 	return filtered.length > 0 ? filtered : undefined;
 }
@@ -201,7 +203,9 @@ export type WebAuthnRegisterOptionsHandlerConfig = {
 	getUser?: (event: RequestEventLike) => User | null | Promise<User | null>;
 };
 
-export function createWebAuthnRegisterOptionsHandler(config: WebAuthnRegisterOptionsHandlerConfig): RequestHandler {
+export function createWebAuthnRegisterOptionsHandler(
+	config: WebAuthnRegisterOptionsHandlerConfig,
+): RequestHandler {
 	const {
 		webauthnAdapter,
 		rpName,
@@ -228,12 +232,8 @@ export function createWebAuthnRegisterOptionsHandler(config: WebAuthnRegisterOpt
 		const excludeCredentials = credentials
 			.map((cred) => credentialDescriptorFromRecord(cred))
 			.filter(
-				(
-					cred,
-				): cred is {
-					id: string;
-					transports?: AuthenticatorTransportFuture[];
-				} => cred !== null,
+				(cred): cred is { id: string; transports?: AuthenticatorTransportFuture[] } =>
+					cred !== null,
 			);
 
 		const optionsInput: GenerateRegistrationOptionsOpts = {
@@ -273,11 +273,23 @@ export type WebAuthnRegisterVerifyHandlerConfig = {
 	rpID: string;
 	origin: string;
 	requireUserVerification?: boolean;
-	onCredentialCreated?: (input: { userId: string; credentialId: string; publicKey: string }) => Promise<void> | void;
+	onCredentialCreated?: (input: {
+		userId: string;
+		credentialId: string;
+		publicKey: string;
+	}) => Promise<void> | void;
 };
 
-export function createWebAuthnRegisterVerifyHandler(config: WebAuthnRegisterVerifyHandlerConfig): RequestHandler {
-	const { webauthnAdapter, rpID, origin, requireUserVerification = false, onCredentialCreated } = config;
+export function createWebAuthnRegisterVerifyHandler(
+	config: WebAuthnRegisterVerifyHandlerConfig,
+): RequestHandler {
+	const {
+		webauthnAdapter,
+		rpID,
+		origin,
+		requireUserVerification = false,
+		onCredentialCreated,
+	} = config;
 
 	if (!rpID || !origin) {
 		throw new Error("createWebAuthnRegisterVerifyHandler requires rpID and origin");
@@ -317,15 +329,20 @@ export function createWebAuthnRegisterVerifyHandler(config: WebAuthnRegisterVeri
 		}
 
 		const registrationInfoRecord = verification.registrationInfo as Record<string, unknown>;
-		const regCredentialRecord = (
-			typeof registrationInfoRecord["credential"] === "object" && registrationInfoRecord["credential"] !== null
+		const regCredentialRecord =
+			(typeof registrationInfoRecord["credential"] === "object" &&
+			registrationInfoRecord["credential"] !== null
 				? registrationInfoRecord["credential"]
-				: registrationInfoRecord
-		) as Record<string, unknown>;
-		const credentialIdRaw = regCredentialRecord["id"] ?? regCredentialRecord["credentialID"];
-		const publicKeyRaw = regCredentialRecord["publicKey"] ?? regCredentialRecord["credentialPublicKey"];
+				: registrationInfoRecord) as Record<string, unknown>;
+		const credentialIdRaw =
+			regCredentialRecord["id"] ?? regCredentialRecord["credentialID"];
+		const publicKeyRaw =
+			regCredentialRecord["publicKey"] ?? regCredentialRecord["credentialPublicKey"];
 		const counterRaw = regCredentialRecord["counter"];
-		const credentialId = typeof credentialIdRaw === "string" ? credentialIdRaw : encodeCredential(credentialIdRaw);
+		const credentialId =
+			typeof credentialIdRaw === "string"
+				? credentialIdRaw
+				: encodeCredential(credentialIdRaw);
 		const publicKey = encodeCredential(publicKeyRaw);
 		const counter = typeof counterRaw === "number" ? counterRaw : 0;
 		const userId = challenge.userId;
@@ -339,7 +356,9 @@ export function createWebAuthnRegisterVerifyHandler(config: WebAuthnRegisterVeri
 			publicKey,
 			counter,
 			transports:
-				credential.response && "transports" in credential.response ? (credential.response.transports ?? null) : null,
+				credential.response && "transports" in credential.response
+					? (credential.response.transports ?? null)
+					: null,
 			name: name ?? null,
 		});
 
@@ -361,8 +380,16 @@ export type WebAuthnLoginOptionsHandlerConfig = {
 	userVerification?: GenerateAuthenticationOptionsOpts["userVerification"];
 };
 
-export function createWebAuthnLoginOptionsHandler(config: WebAuthnLoginOptionsHandlerConfig): RequestHandler {
-	const { webauthnAdapter, databaseAdapter, rpID, timeout = 60_000, userVerification = "preferred" } = config;
+export function createWebAuthnLoginOptionsHandler(
+	config: WebAuthnLoginOptionsHandlerConfig,
+): RequestHandler {
+	const {
+		webauthnAdapter,
+		databaseAdapter,
+		rpID,
+		timeout = 60_000,
+		userVerification = "preferred",
+	} = config;
 
 	if (!rpID) {
 		throw new Error("createWebAuthnLoginOptionsHandler requires rpID");
@@ -377,18 +404,16 @@ export function createWebAuthnLoginOptionsHandler(config: WebAuthnLoginOptionsHa
 			user = await databaseAdapter.getUserByEmail(email);
 		}
 
-		let allowCredentials: GenerateAuthenticationOptionsOpts["allowCredentials"] | undefined;
+		let allowCredentials:
+			| GenerateAuthenticationOptionsOpts["allowCredentials"]
+			| undefined;
 		if (user) {
 			const credentials = await webauthnAdapter.listCredentials(user.id);
 			allowCredentials = credentials
 				.map((cred) => credentialDescriptorFromRecord(cred))
 				.filter(
-					(
-						cred,
-					): cred is {
-						id: string;
-						transports?: AuthenticatorTransportFuture[];
-					} => cred !== null,
+					(cred): cred is { id: string; transports?: AuthenticatorTransportFuture[] } =>
+						cred !== null,
 				);
 		}
 
@@ -417,7 +442,10 @@ export function createWebAuthnLoginOptionsHandler(config: WebAuthnLoginOptionsHa
 }
 
 export type WebAuthnLoginVerifyHandlerConfig = {
-	webauthnAdapter: Pick<WebAuthnAdapter, "getChallenge" | "deleteChallenge" | "getCredential" | "updateCredential">;
+	webauthnAdapter: Pick<
+		WebAuthnAdapter,
+		"getChallenge" | "deleteChallenge" | "getCredential" | "updateCredential"
+	>;
 	databaseAdapter?: { getUserById: (id: string) => Promise<User | null> };
 	sessionAdapter: Pick<SessionAdapter, "createSession" | "setSessionCookie">;
 	rpID: string;
@@ -430,7 +458,9 @@ export type WebAuthnLoginVerifyHandlerConfig = {
 	onLoginMode?: OnLoginMode;
 };
 
-export function createWebAuthnLoginVerifyHandler(config: WebAuthnLoginVerifyHandlerConfig): RequestHandler {
+export function createWebAuthnLoginVerifyHandler(
+	config: WebAuthnLoginVerifyHandlerConfig,
+): RequestHandler {
 	const {
 		webauthnAdapter,
 		databaseAdapter,
@@ -466,11 +496,6 @@ export function createWebAuthnLoginVerifyHandler(config: WebAuthnLoginVerifyHand
 			auditAuthEvent("webauthn.challenge_invalid_type", { challengeId });
 			return jsonResponse({ ok: false, error: "Invalid challenge" }, 400);
 		}
-		if (new Date(challenge.expiresAt) < new Date()) {
-			await webauthnAdapter.deleteChallenge(challengeId);
-			auditAuthEvent("webauthn.challenge_expired", { challengeId });
-			return jsonResponse({ ok: false, error: "Challenge expired" }, 400);
-		}
 
 		const storedCredentialRaw = await webauthnAdapter.getCredential(credential.id);
 		const storedCredential = toCredentialRecord(storedCredentialRaw);
@@ -492,7 +517,9 @@ export function createWebAuthnLoginVerifyHandler(config: WebAuthnLoginVerifyHand
 			expectedChallenge: challenge.challenge,
 			expectedOrigin: origin,
 			expectedRPID: rpID,
-			credential: transports ? { ...credentialInput, transports } : credentialInput,
+			credential: transports
+				? { ...credentialInput, transports }
+				: credentialInput,
 			requireUserVerification,
 		});
 
@@ -504,18 +531,15 @@ export function createWebAuthnLoginVerifyHandler(config: WebAuthnLoginVerifyHand
 		}
 
 		await webauthnAdapter.updateCredential(storedCredential.credentialId, {
-			counter: verification.authenticationInfo.newCounter ?? storedCredential.counter,
+			counter:
+				verification.authenticationInfo.newCounter ?? storedCredential.counter,
 		});
 		await webauthnAdapter.deleteChallenge(challengeId);
 
-			const user = databaseAdapter ? await databaseAdapter.getUserById(storedCredential.userId) : null;
-			let userId = storedCredential.userId;
-			if (!userId) {
-				return jsonResponse({ ok: false, error: "Unable to resolve authenticated principal" }, 401);
-			}
-			if (!user && !onLogin) {
-				return jsonResponse({ ok: false, error: "Unable to resolve authenticated principal" }, 401);
-			}
+		const user = databaseAdapter
+			? await databaseAdapter.getUserById(storedCredential.userId)
+			: null;
+		let userId = storedCredential.userId;
 
 		if (onLogin) {
 			const profile = {

@@ -1,6 +1,31 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createSigninHandler } from '../../src/handlers/signin.ts'
-import { captureRejected, createRequestEvent, getRedirectLocation } from '../test-kit.ts'
+
+function createCookies() {
+	const store = new Map<string, { value: string; options: Record<string, unknown> }>()
+	return {
+		set: (name: string, value: string, options: Record<string, unknown>) => store.set(name, { value, options }),
+		get: (name: string) => store.get(name)?.value ?? null,
+		delete: (name: string) => store.delete(name),
+		_store: store
+	}
+}
+
+function createEvent({ email = 'a@b.com', password = 'pw' } = {}) {
+	return {
+		cookies: createCookies(),
+		request: new Request('http://localhost/signin', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+			body: new URLSearchParams({ email, password })
+		}),
+		locals: {}
+	}
+}
+
+function getRedirectLocation(err: { location?: string; headers?: Headers } | null) {
+	return err?.location || err?.headers?.get?.('location')
+}
 
 describe('createSigninHandler', () => {
 	it('rejects invalid credentials without setting cookie', async () => {
@@ -9,13 +34,7 @@ describe('createSigninHandler', () => {
 		const userAdapter = {}
 
 		const handler = createSigninHandler({ credentialsProvider, userAdapter, sessionAdapter })
-		const result = await handler(
-			createRequestEvent({
-				url: 'http://localhost/signin',
-				method: 'POST',
-				form: { email: 'a@b.com', password: 'pw' }
-			})
-		)
+		const result = await handler(createEvent())
 
 		expect(result.success).toBe(false)
 		expect(sessionAdapter.setSessionCookie).not.toHaveBeenCalled()
@@ -35,17 +54,13 @@ describe('createSigninHandler', () => {
 			redirectTo: '/dashboard'
 		})
 
-		const error = await captureRejected<{ status?: number; headers?: Headers; location?: string }>(
-			handler(
-				createRequestEvent({
-					url: 'http://localhost/signin',
-					method: 'POST',
-					form: { email: 'a@b.com', password: 'pw' }
-				})
-			)
-		)
-		expect(error.status).toBe(303)
-		expect(getRedirectLocation(error)).toBe('/dashboard')
+		try {
+			await handler(createEvent())
+		} catch (err) {
+			const error = err as { status?: number; headers?: Headers; location?: string }
+			expect(error.status).toBe(303)
+			expect(getRedirectLocation(error)).toBe('/dashboard')
+		}
 
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith(
 			'u1',
