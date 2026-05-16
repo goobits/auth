@@ -1,5 +1,4 @@
 import { derived, writable } from 'svelte/store';
-import { browser } from '$app/environment';
 
 type AuthUser = Record<string, unknown> | null;
 type AuthSession = Record<string, unknown> | null;
@@ -35,6 +34,8 @@ const DEFAULT_ENDPOINTS = {
 	session: '/auth/session',
 	updateProfile: '/auth/profile',
 };
+
+const isBrowser = typeof window !== 'undefined';
 
 const mergeHeaders = (
 	base: Record<string, string>,
@@ -182,7 +183,7 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 		},
 
 		async checkSession() {
-			if (!browser) return;
+			if (!isBrowser) return;
 
 			update((state) => ({ ...state, loading: true }));
 
@@ -257,7 +258,7 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 		},
 	};
 
-	if (browser && autoCheck) {
+	if (isBrowser && autoCheck) {
 		api.checkSession();
 	}
 

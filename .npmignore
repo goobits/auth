@@ -1,0 +1,10 @@
+.git
+.gitignore
+.github
+.codeatlas
+coverage
+node_modules
+*.tgz
+*.log
+tmp
+temp
