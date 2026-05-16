@@ -21,6 +21,13 @@ function readEnv(name: string): string | undefined {
 	return process.env?.[name];
 }
 
+/**
+ * Verify a Google reCAPTCHA token.
+ *
+ * @param token Client token to verify.
+ * @param options Secret, expected action, score, timeout, and development fallback settings.
+ * @returns Whether the token is valid for the configured policy.
+ */
 export async function verifyRecaptchaToken(
 	token: string | null,
 	options: RecaptchaOptions = {},

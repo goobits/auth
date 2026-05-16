@@ -33,8 +33,8 @@ export type CallbackConfig = {
  * @returns {import('@sveltejs/kit').RequestHandler}
  *
  * @example
- * // In src/routes/auth/[provider]/callback/+server.ts
- * import { createCallbackHandler } from '@goobits/auth/handlers';
+ * // Internal handler wiring
+ * import { createCallbackHandler } from './handlers/callback.js';
  * import { GoogleProvider } from '@goobits/auth/providers';
  *
  * const googleProvider = new GoogleProvider({...});

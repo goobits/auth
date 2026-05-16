@@ -2,6 +2,4 @@ export { CSRF_COOKIE_NAME, CSRF_HEADER_NAME, MemoryCsrfStore, createCsrfToken, i
 export { MemoryRateLimitStore, KVRateLimitStore, createRateLimiter } from "./rate-limit.js";
 export { auditLog, withAuditLogging, auditAuthEvent } from "./audit.js";
 export { createSecurityAlertObserver } from "./alerts.js";
-export { requireAuthenticated, requireRole, requireOwnership } from "./authorize.js";
 export { createAdminApiKey, hashAdminApiKey, verifyAdminApiKey, parseApiKeyHeader, timingSafeEqual } from "./admin-auth.js";
-export { verifyRecaptchaToken } from "./recaptcha.js";

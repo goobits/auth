@@ -5,7 +5,6 @@ const root = new URL("..", import.meta.url);
 
 const nodeSubpaths = [
 	"index.js",
-	"adapters/index.js",
 	"adapters/database/index.js",
 	"adapters/session/index.js",
 	"adapters/oauth-token/index.js",
@@ -16,15 +15,11 @@ const nodeSubpaths = [
 	"adapters/magic-link/index.js",
 	"adapters/webauthn/index.js",
 	"providers/index.js",
-	"handlers/index.js",
-	"utils/index.js",
-	"client/index.js",
+	"password/index.js",
 	"types/index.js",
-	"testing/index.js",
 	"mfa/index.js",
 	"node/index.js",
 	"security/index.js",
-	"errors/index.js",
 ];
 
 async function importBuiltNodeSubpaths() {
@@ -37,19 +32,24 @@ async function importBuiltNodeSubpaths() {
 async function assertPublicSurface() {
 	const rootApi = await import(new URL("dist/node/index.js", root).href);
 	const rootExports = Object.keys(rootApi).sort();
-	if (rootExports.join(",") !== "GoobitsAuth") {
+	const expectedRoot = [
+		"AuthAdapterCapabilityError",
+		"AuthPrincipalResolutionError",
+		"GoobitsAuth",
+	];
+	if (rootExports.join(",") !== expectedRoot.join(",")) {
 		throw new Error(`unexpected root exports: ${rootExports.join(", ")}`);
 	}
 
-	const utilsApi = await import(new URL("dist/node/utils/index.js", root).href);
-	const utilsExports = Object.keys(utilsApi).sort();
-	const expectedUtils = [
+	const passwordApi = await import(new URL("dist/node/password/index.js", root).href);
+	const passwordExports = Object.keys(passwordApi).sort();
+	const expectedPassword = [
 		"hashPassword",
 		"validatePasswordStrength",
 		"verifyPassword",
 	];
-	if (utilsExports.join(",") !== expectedUtils.join(",")) {
-		throw new Error(`unexpected utils exports: ${utilsExports.join(", ")}`);
+	if (passwordExports.join(",") !== expectedPassword.join(",")) {
+		throw new Error(`unexpected password exports: ${passwordExports.join(", ")}`);
 	}
 }
 

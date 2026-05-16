@@ -1,6 +1,9 @@
 <script>
-	import { auth } from "./auth-store.js";
+	import { readable } from "svelte/store";
 
+	const emptyAuth = readable({ user: null, loading: false });
+
+	export let auth = emptyAuth;
 	export let user = undefined;
 	export let loading = undefined;
 	export let onUnauthenticated = null;

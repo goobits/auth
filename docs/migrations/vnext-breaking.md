@@ -91,7 +91,7 @@ userAdapter.getUserWithPasswordHash(email);
 
 ## Testing utilities
 
-`@goobits/auth/testing` exports mock adapters:
+`@goobits/auth/adapters/memory` exports mock adapters:
 
 - `MockSessionAdapter`
 - `MockUserAdapter`

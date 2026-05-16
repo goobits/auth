@@ -4,10 +4,10 @@ import { DrizzleTokenAdapter } from "../oauth-token/drizzle.js";
 import { DrizzleVerificationTokenAdapter } from "../verification-token/drizzle-verification.js";
 import { DrizzleMagicLinkAdapter } from "../magic-link/drizzle.js";
 import { DrizzleWebAuthnAdapter } from "../webauthn/drizzle.js";
-import type { DrizzleDbLike, DrizzleTable } from "../drizzle-types.js";
+import type { DrizzleDatabase, DrizzleTable } from "../drizzle-types.js";
 import type { User } from "../../types/index.js";
 
-export type { DrizzleDbLike, DrizzleJson, DrizzleTable } from "../drizzle-types.js";
+export type { DrizzleDatabase, DrizzleJson, DrizzleTable } from "../drizzle-types.js";
 
 type TableKey =
 	| "users"
@@ -101,7 +101,7 @@ function requireTable(
 }
 
 export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSchema>(
-	db: DrizzleDbLike,
+	db: DrizzleDatabase,
 	options: DrizzleAdapterOptions<TSchema> = {},
 ): DrizzleAdapterBundle {
 	const usersTable = requireTable("users", options) as UserTableShape;

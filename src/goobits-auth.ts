@@ -23,6 +23,7 @@ export type GoobitsAuthRoutingConfig = {
 	signOutPath?: string;
 };
 
+/** Configuration accepted by the class-first auth API. */
 export type GoobitsAuthConfig = Omit<AuthConfig, "adapters"> &
 	(
 		| { adapter: AuthConfig["adapters"]; adapters?: AuthConfig["adapters"] }
@@ -82,11 +83,13 @@ function resolveUserRoles(user: User): string[] {
 	return Array.from(new Set(roles));
 }
 
+/** Main auth facade for SvelteKit and compatible request runtimes. */
 export class GoobitsAuth {
-	private readonly core: CoreAuth;
-	private readonly routing: Required<GoobitsAuthRoutingConfig>;
-	private readonly defaultHandlers: AuthHandlersBundle;
+	readonly #core: CoreAuth;
+	readonly #routing: Required<GoobitsAuthRoutingConfig>;
+	readonly #defaultHandlers: AuthHandlersBundle;
 
+	/** Create an auth facade from adapters, providers, hooks, and routing settings. */
 	constructor(config: GoobitsAuthConfig) {
 		const { routing, adapter, adapters, ...rest } = config;
 		const resolvedAdapters = adapter ?? adapters;
@@ -97,32 +100,36 @@ export class GoobitsAuth {
 			...rest,
 			adapters: resolvedAdapters,
 		} as AuthConfig;
-		this.core = createAuth(authConfig);
+		this.#core = createAuth(authConfig);
 		const basePath = normalizeBasePath(routing?.basePath);
-		this.routing = {
+		this.#routing = {
 			basePath,
 			signInPath: routing?.signInPath ?? `${basePath}/signin`,
 			signOutPath: routing?.signOutPath ?? `${basePath}/signout`,
 		};
-		this.defaultHandlers = this.createHandlers();
+		this.#defaultHandlers = this.createHandlers();
 	}
 
+	/** Adapter bundle used by this auth instance. */
 	get adapter() {
-		return this.core.adapters;
+		return this.#core.adapters;
 	}
 
+	/** OAuth provider registrations used by this auth instance. */
 	get providers() {
-		return this.core.providers;
+		return this.#core.providers;
 	}
 
+	/** Catch-all GET/POST handlers for the configured auth base path. */
 	get handlers(): AuthHandlersBundle {
-		return this.defaultHandlers;
+		return this.#defaultHandlers;
 	}
 
+	/** Create a SvelteKit handle hook that populates auth locals. */
 	handle(): Handle {
 		return async ({ event, resolve }) => {
 			const baseEvent = event as unknown as RequestEventLike;
-			const response = await this.core.handlers.hooks({
+			const response = await this.#core.handlers.hooks({
 				event: baseEvent,
 				resolve: async (nextEvent) => {
 					const locals = nextEvent.locals as LocalsWithAuth;
@@ -142,15 +149,16 @@ export class GoobitsAuth {
 		};
 	}
 
+	/** Create catch-all GET/POST route handlers for an auth base path. */
 	createHandlers(options?: { basePath?: string }): AuthHandlersBundle {
-		const basePath = normalizeBasePath(options?.basePath ?? this.routing.basePath);
+		const basePath = normalizeBasePath(options?.basePath ?? this.#routing.basePath);
 		const dispatch: RequestHandler = async (event) => {
 			const method = event.request.method.toUpperCase();
 			if (method !== "GET" && method !== "POST") {
 				return new Response("Method Not Allowed", { status: 405 });
 			}
 			const segments = splitRoutedPath(event.url.pathname, basePath);
-			const target = this.resolveTarget({
+			const target = this.#resolveTarget({
 				event: event as unknown as RequestEventLike,
 				segments,
 				method,
@@ -169,6 +177,7 @@ export class GoobitsAuth {
 		};
 	}
 
+	/** Resolve the current session principal from locals or the session cookie. */
 	async getSession(event: RequestEventLike): Promise<AuthPrincipal | null> {
 		if (hasSessionPrincipal(event.locals)) {
 			return {
@@ -176,7 +185,7 @@ export class GoobitsAuth {
 				user: event.locals.user,
 			};
 		}
-		const sessionAdapter = this.core.adapters.session;
+		const sessionAdapter = this.#core.adapters.session;
 		const cookieName = (sessionAdapter as { cookieName?: string })["cookieName"] ?? "session";
 		const sessionId = event.cookies.get(cookieName);
 		if (!sessionId) {
@@ -190,14 +199,16 @@ export class GoobitsAuth {
 		return locals.auth;
 	}
 
+	/** Require an authenticated user, redirecting to the sign-in path when missing. */
 	async requireUser(event: RequestEventLike): Promise<User> {
 		const principal = await this.getSession(event);
 		if (!principal) {
-			throw redirect(302, this.routing.signInPath);
+			throw redirect(302, this.#routing.signInPath);
 		}
 		return principal.user;
 	}
 
+	/** Require an authenticated user with one of the requested roles. */
 	async requireRole(
 		event: RequestEventLike,
 		role: string | string[],
@@ -208,7 +219,7 @@ export class GoobitsAuth {
 		const required = Array.isArray(role) ? role : [role];
 		const allowed = required.some((entry) => roles.includes(entry));
 		if (!allowed) {
-			const emitter = this.core.security.audit.emitter;
+			const emitter = this.#core.security.audit.emitter;
 			await emitter?.({
 				name: "authz.denied",
 				severity: "warn",
@@ -228,13 +239,13 @@ export class GoobitsAuth {
 		return user;
 	}
 
-	private resolveTarget(input: {
+	#resolveTarget(input: {
 		event: RequestEventLike;
 		segments: string[];
 		method: HandlerMethod;
 	}): HandlerTarget | null {
 		const { event, segments, method } = input;
-		const handlers = this.core.handlers;
+		const handlers = this.#core.handlers;
 		if (segments.length === 2 && segments[0] === "signin" && method === "GET") {
 			const provider = segments[1];
 			if (!provider || !handlers.login) return null;
