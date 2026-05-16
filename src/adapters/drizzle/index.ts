@@ -7,6 +7,8 @@ import { DrizzleWebAuthnAdapter } from "../webauthn/drizzle.js";
 import type { DrizzleDbLike, DrizzleTable } from "../drizzle-types.js";
 import type { User } from "../../types/index.js";
 
+export type { DrizzleDbLike, DrizzleJson, DrizzleTable } from "../drizzle-types.js";
+
 type TableKey =
 	| "users"
 	| "sessions"
