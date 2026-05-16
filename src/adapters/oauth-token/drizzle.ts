@@ -5,7 +5,7 @@ import type { OAuthTokens } from "../../types/index.js";
 import {
 	requireCondition,
 	requireColumn,
-	type DrizzleDbLike,
+	type DrizzleDatabase,
 	type DrizzleJson,
 	type DrizzleTable,
 } from "../drizzle-types.js";
@@ -50,13 +50,13 @@ function normalizeOAuthTokens(value: DrizzleJson): OAuthTokens | null {
 }
 
 export class DrizzleTokenAdapter extends TokenAdapter {
-	private db: DrizzleDbLike;
+	private db: DrizzleDatabase;
 	private tokensTable: TokensTable;
 	private encryptionKey: string | null;
 	private encrypt: boolean;
 
 	constructor(
-		db: DrizzleDbLike,
+		db: DrizzleDatabase,
 		options: {
 			tokensTable?: TokensTable;
 			encryptionKey?: string | null;

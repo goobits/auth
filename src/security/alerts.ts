@@ -35,6 +35,12 @@ const DEFAULT_RULES: ThresholdRule[] = [
 	{ eventName: "auth.csrf_failed", max: 10, windowMs: 10 * 60 * 1000, severity: "error" },
 ];
 
+/**
+ * Create an observer that raises alerts when auth events cross configured thresholds.
+ *
+ * @param config Alert threshold rules and callback.
+ * @returns An auth event observer function.
+ */
 export function createSecurityAlertObserver({
 	rules = DEFAULT_RULES,
 	onAlert,

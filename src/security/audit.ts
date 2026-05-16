@@ -29,6 +29,12 @@ type AuthAuditEvent =
 	| "webauthn.authentication_failed"
 	| "session.revoked";
 
+/**
+ * Write a redacted audit event through the provided logger.
+ *
+ * @param event Event payload to log.
+ * @param options Logger and redaction settings.
+ */
 export function auditLog(event: unknown, options: AuditOptions = {}): void {
 	const { logger = console, redactKeys = DEFAULT_REDACT_KEYS } = options;
 
@@ -36,6 +42,12 @@ export function auditLog(event: unknown, options: AuditOptions = {}): void {
 	logger.info("audit", safeEvent);
 }
 
+/**
+ * Wrap a SvelteKit request handler with request/response audit logging.
+ *
+ * @param options Audit wrapper settings.
+ * @returns A handler decorator.
+ */
 export function withAuditLogging({
 	action = "unknown_action",
 	includeRequestBody = false,
@@ -110,6 +122,13 @@ export function withAuditLogging({
 	};
 }
 
+/**
+ * Write a categorized authentication audit event.
+ *
+ * @param event Authentication event name.
+ * @param payload Additional event fields.
+ * @param options Logger and redaction settings.
+ */
 export function auditAuthEvent(
 	event: AuthAuditEvent,
 	payload: Record<string, unknown> = {},

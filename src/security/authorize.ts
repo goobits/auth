@@ -37,6 +37,11 @@ async function emitDenied(
 	);
 }
 
+/**
+ * Assert that auth locals contain an authenticated user.
+ *
+ * @param locals Auth locals to check.
+ */
 export function requireAuthenticated(
 	locals: AuthLocals,
 ): asserts locals is AuthLocals & { user: NonNullable<AuthLocals["user"]> } {
@@ -45,6 +50,12 @@ export function requireAuthenticated(
 	}
 }
 
+/**
+ * Require the current user to have at least one of the provided roles.
+ *
+ * @param context Request context and optional audit emitter.
+ * @param requiredRoles Accepted role names.
+ */
 export async function requireRole(
 	context: AuthorizerContext,
 	requiredRoles: string[],
@@ -62,6 +73,12 @@ export async function requireRole(
 	}
 }
 
+/**
+ * Require the current user id to match a resource owner id.
+ *
+ * @param context Request context and optional audit emitter.
+ * @param resourceOwnerId Expected owner id.
+ */
 export async function requireOwnership(
 	context: AuthorizerContext,
 	resourceOwnerId: string | number,
