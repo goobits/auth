@@ -182,16 +182,17 @@ export class D1UserAdapter extends UserAdapter {
 		return String(value);
 	}
 
-	async createUser(
-		profile: { email: string; name?: string; picture?: string; verified_email?: boolean },
-		metadata: Record<string, unknown> = {},
-	): Promise<User> {
-		const userData: Record<string, unknown> = {
-			email: profile.email,
-			name: profile.name ?? profile.email,
-			avatar: profile.picture ?? null,
-			emailVerified: Boolean(profile.verified_email),
-		};
+		async createUser(
+			profile: { email: string; name?: string; picture?: string; verified_email?: boolean },
+			metadata: Record<string, unknown> = {},
+		): Promise<User> {
+			const normalizedEmail = profile.email.trim().toLowerCase();
+			const userData: Record<string, unknown> = {
+				email: normalizedEmail,
+				name: profile.name ?? normalizedEmail,
+				avatar: profile.picture ?? null,
+				emailVerified: Boolean(profile.verified_email),
+			};
 
 		// Persist only fields that are explicitly allowed (including password hash).
 		for (const [key, value] of Object.entries(metadata)) {
@@ -208,7 +209,7 @@ export class D1UserAdapter extends UserAdapter {
 		const result = await this.db.prepare(sql).bind(...values).run();
 
 		// Prefer looking up by email (works even when table IDs aren't rowid-backed).
-		const createdByEmail = await this.getUserByEmail(profile.email);
+			const createdByEmail = await this.getUserByEmail(normalizedEmail);
 		if (createdByEmail) return createdByEmail;
 
 		// Fallback for environments where email is not unique.
@@ -234,11 +235,11 @@ export class D1UserAdapter extends UserAdapter {
 		return null;
 	}
 
-	async getUserByEmail(email: string): Promise<User | null> {
-		const sql = `SELECT * FROM ${this.usersTable} WHERE ${this.columns.email} = ? LIMIT 1`;
-		const row = await this.db.prepare(sql).bind(email).first();
-		return this.sanitizeUser(this.mapUser(row));
-	}
+		async getUserByEmail(email: string): Promise<User | null> {
+			const sql = `SELECT * FROM ${this.usersTable} WHERE lower(${this.columns.email}) = lower(?) ORDER BY ${this.columns.id} ASC LIMIT 1`;
+			const row = await this.db.prepare(sql).bind(email.trim()).first();
+			return this.sanitizeUser(this.mapUser(row));
+		}
 
 	async getUserByProviderId(provider: string, providerId: string): Promise<User | null> {
 		const sql = `SELECT u.* FROM ${this.oauthAccountsTable} o
@@ -288,9 +289,9 @@ export class D1UserAdapter extends UserAdapter {
 		await this.db.prepare(sql).bind(userId, provider, providerAccountId).run();
 	}
 
-	async getUserWithPasswordHash(email: string): Promise<(User & { password?: string | null }) | null> {
-		const sql = `SELECT * FROM ${this.usersTable} WHERE ${this.columns.email} = ? LIMIT 1`;
-		const row = await this.db.prepare(sql).bind(email).first();
+		async getUserWithPasswordHash(email: string): Promise<(User & { password?: string | null }) | null> {
+			const sql = `SELECT * FROM ${this.usersTable} WHERE lower(${this.columns.email}) = lower(?) ORDER BY ${this.columns.id} ASC LIMIT 1`;
+			const row = await this.db.prepare(sql).bind(email.trim()).first();
 		const mapped = this.mapUser(row);
 		if (!mapped) return null;
 		const password = row?.[this.columns["password"]] ?? row?.["password"];

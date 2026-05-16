@@ -6,65 +6,59 @@ Pluggable authentication for SvelteKit with a class-first API.
 
 This package is designed to be used from a SvelteKit build pipeline.
 
-```sh
-pnpm add @goobits/auth @sveltejs/kit svelte
-```
-
-If you use Drizzle adapters, install the optional Drizzle peer:
-
-```sh
-pnpm add drizzle-orm
-```
-
-Node.js 20 or newer is required.
+- Workspace/git install (recommended while developing):
+  - `pnpm add @goobits/auth --workspace` (monorepo)
+  - or install from a git URL (if you publish a repo)
+- Registry install:
+  - Publish to npm/GitHub Packages first, then `pnpm add @goobits/auth`
 
 ## 5-Minute Setup
 
 ```ts
 // src/lib/auth.ts
-import { GoobitsAuth } from '@goobits/auth'
-import { drizzleAdapter } from '@goobits/auth/adapters/drizzle'
-import { GoogleProvider } from '@goobits/auth/providers'
-import { db, schema } from '$lib/server/db'
-import { env } from '$env/dynamic/private'
+import { GoobitsAuth } from "@goobits/auth";
+import { drizzleAdapter } from "@goobits/auth/adapters/drizzle";
+import { GoogleProvider } from "@goobits/auth/providers";
+import { db, schema } from "$lib/server/db";
+import { env } from "$env/dynamic/private";
 
 export const auth = new GoobitsAuth({
-	profile: 'secure',
-	adapter: drizzleAdapter(db, {
-		schema,
-		oauthTokenEncryptionKey: env.TOKEN_ENCRYPTION_KEY
-	}),
-	providers: {
-		google: {
-			provider: new GoogleProvider({
-				clientId: env.GOOGLE_CLIENT_ID,
-				clientSecret: env.GOOGLE_CLIENT_SECRET,
-				callbackUrl: `${env.APP_URL}/auth/callback/google`
-			})
-		}
-	}
-})
+  profile: "secure",
+  adapter: drizzleAdapter(db, {
+    schema,
+    oauthTokenEncryptionKey: env.TOKEN_ENCRYPTION_KEY,
+  }),
+  providers: {
+    google: {
+      provider: new GoogleProvider({
+        clientId: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+        callbackUrl: `${env.APP_URL}/auth/callback/google`,
+      }),
+    },
+  },
+});
 ```
 
 ## Runtime Targets
 
 - Cloudflare Workers / Pages:
-    - Use default imports (`@goobits/auth`). Avoid WebAuthn.
+  - Use default imports (`@goobits/auth`). Avoid WebAuthn.
 - Node runtime:
-    - Use Node-optimized entrypoints automatically via `exports` conditions.
+  - Use Node-optimized entrypoints automatically via `exports` conditions.
 
 ```ts
 // src/hooks.server.ts
-import { auth } from '$lib/auth'
+import { auth } from "$lib/auth";
 
-export const handle = auth.handle()
+export const handle = auth.handle();
 ```
 
 ```ts
 // src/routes/auth/[...auth]/+server.ts
-import { auth } from '$lib/auth'
+import { auth } from "$lib/auth";
 
-export const { GET, POST } = auth.handlers
+export const { GET, POST } = auth.handlers;
 ```
 
 ## Guard Helpers
@@ -76,13 +70,13 @@ export const { GET, POST } = auth.handlers
 ## Credentials Provider
 
 ```ts
-import { CredentialsProvider } from '@goobits/auth/providers'
+import { CredentialsProvider } from "@goobits/auth/providers";
 
 const credentials = new CredentialsProvider({
-	identifierField: 'nickname',
-	allowBoth: true,
-	normalizeIdentifier: (value) => value.trim().toLowerCase()
-})
+  identifierField: "nickname",
+  allowBoth: true,
+  normalizeIdentifier: (value) => value.trim().toLowerCase(),
+});
 ```
 
 ## One-Stop Drizzle Adapter
@@ -92,12 +86,6 @@ const credentials = new CredentialsProvider({
 - Required tables: `users`, `sessions`
 - Optional tables: `oauthAccounts`, `oauthTokens`, `verificationTokens`, `magicLinkTokens`, `webauthnCredentials`, `webauthnChallenges`
 
-## Non-SvelteKit Hosts
-
-- `@goobits/auth/node` exposes a small Node HTTP bridge for plain `http` servers that need `RequestEventLike` handlers.
-- `@goobits/auth/adapters/pg` exposes a Node-only `node-postgres`-compatible adapter bundle and schema SQL.
-- `@goobits/auth/adapters/memory` exposes dev/demo in-memory user and session adapters.
-
 ## Production Guarantees
 
 - `hooks.onLogin` resolves identity only; framework-managed session issuance remains default.
@@ -106,7 +94,8 @@ const credentials = new CredentialsProvider({
 
 ## Docs
 
-- `docs/quickstart.md`
+- `docs/quickstart.md` — 5-minute SvelteKit wire-up
+- `docs/integration.md` — adapter contract for custom storage backends
 - `docs/public-api.md`
 - `docs/security-contract.md`
 - `docs/schema.md`

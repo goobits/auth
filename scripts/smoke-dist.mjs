@@ -5,6 +5,7 @@ const root = new URL("..", import.meta.url);
 
 const nodeSubpaths = [
 	"index.js",
+	"adapters/index.js",
 	"adapters/database/index.js",
 	"adapters/session/index.js",
 	"adapters/oauth-token/index.js",
@@ -14,12 +15,18 @@ const nodeSubpaths = [
 	"adapters/verification-token/index.js",
 	"adapters/magic-link/index.js",
 	"adapters/webauthn/index.js",
+	"client/index.js",
+	"errors/index.js",
+	"handlers/index.js",
+	"login-context/index.js",
 	"providers/index.js",
 	"password/index.js",
+	"testing/index.js",
 	"types/index.js",
 	"mfa/index.js",
 	"node/index.js",
 	"security/index.js",
+	"utils/index.js",
 ];
 
 async function importBuiltNodeSubpaths() {
@@ -36,6 +43,8 @@ async function assertPublicSurface() {
 		"AuthAdapterCapabilityError",
 		"AuthPrincipalResolutionError",
 		"GoobitsAuth",
+		"createAuth",
+		"createCookieLoginContext",
 	];
 	if (rootExports.join(",") !== expectedRoot.join(",")) {
 		throw new Error(`unexpected root exports: ${rootExports.join(", ")}`);

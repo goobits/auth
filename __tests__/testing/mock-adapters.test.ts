@@ -3,7 +3,7 @@ import {
 	MockSessionAdapter,
 	MockTokenAdapter,
 	MockUserAdapter,
-} from "../../src/adapters/memory/index.ts";
+} from "../../src/testing/index.ts";
 
 describe("testing mock adapters", () => {
 	it("creates and validates sessions", async () => {

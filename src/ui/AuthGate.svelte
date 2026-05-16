@@ -1,25 +1,45 @@
-<script>
-	import { readable } from "svelte/store";
+<script lang="ts">
+	import type { Snippet } from 'svelte'
+	import { auth } from './auth-store.js'
 
-	const emptyAuth = readable({ user: null, loading: false });
+	let {
+		user = undefined,
+		loading = undefined,
+		onUnauthenticated = null,
+		children,
+		loadingContent,
+		unauthenticated
+	}: {
+		user?: unknown
+		loading?: boolean | undefined
+		onUnauthenticated?: (() => void) | null
+		children?: Snippet
+		loadingContent?: Snippet
+		unauthenticated?: Snippet
+	} = $props()
 
-	export let auth = emptyAuth;
-	export let user = undefined;
-	export let loading = undefined;
-	export let onUnauthenticated = null;
+	const resolvedUser = $derived(user ?? $auth.user ?? null)
+	const resolvedLoading = $derived(loading ?? $auth.loading ?? false)
 
-	$: resolvedUser = user ?? $auth.user ?? null;
-	$: resolvedLoading = loading ?? $auth.loading ?? false;
-
-	$: if (!resolvedLoading && !resolvedUser && typeof onUnauthenticated === "function") {
-		onUnauthenticated();
-	}
+	$effect(() => {
+		if (!resolvedLoading && !resolvedUser && typeof onUnauthenticated === 'function') {
+			onUnauthenticated()
+		}
+	})
 </script>
 
 {#if resolvedLoading}
-	<slot name="loading">Loading…</slot>
+	{#if loadingContent}
+		{@render loadingContent()}
+	{:else}
+		Loading...
+	{/if}
 {:else if resolvedUser}
-	<slot />
+	{@render children?.()}
 {:else}
-	<slot name="unauthenticated">Sign in required.</slot>
+	{#if unauthenticated}
+		{@render unauthenticated()}
+	{:else}
+		Sign in required.
+	{/if}
 {/if}

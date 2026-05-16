@@ -14,26 +14,12 @@ type RecaptchaResponse = {
 	action?: string;
 };
 
-function readEnv(name: string): string | undefined {
-	if (typeof process === "undefined") {
-		return undefined;
-	}
-	return process.env?.[name];
-}
-
-/**
- * Verify a Google reCAPTCHA token.
- *
- * @param token Client token to verify.
- * @param options Secret, expected action, score, timeout, and development fallback settings.
- * @returns Whether the token is valid for the configured policy.
- */
 export async function verifyRecaptchaToken(
 	token: string | null,
 	options: RecaptchaOptions = {},
 ): Promise<boolean> {
 	const {
-		secretKey = readEnv("RECAPTCHA_SECRET_KEY"),
+		secretKey = process.env["RECAPTCHA_SECRET_KEY"],
 		action = null,
 		minScore = 0.5,
 		timeoutMs = DEFAULT_TIMEOUT_MS,
@@ -42,7 +28,7 @@ export async function verifyRecaptchaToken(
 
 	if (!token) return false;
 	if (!secretKey) {
-		return readEnv("NODE_ENV") === "production" ? false : allowInDevelopment;
+		return process.env["NODE_ENV"] === "production" ? false : allowInDevelopment;
 	}
 
 	const controller = new AbortController();

@@ -15,8 +15,8 @@ import { getLogger } from "../utils/logger.js";
  * @returns {import('@sveltejs/kit').RequestHandler}
  *
  * @example
- * // Internal handler wiring
- * import { createLogoutHandler } from './handlers/logout.js';
+ * // In src/routes/logout/+page.server.ts
+ * import { createLogoutHandler } from '@goobits/auth/handlers';
  * import { sessionAdapter } from '$lib/auth';
  *
  * export const POST = createLogoutHandler({

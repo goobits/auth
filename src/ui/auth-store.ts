@@ -1,4 +1,5 @@
-import { writable } from 'svelte/store';
+import { derived, writable } from 'svelte/store';
+import { browser } from '$app/environment';
 
 type AuthUser = Record<string, unknown> | null;
 type AuthSession = Record<string, unknown> | null;
@@ -12,37 +13,28 @@ type AuthState = {
 };
 
 type AuthEndpoints = {
-	signIn: string;
-	signUp: string;
-	signOut: string;
+	login: string;
+	register: string;
+	logout: string;
 	session: string;
 	updateProfile: string;
 };
 
-type AuthHeaders =
-	| Record<string, string>
-	| (() => Record<string, string> | Promise<Record<string, string>>);
-
-/** Options for the Svelte auth store helper. */
-export type AuthStoreOptions = {
+type AuthStoreOptions = {
 	baseUrl?: string;
 	endpoints?: Partial<AuthEndpoints>;
-	headers?: AuthHeaders;
+	publishableApiKey?: string | null;
 	fetcher?: typeof fetch;
 	autoCheck?: boolean;
 };
 
 const DEFAULT_ENDPOINTS = {
-	signIn: '/auth/signin',
-	signUp: '/auth/signup',
-	signOut: '/auth/signout',
+	login: '/auth/login',
+	register: '/auth/register',
+	logout: '/auth/logout',
 	session: '/auth/session',
 	updateProfile: '/auth/profile',
 };
-
-function isBrowser() {
-	return typeof window !== 'undefined' && typeof document !== 'undefined';
-}
 
 const mergeHeaders = (
 	base: Record<string, string>,
@@ -52,24 +44,11 @@ const mergeHeaders = (
 	...(extra || {}),
 });
 
-async function resolveHeaders(headers?: AuthHeaders): Promise<Record<string, string>> {
-	if (!headers) {
-		return {};
-	}
-	return typeof headers === 'function' ? headers() : headers;
-}
-
-/**
- * Create a Svelte store for generic auth session state and basic auth actions.
- *
- * @param options Store endpoints, headers, fetch implementation, and startup behavior.
- * @returns A Svelte-readable store with sign-in, sign-up, sign-out, session, and profile helpers.
- */
 export function createAuthStore(options: AuthStoreOptions = {}) {
 	const {
 		baseUrl = '',
 		endpoints = {},
-		headers,
+		publishableApiKey = null,
 		fetcher = fetch,
 		autoCheck = true,
 	} = options;
@@ -85,17 +64,19 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 	});
 
 	const buildHeaders = (extra?: Record<string, string>) => {
-		return resolveHeaders(headers).then((base) => mergeHeaders(base, extra));
+		const base: Record<string, string> = publishableApiKey
+			? { 'x-publishable-api-key': publishableApiKey }
+			: {};
+		return mergeHeaders(base, extra);
 	};
 
 	const applyAuthSuccess = (result: Record<string, unknown>) => {
-		const user = (result["user"] || null) as AuthUser;
-		const session = (result["session"] || null) as AuthSession;
+		const user = (result["customer"] || result["user"] || null) as AuthUser;
 		update((state) => ({
 			...state,
 			user,
-			session,
-			isAuthenticated: !!user || !!session,
+			session: (result["session"] || null) as AuthSession,
+			isAuthenticated: true,
 			loading: false,
 		}));
 		return { success: true, user };
@@ -111,7 +92,7 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 	const postAuth = async (path: string, payload?: unknown) => {
 		const response = await fetcher(`${baseUrl}${path}`, {
 			method: 'POST',
-			headers: await buildHeaders({ 'Content-Type': 'application/json' }),
+			headers: buildHeaders({ 'Content-Type': 'application/json' }),
 			credentials: 'include',
 			body: payload ? JSON.stringify(payload) : null,
 		});
@@ -126,10 +107,10 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 	const api = {
 		subscribe,
 
-		async signIn(email: string, password: string) {
+		async login(email: string, password: string) {
 			update((state) => ({ ...state, loading: true, error: null }));
 			try {
-				const result = await postAuth(resolvedEndpoints.signIn, { email, password });
+				const result = await postAuth(resolvedEndpoints.login, { email, password });
 
 				if (result.twoFactorRequired) {
 					update((state) => ({ ...state, loading: false }));
@@ -146,11 +127,24 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 			}
 		},
 
-		async signUp(data: Record<string, unknown>) {
+		async register(data: Record<string, unknown> | string) {
 			update((state) => ({ ...state, loading: true, error: null }));
 
 			try {
-				const result = await postAuth(resolvedEndpoints.signUp, data);
+				let registrationData: Record<string, unknown>;
+				if (typeof data === 'object' && !data["name"]) {
+					const { first_name, last_name, email, password, phone } = data as Record<string, unknown>;
+					registrationData = { email, password, first_name, last_name, phone };
+				} else if (typeof data === 'object') {
+					registrationData = data as Record<string, unknown>;
+				} else {
+					const email = arguments[0];
+					const password = arguments[1];
+					const name = arguments[2];
+					registrationData = { email, password, name } as Record<string, unknown>;
+				}
+
+				const result = await postAuth(resolvedEndpoints.register, registrationData);
 
 				if (!result.success) {
 					return applyAuthFailure(result.error || 'Registration failed');
@@ -162,11 +156,11 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 			}
 		},
 
-		async signOut() {
+		async logout() {
 			update((state) => ({ ...state, loading: true, error: null }));
 
 			try {
-				const result = await postAuth(resolvedEndpoints.signOut);
+				const result = await postAuth(resolvedEndpoints.logout);
 				set({
 					user: null,
 					session: null,
@@ -188,14 +182,14 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 		},
 
 		async checkSession() {
-			if (!isBrowser()) return;
+			if (!browser) return;
 
 			update((state) => ({ ...state, loading: true }));
 
 			try {
 				const response = await fetcher(`${baseUrl}${resolvedEndpoints.session}`, {
 					method: 'GET',
-					headers: await buildHeaders(),
+					headers: buildHeaders(),
 					credentials: 'include',
 				});
 
@@ -228,7 +222,7 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 			try {
 				const response = await fetcher(`${baseUrl}${resolvedEndpoints.updateProfile}`, {
 					method: 'POST',
-					headers: await buildHeaders({ 'Content-Type': 'application/json' }),
+					headers: buildHeaders({ 'Content-Type': 'application/json' }),
 					credentials: 'include',
 					body: JSON.stringify(data),
 				});
@@ -263,9 +257,13 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 		},
 	};
 
-	if (isBrowser() && autoCheck) {
+	if (browser && autoCheck) {
 		api.checkSession();
 	}
 
 	return api;
 }
+
+export const auth = createAuthStore();
+export const isAuthenticated = derived(auth, ($auth) => $auth.isAuthenticated);
+export const user = derived(auth, ($auth) => $auth.user);

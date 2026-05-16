@@ -1,4 +1,3 @@
-/** Auth session persisted by a session adapter. */
 export type Session = {
 	id: string;
 	userId: string;
@@ -11,7 +10,6 @@ export type Session = {
 	fingerprint?: string | null;
 };
 
-/** Optional metadata captured when creating a session. */
 export type SessionMetadata = {
 	rememberMe?: boolean;
 	ip?: string;
@@ -19,7 +17,6 @@ export type SessionMetadata = {
 	fingerprint?: string;
 };
 
-/** Public authenticated user shape returned by adapters and session validation. */
 export type User = {
 	id: string;
 	email: string;
@@ -30,9 +27,13 @@ export type User = {
 	settings?: Record<string, unknown>;
 	createdAt?: Date;
 	updatedAt?: Date;
+	user_id?: number;
+	nickname?: string;
+	is_admin?: boolean;
+	is_moderator?: boolean;
+	u_posts?: number;
 };
 
-/** OAuth token set stored by OAuth token adapters. */
 export type OAuthTokens = {
 	accessToken: string;
 	refreshToken: string | null;
@@ -40,7 +41,6 @@ export type OAuthTokens = {
 	accessTokenExpiresAt: string;
 };
 
-/** Normalized OAuth profile returned by providers. */
 export type OAuthProfile = {
 	id: string;
 	email: string;
@@ -49,7 +49,6 @@ export type OAuthProfile = {
 	verified_email?: boolean;
 };
 
-/** Verification token record for email verification and password reset flows. */
 export type VerificationToken = {
 	id: string;
 	userId: string;
@@ -59,14 +58,12 @@ export type VerificationToken = {
 	createdAt: Date;
 };
 
-/** Built-in verification-token purpose names. */
 export const VERIFICATION_TOKEN_TYPES = {
 	EMAIL_VERIFICATION: "email_verification",
 	PASSWORD_RESET: "password_reset",
 	EMAIL_UPDATE: "email_update",
 };
 
-/** Magic-link token record. */
 export type MagicLinkToken = {
 	id: string;
 	userId: string | null;
@@ -77,7 +74,6 @@ export type MagicLinkToken = {
 	createdAt: Date;
 };
 
-/** Stored WebAuthn credential record. */
 export type WebAuthnCredential = {
 	id: string;
 	userId: string;
@@ -90,7 +86,6 @@ export type WebAuthnCredential = {
 	updatedAt: Date;
 };
 
-/** Session summary returned by session-management endpoints. */
 export type SessionSummary = {
 	id: string;
 	userId: string;

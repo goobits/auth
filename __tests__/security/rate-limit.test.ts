@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createRateLimiter, MemoryRateLimitStore } from '../../src/utils/rate-limit.ts'
+import { createRateLimiter, MemoryRateLimitStore } from '../../src/security/rate-limit.ts'
 
 describe('rate limiter', () => {
 	it('blocks after max attempts', async () => {
