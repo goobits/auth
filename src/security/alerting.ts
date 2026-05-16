@@ -1,7 +1,7 @@
 const DEFAULT_COOLDOWN_MS = 10 * 60 * 1000;
 const DEFAULT_MAX_PER_HOUR = 10;
 
-type WebhookAlerterConfig = {
+export type WebhookAlerterConfig = {
 	url?: string | null;
 	secret?: string | null;
 	cooldownMs?: number;

@@ -17,6 +17,7 @@ import type { Logger } from "../utils/logger.js";
 import type { AuthEventEmitter } from "../security/events.js";
 import type { RateLimitStore } from "../security/rate-limit.js";
 import type { SecurityAlertHandler } from "../security/alerts.js";
+import type { WebhookAlerterConfig } from "../security/alerting.js";
 
 export type AuthLocals = {
 	user?: User | null;
@@ -137,14 +138,14 @@ export type AuthSecurityConfig = {
 		headerName?: string;
 		checkExpiry?: boolean;
 	};
-		rateLimit?: {
-			mode?: SecurityMode;
-			max?: number;
-			windowMs?: number;
-			keyPrefix?: string;
-			trustProxyHeader?: boolean;
-			store?: RateLimitStore;
-		};
+	rateLimit?: {
+		mode?: SecurityMode;
+		max?: number;
+		windowMs?: number;
+		keyPrefix?: string;
+		trustProxyHeader?: boolean;
+		store?: RateLimitStore;
+	};
 	audit?: {
 		mode?: SecurityMode;
 		emitter?: AuthEventEmitter;
@@ -152,6 +153,7 @@ export type AuthSecurityConfig = {
 	alerts?: {
 		enabled?: boolean;
 		onAlert?: SecurityAlertHandler;
+		webhook?: WebhookAlerterConfig;
 	};
 };
 
