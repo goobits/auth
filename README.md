@@ -2,6 +2,27 @@
 
 Pluggable authentication for SvelteKit with a class-first API.
 
+## Public Surface
+
+`@goobits/auth` is SvelteKit-first. The main `GoobitsAuth` export, route
+handlers, cookie adapters, and UI helpers expect SvelteKit request/cookie
+types or a SvelteKit build pipeline.
+
+Lower-level subpaths are still useful outside a full SvelteKit app when you
+want the primitives directly:
+
+- `@goobits/auth/security`
+- `@goobits/auth/password`
+- `@goobits/auth/mfa`
+- `@goobits/auth/adapters/pg`
+- `@goobits/auth/testing`
+
+## Stability
+
+The documented exports are treated as stable for the `0.2.x` line. WebAuthn
+and MFA APIs are production-oriented but may receive additive options as
+browser and authenticator behavior evolves.
+
 ## Install
 
 This package is designed to be used from a SvelteKit build pipeline.
@@ -92,6 +113,29 @@ const credentials = new CredentialsProvider({
 - If no principal is resolved in login flows (`OAuth`, `Magic Link`, `WebAuthn`), auth fails explicitly.
 - Session revoke capabilities are mapped to deterministic responses (`501` for unsupported operations).
 
+## Security Alerts
+
+Security threshold alerts can be delivered through an explicit webhook config:
+
+```ts
+export const auth = new GoobitsAuth({
+  adapter,
+  security: {
+    alerts: {
+      enabled: true,
+      webhook: {
+        url: env.SECURITY_WEBHOOK_URL,
+        secret: env.SECURITY_WEBHOOK_SECRET,
+      },
+    },
+  },
+});
+```
+
+For compatibility, `SECURITY_WEBHOOK_URL` and `SECURITY_WEBHOOK_SECRET` are
+also read from `process.env` when no explicit `security.alerts.webhook` value
+is provided. Prefer the explicit config in new apps.
+
 ## Docs
 
 - `docs/quickstart.md` — 5-minute SvelteKit wire-up
@@ -99,4 +143,6 @@ const credentials = new CredentialsProvider({
 - `docs/public-api.md`
 - `docs/security-contract.md`
 - `docs/schema.md`
+- `docs/testing.md`
 - `docs/migrations/vnext-breaking.md`
+- `examples/sveltekit-quickstart/` — minimal SvelteKit wiring

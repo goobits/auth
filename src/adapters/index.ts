@@ -45,3 +45,6 @@ export type {
 	DrizzleAdapterOptions,
 	DrizzleAuthSchema,
 } from "./drizzle/index.js";
+
+// Type-only export keeps the aggregate adapter entrypoint Worker-safe.
+export type { PgPoolLike } from "./pg/index.js";

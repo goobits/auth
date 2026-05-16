@@ -128,16 +128,18 @@ function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 		alerts: { ...base.alerts, ...config.security?.alerts },
 	};
 	const csrfStore = new MemoryCsrfStore();
-	const webhookUrl =
+	const webhook = merged.alerts?.webhook;
+	const fallbackWebhookUrl =
 		typeof process !== "undefined" ? process.env["SECURITY_WEBHOOK_URL"] : undefined;
-	const webhookSecret =
+	const fallbackWebhookSecret =
 		typeof process !== "undefined" ? process.env["SECURITY_WEBHOOK_SECRET"] : undefined;
 	const alerter =
 		merged.alerts?.enabled === false
 			? null
 			: createWebhookAlerter({
-					url: webhookUrl ?? null,
-					secret: webhookSecret ?? null,
+					...webhook,
+					url: webhook?.url ?? fallbackWebhookUrl ?? null,
+					secret: webhook?.secret ?? fallbackWebhookSecret ?? null,
 				});
 	const alertObserver = createSecurityAlertObserver({
 		onAlert: async (alert) => {

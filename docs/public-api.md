@@ -2,6 +2,17 @@
 
 Primary API: `new GoobitsAuth(...)`
 
+`@goobits/auth` is SvelteKit-first. The main class, route handlers, cookie
+adapters, and UI helpers use SvelteKit request/cookie/build types. Consumers
+outside SvelteKit should prefer low-level subpaths such as
+`@goobits/auth/security`, `@goobits/auth/password`, `@goobits/auth/mfa`, or
+`@goobits/auth/adapters/pg`.
+
+## Stability
+
+The documented exports are stable for the `0.2.x` line. WebAuthn and MFA may
+receive additive options as platform behavior evolves.
+
 ## Main entrypoint
 
 ```ts
@@ -37,6 +48,11 @@ export const auth = new GoobitsAuth({
 - `auth.requireUser(event)`
 - `auth.requireRole(event, role | role[])`
 - `auth.adapter` (raw adapters for advanced/manual usage)
+
+Security alert webhooks are configured through
+`security.alerts.webhook.{url,secret,cooldownMs,maxPerHour,timeoutMs}`. The
+legacy `SECURITY_WEBHOOK_URL` and `SECURITY_WEBHOOK_SECRET` process env fallback
+is kept for compatibility when explicit webhook fields are not provided.
 
 ## SvelteKit wiring
 
