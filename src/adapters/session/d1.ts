@@ -53,8 +53,7 @@ export class D1SessionAdapter extends SessionAdapter {
 	private usersTable: string;
 	private sessionLifetime: number;
 	private sessionRefreshThreshold: number;
-	// Exposed for auth hook resolution (`createAuth` reads adapter.cookieName).
-	cookieName: string;
+	private cookieName: string;
 	private secureCookies: boolean;
 	private sanitizeUser: (user: User | null) => User | null;
 	private columns: {
@@ -220,22 +219,8 @@ export class D1SessionAdapter extends SessionAdapter {
 		}
 		if (role !== null && role !== undefined && typeof role !== "string") return null;
 		if (settings !== null && settings !== undefined && typeof settings !== "string") return null;
-			if (
-				createdAt !== null &&
-				createdAt !== undefined &&
-				typeof createdAt !== "string" &&
-				typeof createdAt !== "number"
-			) {
-				return null;
-			}
-			if (
-				updatedAt !== null &&
-				updatedAt !== undefined &&
-				typeof updatedAt !== "string" &&
-				typeof updatedAt !== "number"
-			) {
-				return null;
-			}
+		if (createdAt !== null && createdAt !== undefined && typeof createdAt !== "string") return null;
+		if (updatedAt !== null && updatedAt !== undefined && typeof updatedAt !== "string") return null;
 
 		let parsedSettings: Record<string, unknown> | undefined;
 		if (typeof settings === "string" && settings.trim().length > 0) {
@@ -248,31 +233,14 @@ export class D1SessionAdapter extends SessionAdapter {
 				// Ignore invalid JSON.
 			}
 		}
-			const createdAtDate = (() => {
-				if (typeof createdAt === "string") {
-					const parsed = new Date(createdAt);
-					return Number.isNaN(parsed.getTime()) ? undefined : parsed;
-				}
-				if (typeof createdAt === "number") {
-					// sqlite `unixepoch()` defaults are seconds; accept ms too.
-					const ms = createdAt > 1e12 ? createdAt : createdAt * 1000;
-					const parsed = new Date(ms);
-					return Number.isNaN(parsed.getTime()) ? undefined : parsed;
-				}
-				return undefined;
-			})();
-			const updatedAtDate = (() => {
-				if (typeof updatedAt === "string") {
-					const parsed = new Date(updatedAt);
-					return Number.isNaN(parsed.getTime()) ? undefined : parsed;
-				}
-				if (typeof updatedAt === "number") {
-					const ms = updatedAt > 1e12 ? updatedAt : updatedAt * 1000;
-					const parsed = new Date(ms);
-					return Number.isNaN(parsed.getTime()) ? undefined : parsed;
-				}
-				return undefined;
-			})();
+		const createdAtDate =
+			typeof createdAt === "string" && !Number.isNaN(new Date(createdAt).getTime())
+				? new Date(createdAt)
+				: undefined;
+		const updatedAtDate =
+			typeof updatedAt === "string" && !Number.isNaN(new Date(updatedAt).getTime())
+				? new Date(updatedAt)
+				: undefined;
 		return {
 			id: String(id),
 			email,

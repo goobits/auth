@@ -32,8 +32,7 @@ export class KVSessionAdapter extends SessionAdapter {
 	private namespace: KVNamespaceLike;
 	private sessionLifetime: number;
 	private sessionRefreshThreshold: number;
-	// Exposed for auth hook resolution (`createAuth` reads adapter.cookieName).
-	cookieName: string;
+	private cookieName: string;
 	private secureCookies: boolean;
 	private getUserById: ((id: string) => Promise<User | null>) | null;
 	private sanitizeUser: (user: User | null) => User | null;

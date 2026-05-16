@@ -80,7 +80,11 @@ export async function consumeVerificationToken({
 	sanitizeUser?: (user: Record<string, unknown>) => unknown;
 }): Promise<unknown | null> {
 	const tokenHash = await sha256Hex(token);
-	const record = await adapter.findByToken({ token: tokenHash, type });
+	let record = await adapter.findByToken({ token: tokenHash, type });
+	// Backwards compatibility: accept legacy plaintext tokens if found
+	if (!record) {
+		record = await adapter.findByToken({ token, type });
+	}
 
 	if (!record) {
 		return null;
@@ -120,7 +124,11 @@ export async function getUserForVerificationToken({
 	sanitizeUser?: (user: Record<string, unknown>) => unknown;
 }): Promise<unknown | null> {
 	const tokenHash = await sha256Hex(token);
-	const record = await adapter.findByToken({ token: tokenHash, type });
+	let record = await adapter.findByToken({ token: tokenHash, type });
+	// Backwards compatibility: accept legacy plaintext tokens if found
+	if (!record) {
+		record = await adapter.findByToken({ token, type });
+	}
 
 	if (!record) {
 		return null;
