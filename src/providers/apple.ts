@@ -12,6 +12,28 @@ type AppleProviderConfig = {
 	callbackUrl: string;
 };
 
+type AppleIdTokenPayload = {
+	iss?: string;
+	aud?: string | string[];
+	exp?: number;
+	email?: string;
+	sub?: string;
+};
+
+type AppleTokenResponse = {
+	idToken: string | (() => string) | (() => { email?: string; sub?: string });
+	accessToken?: string | (() => string);
+	refreshToken?: string | (() => string);
+	scope?: string;
+	scopes?: string;
+	expiresIn?: number;
+	expires_in?: number;
+};
+
+const APPLE_ISSUER = "https://appleid.apple.com";
+const APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys";
+let cachedAppleJwks: { keys: JsonWebKey[]; expiresAt: number } | null = null;
+
 /**
  * Apple OAuth Provider
  * Implements Sign in with Apple
@@ -116,16 +138,6 @@ export class AppleProvider extends OAuthProvider {
 		userData: string | null = null,
 	): Promise<{ profile: OAuthProfile; tokens: OAuthTokens }> {
 		try {
-			type AppleTokenResponse = {
-				idToken: () => { email?: string; sub?: string };
-				accessToken?: string | (() => string);
-				refreshToken?: string | (() => string);
-				scope?: string;
-				scopes?: string;
-				expiresIn?: number;
-				expires_in?: number;
-			};
-
 			const client = this.client as unknown as {
 				validateAuthorizationCode: (...args: unknown[]) => Promise<AppleTokenResponse>;
 			};
@@ -140,7 +152,7 @@ export class AppleProvider extends OAuthProvider {
 						)
 					: await validateAuthorizationCode.call(this.client, code);
 
-			const { email, sub: appleUserId } = tokens.idToken();
+			const { email, sub: appleUserId } = await this.verifyIdToken(tokens);
 
 			if (!email || !appleUserId) {
 				throw new Error("Invalid token data from Apple");
@@ -158,17 +170,17 @@ export class AppleProvider extends OAuthProvider {
 						const fullName = `${firstName} ${lastName}`.trim();
 						if (fullName) name = fullName;
 					}
-				} catch (e) {
-					getLogger().warn?.("Could not parse Apple user data:", e);
+					} catch (e) {
+						getLogger().warn?.("Could not parse Apple user data:", e);
+					}
 				}
-			}
 
 			return {
 				profile: {
 					id: appleUserId,
 					email: email as string,
 					...(name && { name }),
-					verified_email: true, // Apple emails are always verified
+					verified_email: true,
 				},
 				tokens: {
 					accessToken: this.readTokenValue(tokens.accessToken) ?? "",
@@ -183,6 +195,60 @@ export class AppleProvider extends OAuthProvider {
 			getLogger().error?.("Error in AppleProvider.getUserProfile:", error);
 			throw error;
 		}
+	}
+
+	private async verifyIdToken(tokens: AppleTokenResponse): Promise<AppleIdTokenPayload> {
+		const rawIdToken = typeof tokens.idToken === "function" ? tokens.idToken() : tokens.idToken;
+		if (rawIdToken && typeof rawIdToken === "object") return rawIdToken as AppleIdTokenPayload;
+		const idTokenValue = typeof rawIdToken === "string" ? rawIdToken : "";
+
+		if (!idTokenValue) {
+			throw new Error("Missing Apple ID token");
+		}
+
+		const [headerPart, payloadPart, signaturePart] = idTokenValue.split(".");
+		if (!headerPart || !payloadPart || !signaturePart) {
+			throw new Error("Invalid Apple ID token format");
+		}
+
+		const header = parseJwtPart(headerPart) as { alg?: string; kid?: string };
+		if (header.alg !== "RS256" || !header.kid) {
+			throw new Error("Unsupported Apple ID token header");
+		}
+
+		const jwks = await getAppleJwks();
+		const jwk = jwks.keys.find((key) => (key as JsonWebKey & { kid?: string }).kid === header.kid);
+		if (!jwk) {
+			throw new Error("Apple ID token key not found");
+		}
+
+		const key = await crypto.subtle.importKey(
+			"jwk",
+			jwk,
+			{ name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+			false,
+			["verify"],
+		);
+		const signingInput = new TextEncoder().encode(`${headerPart}.${payloadPart}`);
+		const signature = base64UrlToBytes(signaturePart);
+		const valid = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, signingInput);
+		if (!valid) {
+			throw new Error("Invalid Apple ID token signature");
+		}
+
+		const payload = parseJwtPart(payloadPart) as AppleIdTokenPayload;
+		const audience = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+		const nowSeconds = Math.floor(Date.now() / 1000);
+		if (payload.iss !== APPLE_ISSUER) {
+			throw new Error("Invalid Apple ID token issuer");
+		}
+		if (!audience.includes(String(this.config["clientId"] || ""))) {
+			throw new Error("Invalid Apple ID token audience");
+		}
+		if (!payload.exp || payload.exp <= nowSeconds) {
+			throw new Error("Expired Apple ID token");
+		}
+		return payload;
 	}
 
 	async refreshAccessToken(refreshToken: string): Promise<OAuthTokens> {
@@ -210,4 +276,35 @@ export class AppleProvider extends OAuthProvider {
 			).toISOString(),
 		};
 	}
+}
+
+function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {
+	const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+	const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
+	const binary = atob(padded);
+	const bytes = new Uint8Array(new ArrayBuffer(binary.length));
+	for (let i = 0; i < binary.length; i += 1) {
+		bytes[i] = binary.charCodeAt(i);
+	}
+	return bytes;
+}
+
+function parseJwtPart(value: string): unknown {
+	const bytes = base64UrlToBytes(value);
+	return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+async function getAppleJwks(): Promise<{ keys: JsonWebKey[] }> {
+	const now = Date.now();
+	if (cachedAppleJwks && cachedAppleJwks.expiresAt > now) {
+		return { keys: cachedAppleJwks.keys };
+	}
+	const response = await fetch(APPLE_JWKS_URL);
+	if (!response.ok) {
+		throw new Error(`Apple JWKS fetch failed (${response.status})`);
+	}
+	const body = (await response.json()) as { keys?: JsonWebKey[] };
+	const keys = Array.isArray(body.keys) ? body.keys : [];
+	cachedAppleJwks = { keys, expiresAt: now + 60 * 60 * 1000 };
+	return { keys };
 }

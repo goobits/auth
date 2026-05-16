@@ -1,33 +1,60 @@
-/** In-memory rate-limit counter store for tests, development, and single-process apps. */
-export class MemoryRateLimitStore {
-	#data: Map<string, { count: number; resetAt: number }>;
+export type RateLimitStore = {
+	get: (key: string) => Promise<{ count: number; resetAt: number } | null>;
+	set: (key: string, value: { count: number; resetAt: number }, ttlMs?: number) => Promise<void>;
+	delete: (key: string) => Promise<void>;
+};
 
-	constructor() {
-		this.#data = new Map();
+export class MemoryRateLimitStore implements RateLimitStore {
+	private _data: Map<string, { count: number; resetAt: number }>;
+	private maxSize: number;
+
+	constructor(options: { maxSize?: number } = {}) {
+		this._data = new Map();
+		this.maxSize = options.maxSize ?? 5000;
 	}
 
-	/** Read a counter and expire it if its reset time has passed. */
 	async get(key: string): Promise<{ count: number; resetAt: number } | null> {
-		const record = this.#data.get(key);
+		const record = this._data.get(key);
 		if (!record) return null;
 		if (record.resetAt && Date.now() > record.resetAt) {
-			this.#data.delete(key);
+			this._data.delete(key);
 			return null;
 		}
 		return record;
 	}
 
-	/** Store a counter value. */
 	async set(
 		key: string,
 		value: { count: number; resetAt: number },
 	): Promise<void> {
-		this.#data.set(key, value);
+		this.compact();
+		if (!this._data.has(key) && this._data.size >= this.maxSize) {
+			this.evictOldest();
+		}
+		this._data.set(key, value);
 	}
 
-	/** Delete a counter value. */
 	async delete(key: string): Promise<void> {
-		this.#data.delete(key);
+		this._data.delete(key);
+	}
+
+	private compact(): void {
+		const now = Date.now();
+		for (const [key, record] of this._data.entries()) {
+			if (record.resetAt <= now) this._data.delete(key);
+		}
+	}
+
+	private evictOldest(): void {
+		let oldestKey: string | null = null;
+		let oldestReset = Number.POSITIVE_INFINITY;
+		for (const [key, record] of this._data.entries()) {
+			if (record.resetAt < oldestReset) {
+				oldestReset = record.resetAt;
+				oldestKey = key;
+			}
+		}
+		if (oldestKey) this._data.delete(oldestKey);
 	}
 }
 
@@ -37,28 +64,25 @@ type KVNamespaceLike = {
 	delete: (key: string) => Promise<void>;
 };
 
-/** Rate-limit counter store backed by a Cloudflare Workers-style KV namespace. */
 export class KVRateLimitStore {
-	#namespace: KVNamespaceLike;
-	#ttlSeconds: number | null;
+	private namespace: KVNamespaceLike;
+	private ttlSeconds: number | null;
 
 	constructor(
 		namespace: KVNamespaceLike,
 		options: { ttlSeconds?: number | null } = {},
 	) {
-		this.#namespace = namespace;
-		this.#ttlSeconds = options.ttlSeconds || null;
+		this.namespace = namespace;
+		this.ttlSeconds = options.ttlSeconds || null;
 	}
 
-	/** Read a counter from KV. */
 	async get(key: string): Promise<{ count: number; resetAt: number } | null> {
-		const value = (await this.#namespace.get(key, { type: "json" })) as
+		const value = (await this.namespace.get(key, { type: "json" })) as
 			| { count: number; resetAt: number }
 			| null;
 		return value || null;
 	}
 
-	/** Store a counter in KV using the configured or per-write TTL. */
 	async set(
 		key: string,
 		value: { count: number; resetAt: number },
@@ -67,19 +91,18 @@ export class KVRateLimitStore {
 		const ttl =
 			ttlMs != null
 				? Math.ceil(ttlMs / 1000)
-				: this.#ttlSeconds;
+				: this.ttlSeconds;
 		const options = ttl ? { expirationTtl: ttl } : undefined;
-		await this.#namespace.put(key, JSON.stringify(value), options);
+		await this.namespace.put(key, JSON.stringify(value), options);
 	}
 
-	/** Delete a counter from KV. */
 	async delete(key: string): Promise<void> {
-		await this.#namespace.delete(key);
+		await this.namespace.delete(key);
 	}
 }
 
 type RateLimiterConfig = {
-	store?: MemoryRateLimitStore | KVRateLimitStore;
+	store?: RateLimitStore;
 	windowMs?: number;
 	max?: number;
 	keyPrefix?: string;
@@ -91,12 +114,6 @@ type RateLimitResult = {
 	resetAt: number;
 };
 
-/**
- * Create a fixed-window rate limiter.
- *
- * @param config Store, window, maximum count, and key prefix settings.
- * @returns A function that checks and increments the counter for a key.
- */
 export function createRateLimiter({
 	store = new MemoryRateLimitStore(),
 	windowMs = 60 * 1000,

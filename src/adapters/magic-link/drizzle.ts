@@ -4,7 +4,7 @@ import type { MagicLinkToken } from "../../types/index.js";
 import {
 	requireCondition,
 	requireColumn,
-	type DrizzleDatabase,
+	type DrizzleDbLike,
 	type DrizzleJson,
 	type DrizzleRow,
 	type DrizzleTable,
@@ -55,7 +55,7 @@ function mapTokenRow(row: DrizzleRow | null, columns: {
 }
 
 export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
-	private db: DrizzleDatabase;
+	private db: DrizzleDbLike;
 	private tokensTable: TokensTable;
 	private columns: {
 		id: string;
@@ -68,7 +68,7 @@ export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
 	};
 
 	constructor(
-		db: DrizzleDatabase,
+		db: DrizzleDbLike,
 		options: {
 			tokensTable?: TokensTable;
 			columns?: Partial<Record<string, string>>;
