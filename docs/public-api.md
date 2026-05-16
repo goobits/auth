@@ -1,6 +1,41 @@
-# Public API (vNext)
+# Public API
 
-Primary API: `new GoobitsAuth(...)`
+Canonical API: `new GoobitsAuth(...)`.
+
+The lower-level `createAuth(...)` core is internal. Use `GoobitsAuth` for app wiring and the intentional subpaths below for advanced adapter, handler, client, and security work.
+
+## Subpath status
+
+### Stable
+
+- `@goobits/auth`
+- `@goobits/auth/adapters`
+- `@goobits/auth/adapters/database`
+- `@goobits/auth/adapters/drizzle`
+- `@goobits/auth/adapters/magic-link`
+- `@goobits/auth/adapters/memory`
+- `@goobits/auth/adapters/oauth-token`
+- `@goobits/auth/adapters/pg`
+- `@goobits/auth/adapters/session`
+- `@goobits/auth/adapters/verification-token`
+- `@goobits/auth/adapters/webauthn`
+- `@goobits/auth/client`
+- `@goobits/auth/errors`
+- `@goobits/auth/handlers`
+- `@goobits/auth/mfa`
+- `@goobits/auth/node`
+- `@goobits/auth/providers`
+- `@goobits/auth/security`
+- `@goobits/auth/testing`
+- `@goobits/auth/types`
+- `@goobits/auth/ui`
+- `@goobits/auth/utils`
+
+### Internal implementation modules
+
+- `src/createAuth.ts` is the shared internal engine behind `GoobitsAuth`.
+- OAuth callback cookie helpers, token encryption helpers, verification-token workflows, and low-level sanitizer/redaction helpers are implementation details. Import them relatively inside the package instead of exporting them through `@goobits/auth/utils`.
+- Security policy wrapping, auth event creation, and webhook alert delivery are internal wiring for `createAuth`.
 
 ## Main entrypoint
 

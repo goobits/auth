@@ -3,6 +3,7 @@
 ## Summary
 
 - Primary API is now `new GoobitsAuth({...})`.
+- `createAuth` is no longer exported from the package root; it remains an internal engine.
 - Preferred adapter key is singular: `adapter`.
 - `drizzleAdapter(db, { schema })` is the one-stop Drizzle bundle.
 - `DatabaseAdapter` has been renamed to `UserAdapter`.

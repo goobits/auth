@@ -40,7 +40,7 @@ const commonEntries = [
 	'src/types/index.ts',
 	'src/testing/index.ts',
 	'src/mfa/index.ts',
-	'src/ui/index.ts',
+	'src/ui/auth-store.ts',
 	'src/security/index.ts',
 	'src/errors/index.ts'
 ]
@@ -70,8 +70,8 @@ export default defineConfig([
 		esbuildPlugins: [
 			rewritePlugin([
 				{
-					from: /(^|\/)password\.ts$/,
-					to: p => p.replace(/password\.ts$/, 'password.node.ts')
+					from: /(^|\/)password\.(js|ts)$/,
+					to: p => p.replace(/password\.(js|ts)$/, 'password.node.ts')
 				}
 			])
 		]
@@ -82,8 +82,8 @@ export default defineConfig([
 		esbuildPlugins: [
 			rewritePlugin([
 				{
-					from: /(^|\/)webauthn\.ts$/,
-					to: p => p.replace(/webauthn\.ts$/, 'webauthn.worker.ts')
+					from: /(^|\/)webauthn\.(js|ts)$/,
+					to: p => p.replace(/webauthn\.(js|ts)$/, 'webauthn.worker.ts')
 				}
 			])
 		]

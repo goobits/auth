@@ -3,14 +3,14 @@ import type { AuthLocals, RequestEventLike } from "../types/auth.js";
 import type { SessionSummary, Session } from "../types/index.js";
 import { AuthAdapterCapabilityError } from "../errors/auth.js";
 
-type SessionAdapterLike = {
+export type SessionAdapterLike = {
 	listSessions?: (userId: string) => Promise<SessionSummary[]>;
 	invalidateSession?: (sessionId: string) => Promise<void>;
 	invalidateUserSessions?: (userId: string) => Promise<void>;
 	deleteSessionCookie?: (cookies: RequestEventLike["cookies"]) => void;
 };
 
-type SessionHandlerConfig = {
+export type SessionHandlerConfig = {
 	sessionAdapter: SessionAdapterLike;
 	isAuthenticated?: (locals: AuthLocals) => boolean;
 	getUser?: (locals: AuthLocals) => { id: string };

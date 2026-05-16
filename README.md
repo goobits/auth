@@ -6,11 +6,17 @@ Pluggable authentication for SvelteKit with a class-first API.
 
 This package is designed to be used from a SvelteKit build pipeline.
 
-- Workspace/git install (recommended while developing):
-    - `pnpm add @goobits/auth --workspace` (monorepo)
-    - or install from a git URL (if you publish a repo)
-- Registry install:
-    - Publish to npm/GitHub Packages first, then `pnpm add @goobits/auth`
+```sh
+pnpm add @goobits/auth @sveltejs/kit svelte
+```
+
+If you use Drizzle adapters, install the optional Drizzle peer:
+
+```sh
+pnpm add drizzle-orm
+```
+
+Node.js 20 or newer is required.
 
 ## 5-Minute Setup
 
