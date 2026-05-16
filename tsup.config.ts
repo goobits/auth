@@ -24,7 +24,6 @@ function rewritePlugin(rewrites: Array<{ from: RegExp; to: (path: string) => str
 
 const commonEntries = [
 	'src/index.ts',
-	'src/adapters/index.ts',
 	'src/adapters/database/index.ts',
 	'src/adapters/session/index.ts',
 	'src/adapters/oauth-token/index.ts',
@@ -34,15 +33,11 @@ const commonEntries = [
 	'src/adapters/magic-link/index.ts',
 	'src/adapters/webauthn/index.ts',
 	'src/providers/index.ts',
-	'src/handlers/index.ts',
-	'src/utils/index.ts',
-	'src/client/index.ts',
+	'src/password/index.ts',
 	'src/types/index.ts',
-	'src/testing/index.ts',
 	'src/mfa/index.ts',
 	'src/ui/auth-store.ts',
-	'src/security/index.ts',
-	'src/errors/index.ts'
+	'src/security/index.ts'
 ]
 
 const nodeEntries = [

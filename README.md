@@ -95,7 +95,7 @@ const credentials = new CredentialsProvider({
 ## Non-SvelteKit Hosts
 
 - `@goobits/auth/node` exposes a small Node HTTP bridge for plain `http` servers that need `RequestEventLike` handlers.
-- `@goobits/auth/adapters/pg` exposes a `node-postgres`-compatible adapter bundle and schema SQL.
+- `@goobits/auth/adapters/pg` exposes a Node-only `node-postgres`-compatible adapter bundle and schema SQL.
 - `@goobits/auth/adapters/memory` exposes dev/demo in-memory user and session adapters.
 
 ## Production Guarantees

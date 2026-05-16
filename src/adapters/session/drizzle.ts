@@ -3,7 +3,7 @@ import { encodeBase64url } from "@oslojs/encoding";
 import { eq } from "drizzle-orm";
 import type { Cookies } from "@sveltejs/kit";
 import type { Session, User } from "../../types/index.js";
-import type { DrizzleDbLike, DrizzleJson, DrizzleRow, DrizzleTable } from "../drizzle-types.js";
+import type { DrizzleDatabase, DrizzleJson, DrizzleRow, DrizzleTable } from "../drizzle-types.js";
 
 type SessionsTable = DrizzleTable & {
 	id: DrizzleTable[string];
@@ -76,7 +76,7 @@ function pickSessionMetadata(metadata: Record<string, DrizzleJson>): DrizzleRow 
 }
 
 export class DrizzleSessionAdapter extends SessionAdapter {
-	private db: DrizzleDbLike;
+	private db: DrizzleDatabase;
 	private sessionsTable: SessionsTable;
 	private usersTable: UsersTable;
 	private sessionLifetime: number;
@@ -86,7 +86,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 	private sanitizeUser: (user: User | null) => User | null;
 
 	constructor(
-		db: DrizzleDbLike,
+		db: DrizzleDatabase,
 		options: {
 			sessionsTable?: SessionsTable;
 			usersTable?: UsersTable;

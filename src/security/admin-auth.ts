@@ -35,6 +35,12 @@ async function sha256Hex(value: string): Promise<string> {
 	return bytesToHex(new Uint8Array(digest));
 }
 
+/**
+ * Create a random admin API key with a stable prefix.
+ *
+ * @param options Prefix and random byte length.
+ * @returns The generated API key.
+ */
 export async function createAdminApiKey({
 	prefix = "adm",
 	bytes = 32,
@@ -43,6 +49,13 @@ export async function createAdminApiKey({
 	return `${prefix}_${bytesToHex(random)}`;
 }
 
+/**
+ * Hash an admin API key for storage.
+ *
+ * @param apiKey Raw API key.
+ * @param options Optional salt.
+ * @returns Hex SHA-256 digest.
+ */
 export async function hashAdminApiKey(
 	apiKey: string,
 	{ salt = "" }: { salt?: string } = {},
@@ -51,6 +64,14 @@ export async function hashAdminApiKey(
 	return sha256Hex(`${salt}${apiKey}`);
 }
 
+/**
+ * Verify an admin API key against a stored hash.
+ *
+ * @param apiKey Raw API key.
+ * @param hashed Stored hash.
+ * @param options Optional salt.
+ * @returns Whether the key matches.
+ */
 export async function verifyAdminApiKey(
 	apiKey: string,
 	hashed: string,
@@ -61,6 +82,12 @@ export async function verifyAdminApiKey(
 	return timingSafeEqual(candidate, hashed);
 }
 
+/**
+ * Parse an API key from `ApiKey`, `Bearer`, or raw authorization header values.
+ *
+ * @param value Header value.
+ * @returns The parsed key, or null when missing.
+ */
 export function parseApiKeyHeader(value: string | null): string | null {
 	if (!value) return null;
 	if (value.startsWith("ApiKey ")) return value.slice(7);

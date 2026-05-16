@@ -18,11 +18,13 @@ import type {
 	User
 } from './core.js'
 
+/** Auth-related values stored on SvelteKit locals. */
 export type AuthLocals = {
 	user?: User | null;
 	session?: Session | null;
 }
 
+/** Minimal SvelteKit request event shape consumed by auth handlers. */
 export type RequestEventLike = Pick<
 	RequestEvent,
 	'request' | 'cookies' | 'params' | 'locals' | 'url'
@@ -32,11 +34,13 @@ export type RequestEventLike = Pick<
 	getClientAddress?: () => string;
 }
 
+/** OAuth provider registration used by the auth configuration. */
 export type OAuthProviderConfig = {
 	provider: OAuthProvider;
 	scopes?: string[];
 }
 
+/** Redirect and allowed-origin settings for auth flows. */
 export type AuthUrls = {
 	allowedReturnToOrigins?: string[];
 	login?: string;
@@ -44,13 +48,17 @@ export type AuthUrls = {
 	afterLogout?: string;
 }
 
+/** Cookie defaults for auth-managed cookies. */
 export type AuthCookiesConfig = {
 	secure?: boolean;
 }
 
+/** Optional return value from login hooks to resolve a session user id. */
 export type AuthLoginResult = { userId: string | number } | void
+/** Session creation mode for login flows. */
 export type OnLoginMode = 'augment' | 'manual'
 
+/** Lifecycle hooks invoked by the auth engine. */
 export type AuthHooks = {
 	onSessionValidated?: (
 		event: RequestEventLike,
@@ -71,6 +79,7 @@ export type AuthHooks = {
 	onError?: (event: RequestEventLike, error: unknown) => Promise<void> | void;
 }
 
+/** Magic-link feature configuration. */
 export type MagicLinkConfig = {
 	send: {
 		email: (payload: {
@@ -112,6 +121,7 @@ export type MagicLinkConfig = {
 	};
 }
 
+/** WebAuthn/passkey feature configuration. */
 export type WebAuthnConfig = {
 	origin?: string;
 	rpID?: string;
@@ -125,13 +135,17 @@ export type WebAuthnConfig = {
 	};
 }
 
+/** Session-management endpoint configuration. */
 export type SessionsConfig = {
 	listLimit?: number;
 }
 
+/** Built-in security preset names. */
 export type SecurityProfile = 'basic' | 'secure' | 'strict'
+/** Per-control security enforcement mode. */
 export type SecurityMode = 'required' | 'optional' | 'off'
 
+/** CSRF, rate-limit, audit, and alert settings for auth handlers. */
 export type AuthSecurityConfig = {
 	csrf?: {
 		mode?: SecurityMode;
@@ -207,12 +221,14 @@ type AuthConfigWithBoth = CommonAuthConfigFields & {
 	webauthn: WebAuthnConfig;
 }
 
+/** Complete auth engine configuration. */
 export type AuthConfig =
 	| AuthConfigNoFeatures
 	| AuthConfigWithMagicLink
 	| AuthConfigWithWebAuthn
 	| AuthConfigWithBoth
 
+/** Low-level route handlers assembled by the auth engine. */
 export type AuthHandlers = {
 	login?: RequestHandler;
 	callback?: RequestHandler;
@@ -234,6 +250,7 @@ export type AuthHandlers = {
 	};
 }
 
+/** Route factories for apps that wire individual auth routes manually. */
 export type AuthRoutes = {
 	login: () => { GET: RequestHandler };
 	callback: () => { GET: RequestHandler };

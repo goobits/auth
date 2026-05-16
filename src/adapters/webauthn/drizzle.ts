@@ -3,7 +3,7 @@ import { WebAuthnAdapter } from "./base.js";
 import type { WebAuthnCredential } from "../../types/index.js";
 import {
 	requireColumn,
-	type DrizzleDbLike,
+	type DrizzleDatabase,
 	type DrizzleJson,
 	type DrizzleRow,
 	type DrizzleTable,
@@ -114,7 +114,7 @@ function mapCredentialRow(
 }
 
 export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
-	private db: DrizzleDbLike;
+	private db: DrizzleDatabase;
 	private credentialsTable: CredentialsTable;
 	private challengesTable: ChallengesTable;
 	private columns: {
@@ -134,7 +134,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 	};
 
 	constructor(
-		db: DrizzleDbLike,
+		db: DrizzleDatabase,
 		options: {
 			credentialsTable?: CredentialsTable;
 			challengesTable?: ChallengesTable;

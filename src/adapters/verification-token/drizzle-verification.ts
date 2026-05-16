@@ -4,7 +4,7 @@ import type { User, VerificationToken } from "../../types/index.js";
 import {
 	requireCondition,
 	requireColumn,
-	type DrizzleDbLike,
+	type DrizzleDatabase,
 	type DrizzleRow,
 	type DrizzleTable,
 } from "../drizzle-types.js";
@@ -85,12 +85,12 @@ function toUser(row: DrizzleRow | null): User | null {
 }
 
 export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
-	private db: DrizzleDbLike;
+	private db: DrizzleDatabase;
 	private tokensTable: TokensTable;
 	private usersTable: UsersTable;
 
 	constructor(
-		db: DrizzleDbLike,
+		db: DrizzleDatabase,
 		options: { tokensTable?: TokensTable; usersTable?: UsersTable } = {},
 	) {
 		super();
