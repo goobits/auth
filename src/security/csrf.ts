@@ -10,39 +10,33 @@ export type CsrfStore = {
 	delete: (key: string) => Promise<void>;
 };
 
-/** Default CSRF cookie name used by the security policy helpers. */
 export const CSRF_COOKIE_NAME = "csrf-token";
-/** Default CSRF request header name used for double-submit validation. */
 export const CSRF_HEADER_NAME = "x-csrf-token";
 
-/** In-memory CSRF token store for development, tests, and single-process apps. */
 export class MemoryCsrfStore {
-	#data: Map<string, CsrfStoreRecord>;
+	private _data: Map<string, CsrfStoreRecord>;
 
 	constructor() {
-		this.#data = new Map();
+		this._data = new Map();
 	}
 
-	/** Look up a stored CSRF token record and expire stale entries. */
 	async get(key: string): Promise<CsrfStoreRecord | null> {
-		const record = this.#data.get(key);
+		const record = this._data.get(key);
 		if (!record) return null;
 		if (record.expiresAt && Date.now() > record.expiresAt) {
-			this.#data.delete(key);
+			this._data.delete(key);
 			return null;
 		}
 		return record;
 	}
 
-	/** Store a CSRF token marker with an optional TTL. */
 	async set(key: string, value: boolean, ttlMs?: number): Promise<void> {
 		const expiresAt = ttlMs ? Date.now() + ttlMs : null;
-		this.#data.set(key, { value, expiresAt });
+		this._data.set(key, { value, expiresAt });
 	}
 
-	/** Delete a CSRF token marker. */
 	async delete(key: string): Promise<void> {
-		this.#data.delete(key);
+		this._data.delete(key);
 	}
 }
 
@@ -61,18 +55,11 @@ function timingSafeEqual(a: string, b: string): boolean {
 	return diff === 0;
 }
 
-/** Create a random CSRF token encoded as lowercase hex. */
 export async function createCsrfToken(): Promise<string> {
 	const bytes = await getRandomBytes(32);
 	return bytesToHex(bytes);
 }
 
-/**
- * Issue a CSRF token cookie and optionally persist it in a backing store.
- *
- * @param input Cookie, store, and token lifetime settings.
- * @returns The issued token value.
- */
 export async function issueCsrfToken({
 	cookies,
 	store,
@@ -110,12 +97,6 @@ export async function issueCsrfToken({
 	return token;
 }
 
-/**
- * Validate a double-submit CSRF request against the configured cookie/header names.
- *
- * @param input Request, cookie, and optional store validation settings.
- * @returns Whether the request contains a valid CSRF token pair.
- */
 export async function validateCsrfRequest({
 	request,
 	cookies,

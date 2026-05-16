@@ -2,9 +2,7 @@
 
 ## Reporting
 
-Please report security issues privately through GitHub Security Advisories before public disclosure:
-
-<https://github.com/goobits/auth/security/advisories/new>
+Please report security issues privately to the maintainers before public disclosure.
 
 Include:
 

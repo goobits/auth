@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import type { OAuthProfile, User } from "../../types/index.js";
 import {
 	requireCondition,
-	type DrizzleDatabase,
+	type DrizzleDbLike,
 	type DrizzleJson,
 	type DrizzleRow,
 	type DrizzleTable,
@@ -56,13 +56,13 @@ function toDrizzleRow(values: Record<string, DrizzleJson>): DrizzleRow {
 }
 
 export class DrizzleUserAdapter extends UserAdapter {
-	private db: DrizzleDatabase;
+	private db: DrizzleDbLike;
 	private usersTable: UsersTable;
 	private oauthAccountsTable: OAuthAccountsTable | null;
 	private sanitizeUser: (user: User | null) => User | null;
 
 	constructor(
-		db: DrizzleDatabase,
+		db: DrizzleDbLike,
 		options: {
 			usersTable?: UsersTable;
 			oauthAccountsTable?: OAuthAccountsTable;
