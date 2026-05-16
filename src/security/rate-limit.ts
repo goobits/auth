@@ -1,16 +1,8 @@
-export type RateLimitStore = {
-	get: (key: string) => Promise<{ count: number; resetAt: number } | null>;
-	set: (key: string, value: { count: number; resetAt: number }, ttlMs?: number) => Promise<void>;
-	delete: (key: string) => Promise<void>;
-};
-
-export class MemoryRateLimitStore implements RateLimitStore {
+export class MemoryRateLimitStore {
 	private _data: Map<string, { count: number; resetAt: number }>;
-	private maxSize: number;
 
-	constructor(options: { maxSize?: number } = {}) {
+	constructor() {
 		this._data = new Map();
-		this.maxSize = options.maxSize ?? 5000;
 	}
 
 	async get(key: string): Promise<{ count: number; resetAt: number } | null> {
@@ -27,34 +19,11 @@ export class MemoryRateLimitStore implements RateLimitStore {
 		key: string,
 		value: { count: number; resetAt: number },
 	): Promise<void> {
-		this.compact();
-		if (!this._data.has(key) && this._data.size >= this.maxSize) {
-			this.evictOldest();
-		}
 		this._data.set(key, value);
 	}
 
 	async delete(key: string): Promise<void> {
 		this._data.delete(key);
-	}
-
-	private compact(): void {
-		const now = Date.now();
-		for (const [key, record] of this._data.entries()) {
-			if (record.resetAt <= now) this._data.delete(key);
-		}
-	}
-
-	private evictOldest(): void {
-		let oldestKey: string | null = null;
-		let oldestReset = Number.POSITIVE_INFINITY;
-		for (const [key, record] of this._data.entries()) {
-			if (record.resetAt < oldestReset) {
-				oldestReset = record.resetAt;
-				oldestKey = key;
-			}
-		}
-		if (oldestKey) this._data.delete(oldestKey);
 	}
 }
 
@@ -102,7 +71,7 @@ export class KVRateLimitStore {
 }
 
 type RateLimiterConfig = {
-	store?: RateLimitStore;
+	store?: MemoryRateLimitStore | KVRateLimitStore;
 	windowMs?: number;
 	max?: number;
 	keyPrefix?: string;

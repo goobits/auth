@@ -23,10 +23,13 @@ export type GoobitsAuthRoutingConfig = {
 	signOutPath?: string;
 };
 
-export type GoobitsAuthConfig = Omit<AuthConfig, "adapters"> & {
-	adapter: AuthConfig["adapters"];
-	routing?: GoobitsAuthRoutingConfig;
-};
+export type GoobitsAuthConfig = Omit<AuthConfig, "adapters"> &
+	(
+		| { adapter: AuthConfig["adapters"]; adapters?: AuthConfig["adapters"] }
+		| { adapter?: never; adapters: AuthConfig["adapters"] }
+	) & {
+		routing?: GoobitsAuthRoutingConfig;
+	};
 
 type HandlerTarget = {
 	method: HandlerMethod;
@@ -85,10 +88,14 @@ export class GoobitsAuth {
 	private readonly defaultHandlers: AuthHandlersBundle;
 
 	constructor(config: GoobitsAuthConfig) {
-		const { routing, adapter, ...rest } = config;
+		const { routing, adapter, adapters, ...rest } = config;
+		const resolvedAdapters = adapter ?? adapters;
+		if (!resolvedAdapters) {
+			throw new Error("GoobitsAuth requires 'adapter' (or legacy 'adapters') configuration");
+		}
 		const authConfig = {
 			...rest,
-			adapters: adapter,
+			adapters: resolvedAdapters,
 		} as AuthConfig;
 		this.core = createAuth(authConfig);
 		const basePath = normalizeBasePath(routing?.basePath);
@@ -200,7 +207,7 @@ export class GoobitsAuth {
 		const roles = options?.resolveRoles ? options.resolveRoles(user) : resolveUserRoles(user);
 		const required = Array.isArray(role) ? role : [role];
 		const allowed = required.some((entry) => roles.includes(entry));
-			if (!allowed) {
+		if (!allowed) {
 			const emitter = this.core.security.audit.emitter;
 			await emitter?.({
 				name: "authz.denied",
@@ -216,10 +223,10 @@ export class GoobitsAuth {
 				},
 				timestamp: new Date().toISOString(),
 			});
-				error(403, "Forbidden");
-			}
-			return user;
+			throw error(403, "Forbidden");
 		}
+		return user;
+	}
 
 	private resolveTarget(input: {
 		event: RequestEventLike;
@@ -234,15 +241,11 @@ export class GoobitsAuth {
 			event.params["provider"] = provider;
 			return { method: "GET", handler: handlers.login };
 		}
-		if (
-			segments.length === 2 &&
-			segments[0] === "callback" &&
-			(method === "GET" || method === "POST")
-		) {
+		if (segments.length === 2 && segments[0] === "callback" && method === "GET") {
 			const provider = segments[1];
 			if (!provider || !handlers.callback) return null;
 			event.params["provider"] = provider;
-			return { method, handler: handlers.callback };
+			return { method: "GET", handler: handlers.callback };
 		}
 		if (segments.length === 1 && (segments[0] === "signout" || segments[0] === "logout")) {
 			return { method: "POST", handler: handlers.logout };
@@ -285,16 +288,11 @@ export class GoobitsAuth {
 			event.params["provider"] = provider;
 			return { method: "GET", handler: handlers.login };
 		}
-		if (
-			segments.length === 2 &&
-			handlers.callback &&
-			(method === "GET" || method === "POST") &&
-			segments[1] === "callback"
-		) {
+		if (segments.length === 2 && handlers.callback && method === "GET" && segments[1] === "callback") {
 			const provider = segments[0];
 			if (!provider) return null;
 			event.params["provider"] = provider;
-			return { method, handler: handlers.callback };
+			return { method: "GET", handler: handlers.callback };
 		}
 		return null;
 	}

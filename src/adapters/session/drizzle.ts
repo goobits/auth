@@ -81,8 +81,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 	private usersTable: UsersTable;
 	private sessionLifetime: number;
 	private sessionRefreshThreshold: number;
-	// Exposed for auth hook resolution (`createAuth` reads adapter.cookieName).
-	cookieName: string;
+	private cookieName: string;
 	private secureCookies: boolean;
 	private sanitizeUser: (user: User | null) => User | null;
 

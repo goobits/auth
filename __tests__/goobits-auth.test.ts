@@ -4,7 +4,29 @@ import type { OAuthProvider } from "../src/providers/base.ts";
 import type { SessionAdapter } from "../src/adapters/session/base.ts";
 import type { RequestEventLike } from "../src/types/auth.ts";
 import type { Session, User } from "../src/types/index.ts";
-import { createRequestEvent } from "./test-kit.ts";
+
+function createCookies() {
+	const store = new Map<string, string>();
+	return {
+		get: (name: string) => store.get(name) ?? null,
+		set: (name: string, value: string) => {
+			store.set(name, value);
+		},
+		delete: (name: string) => {
+			store.delete(name);
+		},
+	};
+}
+
+function createEvent(url: string, method: "GET" | "POST" = "GET"): RequestEventLike {
+	return {
+		request: new Request(url, { method }),
+		cookies: createCookies(),
+		locals: {},
+		params: {},
+		url: new URL(url),
+	};
+}
 
 function createProvider(): OAuthProvider {
 	return {
@@ -56,7 +78,7 @@ describe("GoobitsAuth", () => {
 			adapter: { session: createSessionAdapter({ session, user }) },
 			providers: { google: { provider: createProvider() } },
 		});
-		const event = createRequestEvent({ url: "http://localhost/account" });
+		const event = createEvent("http://localhost/account");
 		event.cookies.set("session", "s1");
 
 		const handle = auth.handle();
@@ -77,33 +99,10 @@ describe("GoobitsAuth", () => {
 			providers: { google: { provider: createProvider() } },
 		});
 
-		const event = createRequestEvent({
-			url: "http://localhost/auth/signin/google",
-			params: { provider: "google" },
-		});
+		const event = createEvent("http://localhost/auth/signin/google", "GET");
 		await expect(auth.handlers.GET(event as never)).rejects.toMatchObject({
 			status: 302,
 			location: "https://provider.example/auth",
-		});
-	});
-
-	it("dispatches POST /auth/callback/:provider via handlers", async () => {
-		const auth = new GoobitsAuth({
-			adapter: {
-				session: createSessionAdapter({ session: null, user: null }),
-			},
-			providers: { apple: { provider: createProvider() } },
-		});
-
-		const event = createRequestEvent({
-			url: "http://localhost/auth/callback/apple",
-			method: "POST",
-			form: { code: "test-code", state: "test-state" },
-			params: { provider: "apple" },
-		});
-
-		await expect(auth.handlers.POST(event as never)).rejects.not.toMatchObject({
-			status: 404,
 		});
 	});
 
@@ -124,7 +123,7 @@ describe("GoobitsAuth", () => {
 		const auth = new GoobitsAuth({
 			adapter: { session: createSessionAdapter({ session, user }) },
 		});
-		const event = createRequestEvent({ url: "http://localhost/protected" });
+		const event = createEvent("http://localhost/protected");
 		event.locals.session = session;
 		event.locals.user = user;
 		await expect(auth.requireRole(event, "admin")).rejects.toMatchObject({ status: 403 });
