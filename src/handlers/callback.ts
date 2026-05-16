@@ -8,7 +8,7 @@ import type { OAuthProfile, OAuthTokens } from '../types/index.js'
 import { getLogger } from '../utils/logger.js'
 import { getOAuthReturnTo, handleOAuthCallback, resolveSafeReturnTo } from '../utils/oauth.js'
 
-type CallbackConfig = {
+export type CallbackConfig = {
 	allowedReturnToOrigins?: string[];
 	providers: Record<string, OAuthProvider>;
 	redirectAfterLogin?: string;

@@ -20,7 +20,7 @@ import { AuthPrincipalResolutionError } from "../errors/auth.js";
 import { auditAuthEvent } from "../security/audit.js";
 import { isSafeRedirectPath } from "../utils/redirect.js";
 
-type MagicLinkAdapterLike = {
+export type MagicLinkAdapterLike = {
 	createToken: (params: {
 		userId: string | null;
 		email: string;
@@ -38,7 +38,7 @@ type MagicLinkAdapterLike = {
 	deleteByEmail: (email: string) => Promise<unknown>;
 };
 
-type MagicLinkUserAdapterLike = {
+export type MagicLinkUserAdapterLike = {
 	getUserByEmail: (email: string) => Promise<User | null>;
 	getUserById: (id: string) => Promise<User | null>;
 	createUser: (profile: {
@@ -50,7 +50,7 @@ type MagicLinkUserAdapterLike = {
 	updateUser: (id: string, data: Record<string, unknown>) => Promise<User>;
 };
 
-type MagicLinkSessionAdapterLike = {
+export type MagicLinkSessionAdapterLike = {
 	createSession: (userId: string) => Promise<Session>;
 	setSessionCookie?: (
 		cookies: RequestEventLike["cookies"],
@@ -58,7 +58,7 @@ type MagicLinkSessionAdapterLike = {
 	) => void;
 };
 
-type MagicLinkRequestConfig = {
+export type MagicLinkRequestConfig = {
 	magicLinkAdapter: MagicLinkAdapterLike;
 	databaseAdapter?: Pick<MagicLinkUserAdapterLike, "getUserByEmail">;
 	sendEmail: (payload: {
@@ -87,7 +87,7 @@ type MagicLinkRequestConfig = {
 	key?: (event: RequestEventLike) => string;
 };
 
-type MagicLinkVerifyConfig = {
+export type MagicLinkVerifyConfig = {
 	magicLinkAdapter: MagicLinkAdapterLike;
 	databaseAdapter?: MagicLinkUserAdapterLike;
 	sessionAdapter: MagicLinkSessionAdapterLike;

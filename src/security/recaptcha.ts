@@ -14,12 +14,19 @@ type RecaptchaResponse = {
 	action?: string;
 };
 
+function readEnv(name: string): string | undefined {
+	if (typeof process === "undefined") {
+		return undefined;
+	}
+	return process.env?.[name];
+}
+
 export async function verifyRecaptchaToken(
 	token: string | null,
 	options: RecaptchaOptions = {},
 ): Promise<boolean> {
 	const {
-		secretKey = process.env["RECAPTCHA_SECRET_KEY"],
+		secretKey = readEnv("RECAPTCHA_SECRET_KEY"),
 		action = null,
 		minScore = 0.5,
 		timeoutMs = DEFAULT_TIMEOUT_MS,
@@ -28,7 +35,7 @@ export async function verifyRecaptchaToken(
 
 	if (!token) return false;
 	if (!secretKey) {
-		return process.env["NODE_ENV"] === "production" ? false : allowInDevelopment;
+		return readEnv("NODE_ENV") === "production" ? false : allowInDevelopment;
 	}
 
 	const controller = new AbortController();

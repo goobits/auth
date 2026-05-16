@@ -1,4 +1,4 @@
-import { mkdir, readdir, copyFile } from "node:fs/promises";
+import { mkdir, readdir, copyFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,6 +14,14 @@ const ASSET_DIRS = [
 ];
 
 const OUT_DIRS = [join(root, "dist", "node"), join(root, "dist", "worker")];
+
+const UI_BARREL = `export { default as BackupCodesModal } from './BackupCodesModal.svelte';
+export { default as AuthNotification } from './AuthNotification.svelte';
+export { default as MigrationNotification } from './MigrationNotification.svelte';
+export { default as AuthGate } from './AuthGate.svelte';
+export { default as SessionManager } from './SessionManager.svelte';
+export { auth, createAuthStore, isAuthenticated, user } from './auth-store.js';
+`;
 
 async function ensureDir(path) {
   await mkdir(path, { recursive: true });
@@ -41,3 +49,7 @@ for (const dir of ASSET_DIRS) {
   await copyDirFiltered(dir);
 }
 
+for (const outDir of OUT_DIRS) {
+  // eslint-disable-next-line no-await-in-loop
+  await writeFile(join(outDir, "ui", "index.js"), UI_BARREL);
+}

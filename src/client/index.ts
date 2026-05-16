@@ -8,7 +8,7 @@ type Base64Input =
 	| null
 	| undefined;
 
-type PasskeyEndpoints = {
+export type PasskeyEndpoints = {
 	magicLinkRequest?: string;
 	magicLinkVerify?: string;
 	passkeyRegisterOptions?: string;
@@ -18,7 +18,7 @@ type PasskeyEndpoints = {
 	sessions?: string;
 };
 
-type CreateAuthClientOptions = {
+export type CreateAuthClientOptions = {
 	baseUrl?: string;
 	endpoints?: PasskeyEndpoints;
 	fetcher?: typeof fetch;
