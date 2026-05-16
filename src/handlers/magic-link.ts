@@ -4,7 +4,7 @@ import {
 	generateOtp,
 	hashToken,
 } from "../utils/magic-link.js";
-import { createRateLimiter } from "../utils/rate-limit.js";
+import { createRateLimiter } from "../security/rate-limit.js";
 import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.js";
 import { jsonResponse, parseRequestData } from "../utils/http.js";
 import type { RequestHandler } from "@sveltejs/kit";
@@ -20,7 +20,7 @@ import { AuthPrincipalResolutionError } from "../errors/auth.js";
 import { auditAuthEvent } from "../security/audit.js";
 import { isSafeRedirectPath } from "../utils/redirect.js";
 
-export type MagicLinkAdapterLike = {
+type MagicLinkAdapterLike = {
 	createToken: (params: {
 		userId: string | null;
 		email: string;
@@ -38,7 +38,7 @@ export type MagicLinkAdapterLike = {
 	deleteByEmail: (email: string) => Promise<unknown>;
 };
 
-export type MagicLinkUserAdapterLike = {
+type MagicLinkUserAdapterLike = {
 	getUserByEmail: (email: string) => Promise<User | null>;
 	getUserById: (id: string) => Promise<User | null>;
 	createUser: (profile: {
@@ -50,7 +50,7 @@ export type MagicLinkUserAdapterLike = {
 	updateUser: (id: string, data: Record<string, unknown>) => Promise<User>;
 };
 
-export type MagicLinkSessionAdapterLike = {
+type MagicLinkSessionAdapterLike = {
 	createSession: (userId: string) => Promise<Session>;
 	setSessionCookie?: (
 		cookies: RequestEventLike["cookies"],
@@ -58,7 +58,7 @@ export type MagicLinkSessionAdapterLike = {
 	) => void;
 };
 
-export type MagicLinkRequestConfig = {
+type MagicLinkRequestConfig = {
 	magicLinkAdapter: MagicLinkAdapterLike;
 	databaseAdapter?: Pick<MagicLinkUserAdapterLike, "getUserByEmail">;
 	sendEmail: (payload: {
@@ -87,7 +87,7 @@ export type MagicLinkRequestConfig = {
 	key?: (event: RequestEventLike) => string;
 };
 
-export type MagicLinkVerifyConfig = {
+type MagicLinkVerifyConfig = {
 	magicLinkAdapter: MagicLinkAdapterLike;
 	databaseAdapter?: MagicLinkUserAdapterLike;
 	sessionAdapter: MagicLinkSessionAdapterLike;
@@ -278,6 +278,11 @@ export function createMagicLinkVerifyHandler(
 		const token =
 			(typeof data["token"] === "string" && data["token"]) ||
 			event.url.searchParams.get("token");
+		const redirectToRaw =
+			(typeof data["redirectTo"] === "string" && data["redirectTo"]) ||
+			event.url.searchParams.get("redirectTo") ||
+			"";
+		const redirectTo = isSafeRedirectPath(redirectToRaw) ? redirectToRaw : "";
 		const otp = (typeof data["otp"] === "string" && data["otp"]) || (typeof data["code"] === "string" && data["code"]);
 		const emailInput =
 			(typeof data["email"] === "string" && data["email"]) ||
@@ -403,7 +408,7 @@ export function createMagicLinkVerifyHandler(
 		}
 
 		if (event.request.method === "GET") {
-			throw redirect(302, redirectAfterLogin);
+			throw redirect(302, redirectTo || redirectAfterLogin);
 		}
 
 		return jsonResponse({ ok: true, user: sanitizeUser(user) });

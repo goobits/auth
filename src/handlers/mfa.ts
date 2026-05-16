@@ -2,7 +2,7 @@ import { generateSecret, createOtpAuthURL, verifyTOTP } from "../mfa/totp.js";
 import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from "../mfa/backup-codes.js";
 import type { RequestEventLike } from "../types/auth.js";
 
-export type MfaStore = {
+type MfaStore = {
 	setSecret: (userId: string, secret: string) => Promise<void>;
 	setBackupCodes: (userId: string, codes: string[]) => Promise<void>;
 	enableMfa: (userId: string) => Promise<void>;
@@ -12,7 +12,7 @@ export type MfaStore = {
 	consumeBackupCode: (userId: string, hash: string) => Promise<void>;
 };
 
-export type MfaConfig = {
+type MfaConfig = {
 	getUserId: (locals: RequestEventLike["locals"]) => string | null;
 	store: MfaStore;
 	issuer?: string;

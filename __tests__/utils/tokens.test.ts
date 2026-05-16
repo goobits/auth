@@ -52,25 +52,31 @@ describe('verification tokens', () => {
 	it('consumes and deletes token', async () => {
 		const adapter = createAdapter()
 		const expiresAt = new Date(Date.now() + 10000)
-		await adapter.create({ userId: 'u1', type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET, token: 't1', expiresAt })
-		const user = await consumeVerificationToken({ adapter, token: 't1', type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET })
+		const token = 't1'
+		const tokenHash = await sha256Hex(token)
+		await adapter.create({ userId: 'u1', type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET, token: tokenHash, expiresAt })
+		const user = await consumeVerificationToken({ adapter, token, type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET })
 		expect((user as { id: string }).id).toBe('u1')
-		expect(adapter._tokens.has('t1')).toBe(false)
+		expect(adapter._tokens.has(tokenHash)).toBe(false)
 	})
 
 	it('returns null for expired tokens', async () => {
 		const adapter = createAdapter()
-		await adapter.create({ userId: 'u1', type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET, token: 't2', expiresAt: new Date(Date.now() - 1000) })
-		const user = await consumeVerificationToken({ adapter, token: 't2', type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET })
+		const token = 't2'
+		const tokenHash = await sha256Hex(token)
+		await adapter.create({ userId: 'u1', type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET, token: tokenHash, expiresAt: new Date(Date.now() - 1000) })
+		const user = await consumeVerificationToken({ adapter, token, type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET })
 		expect(user).toBeNull()
 	})
 
 	it('getUserForVerificationToken respects expiry and sanitize', async () => {
 		const adapter = createAdapter()
-		await adapter.create({ userId: 'u1', type: VERIFICATION_TOKEN_TYPES.EMAIL_UPDATE, token: 't3', expiresAt: new Date(Date.now() + 1000) })
+		const token = 't3'
+		const tokenHash = await sha256Hex(token)
+		await adapter.create({ userId: 'u1', type: VERIFICATION_TOKEN_TYPES.EMAIL_UPDATE, token: tokenHash, expiresAt: new Date(Date.now() + 1000) })
 		const user = await getUserForVerificationToken({
 			adapter,
-			token: 't3',
+			token,
 			type: VERIFICATION_TOKEN_TYPES.EMAIL_UPDATE,
 			sanitizeUser: (u: Record<string, unknown>) => ({ id: u["id"] })
 		})

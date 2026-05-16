@@ -32,7 +32,7 @@ export type DeleteQuery = {
 	where: (condition: SQLWrapper) => Promise<void>;
 };
 
-export type DrizzleDatabase = {
+export type DrizzleDbLike = {
 	select(): SelectQuery<DrizzleRow>;
 	select(fields: Record<string, DrizzleTable>): SelectQuery<Record<string, DrizzleRow>>;
 	insert: (table: DrizzleTable) => InsertQuery;

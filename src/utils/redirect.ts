@@ -10,3 +10,33 @@ export function isSafeRedirectPath(value: string): boolean {
 	return true;
 }
 
+export type SafeRedirectOptions = {
+	allowedPrefixes?: readonly string[];
+	baseUrl?: string;
+};
+
+export function normalizeSafeRedirectPath(
+	value: unknown,
+	options: SafeRedirectOptions = {},
+): string | null {
+	if (typeof value !== "string") return null;
+	const trimmed = value.trim();
+	if (!isSafeRedirectPath(trimmed)) return null;
+
+	let parsed: URL;
+	try {
+		parsed = new URL(trimmed, options.baseUrl ?? "https://auth.local");
+	} catch {
+		return null;
+	}
+	const pathname = parsed.pathname;
+	const allowedPrefixes = options.allowedPrefixes ?? [];
+	if (allowedPrefixes.length > 0) {
+		const isAllowed = allowedPrefixes.some(
+			(prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+		);
+		if (!isAllowed) return null;
+	}
+
+	return `${pathname}${parsed.search}${parsed.hash}`;
+}
