@@ -25,7 +25,6 @@ type AuthAuditEvent =
 	| "magic_link.expired"
 	| "webauthn.challenge_missing"
 	| "webauthn.challenge_invalid_type"
-	| "webauthn.challenge_expired"
 	| "webauthn.credential_missing"
 	| "webauthn.authentication_failed"
 	| "session.revoked";
@@ -64,7 +63,8 @@ export function withAuditLogging({
 				try {
 					auditContext["requestBody"] = await request.clone().json();
 				} catch (error) {
-					auditContext["requestBodyError"] = error instanceof Error ? error.message : String(error);
+					auditContext["requestBodyError"] =
+						error instanceof Error ? error.message : String(error);
 				}
 			}
 
@@ -85,7 +85,8 @@ export function withAuditLogging({
 						const responseBody = await response.clone().json();
 						result["responseBody"] = responseBody;
 					} catch (error) {
-						result["responseBodyError"] = error instanceof Error ? error.message : String(error);
+						result["responseBodyError"] =
+							error instanceof Error ? error.message : String(error);
 					}
 				}
 

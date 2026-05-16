@@ -1,6 +1,5 @@
 import { validateCsrfRequest } from "./csrf.js";
 import { createRateLimiter } from "./rate-limit.js";
-import type { RateLimitStore } from "./rate-limit.js";
 import { createAuthEvent, type AuthEventEmitter } from "./events.js";
 import type { RequestEventLike } from "../types/auth.js";
 import type { CsrfStore } from "./csrf.js";
@@ -35,14 +34,13 @@ export type SecurityPolicySettings = {
 		checkExpiry: boolean;
 		store?: CsrfStore;
 	};
-		rateLimit: {
-			mode: PolicyMode;
-			max: number;
-			windowMs: number;
-			keyPrefix: string;
-			trustProxyHeader: boolean;
-			store?: RateLimitStore;
-		};
+	rateLimit: {
+		mode: PolicyMode;
+		max: number;
+		windowMs: number;
+		keyPrefix: string;
+		trustProxyHeader: boolean;
+	};
 	audit: {
 		mode: PolicyMode;
 		emitter?: AuthEventEmitter;
@@ -78,7 +76,6 @@ export function applySecurityPolicy({
 		windowMs: settings.rateLimit.windowMs,
 		max: settings.rateLimit.max,
 		keyPrefix: settings.rateLimit.keyPrefix,
-		...(settings.rateLimit.store ? { store: settings.rateLimit.store } : {}),
 	});
 
 	return async (event: RequestEventLike): Promise<Response> => {

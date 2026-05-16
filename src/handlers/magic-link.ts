@@ -278,11 +278,6 @@ export function createMagicLinkVerifyHandler(
 		const token =
 			(typeof data["token"] === "string" && data["token"]) ||
 			event.url.searchParams.get("token");
-		const redirectToRaw =
-			(typeof data["redirectTo"] === "string" && data["redirectTo"]) ||
-			event.url.searchParams.get("redirectTo") ||
-			"";
-		const redirectTo = isSafeRedirectPath(redirectToRaw) ? redirectToRaw : "";
 		const otp = (typeof data["otp"] === "string" && data["otp"]) || (typeof data["code"] === "string" && data["code"]);
 		const emailInput =
 			(typeof data["email"] === "string" && data["email"]) ||
@@ -408,7 +403,7 @@ export function createMagicLinkVerifyHandler(
 		}
 
 		if (event.request.method === "GET") {
-			throw redirect(302, redirectTo || redirectAfterLogin);
+			throw redirect(302, redirectAfterLogin);
 		}
 
 		return jsonResponse({ ok: true, user: sanitizeUser(user) });
