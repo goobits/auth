@@ -18,6 +18,10 @@ type TokenUserRecord = {
 	user: User;
 };
 
+function getOwnOrFallback(row: D1Row, key: string, fallback: D1Value | undefined): D1Value | undefined {
+	return Object.prototype.hasOwnProperty.call(row, key) ? row[key] : fallback;
+}
+
 export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 	private db: D1DatabaseLike;
 	private tokensTable: string;
@@ -70,16 +74,18 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 
 	private mapTokenAndUser(row: D1Row | null): TokenUserRecord | null {
 		if (!row) return null;
-		const tokenId = row[this.columns.id];
-		const userId = row[this.columns.userId];
-		const type = row[this.columns.type];
-		const token = row[this.columns.token];
-		const expiresAt = row[this.columns.expiresAt];
-		const email = row[this.userColumns.email];
-		const name = row[this.userColumns.name];
-		const avatar = row[this.userColumns.avatar];
+		const tokenId = row["token_id"] ?? row[this.columns.id];
+		const tokenUserId = row["token_user_id"] ?? row[this.columns.userId];
+		const type = row["token_type"] ?? row[this.columns.type];
+		const token = row["verification_token"] ?? row[this.columns.token];
+		const expiresAt = row["token_expires_at"] ?? row[this.columns.expiresAt];
+		const userId = row["user_id"] ?? row[this.userColumns.id] ?? tokenUserId;
+		const email = row["user_email"] ?? row[this.userColumns.email];
+		const name = row["user_name"] ?? row[this.userColumns.name];
+		const avatar = getOwnOrFallback(row, "user_avatar", row[this.userColumns.avatar]);
 		if (
 			(typeof tokenId !== "string" && typeof tokenId !== "number") ||
+			(typeof tokenUserId !== "string" && typeof tokenUserId !== "number") ||
 			(typeof userId !== "string" && typeof userId !== "number") ||
 			typeof type !== "string" ||
 			typeof token !== "string" ||
@@ -94,7 +100,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		if (Number.isNaN(expiresAtDate.getTime())) return null;
 		const tokenRecord: VerificationToken = {
 			id: String(tokenId),
-			userId: String(userId),
+			userId: String(tokenUserId),
 			type,
 			token,
 			expiresAt: expiresAtDate,
@@ -138,7 +144,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 	async findByToken({ token, type }: { token: string; type: string }): Promise<TokenUserRecord | null> {
 		const row = await this.db
 			.prepare(
-				`SELECT t.*, u.* FROM ${this.tokensTable} t JOIN ${this.usersTable} u ON t.${this.columns.userId} = u.${this.userColumns.id} WHERE t.${this.columns.token} = ? AND t.${this.columns.type} = ? LIMIT 1`,
+				`SELECT t.${this.columns.id} AS token_id, t.${this.columns.userId} AS token_user_id, t.${this.columns.type} AS token_type, t.${this.columns.token} AS verification_token, t.${this.columns.expiresAt} AS token_expires_at, u.${this.userColumns.id} AS user_id, u.${this.userColumns.email} AS user_email, u.${this.userColumns.name} AS user_name, u.${this.userColumns.avatar} AS user_avatar FROM ${this.tokensTable} t JOIN ${this.usersTable} u ON t.${this.columns.userId} = u.${this.userColumns.id} WHERE t.${this.columns.token} = ? AND t.${this.columns.type} = ? LIMIT 1`,
 			)
 			.bind(token, type)
 			.first();
@@ -186,7 +192,17 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 			.bind(this.coerceDbId(String(userId)))
 			.first();
 		// Reuse the token+user mapper by merging the rows.
-		const merged: D1Row = { ...deletedRow, ...(userRow ?? {}) };
+		const merged: D1Row = {
+			token_id: deletedRow[this.columns.id] ?? null,
+			token_user_id: deletedRow[this.columns.userId] ?? null,
+			token_type: deletedRow[this.columns.type] ?? null,
+			verification_token: deletedRow[this.columns.token] ?? null,
+			token_expires_at: deletedRow[this.columns.expiresAt] ?? null,
+			user_id: userRow?.[this.userColumns.id] ?? userId,
+			user_email: userRow?.[this.userColumns.email] ?? null,
+			user_name: userRow?.[this.userColumns.name] ?? null,
+			user_avatar: userRow?.[this.userColumns.avatar] ?? null,
+		};
 		return this.mapTokenAndUser(merged);
 	}
 }

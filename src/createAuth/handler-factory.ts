@@ -213,17 +213,20 @@ export function createHandlers(
 	const handleHooks: AuthHandlers["hooks"] = async ({ event, resolve }) => {
 		const method = event.request.method.toUpperCase();
 		const safeMethod = method === "GET" || method === "HEAD" || method === "OPTIONS";
-		if (safeMethod && security.csrf.mode !== "off") {
-			const existingToken = event.cookies.get(security.csrf.cookieName);
-			if (!existingToken) {
-				await issueCsrfToken({
-					cookies: event.cookies,
-					cookieName: security.csrf.cookieName,
-					secure: defaults.cookieConfig.secure,
-					...(security.csrf.store ? { store: security.csrf.store } : {}),
-				});
+			if (safeMethod && security.csrf.mode !== "off") {
+				const existingToken = event.cookies.get(security.csrf.cookieName);
+				if (!existingToken) {
+					await issueCsrfToken({
+						cookies: event.cookies,
+						cookieName: security.csrf.cookieName,
+						secure: defaults.cookieConfig.secure,
+						...(security.csrf.httpOnly !== undefined
+							? { httpOnly: security.csrf.httpOnly }
+							: {}),
+						...(security.csrf.store ? { store: security.csrf.store } : {}),
+					});
+				}
 			}
-		}
 		const sessionCookieName =
 			(adapters.session as { cookieName?: string })["cookieName"] ?? "session";
 		const sessionId = event.cookies.get(sessionCookieName);

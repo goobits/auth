@@ -137,6 +137,7 @@ export type AuthSecurityConfig = {
 		cookieName?: string;
 		headerName?: string;
 		checkExpiry?: boolean;
+		httpOnly?: boolean;
 	};
 	rateLimit?: {
 		mode?: SecurityMode;

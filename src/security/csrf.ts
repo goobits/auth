@@ -57,6 +57,7 @@ export async function issueCsrfToken({
 	ttlMs = 60 * 60 * 1000,
 	cookieName = CSRF_COOKIE_NAME,
 	secure = true,
+	httpOnly = false,
 	sameSite = "lax",
 	path = "/",
 }: {
@@ -65,6 +66,7 @@ export async function issueCsrfToken({
 	ttlMs?: number;
 	cookieName?: string;
 	secure?: boolean;
+	httpOnly?: boolean;
 	sameSite?: "lax" | "strict" | "none";
 	path?: string;
 } = {}): Promise<string> {
@@ -78,7 +80,7 @@ export async function issueCsrfToken({
 	}
 
 	cookies.set(cookieName, token, {
-		httpOnly: true,
+		httpOnly,
 		secure,
 		sameSite,
 		path,

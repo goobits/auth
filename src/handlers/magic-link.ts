@@ -108,10 +108,12 @@ type RateLimitKeyConfig = {
 
 function getRateLimitKey(event: RequestEventLike, config: RateLimitKeyConfig): string {
 	if (config?.key) return config.key(event);
-	if (event.getClientAddress) return event.getClientAddress();
 	if (config?.trustProxyHeader) {
-		return event.request.headers.get("x-forwarded-for") || "unknown";
+		const forwardedFor = event.request.headers.get("x-forwarded-for");
+		const firstForwardedIp = forwardedFor?.split(",")[0]?.trim();
+		if (firstForwardedIp) return firstForwardedIp;
 	}
+	if (event.getClientAddress) return event.getClientAddress();
 	return "unknown";
 }
 
