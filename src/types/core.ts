@@ -86,6 +86,12 @@ export type WebAuthnCredential = {
 	updatedAt: Date;
 };
 
+export type MfaStatus = {
+	enabled: boolean;
+	enabledAt: Date | null;
+	backupCodeCount: number;
+};
+
 export type SessionSummary = {
 	id: string;
 	userId: string;

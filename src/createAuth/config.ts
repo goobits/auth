@@ -24,6 +24,9 @@ export function validateConfig(config: AuthConfig): void {
 	if (config.webauthn && !config.adapters.webauthn) {
 		throw new Error("createAuth webauthn requires adapters.webauthn");
 	}
+	if (config.mfa && !config.adapters.mfa) {
+		throw new Error("createAuth mfa requires adapters.mfa");
+	}
 }
 
 export function resolveDefaults(config: AuthConfig): ResolvedDefaults {

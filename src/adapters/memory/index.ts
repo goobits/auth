@@ -2,7 +2,9 @@ import { encodeBase64url } from '@oslojs/encoding'
 import type { Cookies } from '@sveltejs/kit'
 
 import type { OAuthProfile, OAuthTokens, Session, User, WebAuthnCredential } from '../../types/index.js'
+import type { MfaStatus } from '../../types/index.js'
 import { UserAdapter } from '../database/base.js'
+import { MfaAdapter } from '../mfa/base.js'
 import { TokenAdapter } from '../oauth-token/base.js'
 import { SessionAdapter } from '../session/base.js'
 import { WebAuthnAdapter } from '../webauthn/base.js'
@@ -299,6 +301,60 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 	}
 }
 
+export class MemoryMfaAdapter extends MfaAdapter {
+	#backupCodes = new Map<string, Set<string>>()
+	#factors = new Map<string, { enabledAt: Date | null; secret: string }>()
+
+	async setSecret(userId: string, secret: string): Promise<void> {
+		const existing = this.#factors.get(userId)
+		this.#factors.set(userId, {
+			enabledAt: existing?.enabledAt ?? null,
+			secret
+		})
+	}
+
+	async getSecret(userId: string): Promise<string | null> {
+		return this.#factors.get(userId)?.secret ?? null
+	}
+
+	async enableMfa(userId: string): Promise<void> {
+		const existing = this.#factors.get(userId)
+		if (!existing) {
+			return
+		}
+		this.#factors.set(userId, {
+			...existing,
+			enabledAt: new Date()
+		})
+	}
+
+	async disableMfa(userId: string): Promise<void> {
+		this.#factors.delete(userId)
+		this.#backupCodes.delete(userId)
+	}
+
+	async setBackupCodes(userId: string, codes: string[]): Promise<void> {
+		this.#backupCodes.set(userId, new Set(codes))
+	}
+
+	async getBackupCodes(userId: string): Promise<string[]> {
+		return [ ...(this.#backupCodes.get(userId) ?? []) ]
+	}
+
+	async consumeBackupCode(userId: string, hash: string): Promise<void> {
+		this.#backupCodes.get(userId)?.delete(hash)
+	}
+
+	async getStatus(userId: string): Promise<MfaStatus> {
+		const factor = this.#factors.get(userId)
+		return {
+			backupCodeCount: this.#backupCodes.get(userId)?.size ?? 0,
+			enabled: Boolean(factor?.enabledAt),
+			enabledAt: factor?.enabledAt ?? null
+		}
+	}
+}
+
 export function createMemoryAuthAdapters(input: {
 	cookieDomain?: string;
 	cookieName: string;
@@ -312,6 +368,7 @@ export function createMemoryAuthAdapters(input: {
 			secureCookies: input.secureCookies,
 			users: user
 		}),
+		mfa: new MemoryMfaAdapter(),
 		user,
 		webauthn: new MemoryWebAuthnAdapter()
 	}

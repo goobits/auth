@@ -31,6 +31,9 @@ export {
 	D1MagicLinkAdapter,
 } from "./magic-link/index.js";
 
+// MFA Adapters
+export { MfaAdapter } from "./mfa/index.js";
+
 // WebAuthn Adapters
 export {
 	WebAuthnAdapter,

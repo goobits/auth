@@ -31,6 +31,7 @@ const commonEntries = [
 	"src/adapters/memory/index.ts",
 	"src/adapters/verification-token/index.ts",
 	"src/adapters/magic-link/index.ts",
+	"src/adapters/mfa/index.ts",
 	"src/adapters/webauthn/index.ts",
 	"src/providers/index.ts",
 	"src/handlers/index.ts",

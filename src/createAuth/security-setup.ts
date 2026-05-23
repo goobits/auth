@@ -120,6 +120,11 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			"webauthn.register.verify": { csrf: merged.csrf?.mode ?? "optional" },
 			"webauthn.login.options": { csrf: merged.csrf?.mode ?? "optional" },
 			"webauthn.login.verify": { csrf: merged.csrf?.mode ?? "optional" },
+			"mfa.status": { csrf: "off" },
+			"mfa.enroll": { csrf: merged.csrf?.mode ?? "optional" },
+			"mfa.verify": { csrf: merged.csrf?.mode ?? "optional" },
+			"mfa.disable": { csrf: merged.csrf?.mode ?? "optional" },
+			"mfa.backup_code": { csrf: merged.csrf?.mode ?? "optional" },
 			"sessions.list": { csrf: "off" },
 			"sessions.revoke": { csrf: merged.csrf?.mode ?? "optional" },
 		},
@@ -186,6 +191,35 @@ export function applyPolicies(
 			loginVerify: applySecurityPolicy({
 				handler: handlers.webauthn.loginVerify,
 				routeId: "webauthn.login.verify",
+				settings: security,
+			}),
+		};
+	}
+	if (handlers.mfa) {
+		wrapped.mfa = {
+			status: applySecurityPolicy({
+				handler: handlers.mfa.status,
+				routeId: "mfa.status",
+				settings: security,
+			}),
+			enroll: applySecurityPolicy({
+				handler: handlers.mfa.enroll,
+				routeId: "mfa.enroll",
+				settings: security,
+			}),
+			verify: applySecurityPolicy({
+				handler: handlers.mfa.verify,
+				routeId: "mfa.verify",
+				settings: security,
+			}),
+			disable: applySecurityPolicy({
+				handler: handlers.mfa.disable,
+				routeId: "mfa.disable",
+				settings: security,
+			}),
+			backupCode: applySecurityPolicy({
+				handler: handlers.mfa.backupCode,
+				routeId: "mfa.backup_code",
 				settings: security,
 			}),
 		};

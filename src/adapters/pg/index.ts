@@ -3,8 +3,10 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import type { Cookies } from '@sveltejs/kit'
 
 import type { OAuthProfile, Session, User } from '../../types/index.js'
+import type { MfaStatus } from '../../types/index.js'
 import type { WebAuthnCredential } from '../../types/index.js'
 import { UserAdapter } from '../database/base.js'
+import { MfaAdapter } from '../mfa/base.js'
 import { SessionAdapter } from '../session/base.js'
 import { WebAuthnAdapter } from '../webauthn/base.js'
 
@@ -56,6 +58,17 @@ type WebAuthnCredentialRow = {
 	transports: string[] | null;
 	updated_at: Date;
 	user_id: string;
+}
+
+type MfaFactorRow = {
+	enabled_at: Date | null;
+	secret: string;
+	user_id: string;
+}
+
+type MfaStatusRow = {
+	backup_code_count: string | number;
+	enabled_at: Date | null;
 }
 
 export class PgUserAdapter extends UserAdapter {
@@ -480,6 +493,99 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 	}
 }
 
+export class PgMfaAdapter extends MfaAdapter {
+	#db: PgPoolLike
+
+	constructor({ db }: { db: PgPoolLike }) {
+		super()
+		this.#db = db
+	}
+
+	async setSecret(userId: string, secret: string): Promise<void> {
+		await this.#db.query(
+			`
+			INSERT INTO auth_mfa_factors (user_id, secret)
+			VALUES ($1, $2)
+			ON CONFLICT (user_id) DO UPDATE SET
+				secret = EXCLUDED.secret,
+				updated_at = now()
+		`,
+			[ userId, secret ]
+		)
+	}
+
+	async getSecret(userId: string): Promise<string | null> {
+		const row = (
+			await this.#db.query<MfaFactorRow>(
+				'SELECT user_id, secret, enabled_at FROM auth_mfa_factors WHERE user_id = $1',
+				[ userId ]
+			)
+		).rows[0]
+		return row?.secret ?? null
+	}
+
+	async enableMfa(userId: string): Promise<void> {
+		await this.#db.query(
+			'UPDATE auth_mfa_factors SET enabled_at = COALESCE(enabled_at, now()), updated_at = now() WHERE user_id = $1',
+			[ userId ]
+		)
+	}
+
+	async disableMfa(userId: string): Promise<void> {
+		await this.#db.query('DELETE FROM auth_mfa_backup_codes WHERE user_id = $1', [ userId ])
+		await this.#db.query('DELETE FROM auth_mfa_factors WHERE user_id = $1', [ userId ])
+	}
+
+	async setBackupCodes(userId: string, codes: string[]): Promise<void> {
+		await this.#db.query('DELETE FROM auth_mfa_backup_codes WHERE user_id = $1', [ userId ])
+		for (const hash of codes) {
+			await this.#db.query(
+				'INSERT INTO auth_mfa_backup_codes (user_id, code_hash) VALUES ($1, $2)',
+				[ userId, hash ]
+			)
+		}
+	}
+
+	async getBackupCodes(userId: string): Promise<string[]> {
+		const rows = (
+			await this.#db.query<{ code_hash: string }>(
+				'SELECT code_hash FROM auth_mfa_backup_codes WHERE user_id = $1 ORDER BY created_at ASC',
+				[ userId ]
+			)
+		).rows
+		return rows.map((row) => row.code_hash)
+	}
+
+	async consumeBackupCode(userId: string, hash: string): Promise<void> {
+		await this.#db.query(
+			'DELETE FROM auth_mfa_backup_codes WHERE user_id = $1 AND code_hash = $2',
+			[ userId, hash ]
+		)
+	}
+
+	async getStatus(userId: string): Promise<MfaStatus> {
+		const row = (
+			await this.#db.query<MfaStatusRow>(
+				`
+				SELECT
+					f.enabled_at,
+					COUNT(c.code_hash) AS backup_code_count
+				FROM auth_mfa_factors f
+				LEFT JOIN auth_mfa_backup_codes c ON c.user_id = f.user_id
+				WHERE f.user_id = $1
+				GROUP BY f.enabled_at
+			`,
+				[ userId ]
+			)
+		).rows[0]
+		return {
+			backupCodeCount: Number(row?.backup_code_count ?? 0),
+			enabled: Boolean(row?.enabled_at),
+			enabledAt: row?.enabled_at ?? null
+		}
+	}
+}
+
 export function createPgAuthAdapters(input: {
 	cookieDomain?: string;
 	cookieName: string;
@@ -487,6 +593,7 @@ export function createPgAuthAdapters(input: {
 	secureCookies: boolean;
 }) {
 	return {
+		mfa: new PgMfaAdapter({ db: input.db }),
 		session: new PgSessionAdapter(input),
 		user: new PgUserAdapter({ db: input.db }),
 		webauthn: new PgWebAuthnAdapter({ db: input.db })
@@ -530,6 +637,21 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
 
 CREATE INDEX IF NOT EXISTS auth_sessions_user_id_idx ON auth_sessions(user_id);
 CREATE INDEX IF NOT EXISTS auth_sessions_expires_at_idx ON auth_sessions(expires_at);
+
+CREATE TABLE IF NOT EXISTS auth_mfa_factors (
+	user_id TEXT PRIMARY KEY REFERENCES auth_users(id) ON DELETE CASCADE,
+	secret TEXT NOT NULL,
+	enabled_at TIMESTAMPTZ,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS auth_mfa_backup_codes (
+	user_id TEXT NOT NULL REFERENCES auth_users(id) ON DELETE CASCADE,
+	code_hash TEXT NOT NULL,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	PRIMARY KEY (user_id, code_hash)
+);
 
 CREATE TABLE IF NOT EXISTS auth_webauthn_challenges (
 	id TEXT PRIMARY KEY,

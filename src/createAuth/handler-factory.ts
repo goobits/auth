@@ -19,6 +19,13 @@ import {
 	createSessionListHandler,
 	createSessionRevokeHandler,
 } from "../handlers/sessions.js";
+import {
+	createMfaBackupCodeHandler,
+	createMfaDisableHandler,
+	createMfaEnrollHandler,
+	createMfaStatusHandler,
+	createMfaVerifyHandler,
+} from "../handlers/mfa.js";
 import { ensureSessionAfterLogin } from "../handlers/session-lifecycle.js";
 import type {
 	AuthConfig,
@@ -35,6 +42,7 @@ import type { User } from "../types/index.js";
 import type { ResolvedDefaults } from "./config.js";
 import type { ResolvedSecurity } from "./security-setup.js";
 import { issueCsrfToken } from "../security/csrf.js";
+import { jsonResponse } from "../utils/http.js";
 
 function resolveOnLoginUserId(
 	hookResult: AuthLoginResult,
@@ -86,6 +94,12 @@ function normalizeMagicLinkConfig(
 	return onLogin ? { ...normalized, onLogin } : normalized;
 }
 
+function asJsonHandler(
+	handler: (event: RequestEventLike) => Promise<unknown>,
+): NonNullable<AuthHandlers["mfa"]>["status"] {
+	return async (event) => jsonResponse(await handler(event as RequestEventLike));
+}
+
 export function createHandlers(
 	config: AuthConfig,
 	defaults: ResolvedDefaults,
@@ -97,6 +111,7 @@ export function createHandlers(
 		hooks = {},
 		magicLink,
 		webauthn,
+		mfa,
 		sessions,
 		sanitizeUser = (user: User | null) => user,
 	} = config;
@@ -213,20 +228,20 @@ export function createHandlers(
 	const handleHooks: AuthHandlers["hooks"] = async ({ event, resolve }) => {
 		const method = event.request.method.toUpperCase();
 		const safeMethod = method === "GET" || method === "HEAD" || method === "OPTIONS";
-			if (safeMethod && security.csrf.mode !== "off") {
-				const existingToken = event.cookies.get(security.csrf.cookieName);
-				if (!existingToken) {
-					await issueCsrfToken({
-						cookies: event.cookies,
-						cookieName: security.csrf.cookieName,
-						secure: defaults.cookieConfig.secure,
-						...(security.csrf.httpOnly !== undefined
-							? { httpOnly: security.csrf.httpOnly }
-							: {}),
-						...(security.csrf.store ? { store: security.csrf.store } : {}),
-					});
-				}
+		if (safeMethod && security.csrf.mode !== "off") {
+			const existingToken = event.cookies.get(security.csrf.cookieName);
+			if (!existingToken) {
+				await issueCsrfToken({
+					cookies: event.cookies,
+					cookieName: security.csrf.cookieName,
+					secure: defaults.cookieConfig.secure,
+					...(security.csrf.httpOnly !== undefined
+						? { httpOnly: security.csrf.httpOnly }
+						: {}),
+					...(security.csrf.store ? { store: security.csrf.store } : {}),
+				});
 			}
+		}
 		const sessionCookieName =
 			(adapters.session as { cookieName?: string })["cookieName"] ?? "session";
 		const sessionId = event.cookies.get(sessionCookieName);
@@ -336,6 +351,23 @@ export function createHandlers(
 		};
 	}
 
+	if (mfa) {
+		const getUserId = (locals: AuthLocals) => locals.user?.id ?? null;
+		const mfaConfig = {
+			getUserId,
+			store: adapters.mfa!,
+			...(mfa.issuer ? { issuer: mfa.issuer } : {}),
+			...(mfa.label ? { label: mfa.label } : {}),
+		};
+		handlers.mfa = {
+			status: asJsonHandler(createMfaStatusHandler(mfaConfig)),
+			enroll: asJsonHandler(createMfaEnrollHandler(mfaConfig)),
+			verify: asJsonHandler(createMfaVerifyHandler(mfaConfig)),
+			disable: asJsonHandler(createMfaDisableHandler(mfaConfig)),
+			backupCode: asJsonHandler(createMfaBackupCodeHandler(mfaConfig)),
+		};
+	}
+
 	if (sessions) {
 		handlers.sessions = {
 			list: createSessionListHandler({
@@ -388,6 +420,26 @@ export function buildRoutes(handlers: AuthHandlers): AuthRoutes {
 		passkeyLoginVerify: () => {
 			if (!handlers.webauthn) throw new Error("WebAuthn handlers not configured");
 			return { POST: handlers.webauthn.loginVerify };
+		},
+		mfaStatus: () => {
+			if (!handlers.mfa) throw new Error("MFA handlers not configured");
+			return { GET: handlers.mfa.status };
+		},
+		mfaEnroll: () => {
+			if (!handlers.mfa) throw new Error("MFA handlers not configured");
+			return { POST: handlers.mfa.enroll };
+		},
+		mfaVerify: () => {
+			if (!handlers.mfa) throw new Error("MFA handlers not configured");
+			return { POST: handlers.mfa.verify };
+		},
+		mfaDisable: () => {
+			if (!handlers.mfa) throw new Error("MFA handlers not configured");
+			return { POST: handlers.mfa.disable };
+		},
+		mfaBackupCode: () => {
+			if (!handlers.mfa) throw new Error("MFA handlers not configured");
+			return { POST: handlers.mfa.backupCode };
 		},
 		sessions: () => {
 			if (!handlers.sessions) throw new Error("Session handlers not configured");

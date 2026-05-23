@@ -18,6 +18,11 @@ export type SecurityRouteId =
 	| "webauthn.register.verify"
 	| "webauthn.login.options"
 	| "webauthn.login.verify"
+	| "mfa.status"
+	| "mfa.enroll"
+	| "mfa.verify"
+	| "mfa.disable"
+	| "mfa.backup_code"
 	| "sessions.list"
 	| "sessions.revoke";
 

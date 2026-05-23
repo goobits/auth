@@ -15,6 +15,11 @@ type PasskeyEndpoints = {
 	passkeyRegisterVerify?: string;
 	passkeyLoginOptions?: string;
 	passkeyLoginVerify?: string;
+	mfaStatus?: string;
+	mfaEnroll?: string;
+	mfaVerify?: string;
+	mfaDisable?: string;
+	mfaBackupCode?: string;
 	sessions?: string;
 };
 
@@ -117,6 +122,11 @@ export function createAuthClient({
 			endpoints.passkeyLoginOptions || "/auth/passkey/login/options",
 		passkeyLoginVerify:
 			endpoints.passkeyLoginVerify || "/auth/passkey/login/verify",
+		mfaStatus: endpoints.mfaStatus || "/auth/mfa/status",
+		mfaEnroll: endpoints.mfaEnroll || "/auth/mfa/enroll",
+		mfaVerify: endpoints.mfaVerify || "/auth/mfa/verify",
+		mfaDisable: endpoints.mfaDisable || "/auth/mfa/disable",
+		mfaBackupCode: endpoints.mfaBackupCode || "/auth/mfa/backup-code",
 		sessions: endpoints.sessions || "/auth/sessions",
 	};
 
@@ -213,6 +223,47 @@ export function createAuthClient({
 				},
 			);
 			return verifyRes.json();
+		},
+
+		async getMfaStatus() {
+			const response = await fetcher(withBase(resolved.mfaStatus), {
+				method: "GET",
+			});
+			return response.json();
+		},
+
+		async enrollMfa() {
+			const response = await fetcher(withBase(resolved.mfaEnroll), {
+				method: "POST",
+			});
+			return response.json();
+		},
+
+		async verifyMfa({ token }: { token: string }) {
+			const form = new FormData();
+			form.set("token", token);
+			const response = await fetcher(withBase(resolved.mfaVerify), {
+				method: "POST",
+				body: form,
+			});
+			return response.json();
+		},
+
+		async disableMfa() {
+			const response = await fetcher(withBase(resolved.mfaDisable), {
+				method: "POST",
+			});
+			return response.json();
+		},
+
+		async useMfaBackupCode({ code }: { code: string }) {
+			const form = new FormData();
+			form.set("code", code);
+			const response = await fetcher(withBase(resolved.mfaBackupCode), {
+				method: "POST",
+				body: form,
+			});
+			return response.json();
 		},
 
 		async listSessions() {
