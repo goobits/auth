@@ -25,6 +25,16 @@ export const drizzleOauthTokensTable = pgTable('oauth_tokens', {
 	updatedAt: timestamp('updated_at').defaultNow()
 })
 
+export const drizzleMagicLinkTokensTable = pgTable('magic_link_tokens', {
+	id: uuid('id').primaryKey().defaultRandom(),
+	userId: uuid('userId'),
+	email: text('email').notNull(),
+	tokenHash: text('tokenHash').notNull(),
+	otpHash: text('otpHash'),
+	expiresAt: timestamp('expiresAt').notNull(),
+	createdAt: timestamp('createdAt').defaultNow()
+})
+
 export function createMockDrizzleDb() {
 	return {
 		select: () => ({
@@ -125,6 +135,15 @@ export async function createIntegrationDrizzleFixture(): Promise<IntegrationDbFi
 			tokens TEXT NOT NULL,
 			created_at TIMESTAMP DEFAULT now(),
 			updated_at TIMESTAMP DEFAULT now()
+		);
+		CREATE TABLE magic_link_tokens (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			"userId" UUID,
+			email TEXT NOT NULL,
+			"tokenHash" TEXT NOT NULL,
+			"otpHash" TEXT,
+			"expiresAt" TIMESTAMP NOT NULL,
+			"createdAt" TIMESTAMP DEFAULT now()
 		);
 	`)
 
