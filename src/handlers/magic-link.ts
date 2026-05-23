@@ -3,7 +3,7 @@ import {
 	generateMagicLinkToken,
 	generateOtp,
 	hashToken,
-} from "../utils/magic-link.js";
+} from "./magic-link.utils.js";
 import { createRateLimiter } from "../security/rate-limit.js";
 import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.js";
 import { jsonResponse, parseRequestData } from "../utils/http.js";
@@ -15,7 +15,7 @@ import type {
 } from "../types/auth.js";
 import type { User } from "../types/index.js";
 import type { Session } from "../types/index.js";
-import { ensureSessionAfterLogin, type OnLoginMode } from "../utils/session-lifecycle.js";
+import { ensureSessionAfterLogin, type OnLoginMode } from "./session-lifecycle.js";
 import { AuthPrincipalResolutionError } from "../errors/auth.js";
 import { auditAuthEvent } from "../security/audit.js";
 import { isSafeRedirectPath } from "../utils/redirect.js";
@@ -60,7 +60,7 @@ type MagicLinkSessionAdapterLike = {
 
 type MagicLinkRequestConfig = {
 	magicLinkAdapter: MagicLinkAdapterLike;
-	databaseAdapter?: Pick<MagicLinkUserAdapterLike, "getUserByEmail">;
+	userAdapter?: Pick<MagicLinkUserAdapterLike, "getUserByEmail">;
 	sendEmail: (payload: {
 		email: string;
 		link: string;
@@ -89,7 +89,7 @@ type MagicLinkRequestConfig = {
 
 type MagicLinkVerifyConfig = {
 	magicLinkAdapter: MagicLinkAdapterLike;
-	databaseAdapter?: MagicLinkUserAdapterLike;
+	userAdapter?: MagicLinkUserAdapterLike;
 	sessionAdapter: MagicLinkSessionAdapterLike;
 	allowSignup?: boolean;
 	createUser?: (email: string, event: RequestEventLike) => Promise<User>;
@@ -135,7 +135,7 @@ export function createMagicLinkRequestHandler(
 ): RequestHandler {
 	const {
 		magicLinkAdapter,
-		databaseAdapter,
+		userAdapter,
 		sendEmail,
 		allowSignup = false,
 		expiresInMs = 15 * 60 * 1000,
@@ -174,8 +174,8 @@ export function createMagicLinkRequestHandler(
 			return jsonResponse({ ok: false, error: "Email required" }, 400);
 		}
 
-		const user = databaseAdapter
-			? await databaseAdapter.getUserByEmail(email)
+		const user = userAdapter
+			? await userAdapter.getUserByEmail(email)
 			: null;
 
 		if (!user && !allowSignup) {
@@ -236,7 +236,7 @@ export function createMagicLinkVerifyHandler(
 ) {
 	const {
 		magicLinkAdapter,
-		databaseAdapter,
+		userAdapter,
 		sessionAdapter,
 		allowSignup = false,
 		createUser,
@@ -349,22 +349,22 @@ export function createMagicLinkVerifyHandler(
 			typeof record["userId"] === "string" ? record["userId"] : null;
 		const recordEmail =
 			typeof record["email"] === "string" ? record["email"] : null;
-		if (databaseAdapter) {
+		if (userAdapter) {
 			if (recordUserId) {
-				user = await databaseAdapter.getUserById(recordUserId);
+				user = await userAdapter.getUserById(recordUserId);
 			}
 			if (!user && (recordEmail || email)) {
-				user = await databaseAdapter.getUserByEmail(recordEmail || email);
+				user = await userAdapter.getUserByEmail(recordEmail || email);
 			}
 		}
 
-		if (!user && allowSignup && databaseAdapter) {
+		if (!user && allowSignup && userAdapter) {
 			if (typeof createUser === "function") {
 				user = await createUser(recordEmail || email, event);
 			} else {
 				const signupEmail = recordEmail || email;
 				const signupName = signupEmail.split("@")[0] ?? "";
-				user = await databaseAdapter.createUser({
+				user = await userAdapter.createUser({
 					id: signupEmail,
 					email: signupEmail,
 					name: signupName,
@@ -373,9 +373,9 @@ export function createMagicLinkVerifyHandler(
 			}
 		}
 
-		if (user && databaseAdapter && user.emailVerified === false) {
+		if (user && userAdapter && user.emailVerified === false) {
 			try {
-				await databaseAdapter.updateUser(user.id, { emailVerified: true });
+				await userAdapter.updateUser(user.id, { emailVerified: true });
 			} catch {}
 		}
 
