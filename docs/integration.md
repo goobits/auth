@@ -13,10 +13,9 @@ If you just want to wire the package into a SvelteKit app, start with
 
 ## The mental model
 
-`createAuth` (and its higher-level wrapper `GoobitsAuth`) does not own any
-storage. You hand it a set of adapter instances; it composes handlers, runs
-the security/CSRF/rate-limit pipeline, and calls into your adapters for the
-actual reads and writes.
+`GoobitsAuth` does not own any storage. You hand it a set of adapter
+instances; it composes handlers, runs the security/CSRF/rate-limit pipeline,
+and calls into your adapters for the actual reads and writes.
 
 Every adapter is an abstract class in `@goobits/auth/adapters`. To implement
 your own, extend the relevant base class and implement its abstract methods.
@@ -30,13 +29,13 @@ MagicLinkAdapter         — optional (required if magicLink config is set)
 WebAuthnAdapter          — optional (required if webauthn config is set)
 ```
 
-`validateConfig` in `createAuth.ts` is the source of truth on which adapters
-are required for which features:
+The `GoobitsAuth` constructor validates which adapters are required for
+which features:
 
-- `adapters.session` is always required.
-- `adapters.magicLink` is required if you pass a `magicLink` config block.
-- `adapters.webauthn` is required if you pass a `webauthn` config block.
-- `adapters.user` is functionally required if you use OAuth providers, magic
+- `adapter.session` is always required.
+- `adapter.magicLink` is required if you pass a `magicLink` config block.
+- `adapter.webauthn` is required if you pass a `webauthn` config block.
+- `adapter.user` is functionally required if you use OAuth providers, magic
   links, or passkeys — the handlers fall back to "anonymous" only when no
   `user` adapter is present, which is rarely useful.
 
@@ -60,11 +59,11 @@ Behavioral expectations:
   expired session IDs. It must not throw.
 - `validateSession` is allowed to **renew** the session and set
   `session.fresh = true` to signal that the cookie should be re-issued; the
-  `hooks` pipeline in `createAuth` checks this and calls `setSessionCookie`.
+  `GoobitsAuth` hook pipeline checks this and calls `setSessionCookie`.
 - `setSessionCookie` is responsible for cookie attributes (`HttpOnly`,
   `Secure`, `SameSite`, path). Don't expect the framework to add them.
-- Optionally expose a `cookieName` property on the adapter instance so
-  `createAuth`'s hook can read the cookie name from there; otherwise it
+- Optionally expose a `cookieName` property on the adapter instance so the
+  framework hook can read the cookie name from there; otherwise it
   defaults to `"session"`.
 
 ### `UserAdapter` (effectively required for OAuth/magic-link/passkey flows)
@@ -93,7 +92,7 @@ Behavioral expectations:
 - `linkOAuthAccount` must be idempotent; the OAuth callback path may retry
   it, and the package swallows duplicate-link errors silently.
 - `requireVerifiedEmailForLinking` (default `true`) is enforced inside
-  `createAuth`, not in your adapter. If you want to allow OAuth-to-existing
+  `GoobitsAuth`, not in your adapter. If you want to allow OAuth-to-existing
   account linking on unverified emails, set the config flag — don't relax
   your adapter logic.
 

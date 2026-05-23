@@ -4,7 +4,6 @@ export {
 	generateEncryptionKey,
 } from "./crypto.js";
 export { sanitizeUser } from "./sanitize.js";
-export { hashPassword, verifyPassword, validatePasswordStrength } from "./password.js";
 export {
 	createOAuthCookies,
 	cleanupOAuthCookies,
@@ -18,6 +17,5 @@ export {
 	consumeVerificationToken,
 	getUserForVerificationToken,
 } from "./tokens.js";
-export { VerificationTokenAdapter } from "../adapters/verification-token/base.js";
 export { redactObject, DEFAULT_REDACT_KEYS } from "./redact.js";
 export { isSafeRedirectPath, normalizeSafeRedirectPath } from "./redirect.js";

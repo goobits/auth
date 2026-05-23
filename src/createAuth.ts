@@ -34,7 +34,7 @@ import type {
 } from "./types/auth.js";
 import type { User } from "./types/index.js";
 import { getLogger, setLogger } from "./utils/logger.js";
-import { ensureSessionAfterLogin } from "./utils/session-lifecycle.js";
+import { ensureSessionAfterLogin } from "./handlers/session-lifecycle.js";
 import { MemoryCsrfStore, CSRF_COOKIE_NAME, CSRF_HEADER_NAME, issueCsrfToken } from "./security/csrf.js";
 import { applySecurityPolicy, type SecurityPolicySettings } from "./security/policy.js";
 import { createSecurityAlertObserver } from "./security/alerts.js";
@@ -489,7 +489,7 @@ function createHandlers(
 		const requestConfig: Parameters<typeof createMagicLinkRequestHandler>[0] = {
 			...normalizedMagicLink,
 			magicLinkAdapter: adapters.magicLink!,
-			...(adapters.user ? { databaseAdapter: adapters.user } : {}),
+			...(adapters.user ? { userAdapter: adapters.user } : {}),
 		};
 		const verifyConfig: Parameters<typeof createMagicLinkVerifyHandler>[0] = {
 			...normalizedMagicLink,
@@ -502,7 +502,7 @@ function createHandlers(
 			...(normalizedMagicLink["sanitizeUser"] === undefined
 				? { sanitizeUser }
 				: {}),
-			...(adapters.user ? { databaseAdapter: adapters.user } : {}),
+			...(adapters.user ? { userAdapter: adapters.user } : {}),
 		};
 		handlers.magicLink = {
 			request: createMagicLinkRequestHandler(requestConfig),
@@ -531,7 +531,7 @@ function createHandlers(
 			rpID: webauthn.rpID ?? "",
 			...(webauthn.timeoutMs ? { timeout: webauthn.timeoutMs } : {}),
 			...(webauthn.userVerification ? { userVerification: webauthn.userVerification } : {}),
-			...(adapters.user ? { databaseAdapter: adapters.user } : {}),
+			...(adapters.user ? { userAdapter: adapters.user } : {}),
 		};
 		const loginVerifyConfig: WebAuthnLoginVerifyHandlerConfig = {
 			webauthnAdapter: adapters.webauthn!,
@@ -543,7 +543,7 @@ function createHandlers(
 			autoCreateSession,
 			onLoginMode,
 			sanitizeUser,
-			...(adapters.user ? { databaseAdapter: adapters.user } : {}),
+			...(adapters.user ? { userAdapter: adapters.user } : {}),
 		};
 		const webauthnOnLogin = webauthn.hooks?.onLogin ?? hooks.onLogin;
 		if (webauthnOnLogin) {

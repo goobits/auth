@@ -43,7 +43,6 @@ async function assertPublicSurface() {
 		"AuthAdapterCapabilityError",
 		"AuthPrincipalResolutionError",
 		"GoobitsAuth",
-		"createAuth",
 		"createCookieLoginContext",
 	];
 	if (rootExports.join(",") !== expectedRoot.join(",")) {

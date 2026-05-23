@@ -1,15 +1,5 @@
-/**
- * Unit Tests for Password Utilities
- *
- * Tests password hashing, verification, and validation functions.
- *
- * To run these tests:
- * cd packages/@goobits/auth
- * npx vitest run __tests__/utils/password.test.ts
- */
-
 import { describe, it, expect } from 'vitest';
-import { hashPassword, verifyPassword, validatePasswordStrength } from '../../src/utils/password.ts';
+import { hashPassword, verifyPassword, validatePasswordStrength } from '../../src/password/index.ts';
 
 const callHashPasswordUnsafe = (password: unknown) =>
 	Reflect.apply(hashPassword, undefined, [password]) as Promise<string>;

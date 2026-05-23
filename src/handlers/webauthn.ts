@@ -20,7 +20,7 @@ import type { User } from "../types/index.js";
 import { generateRandomUUID } from "../utils/crypto.js";
 import { jsonResponse, parseRequestDataWithSchema } from "../utils/http.js";
 import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.js";
-import { ensureSessionAfterLogin, type OnLoginMode } from "../utils/session-lifecycle.js";
+import { ensureSessionAfterLogin, type OnLoginMode } from "./session-lifecycle.js";
 import { AuthPrincipalResolutionError } from "../errors/auth.js";
 import { auditAuthEvent } from "../security/audit.js";
 
@@ -355,14 +355,14 @@ export function createWebAuthnRegisterVerifyHandler(config: WebAuthnRegisterVeri
 
 export type WebAuthnLoginOptionsHandlerConfig = {
 	webauthnAdapter: Pick<WebAuthnAdapter, "listCredentials" | "createChallenge">;
-	databaseAdapter?: { getUserByEmail: (email: string) => Promise<User | null> };
+	userAdapter?: { getUserByEmail: (email: string) => Promise<User | null> };
 	rpID: string;
 	timeout?: number;
 	userVerification?: GenerateAuthenticationOptionsOpts["userVerification"];
 };
 
 export function createWebAuthnLoginOptionsHandler(config: WebAuthnLoginOptionsHandlerConfig): RequestHandler {
-	const { webauthnAdapter, databaseAdapter, rpID, timeout = 60_000, userVerification = "preferred" } = config;
+	const { webauthnAdapter, userAdapter, rpID, timeout = 60_000, userVerification = "preferred" } = config;
 
 	if (!rpID) {
 		throw new Error("createWebAuthnLoginOptionsHandler requires rpID");
@@ -373,8 +373,8 @@ export function createWebAuthnLoginOptionsHandler(config: WebAuthnLoginOptionsHa
 		const email = data?.email ? data.email.toLowerCase() : "";
 		let user: User | null = null;
 
-		if (email && databaseAdapter) {
-			user = await databaseAdapter.getUserByEmail(email);
+		if (email && userAdapter) {
+			user = await userAdapter.getUserByEmail(email);
 		}
 
 		let allowCredentials: GenerateAuthenticationOptionsOpts["allowCredentials"] | undefined;
@@ -418,7 +418,7 @@ export function createWebAuthnLoginOptionsHandler(config: WebAuthnLoginOptionsHa
 
 export type WebAuthnLoginVerifyHandlerConfig = {
 	webauthnAdapter: Pick<WebAuthnAdapter, "getChallenge" | "deleteChallenge" | "getCredential" | "updateCredential">;
-	databaseAdapter?: { getUserById: (id: string) => Promise<User | null> };
+	userAdapter?: { getUserById: (id: string) => Promise<User | null> };
 	sessionAdapter: Pick<SessionAdapter, "createSession" | "setSessionCookie">;
 	rpID: string;
 	origin: string;
@@ -433,7 +433,7 @@ export type WebAuthnLoginVerifyHandlerConfig = {
 export function createWebAuthnLoginVerifyHandler(config: WebAuthnLoginVerifyHandlerConfig): RequestHandler {
 	const {
 		webauthnAdapter,
-		databaseAdapter,
+		userAdapter,
 		sessionAdapter,
 		rpID,
 		origin,
@@ -508,7 +508,7 @@ export function createWebAuthnLoginVerifyHandler(config: WebAuthnLoginVerifyHand
 		});
 		await webauthnAdapter.deleteChallenge(challengeId);
 
-			const user = databaseAdapter ? await databaseAdapter.getUserById(storedCredential.userId) : null;
+			const user = userAdapter ? await userAdapter.getUserById(storedCredential.userId) : null;
 			let userId = storedCredential.userId;
 			if (!userId) {
 				return jsonResponse({ ok: false, error: "Unable to resolve authenticated principal" }, 401);
