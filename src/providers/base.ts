@@ -1,60 +1,44 @@
+import type { OAuthProfile, OAuthTokens } from "../types/core.js";
+
 /**
- * Base OAuth Provider Interface
- * All OAuth providers must implement these methods
+ * Base OAuth Provider Interface.
+ * All OAuth providers must extend this class and implement its abstract methods.
  */
-export class OAuthProvider {
+export abstract class OAuthProvider {
 	name: string;
 	config: Record<string, unknown>;
 
-	/**
-	 * @param {string} name - Provider name (e.g., 'google', 'apple')
-	 * @param {Object} config - Provider configuration
-	 */
 	constructor(name: string, config: Record<string, unknown>) {
 		this.name = name;
 		this.config = config;
 	}
 
 	/**
-	 * Create authorization URL for OAuth flow
-	 * @param {string} state - CSRF state token
-	 * @param {string} codeVerifier - PKCE code verifier
-	 * @param {string[]} scopes - OAuth scopes to request
-	 * @returns {URL} Authorization URL
+	 * Build the authorization URL the user should be redirected to.
+	 * @param state - CSRF state token to include in the URL
+	 * @param codeVerifier - PKCE code verifier
+	 * @param scopes - OAuth scopes to request
 	 */
-	createAuthorizationURL(
+	abstract createAuthorizationURL(
 		state: string,
 		codeVerifier: string,
 		scopes: string[],
-	): URL {
-		throw new Error("createAuthorizationURL must be implemented");
-	}
+	): URL;
 
 	/**
-	 * Validate authorization code and get user profile + tokens
-	 * @param {string} code - Authorization code from callback
-	 * @param {string} codeVerifier - PKCE code verifier
-	 * @returns {Promise<{profile: import('../types/core.js').OAuthProfile, tokens: import('../types/core.js').OAuthTokens}>}
+	 * Exchange the authorization code for tokens and resolve the user profile.
+	 * @param code - Authorization code returned by the provider
+	 * @param codeVerifier - PKCE code verifier matching `createAuthorizationURL`
+	 * @param userData - Optional provider-specific user data (e.g. Apple's `user` form field)
 	 */
-	async getUserProfile(
+	abstract getUserProfile(
 		code: string,
 		codeVerifier: string,
 		userData?: string | null,
-	): Promise<{
-		profile: import("../types/core.js").OAuthProfile;
-		tokens: import("../types/core.js").OAuthTokens;
-	}> {
-		throw new Error("getUserProfile must be implemented");
-	}
+	): Promise<{ profile: OAuthProfile; tokens: OAuthTokens }>;
 
 	/**
-	 * Refresh access token using refresh token
-	 * @param {string} refreshToken - OAuth refresh token
-	 * @returns {Promise<import('../types/core.js').OAuthTokens>}
+	 * Refresh an access token. Throw if the provider doesn't support refresh.
 	 */
-	async refreshAccessToken(
-		refreshToken: string,
-	): Promise<import("../types/core.js").OAuthTokens> {
-		throw new Error("refreshAccessToken must be implemented");
-	}
+	abstract refreshAccessToken(refreshToken: string): Promise<OAuthTokens>;
 }

@@ -80,16 +80,17 @@ export async function consumeVerificationToken({
 	sanitizeUser?: (user: Record<string, unknown>) => unknown;
 }): Promise<unknown | null> {
 	const tokenHash = await sha256Hex(token);
-	const record = await adapter.findByToken({ token: tokenHash, type });
+	// Atomic consume — in-tree adapters override `consumeByToken` with a
+	// single `DELETE ... RETURNING` so two concurrent verifies of the same
+	// token cannot both succeed.
+	const record = await adapter.consumeByToken({ token: tokenHash, type });
 
 	if (!record) {
 		return null;
 	}
 
-	// Delete token immediately (consume it)
-	await adapter.deleteById(record.token.id);
-
-	// Check expiration
+	// Check expiration after consumption: the token is already gone, we just
+	// surface the expiry outcome to the caller.
 	if (record.token.expiresAt.getTime() < Date.now()) {
 		return null;
 	}

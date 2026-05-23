@@ -163,4 +163,32 @@ export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
 				),
 			);
 	}
+
+	override async consumeByToken({
+		token,
+		type,
+	}: {
+		token: string;
+		type: string;
+	}): Promise<TokenUserRecord | null> {
+		// Atomic delete-returning closes the TOCTOU race: only one caller
+		// gets the row back, even under concurrent verifies.
+		const rows = await this.db
+			.delete(this.tokensTable)
+			.where(
+				requireCondition(and(eq(this.tokensTable.token, token), eq(this.tokensTable.type, type))),
+			)
+			.returning();
+		const tokenRecord = toToken(rows[0] ?? null);
+		if (!tokenRecord) return null;
+		// User lookup is a separate read — concurrent calls would only
+		// reach this point for the winner of the delete.
+		const [userRow] = await this.db
+			.select()
+			.from(this.usersTable)
+			.where(eq(requireColumn(this.usersTable, "id"), tokenRecord.userId));
+		const user = toUser(userRow ?? null);
+		if (!user) return null;
+		return { token: tokenRecord, user };
+	}
 }

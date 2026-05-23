@@ -172,4 +172,33 @@ export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
 			.delete(this.tokensTable)
 			.where(eq(requireColumn(this.tokensTable, this.columns.email), email));
 	}
+
+	override async consumeByTokenHash(
+		tokenHash: string,
+	): Promise<MagicLinkToken | null> {
+		const rows = await this.db
+			.delete(this.tokensTable)
+			.where(eq(requireColumn(this.tokensTable, this.columns.tokenHash), tokenHash))
+			.returning();
+		return mapTokenRow(rows[0] ?? null, this.columns);
+	}
+
+	override async consumeByEmailAndOtpHash({
+		email,
+		otpHash,
+	}: {
+		email: string;
+		otpHash: string;
+	}): Promise<MagicLinkToken | null> {
+		const rows = await this.db
+			.delete(this.tokensTable)
+			.where(
+				requireCondition(and(
+					eq(requireColumn(this.tokensTable, this.columns.email), email),
+					eq(requireColumn(this.tokensTable, this.columns.otpHash), otpHash),
+				)),
+			)
+			.returning();
+		return mapTokenRow(rows[0] ?? null, this.columns);
+	}
 }

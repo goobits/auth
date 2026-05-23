@@ -1,4 +1,4 @@
-import { hashPassword, verifyPassword } from "../utils/password.js";
+import { hashPassword, verifyPassword } from "../password/index.js";
 import type { UserAdapter } from "../adapters/database/base.js";
 
 type PasswordValidationResult = { valid: boolean; errors: string[] };

@@ -74,4 +74,40 @@ export abstract class MagicLinkAdapter {
 	 * @returns {Promise<void>}
 	 */
 	abstract deleteByEmail(email: string): Promise<void>;
+
+	/**
+	 * Atomically find-and-consume a token by its hash. Should be the only
+	 * call sites use during verification — the default below is a
+	 * non-atomic find+delete pair (susceptible to TOCTOU under concurrent
+	 * verifies of the same token). Backends that can do this atomically
+	 * (SQL `DELETE ... RETURNING`, in-memory `Map`) should override.
+	 */
+	async consumeByTokenHash(
+		tokenHash: string,
+	): Promise<Record<string, unknown> | null> {
+		const record = await this.findByTokenHash(tokenHash);
+		if (!record) return null;
+		const id = (record as Record<string, unknown>)["id"];
+		if (typeof id === "string") {
+			await this.deleteById(id);
+		}
+		return record as Record<string, unknown>;
+	}
+
+	/**
+	 * Atomically find-and-consume a token by email + OTP hash. Same
+	 * atomicity caveat as `consumeByTokenHash`.
+	 */
+	async consumeByEmailAndOtpHash(params: {
+		email: string;
+		otpHash: string;
+	}): Promise<Record<string, unknown> | null> {
+		const record = await this.findByEmailAndOtpHash(params);
+		if (!record) return null;
+		const id = (record as Record<string, unknown>)["id"];
+		if (typeof id === "string") {
+			await this.deleteById(id);
+		}
+		return record as Record<string, unknown>;
+	}
 }

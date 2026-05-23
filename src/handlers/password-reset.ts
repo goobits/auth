@@ -189,16 +189,28 @@ export function createPasswordResetConfirmHandler(config: {
 				userAdapter,
 			});
 
-			// Invalidate existing sessions after password reset
+			// Invalidate existing sessions after password reset. If this fails,
+			// the user's pre-reset sessions remain valid — that's a security
+			// regression, so we surface a warning instead of silently swallowing.
+			let sessionsInvalidated = true;
 			if (sessionAdapter?.invalidateUserSessions) {
 				try {
 					await sessionAdapter.invalidateUserSessions(user.id);
-				} catch {}
+				} catch (error) {
+					sessionsInvalidated = false;
+					log.error?.(
+						"[PasswordReset] Failed to invalidate existing sessions after reset:",
+						error,
+					);
+				}
 			}
 
 			return {
 				success: true,
-				message: "Password has been reset successfully",
+				message: sessionsInvalidated
+					? "Password has been reset successfully"
+					: "Password reset, but existing sessions could not be invalidated. Sign out from all devices manually.",
+				sessionsInvalidated,
 				redirectTo,
 			};
 		} catch (error) {

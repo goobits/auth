@@ -71,8 +71,8 @@ export default defineConfig([
 		esbuildPlugins: [
 			rewritePlugin([
 				{
-					from: /(^|\/)password\.ts$/,
-					to: (p) => p.replace(/password\.ts$/, "password.node.ts"),
+					from: /(^|\/)password\/index\.ts$/,
+					to: (p) => p.replace(/index\.ts$/, "index.node.ts"),
 				},
 			]),
 		],

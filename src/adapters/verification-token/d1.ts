@@ -161,4 +161,32 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 			.bind(this.coerceDbId(userId), type)
 			.run();
 	}
+
+	override async consumeByToken({
+		token,
+		type,
+	}: {
+		token: string;
+		type: string;
+	}): Promise<TokenUserRecord | null> {
+		// Atomic delete-returning closes the TOCTOU race: only one caller
+		// gets the row back, even under concurrent verifies. We then look
+		// up the user — only the winner of the delete reaches this point.
+		const deletedRow = await this.db
+			.prepare(
+				`DELETE FROM ${this.tokensTable} WHERE ${this.columns.token} = ? AND ${this.columns.type} = ? RETURNING *`,
+			)
+			.bind(token, type)
+			.first();
+		if (!deletedRow) return null;
+		const userId = deletedRow[this.columns.userId];
+		if (typeof userId !== "string" && typeof userId !== "number") return null;
+		const userRow = await this.db
+			.prepare(`SELECT * FROM ${this.usersTable} WHERE ${this.userColumns.id} = ? LIMIT 1`)
+			.bind(this.coerceDbId(String(userId)))
+			.first();
+		// Reuse the token+user mapper by merging the rows.
+		const merged: D1Row = { ...deletedRow, ...(userRow ?? {}) };
+		return this.mapTokenAndUser(merged);
+	}
 }
