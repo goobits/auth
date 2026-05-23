@@ -95,6 +95,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			cookieName: merged.csrf?.cookieName ?? CSRF_COOKIE_NAME,
 			headerName: merged.csrf?.headerName ?? CSRF_HEADER_NAME,
 			checkExpiry: merged.csrf?.checkExpiry ?? false,
+			httpOnly: merged.csrf?.httpOnly ?? false,
 			store: csrfStore,
 		},
 		rateLimit: {

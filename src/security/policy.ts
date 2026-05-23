@@ -33,6 +33,7 @@ export type SecurityPolicySettings = {
 		cookieName: string;
 		headerName: string;
 		checkExpiry: boolean;
+		httpOnly?: boolean;
 		store?: CsrfStore;
 	};
 		rateLimit: {
@@ -64,8 +65,12 @@ function jsonError(status: number, message: string): Response {
 }
 
 function getClientIp(event: RequestEventLike, trustProxyHeader: boolean): string {
+	if (trustProxyHeader) {
+		const forwardedFor = event.request.headers.get("x-forwarded-for");
+		const firstForwardedIp = forwardedFor?.split(",")[0]?.trim();
+		if (firstForwardedIp) return firstForwardedIp;
+	}
 	if (event.getClientAddress) return event.getClientAddress();
-	if (trustProxyHeader) return event.request.headers.get("x-forwarded-for") ?? "unknown";
 	return "unknown";
 }
 

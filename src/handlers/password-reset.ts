@@ -52,13 +52,13 @@ export function createPasswordResetRequestHandler(config: {
 		}
 
 		if (rateLimit?.check) {
+			const forwardedFor = rateLimit?.trustProxyHeader
+				? event.request.headers.get("x-forwarded-for")
+				: null;
+			const firstForwardedIp = forwardedFor?.split(",")[0]?.trim();
 			const key = rateLimit.key
 				? rateLimit.key(event)
-				: event.getClientAddress
-					? event.getClientAddress()
-					: rateLimit?.trustProxyHeader
-						? event.request.headers.get("x-forwarded-for") || "unknown"
-						: "unknown";
+				: firstForwardedIp || event.getClientAddress?.() || "unknown";
 			const result = await rateLimit.check(key);
 			if (!result?.allowed) {
 				return {

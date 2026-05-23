@@ -111,6 +111,13 @@ function createMockDb() {
 					return { meta: { changes: 0 } };
 				},
 				first() {
+					if (sql.startsWith('DELETE FROM verification_tokens') && sql.includes('RETURNING')) {
+						const [token, type] = bound;
+						const vt = findWhere('verification_tokens', (r) => r.token === token && r.type === type);
+						if (!vt) return null;
+						deleteWhere('verification_tokens', (r) => r.id === vt.id);
+						return vt;
+					}
 					if (sql.includes('FROM users') && sql.includes('WHERE id')) {
 						const [id] = bound;
 						return findWhere('users', (r) => r.id === id);
@@ -141,6 +148,19 @@ function createMockDb() {
 						const vt = findWhere('verification_tokens', (r) => r.token === token && r.type === type);
 						if (!vt) return null;
 						const user = findWhere('users', (r) => r.id === vt.user_id);
+						if (sql.includes(' AS token_id')) {
+							return {
+								token_id: vt.id,
+								token_user_id: vt.user_id,
+								token_type: vt.type,
+								verification_token: vt.token,
+								token_expires_at: vt.expires_at,
+								user_id: user?.id,
+								user_email: user?.email,
+								user_name: user?.name,
+								user_avatar: user?.avatar ?? null,
+							};
+						}
 						return { ...vt, ...user };
 					}
 					return null;
@@ -191,5 +211,54 @@ describe('D1 adapters', () => {
 		await tokens.create({ userId: user.id, type: 'email_verification', token: 't', expiresAt: new Date(Date.now() + 1000) });
 		const record = await tokens.findByToken({ token: 't', type: 'email_verification' });
 		expect(record?.user?.email).toBe('c@d.com');
+	});
+
+	it('keeps D1 verification token and user ids distinct', async () => {
+		const db = createMockDb();
+		const userAdapter = new D1UserAdapter(db);
+		const user = await userAdapter.createUser({ email: 'token-owner@example.com', name: 'Owner' });
+		const tokens = new D1VerificationTokenAdapter(db);
+		await tokens.create({
+			userId: user.id,
+			type: 'email_verification',
+			token: 'distinct-token',
+			expiresAt: new Date(Date.now() + 1000)
+		});
+
+		const record = await tokens.findByToken({
+			token: 'distinct-token',
+			type: 'email_verification'
+		});
+
+		expect(record?.token.id).not.toBe(user.id);
+		expect(record?.token.userId).toBe(user.id);
+		expect(record?.user.id).toBe(user.id);
+	});
+
+	it('atomically consumes D1 verification tokens without id collisions', async () => {
+		const db = createMockDb();
+		const userAdapter = new D1UserAdapter(db);
+		const user = await userAdapter.createUser({ email: 'consume-owner@example.com', name: 'Owner' });
+		const tokens = new D1VerificationTokenAdapter(db);
+		await tokens.create({
+			userId: user.id,
+			type: 'email_verification',
+			token: 'consume-token',
+			expiresAt: new Date(Date.now() + 1000)
+		});
+
+		const consumed = await tokens.consumeByToken({
+			token: 'consume-token',
+			type: 'email_verification'
+		});
+		const second = await tokens.consumeByToken({
+			token: 'consume-token',
+			type: 'email_verification'
+		});
+
+		expect(consumed?.token.id).not.toBe(user.id);
+		expect(consumed?.token.userId).toBe(user.id);
+		expect(consumed?.user.id).toBe(user.id);
+		expect(second).toBeNull();
 	});
 });

@@ -12,10 +12,12 @@ type RateLimitConfig = {
 
 function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
 	if (rateLimit?.key) return rateLimit.key(event);
-	if (event.getClientAddress) return event.getClientAddress();
 	if (rateLimit?.trustProxyHeader) {
-		return event.request.headers.get("x-forwarded-for") || "unknown";
+		const forwardedFor = event.request.headers.get("x-forwarded-for");
+		const firstForwardedIp = forwardedFor?.split(",")[0]?.trim();
+		if (firstForwardedIp) return firstForwardedIp;
 	}
+	if (event.getClientAddress) return event.getClientAddress();
 	return "unknown";
 }
 

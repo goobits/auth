@@ -13,6 +13,13 @@ describe('csrf', () => {
 		})
 		const valid = await validateCsrfRequest({ request, cookies, store, checkExpiry: true })
 		expect(valid).toBe(true)
+		expect(cookies._store.get('csrf-token')?.options.httpOnly).toBe(false)
+	})
+
+	it('allows callers to issue httpOnly csrf cookies when they provide another token channel', async () => {
+		const cookies = createCookies()
+		await issueCsrfToken({ cookies, secure: false, httpOnly: true })
+		expect(cookies._store.get('csrf-token')?.options.httpOnly).toBe(true)
 	})
 
 	it('rejects mismatched token', async () => {

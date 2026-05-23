@@ -8,10 +8,12 @@ function createEvent({
 	method = "POST",
 	headers = {},
 	cookies = createCookies(),
+	clientAddress = "127.0.0.1",
 }: {
 	method?: string;
 	headers?: Record<string, string>;
 	cookies?: ReturnType<typeof createCookies>;
+	clientAddress?: string;
 } = {}): RequestEventLike {
 	return {
 		...createRequestEvent({
@@ -21,7 +23,7 @@ function createEvent({
 			cookies,
 			locals: { user: null, session: null },
 		}),
-		getClientAddress: () => "127.0.0.1",
+		getClientAddress: () => clientAddress,
 	};
 }
 
@@ -93,5 +95,51 @@ describe("security policy wrapper", () => {
 		);
 		expect(first.status).toBe(200);
 		expect(second.status).toBe(429);
+	});
+
+	it("uses the first forwarded ip when proxy headers are trusted", async () => {
+		const handler = applySecurityPolicy({
+			handler: async () => new Response(JSON.stringify({ ok: true })),
+			routeId: "magic.request",
+			settings: {
+				csrf: {
+					mode: "off",
+					cookieName: "csrf-token",
+					headerName: "x-csrf-token",
+					checkExpiry: false,
+				},
+				rateLimit: {
+					mode: "required",
+					max: 1,
+					windowMs: 60_000,
+					keyPrefix: "test-forwarded",
+					trustProxyHeader: true,
+				},
+				audit: { mode: "off" },
+				routes: {},
+			},
+		});
+		const first = await handler(
+			createEvent({
+				headers: { "x-forwarded-for": "203.0.113.10, 10.0.0.2" },
+				clientAddress: "10.0.0.1",
+			}) as Parameters<typeof handler>[0],
+		);
+		const secondSameForwardedIp = await handler(
+			createEvent({
+				headers: { "x-forwarded-for": "203.0.113.10, 10.0.0.3" },
+				clientAddress: "10.0.0.99",
+			}) as Parameters<typeof handler>[0],
+		);
+		const thirdDifferentForwardedIp = await handler(
+			createEvent({
+				headers: { "x-forwarded-for": "203.0.113.11" },
+				clientAddress: "10.0.0.1",
+			}) as Parameters<typeof handler>[0],
+		);
+
+		expect(first.status).toBe(200);
+		expect(secondSameForwardedIp.status).toBe(429);
+		expect(thirdDifferentForwardedIp.status).toBe(200);
 	});
 });
