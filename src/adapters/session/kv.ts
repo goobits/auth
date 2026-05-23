@@ -1,5 +1,7 @@
 import { SessionAdapter } from "./base.js";
 import { generateRandomUUID } from "../../utils/crypto.js";
+import { AuthAdapterCapabilityError } from "../../errors/auth.js";
+import { getLogger } from "../../utils/logger.js";
 import type { Cookies } from "@sveltejs/kit";
 import type { Session, User } from "../../types/index.js";
 
@@ -90,13 +92,29 @@ export class KVSessionAdapter extends SessionAdapter {
 		session: Session | null;
 		user: User | null;
 	}> {
-		const rawValue = await this.namespace.get(this._key(sessionId), { type: "json" });
+		// SessionAdapter contract requires validateSession to never throw.
+		// Any storage-level failure (network, permission) returns the empty
+		// principal and is logged.
+		let rawValue: Record<string, unknown> | string | null;
+		try {
+			rawValue = await this.namespace.get(this._key(sessionId), { type: "json" });
+		} catch (error) {
+			getLogger().warn?.("[KVSessionAdapter] validateSession KV.get failed:", error);
+			return { session: null, user: null };
+		}
 		const raw = isKVSessionRecord(rawValue) ? rawValue : null;
 		if (!raw) return { session: null, user: null };
 
 		const expiresAt = new Date(raw.expiresAt);
 		if (Date.now() >= expiresAt.getTime()) {
-			await this.namespace.delete(this._key(sessionId));
+			try {
+				await this.namespace.delete(this._key(sessionId));
+			} catch (error) {
+				getLogger().warn?.(
+					"[KVSessionAdapter] failed to delete expired session:",
+					error,
+				);
+			}
 			return { session: null, user: null };
 		}
 
@@ -107,17 +125,31 @@ export class KVSessionAdapter extends SessionAdapter {
 
 		if (shouldRefresh) {
 			newExpiresAt = new Date(Date.now() + this.sessionLifetime);
-			await this.namespace.put(
-				this._key(sessionId),
-				JSON.stringify({ userId: raw.userId, expiresAt: newExpiresAt.toISOString() }),
-				{ expirationTtl: Math.ceil(this.sessionLifetime / 1000) },
-			);
-			fresh = true;
+			try {
+				await this.namespace.put(
+					this._key(sessionId),
+					JSON.stringify({ userId: raw.userId, expiresAt: newExpiresAt.toISOString() }),
+					{ expirationTtl: Math.ceil(this.sessionLifetime / 1000) },
+				);
+				fresh = true;
+			} catch (error) {
+				// Refresh is best-effort; the session is still valid until it expires.
+				getLogger().warn?.("[KVSessionAdapter] session refresh failed:", error);
+				newExpiresAt = expiresAt;
+			}
 		}
 
-		const user = this.getUserById
-			? this.sanitizeUser(await this.getUserById(String(raw.userId ?? "")))
-			: null;
+		let user: User | null = null;
+		if (this.getUserById) {
+			try {
+				user = this.sanitizeUser(await this.getUserById(String(raw.userId ?? "")));
+			} catch (error) {
+				getLogger().warn?.(
+					"[KVSessionAdapter] getUserById hook threw during validateSession:",
+					error,
+				);
+			}
+		}
 
 		return {
 			session: { id: sessionId, userId: raw.userId, expiresAt: newExpiresAt, fresh },
@@ -129,13 +161,30 @@ export class KVSessionAdapter extends SessionAdapter {
 		await this.namespace.delete(this._key(sessionId));
 	}
 
-	async invalidateUserSessions(_userId: string) {
-		throw new Error("KVSessionAdapter does not support invalidateUserSessions");
+	async invalidateUserSessions(userId: string) {
+		if (typeof this.namespace.list !== "function") {
+			throw new AuthAdapterCapabilityError(
+				"KVSessionAdapter requires a KV namespace with list() support for invalidateUserSessions",
+			);
+		}
+		const matching = await this.listSessions(userId);
+		await Promise.all(
+			matching.map((session) =>
+				this.namespace.delete(this._key(session.id)).catch((error) => {
+					getLogger().warn?.(
+						"[KVSessionAdapter] failed to delete session during bulk invalidate:",
+						error,
+					);
+				}),
+			),
+		);
 	}
 
 	async listSessions(userId: string): Promise<Session[]> {
 		if (typeof this.namespace.list !== "function") {
-			throw new Error("KVSessionAdapter does not support listSessions");
+			throw new AuthAdapterCapabilityError(
+				"KVSessionAdapter requires a KV namespace with list() support for listSessions",
+			);
 		}
 		const keys = await this.namespace.list({ prefix: `${this.keyPrefix}:` });
 		const sessions: Session[] = [];

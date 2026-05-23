@@ -46,6 +46,7 @@ describe('password reset handlers', () => {
 			userAdapter: {},
 			verificationTokenAdapter: {
 				findByToken: vi.fn().mockResolvedValue(null),
+				consumeByToken: vi.fn().mockResolvedValue(null),
 				deleteById: vi.fn(),
 				deleteByUserAndType: vi.fn()
 			}
@@ -53,16 +54,18 @@ describe('password reset handlers', () => {
 
 		const result = await handler(createEventWithForm({ token: 'bad', password: 'newpass' }))
 		expect(result.success).toBe(false)
-		expect(result.error).toMatch(/Invalid or expired/) 
+		expect(result.error).toMatch(/Invalid or expired/)
 	})
 
 	it('resets password on valid token', async () => {
 		const credentialsProvider = { updatePassword: vi.fn() }
+		const tokenRecord = {
+			token: { id: 't1', expiresAt: new Date(Date.now() + 10000) },
+			user: { id: 'u1' }
+		}
 		const verificationTokenAdapter = {
-			findByToken: vi.fn().mockResolvedValue({
-				token: { id: 't1', expiresAt: new Date(Date.now() + 10000) },
-				user: { id: 'u1' }
-			}),
+			findByToken: vi.fn().mockResolvedValue(tokenRecord),
+			consumeByToken: vi.fn().mockResolvedValue(tokenRecord),
 			deleteById: vi.fn(),
 			deleteByUserAndType: vi.fn()
 		}

@@ -15,6 +15,11 @@ function createAdapter() {
 		string,
 		TokenRecord
 	>()
+	const findByToken = async ({ token, type }: { token: string; type: string }) => {
+		const record = tokens.get(token)
+		if (!record || record.type !== type) return null
+		return { token: record, user: { id: record.userId, password: 'secret' } }
+	}
 	return {
 		deleteByUserAndType: vi.fn(async ({ userId, type }: { userId: string; type: string }) => {
 			for (const [key, value] of tokens.entries()) {
@@ -24,13 +29,14 @@ function createAdapter() {
 		create: vi.fn(async ({ userId, type, token, expiresAt }: Omit<TokenRecord, 'id'>) => {
 			tokens.set(token, { id: token, token, userId, type, expiresAt })
 		}),
-		findByToken: vi.fn(async ({ token, type }: { token: string; type: string }) => {
-			const record = tokens.get(token)
-			if (!record || record.type !== type) return null
-			return { token: record, user: { id: record.userId, password: 'secret' } }
-		}),
+		findByToken: vi.fn(findByToken),
 		deleteById: vi.fn(async (tokenId: string) => {
 			tokens.delete(tokenId)
+		}),
+		consumeByToken: vi.fn(async (params: { token: string; type: string }) => {
+			const record = await findByToken(params)
+			if (record) tokens.delete(record.token.id)
+			return record
 		}),
 		_tokens: tokens
 	}

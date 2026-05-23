@@ -1,4 +1,4 @@
-import { getRandomBytes } from "../utils/crypto.js";
+import { getRandomBytes, timingSafeEqual } from "../utils/crypto.js";
 import type { Cookies } from "@sveltejs/kit";
 type CsrfStoreRecord = { value: boolean; expiresAt: number | null };
 
@@ -44,15 +44,6 @@ function bytesToHex(bytes: Uint8Array): string {
 	return Array.from(bytes)
 		.map((b) => b.toString(16).padStart(2, "0"))
 		.join("");
-}
-
-function timingSafeEqual(a: string, b: string): boolean {
-	if (!a || !b || a.length !== b.length) return false;
-	let diff = 0;
-	for (let i = 0; i < a.length; i += 1) {
-		diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-	}
-	return diff === 0;
 }
 
 export async function createCsrfToken(): Promise<string> {

@@ -49,4 +49,20 @@ export abstract class VerificationTokenAdapter {
 		userId: string;
 		type: string;
 	}): Promise<void>;
+
+	/**
+	 * Atomically find-and-consume a token. Should be the only call site
+	 * used during verification. The default below is a non-atomic
+	 * find+delete pair; adapters whose storage supports it (SQL `DELETE
+	 * ... RETURNING`, in-memory `Map`) should override.
+	 */
+	async consumeByToken(params: {
+		token: string;
+		type: string;
+	}): Promise<VerificationTokenRecord | null> {
+		const record = await this.findByToken(params);
+		if (!record) return null;
+		await this.deleteById(record.token.id);
+		return record;
+	}
 }
