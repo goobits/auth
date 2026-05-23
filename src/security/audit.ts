@@ -18,7 +18,7 @@ type AuditWrapperOptions = {
 	redactKeys?: string[];
 };
 
-type AuthAuditEvent =
+export type AuthAuditEvent =
 	| "auth.success"
 	| "auth.failure"
 	| "magic_link.invalid"

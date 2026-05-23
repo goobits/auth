@@ -13,7 +13,12 @@ vi.mock('../../src/mfa/backup-codes.ts', () => ({
 
 import * as totp from '../../src/mfa/totp.ts'
 import * as backup from '../../src/mfa/backup-codes.ts'
-import { createMfaEnrollHandler, createMfaVerifyHandler, createMfaBackupCodeHandler } from '../../src/handlers/mfa.ts'
+import {
+	createMfaEnrollHandler,
+	createMfaVerifyHandler,
+	createMfaBackupCodeHandler,
+	createMfaDisableHandler
+} from '../../src/handlers/mfa.ts'
 import { createRequestEvent } from '../test-kit.ts'
 
 function createEvent({ locals = {}, form = {} } = {}) {
@@ -64,6 +69,22 @@ describe('MFA handlers', () => {
 		const result = await handler(createEvent({ locals: { userId: 'u1' }, form: { token: '000000' } }))
 		expect(result.success).toBe(false)
 		expect(store.enableMfa).not.toHaveBeenCalled()
+	})
+
+	it('disable requires user', async () => {
+		const store = { disableMfa: vi.fn() }
+		const handler = createMfaDisableHandler({ getUserId: () => null, store })
+		const result = await handler(createEvent())
+		expect(result.success).toBe(false)
+		expect(store.disableMfa).not.toHaveBeenCalled()
+	})
+
+	it('disable invokes store.disableMfa for the authenticated user', async () => {
+		const store = { disableMfa: vi.fn(async () => undefined) }
+		const handler = createMfaDisableHandler({ getUserId: () => 'u1', store })
+		const result = await handler(createEvent({ locals: { userId: 'u1' } }))
+		expect(result.success).toBe(true)
+		expect(store.disableMfa).toHaveBeenCalledWith('u1')
 	})
 
 	it('backup code consumes valid code', async () => {
