@@ -1,20 +1,13 @@
 import { AuthPrincipalResolutionError } from "../errors/auth.js";
-import type { RequestEventLike } from "../types/auth.js";
-import type { Session } from "../types/index.js";
+import type { OnLoginMode, RequestEventLike } from "../types/auth.js";
+import type { SessionAdapter } from "../adapters/session/base.js";
 
-type SessionAdapterLike = {
-	createSession: (userId: string) => Promise<Session>;
-	setSessionCookie?: (
-		cookies: RequestEventLike["cookies"],
-		session: Session,
-	) => void;
-};
-
-export type OnLoginMode = "augment" | "manual";
+type SessionLoginAdapter = Pick<SessionAdapter, "createSession"> &
+	Partial<Pick<SessionAdapter, "setSessionCookie">>;
 
 export async function ensureSessionAfterLogin(input: {
 	event: RequestEventLike;
-	sessionAdapter: SessionAdapterLike;
+	sessionAdapter: SessionLoginAdapter;
 	userId: string | null;
 	autoCreateSession?: boolean;
 	onLoginMode?: OnLoginMode;

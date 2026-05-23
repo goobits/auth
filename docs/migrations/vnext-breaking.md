@@ -13,9 +13,10 @@
 
 ### Auth instance
 
-Before:
+Before (pre-vNext — `createAuth` was a public root export):
 
 ```ts
+// No longer resolvable: `createAuth` is internal as of 0.2.0.
 import { createAuth } from "@goobits/auth";
 
 const auth = createAuth({
