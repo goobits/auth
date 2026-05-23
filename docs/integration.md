@@ -118,6 +118,45 @@ JSDoc on each abstract method describes the expected behavior.
 For schema requirements (magic link tokens, WebAuthn credentials, session
 metadata columns), see [`schema.md`](./schema.md).
 
+### Atomic single-use semantics: `consume*` methods
+
+Verification flows (magic link verify, password reset, WebAuthn login) need
+to enforce **single-use** on tokens and challenges. Without an atomic
+find-and-delete, two concurrent verifies of the same token can both succeed,
+creating duplicate sessions.
+
+The three adapter bases — `MagicLinkAdapter`, `VerificationTokenAdapter`,
+`WebAuthnAdapter` — expose `consume*` methods that the framework calls
+during verification:
+
+```ts
+MagicLinkAdapter.consumeByTokenHash(tokenHash)
+MagicLinkAdapter.consumeByEmailAndOtpHash({ email, otpHash })
+VerificationTokenAdapter.consumeByToken({ token, type })
+WebAuthnAdapter.consumeChallenge(challengeId)
+```
+
+Each has a **default implementation** that calls `findBy*` followed by
+`deleteById` / `deleteChallenge`. The default is *not* atomic — two
+concurrent calls on the same key can both observe the record before
+either delete completes. That matches the framework's prior behavior, so
+existing custom adapters remain correct without changes.
+
+**If your storage supports it, override these methods with a single
+atomic statement.** For example:
+
+- **SQL backends** (Postgres, SQLite, MySQL via Drizzle, Cloudflare D1):
+  use `DELETE ... RETURNING` — the in-tree Drizzle and D1 adapters do this.
+- **In-memory backends**: a synchronous `Map.get` + `Map.delete` inside
+  the same microtask is effectively atomic in single-threaded JS.
+- **Key-value stores without atomic primitives** (e.g. plain KV
+  namespaces): the safest implementation is to keep the default and
+  accept the small race window, or layer an in-process lock keyed by
+  the token hash.
+
+When you override, keep the same return type as the default: the consumed
+record on success, `null` if no row matched.
+
 ## Prebuilt adapters
 
 | Export | Storage | Notes |
