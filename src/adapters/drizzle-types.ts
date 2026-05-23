@@ -28,8 +28,12 @@ export type UpdateQuery = {
 	};
 };
 
+export type DeleteWhereResult = Promise<void> & {
+	returning: () => Promise<DrizzleRow[]>;
+};
+
 export type DeleteQuery = {
-	where: (condition: SQLWrapper) => Promise<void>;
+	where: (condition: SQLWrapper) => DeleteWhereResult;
 };
 
 export type DrizzleDbLike = {

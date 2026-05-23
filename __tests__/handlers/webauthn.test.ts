@@ -83,6 +83,11 @@ function createWebAuthnAdapter() {
 		},
 		getChallenge: async (id: string) => challenges.get(id) || null,
 		deleteChallenge: async (id: string) => challenges.delete(id),
+		consumeChallenge: async (id: string) => {
+			const record = challenges.get(id) || null;
+			if (record) challenges.delete(id);
+			return record;
+		},
 		createCredential: async (credential: StoredCredential) => {
 			credentials.set(credential.credentialId, credential);
 		},

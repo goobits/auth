@@ -3,6 +3,7 @@ import type { RequestEvent } from "@sveltejs/kit";
 import type { Cookies } from "@sveltejs/kit";
 import type { OAuthProvider } from "../providers/base.js";
 import type { OAuthProfile, OAuthTokens } from "../types/index.js";
+import { timingSafeEqual } from "./crypto.js";
 import type { RequestEventLike } from "../types/auth.js";
 
 type CookiesLike = Pick<Cookies, "set" | "get" | "delete">;
@@ -101,15 +102,6 @@ export function validateOAuthCallback(params: OAuthCallbackParams): boolean {
 		storedState &&
 		stateMatches
 	);
-}
-
-function timingSafeEqual(a: string, b: string): boolean {
-	if (!a || !b || a.length !== b.length) return false;
-	let diff = 0;
-	for (let i = 0; i < a.length; i += 1) {
-		diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-	}
-	return diff === 0;
 }
 
 /**

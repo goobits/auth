@@ -21,6 +21,7 @@ import type { UserAdapter } from "../adapters/database/base.js";
 import { ensureSessionAfterLogin } from "./session-lifecycle.js";
 import { AuthPrincipalResolutionError } from "../errors/auth.js";
 import { auditAuthEvent } from "../security/audit.js";
+import { getLogger } from "../utils/logger.js";
 import { isSafeRedirectPath } from "../utils/redirect.js";
 
 type MagicLinkTokenAdapter = Pick<
@@ -28,6 +29,8 @@ type MagicLinkTokenAdapter = Pick<
 	| "createToken"
 	| "findByTokenHash"
 	| "findByEmailAndOtpHash"
+	| "consumeByTokenHash"
+	| "consumeByEmailAndOtpHash"
 	| "deleteById"
 	| "deleteByEmail"
 >;
@@ -287,17 +290,22 @@ export function createMagicLinkVerifyHandler(
 			);
 		}
 
+		// Atomic find-and-delete: in-tree adapters (Drizzle/D1) override
+		// `consume*` with a single `DELETE ... RETURNING` to close the race
+		// where two concurrent verifies of the same token would both succeed.
 		let record: MagicLinkTokenRecord | null = null;
 
 		if (token) {
 			const tokenHash = await hashToken(token);
-			record = await magicLinkAdapter.findByTokenHash(tokenHash);
+			record = (await magicLinkAdapter.consumeByTokenHash(
+				tokenHash,
+			)) as MagicLinkTokenRecord | null;
 		} else if (otp && email) {
 			const otpHash = await hashToken(otp);
-			record = await magicLinkAdapter.findByEmailAndOtpHash({
+			record = (await magicLinkAdapter.consumeByEmailAndOtpHash({
 				email,
 				otpHash,
-			});
+			})) as MagicLinkTokenRecord | null;
 		}
 
 		if (!record) {
@@ -311,19 +319,11 @@ export function createMagicLinkVerifyHandler(
 
 		const expiresAt = record["expiresAt"];
 		if (expiresAt && new Date(expiresAt) < new Date()) {
-			const recordId = record["id"];
-			if (typeof recordId === "string") {
-				await magicLinkAdapter.deleteById(recordId);
-			}
+			// Token was already consumed by the read above; just audit.
 			auditAuthEvent("magic_link.expired", {
 				email: record["email"] ?? email,
 			});
 			return jsonResponse({ ok: false, error: "Magic link expired" }, 400);
-		}
-
-		const recordId = record["id"];
-		if (typeof recordId === "string") {
-			await magicLinkAdapter.deleteById(recordId);
 		}
 
 		let user: User | null = null;
@@ -358,7 +358,12 @@ export function createMagicLinkVerifyHandler(
 		if (user && userAdapter && user.emailVerified === false) {
 			try {
 				await userAdapter.updateUser(user.id, { emailVerified: true });
-			} catch {}
+			} catch (error) {
+				getLogger().warn?.(
+					"[MagicLink] Failed to mark email as verified after successful login:",
+					error,
+				);
+			}
 		}
 
 		let userId = user?.id ? String(user.id) : recordUserId;

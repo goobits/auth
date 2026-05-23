@@ -2,6 +2,20 @@ const ALGORITHM = "AES-GCM";
 const TAG_LENGTH_BYTES = 16;
 const SHA_256 = "SHA-256";
 
+/**
+ * Constant-time string equality. Returns false immediately for length
+ * mismatches (length itself is not secret); for equal-length inputs the
+ * comparison is a fixed-iteration XOR fold with no branches.
+ */
+export function timingSafeEqual(a: string, b: string): boolean {
+	if (!a || !b || a.length !== b.length) return false;
+	let diff = 0;
+	for (let i = 0; i < a.length; i += 1) {
+		diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+	}
+	return diff === 0;
+}
+
 type WebCrypto = {
 	subtle: SubtleCrypto;
 	getRandomValues: (array: Uint8Array) => Uint8Array;

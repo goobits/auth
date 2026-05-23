@@ -283,4 +283,14 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 			.delete(this.credentialsTable)
 			.where(eq(requireColumn(this.credentialsTable, this.columns.userId), userId));
 	}
+
+	override async consumeChallenge(
+		challengeId: string,
+	): Promise<ChallengeRecord | null> {
+		const rows = await this.db
+			.delete(this.challengesTable)
+			.where(eq(requireColumn(this.challengesTable, this.columns.challengeId), challengeId))
+			.returning();
+		return mapChallengeRow(rows[0] ?? null, this.columns);
+	}
 }

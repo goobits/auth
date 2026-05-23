@@ -119,6 +119,26 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 			.run();
 	}
 
+	override async consumeByTokenHash(
+		tokenHash: string,
+	): Promise<MagicLinkToken | null> {
+		const sql = `DELETE FROM ${this.tokensTable} WHERE ${this.columns.tokenHash} = ? RETURNING *`;
+		const row = await this.db.prepare(sql).bind(tokenHash).first();
+		return this.mapRow(row);
+	}
+
+	override async consumeByEmailAndOtpHash({
+		email,
+		otpHash,
+	}: {
+		email: string;
+		otpHash: string;
+	}): Promise<MagicLinkToken | null> {
+		const sql = `DELETE FROM ${this.tokensTable} WHERE ${this.columns.email} = ? AND ${this.columns.otpHash} = ? RETURNING *`;
+		const row = await this.db.prepare(sql).bind(email, otpHash).first();
+		return this.mapRow(row);
+	}
+
 	private mapRow(row: D1Row | null): MagicLinkToken | null {
 		if (!row) return null;
 		const id = row[this.columns["id"]] ?? row["id"];

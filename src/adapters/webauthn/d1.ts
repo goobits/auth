@@ -272,4 +272,14 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 			.bind(userId)
 			.run();
 	}
+
+	override async consumeChallenge(challengeId: string) {
+		const row = await this.db
+			.prepare(
+				`DELETE FROM ${this.challengesTable} WHERE ${this.columns.challengeId} = ? RETURNING *`,
+			)
+			.bind(challengeId)
+			.first();
+		return this.mapChallenge(row);
+	}
 }
