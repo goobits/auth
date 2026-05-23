@@ -11,56 +11,38 @@ import type { RequestHandler } from "@sveltejs/kit";
 import type {
 	AuthLocals,
 	AuthHooks,
+	OnLoginMode,
 	RequestEventLike,
 } from "../types/auth.js";
 import type { User } from "../types/index.js";
-import type { Session } from "../types/index.js";
-import { ensureSessionAfterLogin, type OnLoginMode } from "./session-lifecycle.js";
+import type { MagicLinkAdapter } from "../adapters/magic-link/base.js";
+import type { SessionAdapter } from "../adapters/session/base.js";
+import type { UserAdapter } from "../adapters/database/base.js";
+import { ensureSessionAfterLogin } from "./session-lifecycle.js";
 import { AuthPrincipalResolutionError } from "../errors/auth.js";
 import { auditAuthEvent } from "../security/audit.js";
 import { isSafeRedirectPath } from "../utils/redirect.js";
 
-type MagicLinkAdapterLike = {
-	createToken: (params: {
-		userId: string | null;
-		email: string;
-		tokenHash: string;
-		otpHash?: string | null;
-		expiresAt: Date;
-		metadata?: Record<string, unknown>;
-	}) => Promise<Record<string, unknown> | void>;
-	findByTokenHash: (hash: string) => Promise<Record<string, unknown> | null>;
-	findByEmailAndOtpHash: (params: {
-		email: string;
-		otpHash: string;
-	}) => Promise<Record<string, unknown> | null>;
-	deleteById: (id: string) => Promise<unknown>;
-	deleteByEmail: (email: string) => Promise<unknown>;
-};
+type MagicLinkTokenAdapter = Pick<
+	MagicLinkAdapter,
+	| "createToken"
+	| "findByTokenHash"
+	| "findByEmailAndOtpHash"
+	| "deleteById"
+	| "deleteByEmail"
+>;
 
-type MagicLinkUserAdapterLike = {
-	getUserByEmail: (email: string) => Promise<User | null>;
-	getUserById: (id: string) => Promise<User | null>;
-	createUser: (profile: {
-		id: string;
-		email: string;
-		name: string;
-		verified_email?: boolean;
-	}) => Promise<User>;
-	updateUser: (id: string, data: Record<string, unknown>) => Promise<User>;
-};
+type MagicLinkUserAdapter = Pick<
+	UserAdapter,
+	"getUserByEmail" | "getUserById" | "createUser" | "updateUser"
+>;
 
-type MagicLinkSessionAdapterLike = {
-	createSession: (userId: string) => Promise<Session>;
-	setSessionCookie?: (
-		cookies: RequestEventLike["cookies"],
-		session: Session,
-	) => void;
-};
+type MagicLinkSessionAdapterLike = Pick<SessionAdapter, "createSession"> &
+	Partial<Pick<SessionAdapter, "setSessionCookie">>;
 
 type MagicLinkRequestConfig = {
-	magicLinkAdapter: MagicLinkAdapterLike;
-	userAdapter?: Pick<MagicLinkUserAdapterLike, "getUserByEmail">;
+	magicLinkAdapter: MagicLinkTokenAdapter;
+	userAdapter?: Pick<MagicLinkUserAdapter, "getUserByEmail">;
 	sendEmail: (payload: {
 		email: string;
 		link: string;
@@ -88,8 +70,8 @@ type MagicLinkRequestConfig = {
 };
 
 type MagicLinkVerifyConfig = {
-	magicLinkAdapter: MagicLinkAdapterLike;
-	userAdapter?: MagicLinkUserAdapterLike;
+	magicLinkAdapter: MagicLinkTokenAdapter;
+	userAdapter?: MagicLinkUserAdapter;
 	sessionAdapter: MagicLinkSessionAdapterLike;
 	allowSignup?: boolean;
 	createUser?: (email: string, event: RequestEventLike) => Promise<User>;
