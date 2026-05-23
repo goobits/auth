@@ -48,31 +48,34 @@ function createEvent({
 function createMagicLinkAdapter() {
 	const tokens = new Map<string, MagicLinkTokenRecord>();
 	let counter = 0;
+	const findByTokenHash = async (tokenHash: string) => {
+		for (const token of tokens.values()) {
+			if (token.tokenHash === tokenHash) return token;
+		}
+		return null;
+	};
+	const findByEmailAndOtpHash = async ({
+		email,
+		otpHash,
+	}: {
+		email: string;
+		otpHash: string;
+	}) => {
+		for (const token of tokens.values()) {
+			if (token.email === email && token.otpHash === otpHash) return token;
+		}
+		return null;
+	};
+	const deleteById = async (id: string) => tokens.delete(id);
 	return {
 		createToken: async (token: Omit<MagicLinkTokenRecord, "id">) => {
 			const id = `t${++counter}`;
 			tokens.set(id, { id, ...token });
 			return tokens.get(id);
 		},
-		findByTokenHash: async (tokenHash: string) => {
-			for (const token of tokens.values()) {
-				if (token.tokenHash === tokenHash) return token;
-			}
-			return null;
-		},
-		findByEmailAndOtpHash: async ({
-			email,
-			otpHash,
-		}: {
-			email: string;
-			otpHash: string;
-		}) => {
-			for (const token of tokens.values()) {
-				if (token.email === email && token.otpHash === otpHash) return token;
-			}
-			return null;
-		},
-		deleteById: async (id: string) => tokens.delete(id),
+		findByTokenHash,
+		findByEmailAndOtpHash,
+		deleteById,
 		deleteByEmail: async (email: string) => {
 			for (const [id, token] of tokens.entries()) {
 				if (token.email === email) tokens.delete(id);
@@ -82,6 +85,16 @@ function createMagicLinkAdapter() {
 			for (const [id, token] of tokens.entries()) {
 				if (token.userId === userId) tokens.delete(id);
 			}
+		},
+		consumeByTokenHash: async (tokenHash: string) => {
+			const record = await findByTokenHash(tokenHash);
+			if (record?.id) tokens.delete(record.id);
+			return record;
+		},
+		consumeByEmailAndOtpHash: async (params: { email: string; otpHash: string }) => {
+			const record = await findByEmailAndOtpHash(params);
+			if (record?.id) tokens.delete(record.id);
+			return record;
 		},
 		_tokens: tokens,
 	};

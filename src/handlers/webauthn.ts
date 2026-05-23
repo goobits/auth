@@ -111,7 +111,7 @@ export function createWebAuthnRegisterOptionsHandler(config: WebAuthnRegisterOpt
 }
 
 export type WebAuthnRegisterVerifyHandlerConfig = {
-	webauthnAdapter: Pick<WebAuthnAdapter, "getChallenge" | "deleteChallenge" | "createCredential">;
+	webauthnAdapter: Pick<WebAuthnAdapter, "consumeChallenge" | "createCredential">;
 	rpID: string;
 	origin: string;
 	requireUserVerification?: boolean;
@@ -132,7 +132,8 @@ export function createWebAuthnRegisterVerifyHandler(config: WebAuthnRegisterVeri
 		}
 		const { challengeId, credential, name } = data;
 
-		const challengeRaw = await webauthnAdapter.getChallenge(challengeId);
+		// Atomic consume — see WebAuthnLoginVerify for race-condition rationale.
+		const challengeRaw = await webauthnAdapter.consumeChallenge(challengeId);
 		const challenge = toChallengeRecord(challengeRaw);
 		if (!challenge) {
 			return jsonResponse({ ok: false, error: "Challenge not found" }, 400);
@@ -142,7 +143,7 @@ export function createWebAuthnRegisterVerifyHandler(config: WebAuthnRegisterVeri
 		}
 
 		if (new Date(challenge.expiresAt) < new Date()) {
-			await webauthnAdapter.deleteChallenge(challengeId);
+			// Already removed by consumeChallenge above.
 			return jsonResponse({ ok: false, error: "Challenge expired" }, 400);
 		}
 
@@ -185,7 +186,7 @@ export function createWebAuthnRegisterVerifyHandler(config: WebAuthnRegisterVeri
 			name: name ?? null,
 		});
 
-		await webauthnAdapter.deleteChallenge(challengeId);
+		// Challenge was atomically consumed at the top of the handler.
 
 		if (onCredentialCreated) {
 			await onCredentialCreated({ userId, credentialId, publicKey });
@@ -259,7 +260,10 @@ export function createWebAuthnLoginOptionsHandler(config: WebAuthnLoginOptionsHa
 }
 
 export type WebAuthnLoginVerifyHandlerConfig = {
-	webauthnAdapter: Pick<WebAuthnAdapter, "getChallenge" | "deleteChallenge" | "getCredential" | "updateCredential">;
+	webauthnAdapter: Pick<
+		WebAuthnAdapter,
+		"consumeChallenge" | "getCredential" | "updateCredential"
+	>;
 	userAdapter?: { getUserById: (id: string) => Promise<User | null> };
 	sessionAdapter: Pick<SessionAdapter, "createSession" | "setSessionCookie">;
 	rpID: string;
@@ -298,7 +302,10 @@ export function createWebAuthnLoginVerifyHandler(config: WebAuthnLoginVerifyHand
 		}
 		const { challengeId, credential } = data;
 
-		const challengeRaw = await webauthnAdapter.getChallenge(challengeId);
+		// Atomically consume the challenge so two concurrent verifies of the
+		// same challengeId cannot both succeed (in-tree adapters override
+		// `consumeChallenge` with `DELETE ... RETURNING`).
+		const challengeRaw = await webauthnAdapter.consumeChallenge(challengeId);
 		const challenge = toChallengeRecord(challengeRaw);
 		if (!challenge) {
 			auditAuthEvent("webauthn.challenge_missing", { challengeId });
@@ -309,7 +316,7 @@ export function createWebAuthnLoginVerifyHandler(config: WebAuthnLoginVerifyHand
 			return jsonResponse({ ok: false, error: "Invalid challenge" }, 400);
 		}
 		if (new Date(challenge.expiresAt) < new Date()) {
-			await webauthnAdapter.deleteChallenge(challengeId);
+			// Already removed by consumeChallenge above.
 			auditAuthEvent("webauthn.challenge_expired", { challengeId });
 			return jsonResponse({ ok: false, error: "Challenge expired" }, 400);
 		}
@@ -348,7 +355,7 @@ export function createWebAuthnLoginVerifyHandler(config: WebAuthnLoginVerifyHand
 		await webauthnAdapter.updateCredential(storedCredential.credentialId, {
 			counter: verification.authenticationInfo.newCounter ?? storedCredential.counter,
 		});
-		await webauthnAdapter.deleteChallenge(challengeId);
+		// Challenge was atomically consumed at the top of the handler.
 
 			const user = userAdapter ? await userAdapter.getUserById(storedCredential.userId) : null;
 			let userId = storedCredential.userId;
