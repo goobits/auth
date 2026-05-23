@@ -109,7 +109,7 @@ describe("magic link handlers", () => {
 	it("verifies token and creates session", async () => {
 		const magicLinkAdapter = createMagicLinkAdapter();
 		const sendEmail = vi.fn();
-		const databaseAdapter = {
+		const userAdapter = {
 			getUserByEmail: vi.fn(async (email) => ({ id: "u1", email })),
 			getUserById: vi.fn(async (id) => ({ id, email: "u1@example.com" })),
 			updateUser: vi.fn(async () => {}),
@@ -121,7 +121,7 @@ describe("magic link handlers", () => {
 
 		const requestHandler = createMagicLinkRequestHandler({
 			magicLinkAdapter,
-			databaseAdapter,
+			userAdapter,
 			sendEmail,
 			exposeToken: true,
 		});
@@ -132,7 +132,7 @@ describe("magic link handlers", () => {
 
 		const verifyHandler = createMagicLinkVerifyHandler({
 			magicLinkAdapter,
-			databaseAdapter,
+			userAdapter,
 			sessionAdapter,
 		});
 
@@ -221,7 +221,7 @@ describe("magic link handlers", () => {
 	it("redirects GET verification to redirectTo when provided", async () => {
 		const magicLinkAdapter = createMagicLinkAdapter();
 		const sendEmail = vi.fn();
-		const databaseAdapter = {
+		const userAdapter = {
 			getUserByEmail: vi.fn(async (email) => ({ id: "u1", email })),
 			getUserById: vi.fn(async (id) => ({ id, email: "u1@example.com" })),
 			updateUser: vi.fn(async () => {}),
@@ -233,7 +233,7 @@ describe("magic link handlers", () => {
 
 		const requestHandler = createMagicLinkRequestHandler({
 			magicLinkAdapter,
-			databaseAdapter,
+			userAdapter,
 			sendEmail,
 			exposeToken: true,
 		});
@@ -245,7 +245,7 @@ describe("magic link handlers", () => {
 
 		const verifyHandler = createMagicLinkVerifyHandler({
 			magicLinkAdapter,
-			databaseAdapter,
+			userAdapter,
 			sessionAdapter,
 			redirectAfterLogin: "/fallback",
 		});

@@ -149,7 +149,7 @@ describe("webauthn handlers", () => {
 			createSession: vi.fn(async () => ({ id: "s1", userId: "u1" })),
 			setSessionCookie: vi.fn(),
 		};
-		const databaseAdapter = {
+		const userAdapter = {
 			getUserById: vi.fn(async () => ({ id: "u1", email: "u1@example.com" })),
 		};
 
@@ -170,7 +170,7 @@ describe("webauthn handlers", () => {
 
 		const handler = createWebAuthnLoginVerifyHandler({
 			webauthnAdapter,
-			databaseAdapter,
+			userAdapter,
 			sessionAdapter,
 			rpID: "example.com",
 			origin: "http://localhost",
