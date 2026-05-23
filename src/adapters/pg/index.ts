@@ -3,8 +3,10 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import type { Cookies } from '@sveltejs/kit'
 
 import type { OAuthProfile, Session, User } from '../../types/index.js'
+import type { WebAuthnCredential } from '../../types/index.js'
 import { UserAdapter } from '../database/base.js'
 import { SessionAdapter } from '../session/base.js'
+import { WebAuthnAdapter } from '../webauthn/base.js'
 
 export type PgPoolLike = {
 	query<T extends Record<string, unknown> = Record<string, unknown>>(
@@ -34,6 +36,25 @@ type SessionRow = {
 	ip: string | null;
 	last_active_at: Date | null;
 	user_agent: string | null;
+	user_id: string;
+}
+
+type WebAuthnChallengeRow = {
+	challenge: string;
+	expires_at: Date;
+	id: string;
+	type: string;
+	user_id: string | null;
+}
+
+type WebAuthnCredentialRow = {
+	counter: number;
+	created_at: Date;
+	credential_id: string;
+	name: string | null;
+	public_key: string;
+	transports: string[] | null;
+	updated_at: Date;
 	user_id: string;
 }
 
@@ -296,6 +317,169 @@ export class PgSessionAdapter extends SessionAdapter {
 	}
 }
 
+export class PgWebAuthnAdapter extends WebAuthnAdapter {
+	#db: PgPoolLike
+
+	constructor({ db }: { db: PgPoolLike }) {
+		super()
+		this.#db = db
+	}
+
+	async createChallenge({
+		challengeId,
+		userId,
+		challenge,
+		type,
+		expiresAt
+	}: {
+		challengeId: string;
+		userId?: string | null;
+		challenge: string;
+		type: string;
+		expiresAt: Date;
+	}): Promise<void> {
+		await this.#db.query(
+			`
+			INSERT INTO auth_webauthn_challenges (id, user_id, challenge, type, expires_at)
+			VALUES ($1, $2, $3, $4, $5)
+			ON CONFLICT (id) DO UPDATE SET
+				user_id = EXCLUDED.user_id,
+				challenge = EXCLUDED.challenge,
+				type = EXCLUDED.type,
+				expires_at = EXCLUDED.expires_at
+		`,
+			[ challengeId, userId ?? null, challenge, type, expiresAt ]
+		)
+	}
+
+	async getChallenge(challengeId: string): Promise<Record<string, unknown> | null> {
+		const row = (
+			await this.#db.query<WebAuthnChallengeRow>(
+				'SELECT * FROM auth_webauthn_challenges WHERE id = $1',
+				[ challengeId ]
+			)
+		).rows[0]
+		return row ? toWebAuthnChallenge(row) : null
+	}
+
+	async deleteChallenge(challengeId: string): Promise<void> {
+		await this.#db.query('DELETE FROM auth_webauthn_challenges WHERE id = $1', [
+			challengeId
+		])
+	}
+
+	async createCredential({
+		userId,
+		credentialId,
+		publicKey,
+		counter,
+		transports,
+		name
+	}: {
+		userId: string;
+		credentialId: string;
+		publicKey: string;
+		counter: number;
+		transports?: string[] | null;
+		name?: string | null;
+	}): Promise<void> {
+		await this.#db.query(
+			`
+			INSERT INTO auth_webauthn_credentials
+				(user_id, credential_id, public_key, counter, transports, name)
+			VALUES ($1, $2, $3, $4, $5::jsonb, $6)
+			ON CONFLICT (credential_id) DO UPDATE SET
+				user_id = EXCLUDED.user_id,
+				public_key = EXCLUDED.public_key,
+				counter = EXCLUDED.counter,
+				transports = EXCLUDED.transports,
+				name = EXCLUDED.name,
+				updated_at = now()
+		`,
+			[
+				userId,
+				credentialId,
+				publicKey,
+				counter,
+				JSON.stringify(transports ?? null),
+				name ?? null
+			]
+		)
+	}
+
+	async getCredential(credentialId: string): Promise<WebAuthnCredential | null> {
+		const row = (
+			await this.#db.query<WebAuthnCredentialRow>(
+				'SELECT * FROM auth_webauthn_credentials WHERE credential_id = $1',
+				[ credentialId ]
+			)
+		).rows[0]
+		return row ? toWebAuthnCredential(row) : null
+	}
+
+	async listCredentials(userId: string): Promise<WebAuthnCredential[]> {
+		const rows = (
+			await this.#db.query<WebAuthnCredentialRow>(
+				'SELECT * FROM auth_webauthn_credentials WHERE user_id = $1 ORDER BY created_at DESC',
+				[ userId ]
+			)
+		).rows
+		return rows.map(toWebAuthnCredential)
+	}
+
+	async updateCredential(
+		credentialId: string,
+		updates: Record<string, unknown>
+	): Promise<void> {
+		const allowed = new Map([
+			['counter', updates['counter']],
+			['name', updates['name']],
+			['transports', updates['transports']]
+		])
+		const fields: string[] = []
+		const values: unknown[] = []
+		for (const [key, value] of allowed.entries()) {
+			if (value === undefined) continue
+			if (key === 'counter' && typeof value !== 'number') continue
+			if (key === 'name' && value !== null && typeof value !== 'string') continue
+			if (key === 'transports') {
+				if (value !== null && (!Array.isArray(value) || value.some((entry) => typeof entry !== 'string'))) {
+					continue
+				}
+				fields.push(`transports = $${fields.length + 1}::jsonb`)
+				values.push(JSON.stringify(value))
+				continue
+			}
+			fields.push(`${ key } = $${fields.length + 1}`)
+			values.push(value)
+		}
+		if (fields.length === 0) {
+			return
+		}
+		values.push(credentialId)
+		await this.#db.query(
+			`
+			UPDATE auth_webauthn_credentials
+			SET ${ fields.join(', ') }, updated_at = now()
+			WHERE credential_id = $${ values.length }
+		`,
+			values
+		)
+	}
+
+	async deleteCredential(credentialId: string): Promise<void> {
+		await this.#db.query('DELETE FROM auth_webauthn_credentials WHERE credential_id = $1', [
+			credentialId
+		])
+	}
+
+	async deleteUserCredentials(userId: string): Promise<void> {
+		await this.#db.query('DELETE FROM auth_webauthn_credentials WHERE user_id = $1', [
+			userId
+		])
+	}
+}
+
 export function createPgAuthAdapters(input: {
 	cookieDomain?: string;
 	cookieName: string;
@@ -304,7 +488,8 @@ export function createPgAuthAdapters(input: {
 }) {
 	return {
 		session: new PgSessionAdapter(input),
-		user: new PgUserAdapter({ db: input.db })
+		user: new PgUserAdapter({ db: input.db }),
+		webauthn: new PgWebAuthnAdapter({ db: input.db })
 	}
 }
 
@@ -345,6 +530,31 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
 
 CREATE INDEX IF NOT EXISTS auth_sessions_user_id_idx ON auth_sessions(user_id);
 CREATE INDEX IF NOT EXISTS auth_sessions_expires_at_idx ON auth_sessions(expires_at);
+
+CREATE TABLE IF NOT EXISTS auth_webauthn_challenges (
+	id TEXT PRIMARY KEY,
+	user_id TEXT REFERENCES auth_users(id) ON DELETE CASCADE,
+	challenge TEXT NOT NULL,
+	type TEXT NOT NULL,
+	expires_at TIMESTAMPTZ NOT NULL,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS auth_webauthn_challenges_expires_at_idx ON auth_webauthn_challenges(expires_at);
+CREATE INDEX IF NOT EXISTS auth_webauthn_challenges_user_id_idx ON auth_webauthn_challenges(user_id);
+
+CREATE TABLE IF NOT EXISTS auth_webauthn_credentials (
+	credential_id TEXT PRIMARY KEY,
+	user_id TEXT NOT NULL REFERENCES auth_users(id) ON DELETE CASCADE,
+	public_key TEXT NOT NULL,
+	counter INTEGER NOT NULL DEFAULT 0,
+	transports JSONB,
+	name TEXT,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS auth_webauthn_credentials_user_id_idx ON auth_webauthn_credentials(user_id);
 `
 
 function normalizeEmail(email: string): string {
@@ -389,6 +599,30 @@ function toUser(row: UserRow): User {
 		user.role = row.role
 	}
 	return user
+}
+
+function toWebAuthnChallenge(row: WebAuthnChallengeRow): Record<string, unknown> {
+	return {
+		challenge: row.challenge,
+		expiresAt: row.expires_at,
+		id: row.id,
+		type: row.type,
+		userId: row.user_id
+	}
+}
+
+function toWebAuthnCredential(row: WebAuthnCredentialRow): WebAuthnCredential {
+	return {
+		counter: row.counter,
+		createdAt: row.created_at,
+		credentialId: row.credential_id,
+		id: row.credential_id,
+		name: row.name,
+		publicKey: row.public_key,
+		transports: Array.isArray(row.transports) ? row.transports : null,
+		updatedAt: row.updated_at,
+		userId: row.user_id
+	}
 }
 
 function requireRow<T>(row: T | undefined): T {

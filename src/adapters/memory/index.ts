@@ -1,10 +1,11 @@
 import { encodeBase64url } from '@oslojs/encoding'
 import type { Cookies } from '@sveltejs/kit'
 
-import type { OAuthProfile, OAuthTokens, Session, User } from '../../types/index.js'
+import type { OAuthProfile, OAuthTokens, Session, User, WebAuthnCredential } from '../../types/index.js'
 import { UserAdapter } from '../database/base.js'
 import { TokenAdapter } from '../oauth-token/base.js'
 import { SessionAdapter } from '../session/base.js'
+import { WebAuthnAdapter } from '../webauthn/base.js'
 
 type StoredUser = User & { password?: string | null }
 
@@ -186,6 +187,118 @@ export class MemorySessionAdapter extends SessionAdapter {
 	}
 }
 
+export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
+	#challenges = new Map<string, Record<string, unknown>>()
+	#credentials = new Map<string, WebAuthnCredential>()
+
+	async createChallenge({
+		challengeId,
+		userId,
+		challenge,
+		type,
+		expiresAt
+	}: {
+		challengeId: string;
+		userId?: string | null;
+		challenge: string;
+		type: string;
+		expiresAt: Date;
+	}): Promise<void> {
+		this.#challenges.set(challengeId, {
+			challenge,
+			expiresAt,
+			id: challengeId,
+			type,
+			userId: userId ?? null
+		})
+	}
+
+	async getChallenge(challengeId: string): Promise<Record<string, unknown> | null> {
+		return this.#challenges.get(challengeId) ?? null
+	}
+
+	async deleteChallenge(challengeId: string): Promise<void> {
+		this.#challenges.delete(challengeId)
+	}
+
+	async createCredential({
+		userId,
+		credentialId,
+		publicKey,
+		counter,
+		transports,
+		name
+	}: {
+		userId: string;
+		credentialId: string;
+		publicKey: string;
+		counter: number;
+		transports?: string[] | null;
+		name?: string | null;
+	}): Promise<void> {
+		const now = new Date()
+		this.#credentials.set(credentialId, {
+			counter,
+			createdAt: now,
+			credentialId,
+			id: credentialId,
+			name: name ?? null,
+			publicKey,
+			transports: transports ?? null,
+			updatedAt: now,
+			userId
+		})
+	}
+
+	async getCredential(credentialId: string): Promise<WebAuthnCredential | null> {
+		return this.#credentials.get(credentialId) ?? null
+	}
+
+	async listCredentials(userId: string): Promise<WebAuthnCredential[]> {
+		return [ ...this.#credentials.values() ].filter((credential) => credential.userId === userId)
+	}
+
+	async updateCredential(
+		credentialId: string,
+		updates: Record<string, unknown>
+	): Promise<void> {
+		const existing = this.#credentials.get(credentialId)
+		if (!existing) {
+			return
+		}
+		const next: WebAuthnCredential = {
+			...existing,
+			updatedAt: new Date()
+		}
+		if (typeof updates['counter'] === 'number') {
+			next.counter = updates['counter']
+		}
+		if (updates['name'] === null || typeof updates['name'] === 'string') {
+			next.name = updates['name']
+		}
+		if (
+			updates['transports'] === null ||
+			(Array.isArray(updates['transports']) &&
+				updates['transports'].every((entry) => typeof entry === 'string'))
+		) {
+			next.transports = updates['transports']
+		}
+		this.#credentials.set(credentialId, next)
+	}
+
+	async deleteCredential(credentialId: string): Promise<void> {
+		this.#credentials.delete(credentialId)
+	}
+
+	async deleteUserCredentials(userId: string): Promise<void> {
+		for (const [ credentialId, credential ] of this.#credentials.entries()) {
+			if (credential.userId === userId) {
+				this.#credentials.delete(credentialId)
+			}
+		}
+	}
+}
+
 export function createMemoryAuthAdapters(input: {
 	cookieDomain?: string;
 	cookieName: string;
@@ -199,7 +312,8 @@ export function createMemoryAuthAdapters(input: {
 			secureCookies: input.secureCookies,
 			users: user
 		}),
-		user
+		user,
+		webauthn: new MemoryWebAuthnAdapter()
 	}
 }
 
