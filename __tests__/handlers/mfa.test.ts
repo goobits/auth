@@ -14,10 +14,11 @@ vi.mock('../../src/mfa/backup-codes.ts', () => ({
 import * as totp from '../../src/mfa/totp.ts'
 import * as backup from '../../src/mfa/backup-codes.ts'
 import {
-	createMfaEnrollHandler,
-	createMfaVerifyHandler,
 	createMfaBackupCodeHandler,
-	createMfaDisableHandler
+	createMfaDisableHandler,
+	createMfaEnrollHandler,
+	createMfaStatusHandler,
+	createMfaVerifyHandler,
 } from '../../src/handlers/mfa.ts'
 import { createRequestEvent } from '../test-kit.ts'
 
@@ -62,6 +63,24 @@ describe('MFA handlers', () => {
 		expect(store.setBackupCodes).toHaveBeenCalledWith('u1', ['hash1', 'hash2'])
 	})
 
+	it('status returns adapter-backed enrollment status', async () => {
+		const status = {
+			backupCodeCount: 2,
+			enabled: true,
+			enabledAt: new Date('2026-01-01T00:00:00.000Z')
+		}
+		const store = {
+			getBackupCodes: vi.fn(),
+			getSecret: vi.fn(),
+			getStatus: vi.fn(async () => status)
+		}
+		const handler = createMfaStatusHandler({ getUserId: () => 'u1', store })
+		const result = await handler(createEvent({ locals: { userId: 'u1' } }))
+
+		expect(result).toEqual({ success: true, status })
+		expect(store.getStatus).toHaveBeenCalledWith('u1')
+	})
+
 	it('verify rejects invalid token', async () => {
 		const store = { getSecret: vi.fn(async () => 'SECRET'), enableMfa: vi.fn() }
 		vi.mocked(totp.verifyTOTP).mockResolvedValue(false)
@@ -77,6 +96,14 @@ describe('MFA handlers', () => {
 		const result = await handler(createEvent())
 		expect(result.success).toBe(false)
 		expect(store.disableMfa).not.toHaveBeenCalled()
+	})
+
+	it('verify rejects missing enrollment secret', async () => {
+		const store = { getSecret: vi.fn(async () => null), enableMfa: vi.fn() }
+		const handler = createMfaVerifyHandler({ getUserId: () => 'u1', store })
+		const result = await handler(createEvent({ locals: { userId: 'u1' }, form: { token: '000000' } }))
+		expect(result).toEqual({ success: false, error: 'MFA enrollment not started' })
+		expect(store.enableMfa).not.toHaveBeenCalled()
 	})
 
 	it('disable invokes store.disableMfa for the authenticated user', async () => {

@@ -13,10 +13,13 @@ export {
 
 // MFA handlers
 export {
+	createMfaStatusHandler,
 	createMfaEnrollHandler,
 	createMfaVerifyHandler,
 	createMfaDisableHandler,
 	createMfaBackupCodeHandler,
+	type MfaConfig,
+	type MfaStore,
 } from "./mfa.js";
 
 // Magic link handlers

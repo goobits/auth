@@ -11,6 +11,7 @@ import type { SessionAdapter } from "../adapters/session/base.js";
 import type { UserAdapter } from "../adapters/database/base.js";
 import type { TokenAdapter } from "../adapters/oauth-token/base.js";
 import type { MagicLinkAdapter } from "../adapters/magic-link/base.js";
+import type { MfaAdapter } from "../adapters/mfa/base.js";
 import type { WebAuthnAdapter } from "../adapters/webauthn/base.js";
 import type { VerificationTokenAdapter } from "../adapters/verification-token/base.js";
 import type { Logger } from "../utils/logger.js";
@@ -124,6 +125,11 @@ export type WebAuthnConfig = {
 	};
 };
 
+export type TotpMfaConfig = {
+	issuer?: string;
+	label?: (userId: string, locals: RequestEventLike["locals"]) => string;
+};
+
 export type SessionsConfig = {
 	listLimit?: number;
 };
@@ -164,6 +170,7 @@ type BaseAuthAdapters = {
 	oauthToken?: TokenAdapter;
 	verificationToken?: VerificationTokenAdapter;
 	magicLink?: MagicLinkAdapter;
+	mfa?: MfaAdapter;
 	webauthn?: WebAuthnAdapter;
 };
 
@@ -179,6 +186,7 @@ type CommonAuthConfigFields = {
 	profile?: SecurityProfile;
 	security?: AuthSecurityConfig;
 	sessions?: SessionsConfig;
+	mfa?: TotpMfaConfig;
 	logger?: Logger;
 };
 
@@ -230,6 +238,13 @@ export type AuthHandlers = {
 		loginOptions: RequestHandler;
 		loginVerify: RequestHandler;
 	};
+	mfa?: {
+		status: RequestHandler;
+		enroll: RequestHandler;
+		verify: RequestHandler;
+		disable: RequestHandler;
+		backupCode: RequestHandler;
+	};
 	sessions?: {
 		list: RequestHandler;
 		revoke: RequestHandler;
@@ -246,6 +261,11 @@ export type AuthRoutes = {
 	passkeyRegisterVerify: () => { POST: RequestHandler };
 	passkeyLoginOptions: () => { POST: RequestHandler };
 	passkeyLoginVerify: () => { POST: RequestHandler };
+	mfaStatus: () => { GET: RequestHandler };
+	mfaEnroll: () => { POST: RequestHandler };
+	mfaVerify: () => { POST: RequestHandler };
+	mfaDisable: () => { POST: RequestHandler };
+	mfaBackupCode: () => { POST: RequestHandler };
 	sessions: () => { GET: RequestHandler; POST: RequestHandler };
 };
 

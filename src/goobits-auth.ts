@@ -285,6 +285,24 @@ export class GoobitsAuth {
 				return { method: "POST", handler: handlers.webauthn.loginVerify };
 			}
 		}
+		if (segments.length === 2 && segments[0] === "mfa") {
+			if (!handlers.mfa) return null;
+			if (segments[1] === "status") {
+				return { method: "GET", handler: handlers.mfa.status };
+			}
+			if (segments[1] === "enroll") {
+				return { method: "POST", handler: handlers.mfa.enroll };
+			}
+			if (segments[1] === "verify") {
+				return { method: "POST", handler: handlers.mfa.verify };
+			}
+			if (segments[1] === "disable") {
+				return { method: "POST", handler: handlers.mfa.disable };
+			}
+			if (segments[1] === "backup-code") {
+				return { method: "POST", handler: handlers.mfa.backupCode };
+			}
+		}
 		if (segments.length === 1 && segments[0] === "sessions") {
 			if (!handlers.sessions) return null;
 			return method === "GET"

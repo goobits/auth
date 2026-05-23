@@ -2,22 +2,43 @@ import { generateSecret, createOtpAuthURL, verifyTOTP } from "../mfa/totp.js";
 import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from "../mfa/backup-codes.js";
 import type { RequestEventLike } from "../types/auth.js";
 
-type MfaStore = {
+export type MfaStore = {
 	setSecret: (userId: string, secret: string) => Promise<void>;
 	setBackupCodes: (userId: string, codes: string[]) => Promise<void>;
 	enableMfa: (userId: string) => Promise<void>;
-	getSecret: (userId: string) => Promise<string>;
+	getSecret: (userId: string) => Promise<string | null>;
 	disableMfa: (userId: string) => Promise<void>;
 	getBackupCodes: (userId: string) => Promise<string[]>;
 	consumeBackupCode: (userId: string, hash: string) => Promise<void>;
+	getStatus?: (userId: string) => Promise<{
+		enabled: boolean;
+		enabledAt: Date | null;
+		backupCodeCount: number;
+	}>;
 };
 
-type MfaConfig = {
+export type MfaConfig = {
 	getUserId: (locals: RequestEventLike["locals"]) => string | null;
 	store: MfaStore;
 	issuer?: string;
 	label?: (userId: string, locals: RequestEventLike["locals"]) => string;
 };
+
+export function createMfaStatusHandler(config: MfaConfig) {
+	const { getUserId, store } = config;
+	return async (event: RequestEventLike) => {
+		const userId = getUserId(event.locals);
+		if (!userId) return { success: false, error: "Unauthorized" };
+		const status = store.getStatus
+			? await store.getStatus(userId)
+			: {
+					backupCodeCount: (await store.getBackupCodes(userId)).length,
+					enabled: Boolean(await store.getSecret(userId)),
+					enabledAt: null,
+				};
+		return { success: true, status };
+	};
+}
 
 /**
  * Create MFA enrollment handler
@@ -62,6 +83,7 @@ export function createMfaVerifyHandler(config: MfaConfig) {
 		const formData = await event.request.formData();
 		const token = formData.get("token")?.toString();
 		const secret = await store.getSecret(userId);
+		if (!secret) return { success: false, error: "MFA enrollment not started" };
 		const verifyInput: { secret: string; token?: string } = { secret };
 		if (token) verifyInput.token = token;
 		const valid = await verifyTOTP(verifyInput);
