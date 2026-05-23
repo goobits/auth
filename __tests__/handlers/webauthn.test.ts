@@ -83,6 +83,11 @@ function createWebAuthnAdapter() {
 		},
 		getChallenge: async (id: string) => challenges.get(id) || null,
 		deleteChallenge: async (id: string) => challenges.delete(id),
+		consumeChallenge: async (id: string) => {
+			const record = challenges.get(id) || null;
+			if (record) challenges.delete(id);
+			return record;
+		},
 		createCredential: async (credential: StoredCredential) => {
 			credentials.set(credential.credentialId, credential);
 		},
@@ -149,7 +154,7 @@ describe("webauthn handlers", () => {
 			createSession: vi.fn(async () => ({ id: "s1", userId: "u1" })),
 			setSessionCookie: vi.fn(),
 		};
-		const databaseAdapter = {
+		const userAdapter = {
 			getUserById: vi.fn(async () => ({ id: "u1", email: "u1@example.com" })),
 		};
 
@@ -170,7 +175,7 @@ describe("webauthn handlers", () => {
 
 		const handler = createWebAuthnLoginVerifyHandler({
 			webauthnAdapter,
-			databaseAdapter,
+			userAdapter,
 			sessionAdapter,
 			rpID: "example.com",
 			origin: "http://localhost",

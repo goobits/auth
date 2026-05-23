@@ -3,7 +3,7 @@ import {
 	generateMagicLinkToken,
 	generateOtp,
 	hashToken,
-} from "../utils/magic-link.js";
+} from "./magic-link.utils.js";
 import { createRateLimiter } from "../security/rate-limit.js";
 import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.js";
 import { jsonResponse, parseRequestData } from "../utils/http.js";
@@ -11,56 +11,41 @@ import type { RequestHandler } from "@sveltejs/kit";
 import type {
 	AuthLocals,
 	AuthHooks,
+	OnLoginMode,
 	RequestEventLike,
 } from "../types/auth.js";
 import type { User } from "../types/index.js";
-import type { Session } from "../types/index.js";
-import { ensureSessionAfterLogin, type OnLoginMode } from "../utils/session-lifecycle.js";
+import type { MagicLinkAdapter } from "../adapters/magic-link/base.js";
+import type { SessionAdapter } from "../adapters/session/base.js";
+import type { UserAdapter } from "../adapters/database/base.js";
+import { ensureSessionAfterLogin } from "./session-lifecycle.js";
 import { AuthPrincipalResolutionError } from "../errors/auth.js";
 import { auditAuthEvent } from "../security/audit.js";
+import { getLogger } from "../utils/logger.js";
 import { isSafeRedirectPath } from "../utils/redirect.js";
 
-type MagicLinkAdapterLike = {
-	createToken: (params: {
-		userId: string | null;
-		email: string;
-		tokenHash: string;
-		otpHash?: string | null;
-		expiresAt: Date;
-		metadata?: Record<string, unknown>;
-	}) => Promise<Record<string, unknown> | void>;
-	findByTokenHash: (hash: string) => Promise<Record<string, unknown> | null>;
-	findByEmailAndOtpHash: (params: {
-		email: string;
-		otpHash: string;
-	}) => Promise<Record<string, unknown> | null>;
-	deleteById: (id: string) => Promise<unknown>;
-	deleteByEmail: (email: string) => Promise<unknown>;
-};
+type MagicLinkTokenAdapter = Pick<
+	MagicLinkAdapter,
+	| "createToken"
+	| "findByTokenHash"
+	| "findByEmailAndOtpHash"
+	| "consumeByTokenHash"
+	| "consumeByEmailAndOtpHash"
+	| "deleteById"
+	| "deleteByEmail"
+>;
 
-type MagicLinkUserAdapterLike = {
-	getUserByEmail: (email: string) => Promise<User | null>;
-	getUserById: (id: string) => Promise<User | null>;
-	createUser: (profile: {
-		id: string;
-		email: string;
-		name: string;
-		verified_email?: boolean;
-	}) => Promise<User>;
-	updateUser: (id: string, data: Record<string, unknown>) => Promise<User>;
-};
+type MagicLinkUserAdapter = Pick<
+	UserAdapter,
+	"getUserByEmail" | "getUserById" | "createUser" | "updateUser"
+>;
 
-type MagicLinkSessionAdapterLike = {
-	createSession: (userId: string) => Promise<Session>;
-	setSessionCookie?: (
-		cookies: RequestEventLike["cookies"],
-		session: Session,
-	) => void;
-};
+type MagicLinkSessionAdapterLike = Pick<SessionAdapter, "createSession"> &
+	Partial<Pick<SessionAdapter, "setSessionCookie">>;
 
 type MagicLinkRequestConfig = {
-	magicLinkAdapter: MagicLinkAdapterLike;
-	databaseAdapter?: Pick<MagicLinkUserAdapterLike, "getUserByEmail">;
+	magicLinkAdapter: MagicLinkTokenAdapter;
+	userAdapter?: Pick<MagicLinkUserAdapter, "getUserByEmail">;
 	sendEmail: (payload: {
 		email: string;
 		link: string;
@@ -88,8 +73,8 @@ type MagicLinkRequestConfig = {
 };
 
 type MagicLinkVerifyConfig = {
-	magicLinkAdapter: MagicLinkAdapterLike;
-	databaseAdapter?: MagicLinkUserAdapterLike;
+	magicLinkAdapter: MagicLinkTokenAdapter;
+	userAdapter?: MagicLinkUserAdapter;
 	sessionAdapter: MagicLinkSessionAdapterLike;
 	allowSignup?: boolean;
 	createUser?: (email: string, event: RequestEventLike) => Promise<User>;
@@ -135,7 +120,7 @@ export function createMagicLinkRequestHandler(
 ): RequestHandler {
 	const {
 		magicLinkAdapter,
-		databaseAdapter,
+		userAdapter,
 		sendEmail,
 		allowSignup = false,
 		expiresInMs = 15 * 60 * 1000,
@@ -174,8 +159,8 @@ export function createMagicLinkRequestHandler(
 			return jsonResponse({ ok: false, error: "Email required" }, 400);
 		}
 
-		const user = databaseAdapter
-			? await databaseAdapter.getUserByEmail(email)
+		const user = userAdapter
+			? await userAdapter.getUserByEmail(email)
 			: null;
 
 		if (!user && !allowSignup) {
@@ -236,7 +221,7 @@ export function createMagicLinkVerifyHandler(
 ) {
 	const {
 		magicLinkAdapter,
-		databaseAdapter,
+		userAdapter,
 		sessionAdapter,
 		allowSignup = false,
 		createUser,
@@ -305,17 +290,22 @@ export function createMagicLinkVerifyHandler(
 			);
 		}
 
+		// Atomic find-and-delete: in-tree adapters (Drizzle/D1) override
+		// `consume*` with a single `DELETE ... RETURNING` to close the race
+		// where two concurrent verifies of the same token would both succeed.
 		let record: MagicLinkTokenRecord | null = null;
 
 		if (token) {
 			const tokenHash = await hashToken(token);
-			record = await magicLinkAdapter.findByTokenHash(tokenHash);
+			record = (await magicLinkAdapter.consumeByTokenHash(
+				tokenHash,
+			)) as MagicLinkTokenRecord | null;
 		} else if (otp && email) {
 			const otpHash = await hashToken(otp);
-			record = await magicLinkAdapter.findByEmailAndOtpHash({
+			record = (await magicLinkAdapter.consumeByEmailAndOtpHash({
 				email,
 				otpHash,
-			});
+			})) as MagicLinkTokenRecord | null;
 		}
 
 		if (!record) {
@@ -329,19 +319,11 @@ export function createMagicLinkVerifyHandler(
 
 		const expiresAt = record["expiresAt"];
 		if (expiresAt && new Date(expiresAt) < new Date()) {
-			const recordId = record["id"];
-			if (typeof recordId === "string") {
-				await magicLinkAdapter.deleteById(recordId);
-			}
+			// Token was already consumed by the read above; just audit.
 			auditAuthEvent("magic_link.expired", {
 				email: record["email"] ?? email,
 			});
 			return jsonResponse({ ok: false, error: "Magic link expired" }, 400);
-		}
-
-		const recordId = record["id"];
-		if (typeof recordId === "string") {
-			await magicLinkAdapter.deleteById(recordId);
 		}
 
 		let user: User | null = null;
@@ -349,22 +331,22 @@ export function createMagicLinkVerifyHandler(
 			typeof record["userId"] === "string" ? record["userId"] : null;
 		const recordEmail =
 			typeof record["email"] === "string" ? record["email"] : null;
-		if (databaseAdapter) {
+		if (userAdapter) {
 			if (recordUserId) {
-				user = await databaseAdapter.getUserById(recordUserId);
+				user = await userAdapter.getUserById(recordUserId);
 			}
 			if (!user && (recordEmail || email)) {
-				user = await databaseAdapter.getUserByEmail(recordEmail || email);
+				user = await userAdapter.getUserByEmail(recordEmail || email);
 			}
 		}
 
-		if (!user && allowSignup && databaseAdapter) {
+		if (!user && allowSignup && userAdapter) {
 			if (typeof createUser === "function") {
 				user = await createUser(recordEmail || email, event);
 			} else {
 				const signupEmail = recordEmail || email;
 				const signupName = signupEmail.split("@")[0] ?? "";
-				user = await databaseAdapter.createUser({
+				user = await userAdapter.createUser({
 					id: signupEmail,
 					email: signupEmail,
 					name: signupName,
@@ -373,10 +355,15 @@ export function createMagicLinkVerifyHandler(
 			}
 		}
 
-		if (user && databaseAdapter && user.emailVerified === false) {
+		if (user && userAdapter && user.emailVerified === false) {
 			try {
-				await databaseAdapter.updateUser(user.id, { emailVerified: true });
-			} catch {}
+				await userAdapter.updateUser(user.id, { emailVerified: true });
+			} catch (error) {
+				getLogger().warn?.(
+					"[MagicLink] Failed to mark email as verified after successful login:",
+					error,
+				);
+			}
 		}
 
 		let userId = user?.id ? String(user.id) : recordUserId;

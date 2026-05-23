@@ -1,17 +1,21 @@
 import { jsonResponse, parseRequestData } from "../utils/http.js";
 import type { AuthLocals, RequestEventLike } from "../types/auth.js";
-import type { SessionSummary, Session } from "../types/index.js";
+import type { Session } from "../types/index.js";
+import type { SessionAdapter } from "../adapters/session/base.js";
 import { AuthAdapterCapabilityError } from "../errors/auth.js";
 
-type SessionAdapterLike = {
-	listSessions?: (userId: string) => Promise<SessionSummary[]>;
-	invalidateSession?: (sessionId: string) => Promise<void>;
-	invalidateUserSessions?: (userId: string) => Promise<void>;
-	deleteSessionCookie?: (cookies: RequestEventLike["cookies"]) => void;
-};
+type SessionManagementAdapter = Partial<
+	Pick<
+		SessionAdapter,
+		| "listSessions"
+		| "invalidateSession"
+		| "invalidateUserSessions"
+		| "deleteSessionCookie"
+	>
+>;
 
 type SessionHandlerConfig = {
-	sessionAdapter: SessionAdapterLike;
+	sessionAdapter: SessionManagementAdapter;
 	isAuthenticated?: (locals: AuthLocals) => boolean;
 	getUser?: (locals: AuthLocals) => { id: string };
 	getSession?: (locals: AuthLocals) => Session | null;
