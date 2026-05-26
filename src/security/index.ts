@@ -12,5 +12,6 @@ export { applySecurityPolicy } from "./policy.js";
 export { createAuthEvent } from "./events.js";
 export { requireAuthenticated, requireRole, requireOwnership } from "./authorize.js";
 export { createWebhookAlerter } from "./alerting.js";
-export { createAdminApiKey, hashAdminApiKey, verifyAdminApiKey, parseApiKeyHeader, timingSafeEqual } from "./admin-auth.js";
+export { createAdminApiKey, hashAdminApiKey, verifyAdminApiKey, parseApiKeyHeader } from "./admin-auth.js";
+export { timingSafeEqual } from "../utils/crypto.js";
 export { verifyRecaptchaToken } from "./recaptcha.js";
