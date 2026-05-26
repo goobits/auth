@@ -60,8 +60,8 @@ describe("basic auth", () => {
 	});
 
 	it("creates a Basic challenge response", () => {
-		const response = createBasicAuthResponse({ realm: 'Asset "Manager"' });
+		const response = createBasicAuthResponse({ realm: 'Asset "Manager"\\Admin\r\n' });
 		expect(response.status).toBe(401);
-		expect(response.headers.get("WWW-Authenticate")).toBe('Basic realm="Asset \\"Manager\\""');
+		expect(response.headers.get("WWW-Authenticate")).toBe('Basic realm="Asset \\"Manager\\"\\\\Admin"');
 	});
 });
