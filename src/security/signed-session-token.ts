@@ -1,6 +1,7 @@
-import { generateRandomUUID, sha256Hex, timingSafeEqual } from "../utils/crypto.js";
+import { generateRandomUUID, timingSafeEqual } from "../utils/crypto.js";
 
 const DEFAULT_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+const HMAC_ALGORITHM = { name: "HMAC", hash: "SHA-256" };
 
 export type SignedSessionTokenClaims = {
 	subject: string;
@@ -39,8 +40,30 @@ function fromBase64Url(value: string): string {
 	return new TextDecoder().decode(bytes);
 }
 
+function bytesToHex(bytes: Uint8Array): string {
+	return Array.from(bytes)
+		.map((byte) => byte.toString(16).padStart(2, "0"))
+		.join("");
+}
+
 async function signPayload(payload: string, secret: string): Promise<string> {
-	return sha256Hex(`${secret}.${payload}`);
+	if (!globalThis.crypto?.subtle) {
+		throw new Error("WebCrypto HMAC support is required");
+	}
+
+	const key = await globalThis.crypto.subtle.importKey(
+		"raw",
+		new TextEncoder().encode(secret) as BufferSource,
+		HMAC_ALGORITHM,
+		false,
+		["sign"],
+	);
+	const signature = await globalThis.crypto.subtle.sign(
+		HMAC_ALGORITHM.name,
+		key,
+		new TextEncoder().encode(payload) as BufferSource,
+	);
+	return bytesToHex(new Uint8Array(signature));
 }
 
 /**
