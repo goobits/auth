@@ -5,6 +5,7 @@
 - Added the class-first `GoobitsAuth` API.
 - Made `GoobitsAuth` the package-root API and kept the lower-level `createAuth` engine internal.
 - Added Node HTTP helpers through `@goobits/auth/node`.
+- Added shared Basic auth and signed session-token helpers through `@goobits/auth/security`.
 - Added memory and PostgreSQL adapter bundles.
 - Added security helpers, MFA utilities, and UI exports.
 - Trimmed broad utility/security exports to the intentional public helpers.

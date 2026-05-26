@@ -119,6 +119,27 @@ Handler options support custom form field names and metadata:
 - `createSigninHandler({ fields: { identifier, password, remember }, identifierField })`
 - `createSignupHandler({ fields: { email, password, name }, metadataFields, getSignupMetadata })`
 
+## Security primitives
+
+Use `@goobits/auth/security` when an app owns its route policy or persistence
+layer but should share auth primitives:
+
+```ts
+import {
+  createBasicAuthResponse,
+  createSignedSessionToken,
+  parseBasicAuthHeader,
+  validateCsrfRequest,
+  verifyBasicAuthHeader,
+  verifySignedSessionToken,
+} from "@goobits/auth/security";
+```
+
+- Basic auth parsing and verification against caller-provided password hashes.
+- Standard Basic-auth challenge responses.
+- Signed, expiring session-token creation and verification.
+- CSRF issuance/validation, rate-limit helpers, API-key helpers, role/ownership guards, and timing-safe comparisons.
+
 ## Typing App locals
 
 ```ts
