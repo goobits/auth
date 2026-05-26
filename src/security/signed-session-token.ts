@@ -112,7 +112,12 @@ export async function verifySignedSessionToken(
 	}
 
 	try {
-		const [encodedPayload, signature] = token.split(".");
+		const parts = token.split(".");
+		if (parts.length !== 2) {
+			return null;
+		}
+
+		const [encodedPayload, signature] = parts;
 		if (!encodedPayload || !signature) {
 			return null;
 		}

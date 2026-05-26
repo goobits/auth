@@ -30,6 +30,7 @@ describe("signed session tokens", () => {
 		});
 
 		await expect(verifySignedSessionToken(`${token}x`, { secret: "test-secret" })).resolves.toBeNull();
+		await expect(verifySignedSessionToken(`${token}.extra`, { secret: "test-secret" })).resolves.toBeNull();
 		await expect(verifySignedSessionToken(token, { secret: "other-secret" })).resolves.toBeNull();
 	});
 
