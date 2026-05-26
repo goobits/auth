@@ -88,6 +88,24 @@ export const { GET, POST } = auth.handlers;
 - `await auth.requireRole(event, "admin")`
 - `await auth.getSession(event)`
 
+## Security Primitives
+
+`@goobits/auth/security` also exports low-level helpers for apps that own
+their own route policy or session store:
+
+```ts
+import {
+  createBasicAuthResponse,
+  createSignedSessionToken,
+  verifyBasicAuthHeader,
+  verifySignedSessionToken,
+} from "@goobits/auth/security";
+```
+
+- Basic auth parsing and verification against caller-owned password hashes.
+- Signed, expiring session-token claims for custom session stores.
+- CSRF, rate-limit, API-key, authorization, and timing-safe comparison helpers.
+
 ## Credentials Provider
 
 ```ts
