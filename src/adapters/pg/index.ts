@@ -3,9 +3,10 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import type { Cookies } from '@sveltejs/kit'
 
 import type { OAuthProfile, Session, User } from '../../types/index.js'
-import type { MfaStatus } from '../../types/index.js'
+import type { MagicLinkToken, MfaStatus } from '../../types/index.js'
 import type { WebAuthnCredential } from '../../types/index.js'
 import { UserAdapter } from '../database/base.js'
+import { MagicLinkAdapter } from '../magic-link/base.js'
 import { MfaAdapter } from '../mfa/base.js'
 import { SessionAdapter } from '../session/base.js'
 import { WebAuthnAdapter } from '../webauthn/base.js'
@@ -69,6 +70,17 @@ type MfaFactorRow = {
 type MfaStatusRow = {
 	backup_code_count: string | number;
 	enabled_at: Date | null;
+}
+
+type MagicLinkTokenRow = {
+	created_at: Date;
+	email: string;
+	expires_at: Date;
+	id: string;
+	metadata: Record<string, unknown> | null;
+	otp_hash: string | null;
+	token_hash: string;
+	user_id: string | null;
 }
 
 export class PgUserAdapter extends UserAdapter {
@@ -586,6 +598,118 @@ export class PgMfaAdapter extends MfaAdapter {
 	}
 }
 
+export class PgMagicLinkAdapter extends MagicLinkAdapter {
+	#db: PgPoolLike
+
+	constructor({ db }: { db: PgPoolLike }) {
+		super()
+		this.#db = db
+	}
+
+	async createToken({
+		userId,
+		email,
+		tokenHash,
+		otpHash,
+		expiresAt,
+		metadata
+	}: {
+		userId: string | null;
+		email: string;
+		tokenHash: string;
+		otpHash?: string | null;
+		expiresAt: Date;
+		metadata?: Record<string, unknown>;
+	}): Promise<MagicLinkToken> {
+		const row = (
+			await this.#db.query<MagicLinkTokenRow>(
+				`
+			INSERT INTO auth_magic_link_tokens
+				(id, user_id, email, token_hash, otp_hash, expires_at, metadata)
+			VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+			RETURNING *
+		`,
+				[
+					randomUUID(),
+					userId,
+					normalizeEmail(email),
+					tokenHash,
+					otpHash ?? null,
+					expiresAt,
+					JSON.stringify(metadata ?? {})
+				]
+			)
+		).rows[0]
+		return toMagicLinkToken(requireRow(row))
+	}
+
+	async findByTokenHash(tokenHash: string): Promise<MagicLinkToken | null> {
+		const row = (
+			await this.#db.query<MagicLinkTokenRow>(
+				'SELECT * FROM auth_magic_link_tokens WHERE token_hash = $1 LIMIT 1',
+				[ tokenHash ]
+			)
+		).rows[0]
+		return row ? toMagicLinkToken(row) : null
+	}
+
+	async findByEmailAndOtpHash({
+		email,
+		otpHash
+	}: {
+		email: string;
+		otpHash: string;
+	}): Promise<MagicLinkToken | null> {
+		const row = (
+			await this.#db.query<MagicLinkTokenRow>(
+				'SELECT * FROM auth_magic_link_tokens WHERE email = $1 AND otp_hash = $2 LIMIT 1',
+				[ normalizeEmail(email), otpHash ]
+			)
+		).rows[0]
+		return row ? toMagicLinkToken(row) : null
+	}
+
+	async deleteById(tokenId: string): Promise<void> {
+		await this.#db.query('DELETE FROM auth_magic_link_tokens WHERE id = $1', [ tokenId ])
+	}
+
+	async deleteByUserId(userId: string): Promise<void> {
+		await this.#db.query('DELETE FROM auth_magic_link_tokens WHERE user_id = $1', [ userId ])
+	}
+
+	async deleteByEmail(email: string): Promise<void> {
+		await this.#db.query('DELETE FROM auth_magic_link_tokens WHERE email = $1', [
+			normalizeEmail(email)
+		])
+	}
+
+	override async consumeByTokenHash(tokenHash: string): Promise<MagicLinkToken | null> {
+		const row = (
+			await this.#db.query<MagicLinkTokenRow>(
+				'DELETE FROM auth_magic_link_tokens WHERE token_hash = $1 RETURNING *',
+				[ tokenHash ]
+			)
+		).rows[0]
+		return row ? toMagicLinkToken(row) : null
+	}
+
+	override async consumeByEmailAndOtpHash({
+		email,
+		otpHash
+	}: {
+		email: string;
+		otpHash: string;
+	}): Promise<MagicLinkToken | null> {
+		const row = (
+			await this.#db.query<MagicLinkTokenRow>(
+				'DELETE FROM auth_magic_link_tokens WHERE email = $1 AND otp_hash = $2 RETURNING *',
+				[ normalizeEmail(email), otpHash ]
+			)
+		).rows[0]
+		return row ? toMagicLinkToken(row) : null
+	}
+}
+
 export function createPgAuthAdapters(input: {
 	cookieDomain?: string;
 	cookieName: string;
@@ -593,6 +717,7 @@ export function createPgAuthAdapters(input: {
 	secureCookies: boolean;
 }) {
 	return {
+		magicLink: new PgMagicLinkAdapter({ db: input.db }),
 		mfa: new PgMfaAdapter({ db: input.db }),
 		session: new PgSessionAdapter(input),
 		user: new PgUserAdapter({ db: input.db }),
@@ -677,6 +802,22 @@ CREATE TABLE IF NOT EXISTS auth_webauthn_credentials (
 );
 
 CREATE INDEX IF NOT EXISTS auth_webauthn_credentials_user_id_idx ON auth_webauthn_credentials(user_id);
+
+CREATE TABLE IF NOT EXISTS auth_magic_link_tokens (
+	id TEXT PRIMARY KEY,
+	user_id TEXT REFERENCES auth_users(id) ON DELETE CASCADE,
+	email TEXT NOT NULL,
+	token_hash TEXT NOT NULL,
+	otp_hash TEXT,
+	expires_at TIMESTAMPTZ NOT NULL,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	metadata JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+
+CREATE INDEX IF NOT EXISTS auth_magic_link_tokens_email_idx ON auth_magic_link_tokens(email);
+CREATE INDEX IF NOT EXISTS auth_magic_link_tokens_token_hash_idx ON auth_magic_link_tokens(token_hash);
+CREATE INDEX IF NOT EXISTS auth_magic_link_tokens_otp_hash_idx ON auth_magic_link_tokens(otp_hash);
+CREATE INDEX IF NOT EXISTS auth_magic_link_tokens_expires_at_idx ON auth_magic_link_tokens(expires_at);
 `
 
 function normalizeEmail(email: string): string {
@@ -743,6 +884,18 @@ function toWebAuthnCredential(row: WebAuthnCredentialRow): WebAuthnCredential {
 		publicKey: row.public_key,
 		transports: Array.isArray(row.transports) ? row.transports : null,
 		updatedAt: row.updated_at,
+		userId: row.user_id
+	}
+}
+
+function toMagicLinkToken(row: MagicLinkTokenRow): MagicLinkToken {
+	return {
+		createdAt: row.created_at,
+		email: row.email,
+		expiresAt: row.expires_at,
+		id: row.id,
+		otpHash: row.otp_hash,
+		tokenHash: row.token_hash,
 		userId: row.user_id
 	}
 }
