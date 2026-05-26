@@ -1,5 +1,3 @@
-import { verifyPassword as verifyPasswordHash } from "../password/index.js";
-
 export type BasicAuthCredentials = {
 	username: string;
 	password: string;
@@ -13,7 +11,7 @@ export type BasicAuthPasswordVerifier = (
 export type VerifyBasicAuthOptions = {
 	authHeader: string | null;
 	getPasswordHash: (username: string) => string | null | undefined | Promise<string | null | undefined>;
-	verifyPassword?: BasicAuthPasswordVerifier;
+	verifyPassword: BasicAuthPasswordVerifier;
 };
 
 function decodeBase64(value: string): string {
@@ -69,7 +67,7 @@ export function parseBasicAuthHeader(authHeader: string | null): BasicAuthCreden
 export async function verifyBasicAuthHeader({
 	authHeader,
 	getPasswordHash,
-	verifyPassword = verifyPasswordHash,
+	verifyPassword,
 }: VerifyBasicAuthOptions): Promise<string | null> {
 	const credentials = parseBasicAuthHeader(authHeader);
 	if (!credentials) {
@@ -82,6 +80,10 @@ export async function verifyBasicAuthHeader({
 	}
 
 	return (await verifyPassword(storedHash, credentials.password)) ? credentials.username : null;
+}
+
+function sanitizeBasicAuthRealm(realm: string): string {
+	return realm.replace(/[\u0000-\u001f\u007f]/g, "").replaceAll("\\", "\\\\").replaceAll('"', '\\"');
 }
 
 /**
@@ -97,7 +99,7 @@ export function createBasicAuthResponse({
 	return new Response(body, {
 		status: 401,
 		headers: {
-			"WWW-Authenticate": `Basic realm="${realm.replaceAll('"', '\\"')}"`,
+			"WWW-Authenticate": `Basic realm="${sanitizeBasicAuthRealm(realm)}"`,
 		},
 	});
 }

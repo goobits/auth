@@ -135,7 +135,7 @@ import {
 } from "@goobits/auth/security";
 ```
 
-- Basic auth parsing and verification against caller-provided password hashes.
+- Basic auth parsing and verification with caller-provided password hash checks.
 - Standard Basic-auth challenge responses.
 - Signed, expiring session-token creation and verification.
 - CSRF issuance/validation, rate-limit helpers, API-key helpers, role/ownership guards, and timing-safe comparisons.

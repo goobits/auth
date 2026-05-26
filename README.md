@@ -102,7 +102,7 @@ import {
 } from "@goobits/auth/security";
 ```
 
-- Basic auth parsing and verification against caller-owned password hashes.
+- Basic auth parsing and verification with caller-owned password hash checks.
 - Signed, expiring session-token claims for custom session stores.
 - CSRF, rate-limit, API-key, authorization, and timing-safe comparison helpers.
 
