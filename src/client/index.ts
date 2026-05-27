@@ -1,5 +1,3 @@
-import { decodeBase64url, encodeBase64url } from "@oslojs/encoding";
-
 type Base64Input =
 	| ArrayBuffer
 	| ArrayBufferView
@@ -28,6 +26,29 @@ type CreateAuthClientOptions = {
 	endpoints?: PasskeyEndpoints;
 	fetcher?: typeof fetch;
 };
+
+function decodeBase64url(value: string): Uint8Array {
+	const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+	const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+	const binary = globalThis.atob(padded);
+	const bytes = new Uint8Array(binary.length);
+	for (let index = 0; index < binary.length; index += 1) {
+		bytes[index] = binary.charCodeAt(index);
+	}
+	return bytes;
+}
+
+function encodeBase64url(value: Uint8Array): string {
+	let binary = "";
+	for (const byte of value) {
+		binary += String.fromCharCode(byte);
+	}
+	return globalThis
+		.btoa(binary)
+		.replace(/\+/g, "-")
+		.replace(/\//g, "_")
+		.replace(/=+$/g, "");
+}
 
 function toUint8Array(value: Base64Input): Uint8Array {
 	if (!value) return new Uint8Array();
