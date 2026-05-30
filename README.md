@@ -2,7 +2,7 @@
 
 Pluggable authentication for SvelteKit with a class-first API.
 
-## Public Surface
+## Entrypoints
 
 `@goobits/auth` is SvelteKit-first. The main `GoobitsAuth` export, route
 handlers, cookie adapters, and UI helpers expect SvelteKit request/cookie
