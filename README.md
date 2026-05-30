@@ -2,6 +2,13 @@
 
 Pluggable authentication for SvelteKit with a class-first API.
 
+## TL;DR
+
+- Drop `GoobitsAuth` into `src/lib/auth.ts` and wire `auth.handle()` into `hooks.server.ts`.
+- Attach route handlers at `src/routes/auth/[...auth]/+server.ts` with `auth.handlers`.
+- Use `drizzleAdapter(db, { schema })` for Drizzle ORM; bring your own adapter for other storage.
+- Lower-level subpaths (`/security`, `/password`, `/mfa`, `/adapters/pg`) work outside SvelteKit.
+
 ## Entrypoints
 
 `@goobits/auth` is SvelteKit-first. The main `GoobitsAuth` export, route
@@ -23,7 +30,7 @@ The documented exports are treated as stable for the `0.2.x` line. WebAuthn
 and MFA APIs are production-oriented but may receive additive options as
 browser and authenticator behavior evolves.
 
-## Install
+## Usage
 
 This package is designed to be used from a SvelteKit build pipeline.
 
