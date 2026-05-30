@@ -163,11 +163,11 @@ is provided. Prefer the explicit config in new apps.
 
 ## Docs
 
-- `docs/quickstart.md` — 5-minute SvelteKit wire-up
-- `docs/integration.md` — adapter contract for custom storage backends
+- `docs/quickstart.md`: 5-minute SvelteKit wire-up
+- `docs/integration.md`: adapter contract for custom storage backends
 - `docs/public-api.md`
 - `docs/security-contract.md`
 - `docs/schema.md`
 - `docs/testing.md`
 - `docs/migrations/vnext-breaking.md`
-- `examples/sveltekit-quickstart/` — minimal SvelteKit wiring
+- `examples/sveltekit-quickstart/`: minimal SvelteKit wiring
