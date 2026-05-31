@@ -1,4 +1,4 @@
-import type { OAuthProfile, User } from "../../types/core.js";
+import type { OAuthProfile, User } from '../../types/core.js'
 
 /**
  * Base Database Adapter Interface
@@ -14,21 +14,21 @@ export abstract class UserAdapter {
 	abstract createUser(
 		profile: OAuthProfile,
 		metadata?: Record<string, unknown>,
-	): Promise<User>;
+	): Promise<User>
 
 	/**
 	 * Get user by ID (returns SANITIZED user)
 	 * @param {string} id - User ID
 	 * @returns {Promise<import('../../types/core.js').User | null>}
 	 */
-	abstract getUserById(id: string): Promise<User | null>;
+	abstract getUserById(id: string): Promise<User | null>
 
 	/**
 	 * Get user by email (returns SANITIZED user)
 	 * @param {string} email - Email address
 	 * @returns {Promise<import('../../types/core.js').User | null>}
 	 */
-	abstract getUserByEmail(email: string): Promise<User | null>;
+	abstract getUserByEmail(email: string): Promise<User | null>
 
 	/**
 	 * Get user by OAuth provider ID (returns SANITIZED user)
@@ -39,7 +39,7 @@ export abstract class UserAdapter {
 	abstract getUserByProviderId(
 		provider: string,
 		providerId: string,
-	): Promise<User | null>;
+	): Promise<User | null>
 
 	/**
 	 * Update user (returns SANITIZED user)
@@ -50,14 +50,14 @@ export abstract class UserAdapter {
 	abstract updateUser(
 		id: string,
 		data: Partial<User> & Record<string, unknown>,
-	): Promise<User>;
+	): Promise<User>
 
 	/**
 	 * Delete user
 	 * @param {string} id - User ID
 	 * @returns {Promise<void>}
 	 */
-	abstract deleteUser(id: string): Promise<void>;
+	abstract deleteUser(id: string): Promise<void>
 
 	/**
 	 * Link OAuth account to user
@@ -70,7 +70,7 @@ export abstract class UserAdapter {
 		userId: string,
 		provider: string,
 		providerAccountId: string,
-	): Promise<void>;
+	): Promise<void>
 
 	/**
 	 * INTERNAL: Get user with password hash (for authentication only)
@@ -80,7 +80,7 @@ export abstract class UserAdapter {
 	 */
 	abstract getUserWithPasswordHash(
 		email: string,
-	): Promise<(User & { password?: string | null }) | null>;
+	): Promise<(User & { password?: string | null }) | null>
 
 	/**
 	 * OPTIONAL: Get user by identifier (returns SANITIZED user)
@@ -91,7 +91,7 @@ export abstract class UserAdapter {
 	getUserByIdentifier?(
 		identifier: string,
 		field?: string,
-	): Promise<User | null>;
+	): Promise<User | null>
 
 	/**
 	 * OPTIONAL: Get user with password hash by identifier (for auth only)
@@ -102,5 +102,5 @@ export abstract class UserAdapter {
 	getUserWithPasswordHashByIdentifier?(
 		identifier: string,
 		field?: string,
-	): Promise<(User & { password?: string | null }) | null>;
+	): Promise<(User & { password?: string | null }) | null>
 }

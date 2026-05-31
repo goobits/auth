@@ -12,16 +12,16 @@
  * @param {Function} [config.rateLimit.key] - Function (event) => string for rate limit key
  * @returns {Function} SvelteKit request handler
  */
-import type { RequestEventLike } from "../types/auth.js";
-import { getLogger } from "../utils/logger.js";
-import type { User } from "../types/index.js";
-import type { VerificationTokenAdapter } from "../adapters/verification-token/base.js";
+import type { VerificationTokenAdapter } from '../adapters/verification-token/base.js'
+import type { RequestEventLike } from '../types/auth.js'
+import type { User } from '../types/index.js'
+import { getLogger } from '../utils/logger.js'
 
 type RateLimitConfig = {
 	check?: (key: string) => Promise<{ allowed: boolean }>;
 	key?: (event: RequestEventLike) => string;
 	trustProxyHeader?: boolean;
-};
+}
 
 export function createPasswordResetRequestHandler(config: {
 	userAdapter: { getUserByEmail: (email: string) => Promise<User | null> };
@@ -35,88 +35,88 @@ export function createPasswordResetRequestHandler(config: {
 		verificationTokenAdapter,
 		sendPasswordResetEmail,
 		csrf,
-		rateLimit,
-	} = config;
+		rateLimit
+	} = config
 
-	const log = getLogger();
+	const log = getLogger()
 
-	return async (event: RequestEventLike) => {
+	return async(event: RequestEventLike) => {
 		if (csrf?.validate) {
-			const valid = await csrf.validate(event);
+			const valid = await csrf.validate(event)
 			if (!valid) {
 				return {
-					error: csrf.errorMessage || "Invalid CSRF token",
-					success: false,
-				};
+					error: csrf.errorMessage || 'Invalid CSRF token',
+					success: false
+				}
 			}
 		}
 
 		if (rateLimit?.check) {
 			const forwardedFor = rateLimit?.trustProxyHeader
-				? event.request.headers.get("x-forwarded-for")
-				: null;
-			const firstForwardedIp = forwardedFor?.split(",")[0]?.trim();
+				? event.request.headers.get('x-forwarded-for')
+				: null
+			const firstForwardedIp = forwardedFor?.split(',')[0]?.trim()
 			const key = rateLimit.key
 				? rateLimit.key(event)
-				: firstForwardedIp || event.getClientAddress?.() || "unknown";
-			const result = await rateLimit.check(key);
+				: firstForwardedIp || event.getClientAddress?.() || 'unknown'
+			const result = await rateLimit.check(key)
 			if (!result?.allowed) {
 				return {
-					error: "Too many attempts. Try again later.",
-					success: false,
-				};
+					error: 'Too many attempts. Try again later.',
+					success: false
+				}
 			}
 		}
 
-		const formData = await event.request.formData();
-		const email = formData.get("email")?.toString();
+		const formData = await event.request.formData()
+		const email = formData.get('email')?.toString()
 
 		if (!email) {
 			return {
-				error: "Email is required",
-				success: false,
-			};
+				error: 'Email is required',
+				success: false
+			}
 		}
 
 		try {
 			// Check if user exists
-			const user = await userAdapter.getUserByEmail(email);
+			const user = await userAdapter.getUserByEmail(email)
 			if (!user) {
 				// Don't reveal that user doesn't exist (security)
 				return {
 					success: true,
 					message:
-						"If an account exists with this email, a password reset link has been sent",
-				};
+						'If an account exists with this email, a password reset link has been sent'
+				}
 			}
 
 			// Create reset token
 			const { createVerificationToken, VERIFICATION_TOKEN_TYPES } =
-				await import("../utils/tokens.js");
+				await import('../utils/tokens.js')
 
 			const token = await createVerificationToken({
 				adapter: verificationTokenAdapter,
 				userId: user.id,
-				type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET,
-			});
+				type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET
+			})
 
 			// Send reset email
-			await sendPasswordResetEmail(user.email, token);
+			await sendPasswordResetEmail(user.email, token)
 
 			return {
 				success: true,
 				message:
-					"If an account exists with this email, a password reset link has been sent",
-			};
-		} catch (error) {
-			log.error?.("[Password Reset Request] Error:", error);
+					'If an account exists with this email, a password reset link has been sent'
+			}
+		} catch(error) {
+			log.error?.('[Password Reset Request] Error:', error)
 
 			return {
-				error: "An error occurred while processing your request",
-				success: false,
-			};
+				error: 'An error occurred while processing your request',
+				success: false
+			}
 		}
-	};
+	}
 }
 
 /**
@@ -147,81 +147,81 @@ export function createPasswordResetConfirmHandler(config: {
 		userAdapter,
 		verificationTokenAdapter,
 		sessionAdapter,
-		redirectTo = "/sign-in",
-	} = config;
+		redirectTo = '/sign-in'
+	} = config
 
-	const log = getLogger();
+	const log = getLogger()
 
-	return async (event: RequestEventLike) => {
-		const formData = await event.request.formData();
-		const token = formData.get("token")?.toString();
-		const newPassword = formData.get("password")?.toString();
+	return async(event: RequestEventLike) => {
+		const formData = await event.request.formData()
+		const token = formData.get('token')?.toString()
+		const newPassword = formData.get('password')?.toString()
 
 		if (!token || !newPassword) {
 			return {
-				error: "Token and new password are required",
-				success: false,
-			};
+				error: 'Token and new password are required',
+				success: false
+			}
 		}
 
 		try {
 			// Consume token and get user
 			const { consumeVerificationToken, VERIFICATION_TOKEN_TYPES } =
-				await import("../utils/tokens.js");
+				await import('../utils/tokens.js')
 
 			const user = (await consumeVerificationToken({
 				adapter: verificationTokenAdapter,
 				token,
-				type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET,
-			})) as User | null;
+				type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET
+			})) as User | null
 
 			if (!user) {
 				return {
-					error: "Invalid or expired reset token",
-					success: false,
-				};
+					error: 'Invalid or expired reset token',
+					success: false
+				}
 			}
 
 			// Update password
 			await credentialsProvider.updatePassword({
 				userId: user.id,
 				newPassword,
-				userAdapter,
-			});
+				userAdapter
+			})
 
 			// Invalidate existing sessions after password reset. If this fails,
 			// the user's pre-reset sessions remain valid — that's a security
 			// regression, so we surface a warning instead of silently swallowing.
-			let sessionsInvalidated = true;
+			let sessionsInvalidated = true
 			if (sessionAdapter?.invalidateUserSessions) {
 				try {
-					await sessionAdapter.invalidateUserSessions(user.id);
-				} catch (error) {
-					sessionsInvalidated = false;
+					await sessionAdapter.invalidateUserSessions(user.id)
+				} catch(error) {
+					sessionsInvalidated = false
 					log.error?.(
-						"[PasswordReset] Failed to invalidate existing sessions after reset:",
-						error,
-					);
+						'[PasswordReset] Failed to invalidate existing sessions after reset:',
+						error
+					)
 				}
 			}
 
 			return {
 				success: true,
 				message: sessionsInvalidated
-					? "Password has been reset successfully"
-					: "Password reset, but existing sessions could not be invalidated. Sign out from all devices manually.",
+					? 'Password has been reset successfully'
+					: 'Password reset, but existing sessions could not be invalidated. Sign out from all devices manually.',
 				sessionsInvalidated,
-				redirectTo,
-			};
-		} catch (error) {
-			log.error?.("[Password Reset Confirm] Error:", error);
+				redirectTo
+			}
+		} catch(error) {
+			log.error?.('[Password Reset Confirm] Error:', error)
 
 			return {
 				error:
 					(error instanceof Error ? error.message : undefined) ||
-					"An error occurred while resetting password",
-				success: false,
-			};
+					'An error occurred while resetting password',
+				success: false
+			}
 		}
-	};
+	}
 }

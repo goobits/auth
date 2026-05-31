@@ -8,14 +8,14 @@ export type Session = {
 	ip?: string | null;
 	userAgent?: string | null;
 	fingerprint?: string | null;
-};
+}
 
 export type SessionMetadata = {
 	rememberMe?: boolean;
 	ip?: string;
 	userAgent?: string;
 	fingerprint?: string;
-};
+}
 
 export type User = {
 	id: string;
@@ -32,14 +32,14 @@ export type User = {
 	is_admin?: boolean;
 	is_moderator?: boolean;
 	u_posts?: number;
-};
+}
 
 export type OAuthTokens = {
 	accessToken: string;
 	refreshToken: string | null;
 	scope: string | null;
 	accessTokenExpiresAt: string;
-};
+}
 
 export type OAuthProfile = {
 	id: string;
@@ -47,7 +47,7 @@ export type OAuthProfile = {
 	name?: string;
 	picture?: string;
 	verified_email?: boolean;
-};
+}
 
 export type VerificationToken = {
 	id: string;
@@ -56,13 +56,13 @@ export type VerificationToken = {
 	token: string;
 	expiresAt: Date;
 	createdAt: Date;
-};
+}
 
 export const VERIFICATION_TOKEN_TYPES = {
-	EMAIL_VERIFICATION: "email_verification",
-	PASSWORD_RESET: "password_reset",
-	EMAIL_UPDATE: "email_update",
-};
+	EMAIL_VERIFICATION: 'email_verification',
+	PASSWORD_RESET: 'password_reset',
+	EMAIL_UPDATE: 'email_update'
+}
 
 export type MagicLinkToken = {
 	id: string;
@@ -72,7 +72,7 @@ export type MagicLinkToken = {
 	otpHash: string | null;
 	expiresAt: Date;
 	createdAt: Date;
-};
+}
 
 export type WebAuthnCredential = {
 	id: string;
@@ -84,13 +84,13 @@ export type WebAuthnCredential = {
 	name: string | null;
 	createdAt: Date;
 	updatedAt: Date;
-};
+}
 
 export type MfaStatus = {
 	enabled: boolean;
 	enabledAt: Date | null;
 	backupCodeCount: number;
-};
+}
 
 export type SessionSummary = {
 	id: string;
@@ -101,4 +101,4 @@ export type SessionSummary = {
 	ip?: string | null;
 	userAgent?: string | null;
 	current?: boolean;
-};
+}

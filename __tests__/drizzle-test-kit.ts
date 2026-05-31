@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import { pgTable, uuid, timestamp, text, serial } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 
 export const drizzleUsersTable = pgTable('users', {
 	id: uuid('id').primaryKey().defaultRandom(),
@@ -47,7 +47,7 @@ export function createMockDrizzleDb() {
 		}),
 		insert: () => ({
 			values: () => ({
-				returning: () => Promise.resolve([{ id: 'session-123', userId: 'user-123', expiresAt: new Date() }])
+				returning: () => Promise.resolve([ { id: 'session-123', userId: 'user-123', expiresAt: new Date() } ])
 			})
 		}),
 		delete: () => ({
@@ -100,7 +100,7 @@ export async function createIntegrationDrizzleFixture(): Promise<IntegrationDbFi
 
 		return {
 			db,
-			dispose: async () => {
+			dispose: async() => {
 				await client.end({ timeout: 5 })
 			}
 		}
@@ -149,34 +149,34 @@ export async function createIntegrationDrizzleFixture(): Promise<IntegrationDbFi
 
 	const toLiteral = (value: unknown): string => {
 		if (value === null || value === undefined) return 'null'
-		if (value instanceof Date) return `'${value.toISOString()}'`
+		if (value instanceof Date) return `'${ value.toISOString() }'`
 		if (typeof value === 'number') return Number.isFinite(value) ? String(value) : 'null'
 		if (typeof value === 'boolean') return value ? 'true' : 'false'
-		if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`
-		if (Array.isArray(value)) return `ARRAY[${value.map((item) => toLiteral(item)).join(', ')}]`
-		return `'${JSON.stringify(value).replace(/'/g, "''")}'`
+		if (typeof value === 'string') return `'${ value.replace(/'/g, "''") }'`
+		if (Array.isArray(value)) return `ARRAY[${ value.map(item => toLiteral(item)).join(', ') }]`
+		return `'${ JSON.stringify(value).replace(/'/g, "''") }'`
 	}
 
 	const formatSql = (sql: string, params: unknown[]) => {
 		let formatted = sql
 		params.forEach((value, index) => {
 			const literal = toLiteral(value)
-			const pattern = new RegExp(`\\$${index + 1}(?!\\d)`, 'g')
+			const pattern = new RegExp(`\\$${ index + 1 }(?!\\d)`, 'g')
 			formatted = formatted.replace(pattern, literal)
 		})
 		return formatted
 	}
 
-	const db = drizzle(async (sql, params = []) => {
+	const db = drizzle(async(sql, params = []) => {
 		const formatted = formatSql(sql, params)
 		const result = dbMem.public.query(formatted)
-		const rows = result.rows.map((row) => {
+		const rows = result.rows.map(row => {
 			const nameCounts: Record<string, number> = {}
-			return result.fields.map((field) => {
+			return result.fields.map(field => {
 				const baseName = field.name
 				const index = nameCounts[baseName] ?? 0
 				nameCounts[baseName] = index + 1
-				const key = index === 0 ? baseName : `${baseName}${index}`
+				const key = index === 0 ? baseName : `${ baseName }${ index }`
 				return row[key]
 			})
 		})
@@ -185,6 +185,6 @@ export async function createIntegrationDrizzleFixture(): Promise<IntegrationDbFi
 
 	return {
 		db,
-		dispose: async () => {}
+		dispose: async() => {}
 	}
 }

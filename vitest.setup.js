@@ -1,12 +1,12 @@
-import { shouldSuppressConsoleArgs } from './__tests__/console-suppressions.js';
+import { shouldSuppressConsoleArgs } from './__tests__/console-suppressions.js'
 
-const wrapConsole = (method) => {
-	const original = console[method];
+const wrapConsole = method => {
+	const original = console[method]
 	console[method] = (...args) => {
-		if (shouldSuppressConsoleArgs(args)) return;
-		original(...args);
-	};
-};
+		if (shouldSuppressConsoleArgs(args)) return
+		original(...args)
+	}
+}
 
-wrapConsole('error');
-wrapConsole('warn');
+wrapConsole('error')
+wrapConsole('warn')

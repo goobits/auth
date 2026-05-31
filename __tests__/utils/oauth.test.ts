@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
+
 import { createOAuthCookies, getOAuthCallbackParams, validateOAuthCallback } from '../../src/utils/oauth.ts'
 
 class MockCookies {

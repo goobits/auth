@@ -3,20 +3,20 @@ export type Logger = {
 	info?: (...args: unknown[]) => void;
 	warn?: (...args: unknown[]) => void;
 	error?: (...args: unknown[]) => void;
-};
+}
 
-const noop = () => {};
+const noop = () => {}
 
-let activeLoggers: Logger[] = [];
+let activeLoggers: Logger[] = []
 
 export function setLogger(logger: Logger | null | undefined) {
 	if (!logger) {
-		activeLoggers = [];
-		return;
+		activeLoggers = []
+		return
 	}
 
 	if (!activeLoggers.includes(logger)) {
-		activeLoggers.push(logger);
+		activeLoggers.push(logger)
 	}
 }
 
@@ -26,20 +26,20 @@ export function getLogger(): Logger {
 			debug: noop,
 			info: noop,
 			warn: noop,
-			error: noop,
-		};
+			error: noop
+		}
 	}
 
 	const forward = (level: keyof Logger, args: unknown[]) => {
 		for (const logger of activeLoggers) {
-			logger[level]?.(...args);
+			logger[level]?.(...args)
 		}
-	};
+	}
 
 	return {
-		debug: (...args: unknown[]) => forward("debug", args),
-		info: (...args: unknown[]) => forward("info", args),
-		warn: (...args: unknown[]) => forward("warn", args),
-		error: (...args: unknown[]) => forward("error", args),
-	};
+		debug: (...args: unknown[]) => forward('debug', args),
+		info: (...args: unknown[]) => forward('info', args),
+		warn: (...args: unknown[]) => forward('warn', args),
+		error: (...args: unknown[]) => forward('error', args)
+	}
 }

@@ -5,13 +5,13 @@
 export abstract class MagicLinkAdapter {
 	/**
 	 * Create a magic link token record
-	 * @param {Object} params
-	 * @param {string|null} params.userId
-	 * @param {string} params.email
-	 * @param {string} params.tokenHash
-	 * @param {string|null} [params.otpHash]
-	 * @param {Date} params.expiresAt
-	 * @param {Object} [params.metadata]
+	 *
+	 * @param {string|null} params.userId - Identifier to use.
+	 * @param {string} params.email - email value.
+	 * @param {string} params.tokenHash - token hash value.
+	 * @param {string|null} [params.otpHash] - otp hash value.
+	 * @param {Date} params.expiresAt - expires at value.
+	 * @param {Object} [params.metadata] - metadata value.
 	 * @returns {Promise<Object>}
 	 */
 	abstract createToken({
@@ -20,7 +20,7 @@ export abstract class MagicLinkAdapter {
 		tokenHash,
 		otpHash,
 		expiresAt,
-		metadata,
+		metadata
 	}: {
 		userId: string | null;
 		email: string;
@@ -28,52 +28,56 @@ export abstract class MagicLinkAdapter {
 		otpHash?: string | null;
 		expiresAt: Date;
 		metadata?: Record<string, unknown>;
-	}): Promise<Record<string, unknown> | void>;
+	}): Promise<Record<string, unknown> | void>
 
 	/**
 	 * Find a token by hashed token
-	 * @param {string} tokenHash
+	 *
+	 * @param {string} tokenHash - token hash value.
 	 * @returns {Promise<Object|null>}
 	 */
 	abstract findByTokenHash(
 		tokenHash: string,
-	): Promise<Record<string, unknown> | null>;
+	): Promise<Record<string, unknown> | null>
 
 	/**
 	 * Find a token by email + OTP hash
-	 * @param {Object} params
-	 * @param {string} params.email
-	 * @param {string} params.otpHash
+	 *
+	 * @param {string} params.email - email value.
+	 * @param {string} params.otpHash - otp hash value.
 	 * @returns {Promise<Object|null>}
 	 */
 	abstract findByEmailAndOtpHash({
 		email,
-		otpHash,
+		otpHash
 	}: {
 		email: string;
 		otpHash: string;
-	}): Promise<Record<string, unknown> | null>;
+	}): Promise<Record<string, unknown> | null>
 
 	/**
 	 * Delete a token record by ID
-	 * @param {string} tokenId
+	 *
+	 * @param {string} tokenId - Identifier to use.
 	 * @returns {Promise<void>}
 	 */
-	abstract deleteById(tokenId: string): Promise<void>;
+	abstract deleteById(tokenId: string): Promise<void>
 
 	/**
 	 * Delete tokens for a user
-	 * @param {string} userId
+	 *
+	 * @param {string} userId - Identifier to use.
 	 * @returns {Promise<void>}
 	 */
-	abstract deleteByUserId(userId: string): Promise<void>;
+	abstract deleteByUserId(userId: string): Promise<void>
 
 	/**
 	 * Delete tokens for an email
-	 * @param {string} email
+	 *
+	 * @param {string} email - email value.
 	 * @returns {Promise<void>}
 	 */
-	abstract deleteByEmail(email: string): Promise<void>;
+	abstract deleteByEmail(email: string): Promise<void>
 
 	/**
 	 * Atomically find-and-consume a token by its hash. Should be the only
@@ -81,33 +85,37 @@ export abstract class MagicLinkAdapter {
 	 * non-atomic find+delete pair (susceptible to TOCTOU under concurrent
 	 * verifies of the same token). Backends that can do this atomically
 	 * (SQL `DELETE ... RETURNING`, in-memory `Map`) should override.
+	 *
+	 * @param tokenHash - token hash value.
 	 */
 	async consumeByTokenHash(
-		tokenHash: string,
+		tokenHash: string
 	): Promise<Record<string, unknown> | null> {
-		const record = await this.findByTokenHash(tokenHash);
-		if (!record) return null;
-		const id = (record as Record<string, unknown>)["id"];
-		if (typeof id === "string") {
-			await this.deleteById(id);
+		const record = await this.findByTokenHash(tokenHash)
+		if (!record) return null
+		const id = (record as Record<string, unknown>)['id']
+		if (typeof id === 'string') {
+			await this.deleteById(id)
 		}
-		return record as Record<string, unknown>;
+		return record as Record<string, unknown>
 	}
 
 	/**
 	 * Atomically find-and-consume a token by email + OTP hash. Same
 	 * atomicity caveat as `consumeByTokenHash`.
+	 *
+	 * @param params - params value.
 	 */
 	async consumeByEmailAndOtpHash(params: {
 		email: string;
 		otpHash: string;
 	}): Promise<Record<string, unknown> | null> {
-		const record = await this.findByEmailAndOtpHash(params);
-		if (!record) return null;
-		const id = (record as Record<string, unknown>)["id"];
-		if (typeof id === "string") {
-			await this.deleteById(id);
+		const record = await this.findByEmailAndOtpHash(params)
+		if (!record) return null
+		const id = (record as Record<string, unknown>)['id']
+		if (typeof id === 'string') {
+			await this.deleteById(id)
 		}
-		return record as Record<string, unknown>;
+		return record as Record<string, unknown>
 	}
 }

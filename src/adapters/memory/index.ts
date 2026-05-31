@@ -257,7 +257,7 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 	}
 
 	async listCredentials(userId: string): Promise<WebAuthnCredential[]> {
-		return [ ...this.#credentials.values() ].filter((credential) => credential.userId === userId)
+		return [ ...this.#credentials.values() ].filter(credential => credential.userId === userId)
 	}
 
 	async updateCredential(
@@ -281,7 +281,7 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 		if (
 			updates['transports'] === null ||
 			(Array.isArray(updates['transports']) &&
-				updates['transports'].every((entry) => typeof entry === 'string'))
+				updates['transports'].every(entry => typeof entry === 'string'))
 		) {
 			next.transports = updates['transports']
 		}

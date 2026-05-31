@@ -1,11 +1,12 @@
-import { redirect, error } from "@sveltejs/kit";
-import { OAuth2RequestError } from "arctic";
-import { handleOAuthCallback } from "../utils/oauth.js";
-import type { OAuthProvider } from "../providers/base.js";
-import type { AuthLocals, RequestEventLike } from "../types/auth.js";
-import type { OAuthProfile, OAuthTokens } from "../types/index.js";
-import { getLogger } from "../utils/logger.js";
-import { AuthPrincipalResolutionError } from "../errors/auth.js";
+import { error, redirect } from '@sveltejs/kit'
+import { OAuth2RequestError } from 'arctic'
+
+import { AuthPrincipalResolutionError } from '../errors/auth.js'
+import type { OAuthProvider } from '../providers/base.js'
+import type { AuthLocals, RequestEventLike } from '../types/auth.js'
+import type { OAuthProfile, OAuthTokens } from '../types/index.js'
+import { getLogger } from '../utils/logger.js'
+import { handleOAuthCallback } from '../utils/oauth.js'
 
 type CallbackConfig = {
 	providers: Record<string, OAuthProvider>;
@@ -14,10 +15,10 @@ type CallbackConfig = {
 	onAuthenticated: (
 		event: RequestEventLike,
 		profile: OAuthProfile,
-		tokens: OAuthTokens,
+		tokens: OAuthTokens
 	) => Promise<void> | void;
 	onError?: (event: RequestEventLike, error: unknown) => Promise<void> | void;
-};
+}
 
 /**
  * Create a callback route handler for OAuth providers
@@ -51,83 +52,83 @@ type CallbackConfig = {
 export function createCallbackHandler(config: CallbackConfig) {
 	const {
 		providers,
-		redirectAfterLogin = "/",
+		redirectAfterLogin = '/',
 		isAuthenticated = (locals: AuthLocals) => !!locals.user,
 		onAuthenticated,
-		onError,
-	} = config;
-	const log = getLogger();
+		onError
+	} = config
+	const log = getLogger()
 
 	const isStatusError = (value: unknown): value is { status: number } =>
-		typeof value === "object" &&
+		typeof value === 'object' &&
 		value !== null &&
-		"status" in value &&
-		typeof (value as { status?: unknown }).status === "number";
+		'status' in value &&
+		typeof (value as { status?: unknown }).status === 'number'
 
-	return async (event: RequestEventLike) => {
-		const { params, locals, url } = event;
+	return async(event: RequestEventLike) => {
+		const { params, locals, url } = event
 
 		try {
 			// Already authenticated - redirect
 			if (isAuthenticated(locals)) {
-				throw redirect(302, redirectAfterLogin);
+				throw redirect(302, redirectAfterLogin)
 			}
 
-			const providerName = String(params["provider"] ?? "");
-			const providerInstance = providers[providerName];
+			const providerName = String(params['provider'] ?? '')
+			const providerInstance = providers[providerName]
 
 			if (!providerInstance) {
-				error(400, "Invalid OAuth provider");
+				error(400, 'Invalid OAuth provider')
 			}
 
 			// Extract Apple user data and callback params if present (POST form data)
-			let appleUserData: string | null = null;
-			let overrideParams: { code: string | null; state: string | null } | null = null;
-			if (providerName === "apple" && event.request.method === "POST") {
-				const formData = await event.request.formData();
-				appleUserData = formData.get("user")?.toString() ?? null;
+			let appleUserData: string | null = null
+			let overrideParams: { code: string | null; state: string | null } | null = null
+			if (providerName === 'apple' && event.request.method === 'POST') {
+				const formData = await event.request.formData()
+				appleUserData = formData.get('user')?.toString() ?? null
 				overrideParams = {
-					code: formData.get("code")?.toString() ?? null,
-					state: formData.get("state")?.toString() ?? null,
-				};
+					code: formData.get('code')?.toString() ?? null,
+					state: formData.get('state')?.toString() ?? null
+				}
 			}
 
 			// Handle OAuth callback
-			const callbacks: Parameters<typeof handleOAuthCallback>[0]["callbacks"] = {
-				onAuthenticated: async (userProfile: OAuthProfile, tokens: OAuthTokens) => {
-					await onAuthenticated(event, userProfile, tokens);
+			const callbacks: Parameters<typeof handleOAuthCallback>[0]['callbacks'] = {
+				onAuthenticated: async(userProfile: OAuthProfile, tokens: OAuthTokens) => {
+					await onAuthenticated(event, userProfile, tokens)
 				},
 				...(onError
-					? { onError: async (err: unknown) => onError(event, err) }
-					: {}),
-			};
+					? { onError: async(err: unknown) => onError(event, err) }
+					: {})
+			}
 			await handleOAuthCallback({
 				event,
 				provider: providerName,
 				providerInstance,
 				appleUserData,
 				overrideParams,
-				callbacks,
-			});
+				callbacks
+			})
 
-			throw redirect(302, redirectAfterLogin);
-		} catch (err) {
+			throw redirect(302, redirectAfterLogin)
+		} catch(err) {
 			// Handle OAuth2 errors
 			if (err instanceof OAuth2RequestError) {
-				error(400, "OAuth authentication failed");
+				error(400, 'OAuth authentication failed')
 			}
 
 			// Re-throw redirects and errors
 			if (isStatusError(err)) {
-				throw err;
+				throw err
 			}
 			if (err instanceof AuthPrincipalResolutionError) {
-				error(err.status, err.message);
+				error(err.status, err.message)
 			}
 
 			// Log and throw generic error
-			log.error?.("Authentication error:", err);
-			error(500, "Authentication system error");
+			log.error?.('Authentication error:', err)
+			error(500, 'Authentication system error')
 		}
-	};
+	}
 }

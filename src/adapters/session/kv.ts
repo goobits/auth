@@ -1,45 +1,47 @@
-import { SessionAdapter } from "./base.js";
-import { generateRandomUUID } from "../../utils/crypto.js";
-import { AuthAdapterCapabilityError } from "../../errors/auth.js";
-import { getLogger } from "../../utils/logger.js";
-import type { Cookies } from "@sveltejs/kit";
-import type { Session, User } from "../../types/index.js";
+import type { Cookies } from '@sveltejs/kit'
+
+import { AuthAdapterCapabilityError } from '../../errors/auth.js'
+import type { Session, User } from '../../types/index.js'
+import { generateRandomUUID } from '../../utils/crypto.js'
+import { getLogger } from '../../utils/logger.js'
+import { SessionAdapter } from './base.js'
 
 type KVNamespaceLike = {
 	put: (key: string, value: string, options?: { expirationTtl?: number }) => Promise<void>;
 	get: (
 		key: string,
-		options?: { type?: "json" | "text" },
+		options?: { type?: 'json' | 'text' }
 	) => Promise<Record<string, unknown> | string | null>;
 	delete: (key: string) => Promise<void>;
 	list?: (options?: { prefix?: string }) => Promise<{ keys?: Array<{ name: string }> }>;
-};
+}
 
 type KVSessionRecord = {
 	userId: string;
 	expiresAt: string;
-};
+}
 
 function isKVSessionRecord(value: Record<string, unknown> | string | null): value is KVSessionRecord {
-	if (!value || typeof value !== "object") return false;
+	if (!value || typeof value !== 'object') return false
 	return (
-		"userId" in value &&
-		typeof value["userId"] === "string" &&
-		"expiresAt" in value &&
-		typeof value["expiresAt"] === "string"
-	);
+		'userId' in value &&
+		typeof value['userId'] === 'string' &&
+		'expiresAt' in value &&
+		typeof value['expiresAt'] === 'string'
+	)
 }
 
 export class KVSessionAdapter extends SessionAdapter {
-	private namespace: KVNamespaceLike;
-	private sessionLifetime: number;
-	private sessionRefreshThreshold: number;
+	private namespace: KVNamespaceLike
+	private sessionLifetime: number
+	private sessionRefreshThreshold: number
+
 	// Exposed for auth hook resolution (`createAuth` reads adapter.cookieName).
-	cookieName: string;
-	private secureCookies: boolean;
-	private getUserById: ((id: string) => Promise<User | null>) | null;
-	private sanitizeUser: (user: User | null) => User | null;
-	private keyPrefix: string;
+	cookieName: string
+	private secureCookies: boolean
+	private getUserById: ((id: string) => Promise<User | null>) | null
+	private sanitizeUser: (user: User | null) => User | null
+	private keyPrefix: string
 
 	constructor(
 		namespace: KVNamespaceLike,
@@ -51,41 +53,41 @@ export class KVSessionAdapter extends SessionAdapter {
 			getUserById?: (id: string) => Promise<User | null>;
 			sanitizeUser?: (user: User | null) => User | null;
 			keyPrefix?: string;
-		} = {},
+		} = {}
 	) {
-		super();
-		this.namespace = namespace;
-		this.sessionLifetime = options.sessionLifetime || 30 * 24 * 60 * 60 * 1000;
+		super()
+		this.namespace = namespace
+		this.sessionLifetime = options.sessionLifetime || 30 * 24 * 60 * 60 * 1000
 		this.sessionRefreshThreshold =
-			options.sessionRefreshThreshold || this.sessionLifetime / 2;
-		this.cookieName = options.cookieName || "session";
-		this.secureCookies = options.secureCookies !== false;
-		this.getUserById = options.getUserById || null;
-		this.sanitizeUser = options.sanitizeUser || this._defaultSanitizeUser;
-		this.keyPrefix = options.keyPrefix || "session";
+			options.sessionRefreshThreshold || this.sessionLifetime / 2
+		this.cookieName = options.cookieName || 'session'
+		this.secureCookies = options.secureCookies !== false
+		this.getUserById = options.getUserById || null
+		this.sanitizeUser = options.sanitizeUser || this._defaultSanitizeUser
+		this.keyPrefix = options.keyPrefix || 'session'
 	}
 
 	_defaultSanitizeUser(user: User | null): User | null {
-		return user;
+		return user
 	}
 
 	_key(sessionId: string) {
-		return `${this.keyPrefix}:${sessionId}`;
+		return `${ this.keyPrefix }:${ sessionId }`
 	}
 
 	async createSession(userId: string, metadata: Record<string, unknown> = {}) {
-		const sessionId = await generateRandomUUID();
-		const expiresAt = new Date(Date.now() + this.sessionLifetime);
+		const sessionId = await generateRandomUUID()
+		const expiresAt = new Date(Date.now() + this.sessionLifetime)
 		const payload = {
 			userId,
-			expiresAt: expiresAt.toISOString(),
-		};
+			expiresAt: expiresAt.toISOString()
+		}
 		await this.namespace.put(
 			this._key(sessionId),
 			JSON.stringify(payload),
-			{ expirationTtl: Math.ceil(this.sessionLifetime / 1000) },
-		);
-		return { id: sessionId, userId, expiresAt, ...metadata };
+			{ expirationTtl: Math.ceil(this.sessionLifetime / 1000) }
+		)
+		return { id: sessionId, userId, expiresAt, ...metadata }
 	}
 
 	async validateSession(sessionId: string): Promise<{
@@ -95,124 +97,124 @@ export class KVSessionAdapter extends SessionAdapter {
 		// SessionAdapter contract requires validateSession to never throw.
 		// Any storage-level failure (network, permission) returns the empty
 		// principal and is logged.
-		let rawValue: Record<string, unknown> | string | null;
+		let rawValue: Record<string, unknown> | string | null
 		try {
-			rawValue = await this.namespace.get(this._key(sessionId), { type: "json" });
-		} catch (error) {
-			getLogger().warn?.("[KVSessionAdapter] validateSession KV.get failed:", error);
-			return { session: null, user: null };
+			rawValue = await this.namespace.get(this._key(sessionId), { type: 'json' })
+		} catch(error) {
+			getLogger().warn?.('[KVSessionAdapter] validateSession KV.get failed:', error)
+			return { session: null, user: null }
 		}
-		const raw = isKVSessionRecord(rawValue) ? rawValue : null;
-		if (!raw) return { session: null, user: null };
+		const raw = isKVSessionRecord(rawValue) ? rawValue : null
+		if (!raw) return { session: null, user: null }
 
-		const expiresAt = new Date(raw.expiresAt);
+		const expiresAt = new Date(raw.expiresAt)
 		if (Date.now() >= expiresAt.getTime()) {
 			try {
-				await this.namespace.delete(this._key(sessionId));
-			} catch (error) {
+				await this.namespace.delete(this._key(sessionId))
+			} catch(error) {
 				getLogger().warn?.(
-					"[KVSessionAdapter] failed to delete expired session:",
-					error,
-				);
+					'[KVSessionAdapter] failed to delete expired session:',
+					error
+				)
 			}
-			return { session: null, user: null };
+			return { session: null, user: null }
 		}
 
 		const shouldRefresh =
-			Date.now() >= expiresAt.getTime() - this.sessionRefreshThreshold;
-		let fresh = false;
-		let newExpiresAt = expiresAt;
+			Date.now() >= expiresAt.getTime() - this.sessionRefreshThreshold
+		let fresh = false
+		let newExpiresAt = expiresAt
 
 		if (shouldRefresh) {
-			newExpiresAt = new Date(Date.now() + this.sessionLifetime);
+			newExpiresAt = new Date(Date.now() + this.sessionLifetime)
 			try {
 				await this.namespace.put(
 					this._key(sessionId),
 					JSON.stringify({ userId: raw.userId, expiresAt: newExpiresAt.toISOString() }),
-					{ expirationTtl: Math.ceil(this.sessionLifetime / 1000) },
-				);
-				fresh = true;
-			} catch (error) {
+					{ expirationTtl: Math.ceil(this.sessionLifetime / 1000) }
+				)
+				fresh = true
+			} catch(error) {
 				// Refresh is best-effort; the session is still valid until it expires.
-				getLogger().warn?.("[KVSessionAdapter] session refresh failed:", error);
-				newExpiresAt = expiresAt;
+				getLogger().warn?.('[KVSessionAdapter] session refresh failed:', error)
+				newExpiresAt = expiresAt
 			}
 		}
 
-		let user: User | null = null;
+		let user: User | null = null
 		if (this.getUserById) {
 			try {
-				user = this.sanitizeUser(await this.getUserById(String(raw.userId ?? "")));
-			} catch (error) {
+				user = this.sanitizeUser(await this.getUserById(String(raw.userId ?? '')))
+			} catch(error) {
 				getLogger().warn?.(
-					"[KVSessionAdapter] getUserById hook threw during validateSession:",
-					error,
-				);
+					'[KVSessionAdapter] getUserById hook threw during validateSession:',
+					error
+				)
 			}
 		}
 
 		return {
 			session: { id: sessionId, userId: raw.userId, expiresAt: newExpiresAt, fresh },
-			user,
-		};
+			user
+		}
 	}
 
 	async invalidateSession(sessionId: string) {
-		await this.namespace.delete(this._key(sessionId));
+		await this.namespace.delete(this._key(sessionId))
 	}
 
 	async invalidateUserSessions(userId: string) {
-		if (typeof this.namespace.list !== "function") {
+		if (typeof this.namespace.list !== 'function') {
 			throw new AuthAdapterCapabilityError(
-				"KVSessionAdapter requires a KV namespace with list() support for invalidateUserSessions",
-			);
+				'KVSessionAdapter requires a KV namespace with list() support for invalidateUserSessions'
+			)
 		}
-		const matching = await this.listSessions(userId);
+		const matching = await this.listSessions(userId)
 		await Promise.all(
-			matching.map((session) =>
-				this.namespace.delete(this._key(session.id)).catch((error) => {
+			matching.map(session =>
+				this.namespace.delete(this._key(session.id)).catch(error => {
 					getLogger().warn?.(
-						"[KVSessionAdapter] failed to delete session during bulk invalidate:",
-						error,
-					);
-				}),
-			),
-		);
+						'[KVSessionAdapter] failed to delete session during bulk invalidate:',
+						error
+					)
+				})
+			)
+		)
 	}
 
 	async listSessions(userId: string): Promise<Session[]> {
-		if (typeof this.namespace.list !== "function") {
+		if (typeof this.namespace.list !== 'function') {
 			throw new AuthAdapterCapabilityError(
-				"KVSessionAdapter requires a KV namespace with list() support for listSessions",
-			);
+				'KVSessionAdapter requires a KV namespace with list() support for listSessions'
+			)
 		}
-		const keys = await this.namespace.list({ prefix: `${this.keyPrefix}:` });
-		const sessions: Session[] = [];
+		const keys = await this.namespace.list({ prefix: `${ this.keyPrefix }:` })
+		const sessions: Session[] = []
 		for (const key of keys.keys ?? []) {
-			const rawValue = await this.namespace.get(key.name, { type: "json" });
-			const raw = isKVSessionRecord(rawValue) ? rawValue : null;
-			if (!raw) continue;
-			if (raw.userId !== userId) continue;
+			const rawValue = await this.namespace.get(key.name, { type: 'json' })
+			const raw = isKVSessionRecord(rawValue) ? rawValue : null
+			if (!raw) continue
+			if (raw.userId !== userId) continue
 			sessions.push({
-				id: key.name.replace(`${this.keyPrefix}:`, ""),
+				id: key.name.replace(`${ this.keyPrefix }:`, ''),
 				userId: raw.userId,
-				expiresAt: new Date(raw.expiresAt),
-			});
+				expiresAt: new Date(raw.expiresAt)
+			})
 		}
-		return sessions;
+		return sessions
 	}
 
 	setSessionCookie(cookies: Cookies, session: { id: string; expiresAt: Date }) {
 		cookies.set(this.cookieName, session.id, {
 			httpOnly: true,
 			secure: this.secureCookies,
-			sameSite: "lax",
-			path: "/",
-			expires: session.expiresAt,
-		});
+			sameSite: 'lax',
+			path: '/',
+			expires: session.expiresAt
+		})
 	}
 
 	deleteSessionCookie(cookies: Cookies) {
-		cookies.delete(this.cookieName, { path: "/" });
+		cookies.delete(this.cookieName, { path: '/' })
 	}
 }

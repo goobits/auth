@@ -457,25 +457,25 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		updates: Record<string, unknown>
 	): Promise<void> {
 		const allowed = new Map([
-			['counter', updates['counter']],
-			['name', updates['name']],
-			['transports', updates['transports']]
+			[ 'counter', updates['counter'] ],
+			[ 'name', updates['name'] ],
+			[ 'transports', updates['transports'] ]
 		])
 		const fields: string[] = []
 		const values: unknown[] = []
-		for (const [key, value] of allowed.entries()) {
+		for (const [ key, value ] of allowed.entries()) {
 			if (value === undefined) continue
 			if (key === 'counter' && typeof value !== 'number') continue
 			if (key === 'name' && value !== null && typeof value !== 'string') continue
 			if (key === 'transports') {
-				if (value !== null && (!Array.isArray(value) || value.some((entry) => typeof entry !== 'string'))) {
+				if (value !== null && (!Array.isArray(value) || value.some(entry => typeof entry !== 'string'))) {
 					continue
 				}
-				fields.push(`transports = $${fields.length + 1}::jsonb`)
+				fields.push(`transports = $${ fields.length + 1 }::jsonb`)
 				values.push(JSON.stringify(value))
 				continue
 			}
-			fields.push(`${ key } = $${fields.length + 1}`)
+			fields.push(`${ key } = $${ fields.length + 1 }`)
 			values.push(value)
 		}
 		if (fields.length === 0) {
@@ -565,7 +565,7 @@ export class PgMfaAdapter extends MfaAdapter {
 				[ userId ]
 			)
 		).rows
-		return rows.map((row) => row.code_hash)
+		return rows.map(row => row.code_hash)
 	}
 
 	async consumeBackupCode(userId: string, hash: string): Promise<void> {

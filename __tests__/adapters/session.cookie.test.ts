@@ -1,4 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
 import { CookieSessionAdapter } from '../../src/adapters/session/cookie.ts'
 import { createCookies } from '../test-kit.ts'
 
@@ -7,7 +8,7 @@ type CookieSessionAdapterInternals = {
 }
 
 describe('CookieSessionAdapter', () => {
-	it('expires sessions and deletes them', async () => {
+	it('expires sessions and deletes them', async() => {
 		const adapter = new CookieSessionAdapter({ sessionLifetime: 10 })
 		const session = await adapter.createSession('u1')
 		vi.spyOn(Date, 'now').mockReturnValue(session.expiresAt.getTime() + 1)
@@ -18,7 +19,7 @@ describe('CookieSessionAdapter', () => {
 		expect(internals._sessions.has(session.id)).toBe(false)
 	})
 
-	it('sets session cookie with expected attributes', async () => {
+	it('sets session cookie with expected attributes', async() => {
 		const adapter = new CookieSessionAdapter({ cookieName: 'auth', secureCookies: false })
 		const cookies = createCookies()
 		const session = await adapter.createSession('u1')
@@ -31,7 +32,7 @@ describe('CookieSessionAdapter', () => {
 		expect(entry?.options.sameSite).toBe('lax')
 	})
 
-	it('lists sessions for a user', async () => {
+	it('lists sessions for a user', async() => {
 		const adapter = new CookieSessionAdapter()
 		await adapter.createSession('u1')
 		await adapter.createSession('u2')

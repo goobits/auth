@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from 'vitest'
-import { createAuth } from '../src/createAuth.ts'
-import type { Session } from '../src/types/index.ts'
+import { describe, expect, it, vi } from 'vitest'
+
 import type { SessionAdapter } from '../src/adapters/session/base.ts'
+import { createAuth } from '../src/createAuth.ts'
 import type { OAuthProvider } from '../src/providers/base.ts'
 import type { RequestEventLike } from '../src/types/auth.ts'
+import type { Session } from '../src/types/index.ts'
 import { createRequestEvent } from './test-kit.ts'
 
 function createSessionAdapter({
@@ -15,20 +16,20 @@ function createSessionAdapter({
 } = {}): SessionAdapter {
 	return {
 		cookieName,
-		validateSession: vi.fn(async () => validateResult),
+		validateSession: vi.fn(async() => validateResult),
 		setSessionCookie: vi.fn(),
 		deleteSessionCookie: vi.fn(),
-		createSession: vi.fn(async (userId: string) => ({ id: `s:${userId}`, userId })),
-		invalidateSession: vi.fn(async () => {}),
-		invalidateUserSessions: vi.fn(async () => {}),
-		listSessions: vi.fn(async () => [])
+		createSession: vi.fn(async(userId: string) => ({ id: `s:${ userId }`, userId })),
+		invalidateSession: vi.fn(async() => {}),
+		invalidateUserSessions: vi.fn(async() => {}),
+		listSessions: vi.fn(async() => [])
 	}
 }
 
 function createProvider(): OAuthProvider {
 	return {
 		createAuthorizationURL: () => new URL('https://example.com/auth'),
-		getUserProfile: vi.fn(async () => ({
+		getUserProfile: vi.fn(async() => ({
 			profile: { id: 'p1', email: 'p1@example.com' },
 			tokens: { accessToken: 'token' }
 		}))
@@ -48,7 +49,7 @@ describe('createAuth', () => {
 		expect(auth.routes.logout().POST).toBeDefined()
 	})
 
-	it('clears cookie when session is invalid', async () => {
+	it('clears cookie when session is invalid', async() => {
 		const sessionAdapter = createSessionAdapter({
 			cookieName: 'auth_session',
 			validateResult: { session: null, user: null }
@@ -70,7 +71,7 @@ describe('createAuth', () => {
 		expect(sessionAdapter.deleteSessionCookie).toHaveBeenCalledWith(event.cookies)
 	})
 
-	it('refreshes cookie when session is fresh', async () => {
+	it('refreshes cookie when session is fresh', async() => {
 		const session = { id: 's1', fresh: true }
 		const user = { id: 'u1' }
 		const sessionAdapter = createSessionAdapter({

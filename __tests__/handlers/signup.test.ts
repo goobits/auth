@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
 import { createSignupHandler } from '../../src/handlers/signup.ts'
 import { captureRejected, createRequestEvent, getRedirectLocation } from '../test-kit.ts'
 
 describe('createSignupHandler', () => {
-	it('rejects if email already exists', async () => {
+	it('rejects if email already exists', async() => {
 		const userAdapter = { getUserByEmail: vi.fn().mockResolvedValue({ id: 'u1' }) }
 		const credentialsProvider = { signUp: vi.fn() }
 		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
@@ -21,7 +22,7 @@ describe('createSignupHandler', () => {
 		expect(credentialsProvider.signUp).not.toHaveBeenCalled()
 	})
 
-	it('continues signup if verification email fails', async () => {
+	it('continues signup if verification email fails', async() => {
 		const userAdapter = {
 			getUserByEmail: vi.fn().mockResolvedValue(null)
 		}

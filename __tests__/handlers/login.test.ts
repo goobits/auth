@@ -1,4 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
 import { createLoginHandler } from '../../src/handlers/login.ts'
 import type { OAuthProvider } from '../../src/providers/base.ts'
 import { captureRejected, createRequestEvent, getRedirectLocation } from '../test-kit.ts'
@@ -6,7 +7,7 @@ import { captureRejected, createRequestEvent, getRedirectLocation } from '../tes
 function createProvider(createAuthorizationURL?: () => URL): OAuthProvider {
 	return {
 		createAuthorizationURL: createAuthorizationURL ?? (() => new URL('https://example.com/auth')),
-		getUserProfile: vi.fn(async () => ({
+		getUserProfile: vi.fn(async() => ({
 			profile: { id: 'u1', email: 'u1@example.com' },
 			tokens: { accessToken: 'token' }
 		}))
@@ -14,13 +15,13 @@ function createProvider(createAuthorizationURL?: () => URL): OAuthProvider {
 }
 
 describe('createLoginHandler', () => {
-	it('rejects unknown provider', async () => {
+	it('rejects unknown provider', async() => {
 		const handler = createLoginHandler({ providers: {} })
 		const response = await handler(createRequestEvent({ params: { provider: 'unknown' } }))
 		expect(response.status).toBe(400)
 	})
 
-	it('redirects if already authenticated', async () => {
+	it('redirects if already authenticated', async() => {
 		const handler = createLoginHandler({
 			providers: { google: { provider: createProvider(() => new URL('https://example.com')) } },
 			redirectAfterLogin: '/home',
@@ -33,11 +34,11 @@ describe('createLoginHandler', () => {
 		expect(error.status).toBe(302)
 	})
 
-	it('sets apple response_mode to form_post', async () => {
+	it('sets apple response_mode to form_post', async() => {
 		const createAuthorizationURL = vi.fn(() => new URL('https://apple.example.com/authorize'))
 		const handler = createLoginHandler({
 			providers: {
-				apple: { provider: createProvider(createAuthorizationURL), scopes: ['email'] }
+				apple: { provider: createProvider(createAuthorizationURL), scopes: [ 'email' ] }
 			}
 		})
 

@@ -79,7 +79,7 @@ describe('pg auth adapters', () => {
 								credential_id: values[0],
 								name: 'Work laptop',
 								public_key: 'public-key',
-								transports: ['internal'],
+								transports: [ 'internal' ],
 								updated_at: new Date('2026-01-01T00:00:00.000Z'),
 								user_id: 'user-1'
 							}
@@ -107,16 +107,16 @@ describe('pg auth adapters', () => {
 			credentialId: 'credential-1',
 			name: 'Work laptop',
 			publicKey: 'public-key',
-			transports: ['internal'],
+			transports: [ 'internal' ],
 			userId: 'user-1'
 		})
 		const challenge = await adapters.webauthn.getChallenge('challenge-1')
 		const credential = await adapters.webauthn.getCredential('credential-1')
 
 		expect(challenge?.id).toBe('challenge-1')
-		expect(credential?.transports).toEqual(['internal'])
-		expect(queries.some((query) => query.text.includes('INSERT INTO auth_webauthn_challenges'))).toBe(true)
-		expect(queries.some((query) => query.text.includes('INSERT INTO auth_webauthn_credentials'))).toBe(true)
+		expect(credential?.transports).toEqual([ 'internal' ])
+		expect(queries.some(query => query.text.includes('INSERT INTO auth_webauthn_challenges'))).toBe(true)
+		expect(queries.some(query => query.text.includes('INSERT INTO auth_webauthn_credentials'))).toBe(true)
 	})
 
 	it('stores MFA secrets and backup codes through the postgres bundle', async() => {
@@ -158,7 +158,7 @@ describe('pg auth adapters', () => {
 		})
 
 		await adapters.mfa.setSecret('user-1', 'SECRET')
-		await adapters.mfa.setBackupCodes('user-1', ['hash-1'])
+		await adapters.mfa.setBackupCodes('user-1', [ 'hash-1' ])
 		await adapters.mfa.enableMfa('user-1')
 		const secret = await adapters.mfa.getSecret('user-1')
 		const backupCodes = await adapters.mfa.getBackupCodes('user-1')
@@ -166,14 +166,14 @@ describe('pg auth adapters', () => {
 		await adapters.mfa.consumeBackupCode('user-1', 'hash-1')
 
 		expect(secret).toBe('SECRET')
-		expect(backupCodes).toEqual(['hash-1'])
+		expect(backupCodes).toEqual([ 'hash-1' ])
 		expect(status).toEqual({
 			backupCodeCount: 1,
 			enabled: true,
 			enabledAt: new Date('2026-01-01T00:00:00.000Z')
 		})
-		expect(queries.some((query) => query.text.includes('INSERT INTO auth_mfa_factors'))).toBe(true)
-		expect(queries.some((query) => query.text.includes('INSERT INTO auth_mfa_backup_codes'))).toBe(true)
+		expect(queries.some(query => query.text.includes('INSERT INTO auth_mfa_factors'))).toBe(true)
+		expect(queries.some(query => query.text.includes('INSERT INTO auth_mfa_backup_codes'))).toBe(true)
 	})
 
 	it('stores and atomically consumes magic link tokens through the postgres bundle', async() => {
@@ -254,6 +254,6 @@ describe('pg auth adapters', () => {
 		expect(byOtp?.id).toBe(token.id)
 		expect(consumed?.id).toBe(token.id)
 		expect(await adapters.magicLink.findByTokenHash('token-hash')).toBeNull()
-		expect(queries.some((query) => query.text.includes('RETURNING *'))).toBe(true)
+		expect(queries.some(query => query.text.includes('RETURNING *'))).toBe(true)
 	})
 })

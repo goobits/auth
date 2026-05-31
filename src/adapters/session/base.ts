@@ -1,5 +1,6 @@
-import type { Session, User } from "../../types/core.js";
-import type { Cookies } from "@sveltejs/kit";
+import type { Cookies } from '@sveltejs/kit'
+
+import type { Session, User } from '../../types/core.js'
 
 /**
  * Base Session Adapter Interface
@@ -15,7 +16,7 @@ export abstract class SessionAdapter {
 	abstract createSession(
 		userId: string,
 		metadata?: Record<string, unknown>,
-	): Promise<Session>;
+	): Promise<Session>
 
 	/**
 	 * Validate a session and return session + sanitized user
@@ -24,28 +25,28 @@ export abstract class SessionAdapter {
 	 */
 	abstract validateSession(
 		sessionId: string,
-	): Promise<{ session: Session | null; user: User | null }>;
+	): Promise<{ session: Session | null; user: User | null }>
 
 	/**
 	 * Invalidate a specific session
 	 * @param {string} sessionId - Session ID to invalidate
 	 * @returns {Promise<void>}
 	 */
-	abstract invalidateSession(sessionId: string): Promise<void>;
+	abstract invalidateSession(sessionId: string): Promise<void>
 
 	/**
 	 * Invalidate all sessions for a user
 	 * @param {string} userId - User ID whose sessions to invalidate
 	 * @returns {Promise<void>}
 	 */
-	abstract invalidateUserSessions(userId: string): Promise<void>;
+	abstract invalidateUserSessions(userId: string): Promise<void>
 
 	/**
 	 * List sessions for a user
 	 * @param {string} userId - User ID
 	 * @returns {Promise<Array<import('../../types/core.js').Session>>}
 	 */
-	abstract listSessions(userId: string): Promise<Session[]>;
+	abstract listSessions(userId: string): Promise<Session[]>
 
 	/**
 	 * Set session cookie
@@ -53,12 +54,12 @@ export abstract class SessionAdapter {
 	 * @param {import('../../types/core.js').Session} session - Session to set
 	 * @returns {void}
 	 */
-	abstract setSessionCookie(cookies: Cookies, session: Session): void;
+	abstract setSessionCookie(cookies: Cookies, session: Session): void
 
 	/**
 	 * Delete session cookie
 	 * @param {import('@sveltejs/kit').Cookies} cookies - SvelteKit cookies object
 	 * @returns {void}
 	 */
-	abstract deleteSessionCookie(cookies: Cookies): void;
+	abstract deleteSessionCookie(cookies: Cookies): void
 }
