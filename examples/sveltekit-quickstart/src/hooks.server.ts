@@ -1,3 +1,3 @@
-import { auth } from "$lib/auth";
+import { auth } from '$lib/auth'
 
-export const handle = auth.handle();
+export const handle = auth.handle()

@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
+
 import { redactObject } from '../../src/utils/redact.ts'
 
 type RedactedOutput = {
@@ -13,7 +14,7 @@ describe('redactObject', () => {
 			password: 'secret',
 			profile: {
 				token: 'abc',
-				nested: [{ Access_Token: 'def' }]
+				nested: [ { Access_Token: 'def' } ]
 			},
 			ok: true
 		}

@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
-import { createPasswordResetRequestHandler, createPasswordResetConfirmHandler } from '../../src/handlers/password-reset.ts'
+import { describe, expect, it, vi } from 'vitest'
+
+import { createPasswordResetConfirmHandler, createPasswordResetRequestHandler } from '../../src/handlers/password-reset.ts'
 
 function createEventWithForm(data: Record<string, string>) {
 	return {
@@ -14,7 +15,7 @@ function createEventWithForm(data: Record<string, string>) {
 }
 
 describe('password reset handlers', () => {
-	it('blocks request on invalid CSRF', async () => {
+	it('blocks request on invalid CSRF', async() => {
 		const handler = createPasswordResetRequestHandler({
 			userAdapter: { getUserByEmail: vi.fn() },
 			verificationTokenAdapter: {},
@@ -27,7 +28,7 @@ describe('password reset handlers', () => {
 		expect(result.error).toBe('nope')
 	})
 
-	it('does not reveal if user is missing', async () => {
+	it('does not reveal if user is missing', async() => {
 		const sendPasswordResetEmail = vi.fn()
 		const handler = createPasswordResetRequestHandler({
 			userAdapter: { getUserByEmail: vi.fn().mockResolvedValue(null) },
@@ -40,7 +41,7 @@ describe('password reset handlers', () => {
 		expect(sendPasswordResetEmail).not.toHaveBeenCalled()
 	})
 
-	it('rejects invalid or expired reset token', async () => {
+	it('rejects invalid or expired reset token', async() => {
 		const handler = createPasswordResetConfirmHandler({
 			credentialsProvider: { updatePassword: vi.fn() },
 			userAdapter: {},
@@ -57,7 +58,7 @@ describe('password reset handlers', () => {
 		expect(result.error).toMatch(/Invalid or expired/)
 	})
 
-	it('resets password on valid token', async () => {
+	it('resets password on valid token', async() => {
 		const credentialsProvider = { updatePassword: vi.fn() }
 		const tokenRecord = {
 			token: { id: 't1', expiresAt: new Date(Date.now() + 10000) },

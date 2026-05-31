@@ -1,11 +1,11 @@
-import { hashPassword, verifyPassword } from "../password/index.js";
-import type { UserAdapter } from "../adapters/database/base.js";
+import type { UserAdapter } from '../adapters/database/base.js'
+import { hashPassword, verifyPassword } from '../password/index.js'
 
-type PasswordValidationResult = { valid: boolean; errors: string[] };
-type ValidatePasswordFn = (password: string) => PasswordValidationResult;
-type NormalizeIdentifierFn = (value: string) => string;
-type HashPasswordFn = (password: string) => Promise<string>;
-type VerifyPasswordFn = (storedHash: string, password: string) => Promise<boolean>;
+type PasswordValidationResult = { valid: boolean; errors: string[] }
+type ValidatePasswordFn = (password: string) => PasswordValidationResult
+type NormalizeIdentifierFn = (value: string) => string
+type HashPasswordFn = (password: string) => Promise<string>
+type VerifyPasswordFn = (storedHash: string, password: string) => Promise<boolean>
 
 type CredentialsProviderOptions = {
 	validatePassword?: ValidatePasswordFn;
@@ -14,57 +14,60 @@ type CredentialsProviderOptions = {
 	normalizeIdentifier?: NormalizeIdentifierFn;
 	hashPassword?: HashPasswordFn;
 	verifyPassword?: VerifyPasswordFn;
-};
+}
 
 /**
  * Credentials Provider for email/password authentication
  * Handles signup, signin, and password management
  */
 export class CredentialsProvider {
-	name: string;
-	validatePassword?: ValidatePasswordFn;
-	identifierField: string;
-	allowBoth: boolean;
-	normalizeIdentifier: NormalizeIdentifierFn;
-	hashPassword: HashPasswordFn;
-	verifyPassword: VerifyPasswordFn;
+	name: string
+	validatePassword?: ValidatePasswordFn
+	identifierField: string
+	allowBoth: boolean
+	normalizeIdentifier: NormalizeIdentifierFn
+	hashPassword: HashPasswordFn
+	verifyPassword: VerifyPasswordFn
 
 	/**
 	 * @param {Object} [options] - Configuration options
 	 * @param {Function} [options.validatePassword] - Custom password validation function
 	 */
 	constructor(options: CredentialsProviderOptions = {}) {
-		this.name = "credentials";
-		if (options.validatePassword) this.validatePassword = options.validatePassword;
-		this.identifierField = options.identifierField ?? "email";
-		this.allowBoth = options.allowBoth ?? false;
+		this.name = 'credentials'
+		if (options.validatePassword) this.validatePassword = options.validatePassword
+		this.identifierField = options.identifierField ?? 'email'
+		this.allowBoth = options.allowBoth ?? false
 		this.normalizeIdentifier =
-			options.normalizeIdentifier ?? ((value) => value.trim().toLowerCase());
-		this.hashPassword = options.hashPassword ?? hashPassword;
-		this.verifyPassword = options.verifyPassword ?? verifyPassword;
+			options.normalizeIdentifier ?? (value => value.trim().toLowerCase())
+		this.hashPassword = options.hashPassword ?? hashPassword
+		this.verifyPassword = options.verifyPassword ?? verifyPassword
 	}
 
 	withIdentifier(
 		identifierField: string,
-		options: { allowBoth?: boolean; normalizeIdentifier?: NormalizeIdentifierFn } = {},
+		options: { allowBoth?: boolean; normalizeIdentifier?: NormalizeIdentifierFn } = {}
 	) {
 		const providerOptions: CredentialsProviderOptions = {
 			identifierField,
 			allowBoth: options.allowBoth ?? this.allowBoth,
 			normalizeIdentifier: options.normalizeIdentifier ?? this.normalizeIdentifier,
 			hashPassword: this.hashPassword,
-			verifyPassword: this.verifyPassword,
-		};
-		if (this.validatePassword) {
-			providerOptions.validatePassword = this.validatePassword;
+			verifyPassword: this.verifyPassword
 		}
-		return new CredentialsProvider(providerOptions);
+		if (this.validatePassword) {
+			providerOptions.validatePassword = this.validatePassword
+		}
+		return new CredentialsProvider(providerOptions)
 	}
 
 	/**
 	 * Authenticate a user with email and password
-	 * @param {Object} params
+	 *
 	 * @param {string} params.email - User email
+	 * @param identifier - identifier value.
+	 * @param identifierField - identifier field value.
+	 * @param allowBoth - allow both value.
 	 * @param {string} params.password - Plain text password
 	 * @param {import('../adapters/database/base.js').UserAdapter} params.userAdapter - User adapter
 	 * @returns {Promise<{user: Object, valid: boolean}>}
@@ -75,7 +78,7 @@ export class CredentialsProvider {
 		identifierField,
 		allowBoth,
 		password,
-		userAdapter,
+		userAdapter
 	}: {
 		email?: string;
 		identifier?: string;
@@ -84,67 +87,67 @@ export class CredentialsProvider {
 		password: string;
 		userAdapter: UserAdapter;
 	}): Promise<{ user: Record<string, unknown> | null; valid: boolean }> {
-		const rawIdentifier = identifier ?? email ?? "";
+		const rawIdentifier = identifier ?? email ?? ''
 		if (!rawIdentifier || !password) {
-			return { user: null, valid: false };
+			return { user: null, valid: false }
 		}
 
-		const resolvedField = identifierField ?? this.identifierField;
-		const resolvedAllowBoth = allowBoth ?? this.allowBoth;
-		const normalizedIdentifier = this.normalizeIdentifier(rawIdentifier);
+		const resolvedField = identifierField ?? this.identifierField
+		const resolvedAllowBoth = allowBoth ?? this.allowBoth
+		const normalizedIdentifier = this.normalizeIdentifier(rawIdentifier)
 
 		let user:
 			| (Record<string, unknown> & { password?: string | null })
-			| null = null;
-		let matchedField: string | null = null;
+			| null = null
+		let matchedField: string | null = null
 
 		const tryFields = resolvedAllowBoth
-			? Array.from(new Set([resolvedField, "email"]))
-			: [resolvedField];
+			? Array.from(new Set([ resolvedField, 'email' ]))
+			: [ resolvedField ]
 
 		for (const field of tryFields) {
-			if (field === "email") {
-				user = await userAdapter.getUserWithPasswordHash(normalizedIdentifier);
+			if (field === 'email') {
+				user = await userAdapter.getUserWithPasswordHash(normalizedIdentifier)
 			} else if (userAdapter.getUserWithPasswordHashByIdentifier) {
 				user = await userAdapter.getUserWithPasswordHashByIdentifier(
 					normalizedIdentifier,
-					field,
-				);
+					field
+				)
 			}
 
 			if (user) {
-				matchedField = field;
-				break;
+				matchedField = field
+				break
 			}
 		}
 
 		if (!user || !user.password) {
-			return { user: null, valid: false };
+			return { user: null, valid: false }
 		}
 
 		// Verify password
-		const valid = await this.verifyPassword(user.password, password);
+		const valid = await this.verifyPassword(user.password, password)
 
 		if (!valid) {
-			return { user: null, valid: false };
+			return { user: null, valid: false }
 		}
 
 		// Return sanitized user
 		const sanitized =
-			matchedField === "email"
+			matchedField === 'email'
 				? await userAdapter.getUserByEmail(normalizedIdentifier)
 				: userAdapter.getUserByIdentifier
 					? await userAdapter.getUserByIdentifier(
-							normalizedIdentifier,
-							matchedField ?? resolvedField,
-						)
-					: await userAdapter.getUserByEmail(normalizedIdentifier);
-		return { user: sanitized, valid: true };
+						normalizedIdentifier,
+						matchedField ?? resolvedField
+					)
+					: await userAdapter.getUserByEmail(normalizedIdentifier)
+		return { user: sanitized, valid: true }
 	}
 
 	/**
 	 * Create a new user with email and password
-	 * @param {Object} params
+	 *
 	 * @param {string} params.email - User email
 	 * @param {string} params.password - Plain text password
 	 * @param {string} [params.name] - User name
@@ -157,7 +160,7 @@ export class CredentialsProvider {
 		password,
 		name,
 		metadata = {},
-		userAdapter,
+		userAdapter
 	}: {
 		email: string;
 		password: string;
@@ -166,19 +169,19 @@ export class CredentialsProvider {
 		userAdapter: UserAdapter;
 	}): Promise<Record<string, unknown>> {
 		if (!email || !password) {
-			throw new Error("Email and password are required");
+			throw new Error('Email and password are required')
 		}
 
 		// Validate password if custom validator provided
 		if (this.validatePassword) {
-			const validation = this.validatePassword(password);
+			const validation = this.validatePassword(password)
 			if (!validation.valid) {
-				throw new Error(validation.errors.join(", "));
+				throw new Error(validation.errors.join(', '))
 			}
 		}
 
 		// Hash password
-		const passwordHash = await this.hashPassword(password);
+		const passwordHash = await this.hashPassword(password)
 
 		// Create user profile
 		const profile: {
@@ -189,29 +192,29 @@ export class CredentialsProvider {
 		} = {
 			id: email.toLowerCase(),
 			email: email.toLowerCase(),
-			verified_email: false,
-		};
-		const fallbackName = email.split("@")[0] ?? "";
+			verified_email: false
+		}
+		const fallbackName = email.split('@')[0] ?? ''
 		if (name) {
-			profile.name = name;
+			profile.name = name
 		} else if (fallbackName) {
-			profile.name = fallbackName;
+			profile.name = fallbackName
 		}
 
 		// Create user with hashed password
 		const user = await userAdapter.createUser(profile, {
 			password: passwordHash,
-			provider: "email",
+			provider: 'email',
 			emailVerified: false,
-			...metadata,
-		});
+			...metadata
+		})
 
-		return user;
+		return user
 	}
 
 	/**
 	 * Update user password
-	 * @param {Object} params
+	 *
 	 * @param {string} params.userId - User ID
 	 * @param {string} params.newPassword - New plain text password
 	 * @param {import('../adapters/database/base.js').UserAdapter} params.userAdapter - User adapter
@@ -220,38 +223,38 @@ export class CredentialsProvider {
 	async updatePassword({
 		userId,
 		newPassword,
-		userAdapter,
+		userAdapter
 	}: {
 		userId: string;
 		newPassword: string;
 		userAdapter: UserAdapter;
 	}): Promise<Record<string, unknown>> {
 		if (!userId || !newPassword) {
-			throw new Error("User ID and new password are required");
+			throw new Error('User ID and new password are required')
 		}
 
 		// Validate password if custom validator provided
 		if (this.validatePassword) {
-			const validation = this.validatePassword(newPassword);
+			const validation = this.validatePassword(newPassword)
 			if (!validation.valid) {
-				throw new Error(validation.errors.join(", "));
+				throw new Error(validation.errors.join(', '))
 			}
 		}
 
 		// Hash new password
-		const passwordHash = await this.hashPassword(newPassword);
+		const passwordHash = await this.hashPassword(newPassword)
 
 		// Update user
 		const user = await userAdapter.updateUser(userId, {
-			password: passwordHash,
-		});
+			password: passwordHash
+		})
 
-		return user;
+		return user
 	}
 
 	/**
 	 * Verify current password before allowing update
-	 * @param {Object} params
+	 *
 	 * @param {string} params.email - User email
 	 * @param {string} params.currentPassword - Current plain text password
 	 * @param {string} params.newPassword - New plain text password
@@ -262,7 +265,7 @@ export class CredentialsProvider {
 		email,
 		currentPassword,
 		newPassword,
-		userAdapter,
+		userAdapter
 	}: {
 		email: string;
 		currentPassword: string;
@@ -273,28 +276,28 @@ export class CredentialsProvider {
 		const { user, valid } = await this.authenticate({
 			email,
 			password: currentPassword,
-			userAdapter,
-		});
+			userAdapter
+		})
 
 		if (!valid || !user) {
-			return { user: null, valid: false };
+			return { user: null, valid: false }
 		}
 
 		// Update to new password
-		const userId = typeof (user as { id?: unknown }).id === "string" || typeof (user as { id?: unknown }).id === "number"
+		const userId = typeof (user as { id?: unknown }).id === 'string' || typeof (user as { id?: unknown }).id === 'number'
 			? String((user as { id?: string | number }).id)
-			: "";
+			: ''
 
 		if (!userId) {
-			return { user: null, valid: false };
+			return { user: null, valid: false }
 		}
 
 		const updatedUser = await this.updatePassword({
 			userId,
 			newPassword,
-			userAdapter,
-		});
+			userAdapter
+		})
 
-		return { user: updatedUser, valid: true };
+		return { user: updatedUser, valid: true }
 	}
 }

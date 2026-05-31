@@ -1,9 +1,9 @@
-import { AuthPrincipalResolutionError } from "../errors/auth.js";
-import type { OnLoginMode, RequestEventLike } from "../types/auth.js";
-import type { SessionAdapter } from "../adapters/session/base.js";
+import type { SessionAdapter } from '../adapters/session/base.js'
+import { AuthPrincipalResolutionError } from '../errors/auth.js'
+import type { OnLoginMode, RequestEventLike } from '../types/auth.js'
 
-type SessionLoginAdapter = Pick<SessionAdapter, "createSession"> &
-	Partial<Pick<SessionAdapter, "setSessionCookie">>;
+type SessionLoginAdapter = Pick<SessionAdapter, 'createSession'> &
+	Partial<Pick<SessionAdapter, 'setSessionCookie'>>
 
 export async function ensureSessionAfterLogin(input: {
 	event: RequestEventLike;
@@ -17,17 +17,17 @@ export async function ensureSessionAfterLogin(input: {
 		sessionAdapter,
 		userId,
 		autoCreateSession = true,
-		onLoginMode = "augment",
-	} = input;
+		onLoginMode = 'augment'
+	} = input
 
 	if (!userId) {
-		throw new AuthPrincipalResolutionError();
+		throw new AuthPrincipalResolutionError()
 	}
 
-	if (autoCreateSession && onLoginMode === "augment") {
-		const session = await sessionAdapter.createSession(userId);
-		sessionAdapter.setSessionCookie?.(event.cookies, session);
+	if (autoCreateSession && onLoginMode === 'augment') {
+		const session = await sessionAdapter.createSession(userId)
+		sessionAdapter.setSessionCookie?.(event.cookies, session)
 	}
 
-	return userId;
+	return userId
 }

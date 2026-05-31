@@ -5,7 +5,7 @@ type CookieOptions = Record<string, unknown>
 export function createCookies(initial: Record<string, string> = {}) {
 	const store = new Map<string, { value: string; options: CookieOptions }>()
 
-	for (const [name, value] of Object.entries(initial)) {
+	for (const [ name, value ] of Object.entries(initial)) {
 		store.set(name, { value, options: {} })
 	}
 
@@ -69,7 +69,7 @@ export async function captureRejected<T>(promise: Promise<unknown>): Promise<T> 
 	try {
 		await promise
 		throw new Error('Expected promise to reject')
-	} catch (err) {
+	} catch(err) {
 		return err as T
 	}
 }

@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest'
-import { createVerificationToken, consumeVerificationToken, getUserForVerificationToken, VERIFICATION_TOKEN_TYPES } from '../../src/utils/tokens.ts'
+import { describe, expect, it, vi } from 'vitest'
+
 import { sha256Hex } from '../../src/utils/crypto.ts'
+import { consumeVerificationToken, createVerificationToken, getUserForVerificationToken, VERIFICATION_TOKEN_TYPES } from '../../src/utils/tokens.ts'
 
 type TokenRecord = {
 	id: string;
@@ -15,25 +16,25 @@ function createAdapter() {
 		string,
 		TokenRecord
 	>()
-	const findByToken = async ({ token, type }: { token: string; type: string }) => {
+	const findByToken = async({ token, type }: { token: string; type: string }) => {
 		const record = tokens.get(token)
 		if (!record || record.type !== type) return null
 		return { token: record, user: { id: record.userId, password: 'secret' } }
 	}
 	return {
-		deleteByUserAndType: vi.fn(async ({ userId, type }: { userId: string; type: string }) => {
-			for (const [key, value] of tokens.entries()) {
+		deleteByUserAndType: vi.fn(async({ userId, type }: { userId: string; type: string }) => {
+			for (const [ key, value ] of tokens.entries()) {
 				if (value.userId === userId && value.type === type) tokens.delete(key)
 			}
 		}),
-		create: vi.fn(async ({ userId, type, token, expiresAt }: Omit<TokenRecord, 'id'>) => {
+		create: vi.fn(async({ userId, type, token, expiresAt }: Omit<TokenRecord, 'id'>) => {
 			tokens.set(token, { id: token, token, userId, type, expiresAt })
 		}),
 		findByToken: vi.fn(findByToken),
-		deleteById: vi.fn(async (tokenId: string) => {
+		deleteById: vi.fn(async(tokenId: string) => {
 			tokens.delete(tokenId)
 		}),
-		consumeByToken: vi.fn(async (params: { token: string; type: string }) => {
+		consumeByToken: vi.fn(async(params: { token: string; type: string }) => {
 			const record = await findByToken(params)
 			if (record) tokens.delete(record.token.id)
 			return record
@@ -43,7 +44,7 @@ function createAdapter() {
 }
 
 describe('verification tokens', () => {
-	it('replaces existing tokens of the same type', async () => {
+	it('replaces existing tokens of the same type', async() => {
 		const adapter = createAdapter()
 		const token = await createVerificationToken({
 			adapter,
@@ -55,7 +56,7 @@ describe('verification tokens', () => {
 		expect(adapter._tokens.has(tokenHash)).toBe(true)
 	})
 
-	it('consumes and deletes token', async () => {
+	it('consumes and deletes token', async() => {
 		const adapter = createAdapter()
 		const expiresAt = new Date(Date.now() + 10000)
 		const token = 't1'
@@ -66,7 +67,7 @@ describe('verification tokens', () => {
 		expect(adapter._tokens.has(tokenHash)).toBe(false)
 	})
 
-	it('returns null for expired tokens', async () => {
+	it('returns null for expired tokens', async() => {
 		const adapter = createAdapter()
 		const token = 't2'
 		const tokenHash = await sha256Hex(token)
@@ -75,7 +76,7 @@ describe('verification tokens', () => {
 		expect(user).toBeNull()
 	})
 
-	it('getUserForVerificationToken respects expiry and sanitize', async () => {
+	it('getUserForVerificationToken respects expiry and sanitize', async() => {
 		const adapter = createAdapter()
 		const token = 't3'
 		const tokenHash = await sha256Hex(token)
@@ -84,7 +85,7 @@ describe('verification tokens', () => {
 			adapter,
 			token,
 			type: VERIFICATION_TOKEN_TYPES.EMAIL_UPDATE,
-			sanitizeUser: (u: Record<string, unknown>) => ({ id: u["id"] })
+			sanitizeUser: (u: Record<string, unknown>) => ({ id: u['id'] })
 		})
 		expect(user).toEqual({ id: 'u1' })
 	})

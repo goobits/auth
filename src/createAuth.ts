@@ -1,23 +1,23 @@
-import type { AuthConfig } from "./types/auth.js";
-import { setLogger } from "./utils/logger.js";
-import { validateConfig, resolveDefaults } from "./createAuth/config.js";
-import { resolveSecurity, applyPolicies } from "./createAuth/security-setup.js";
+import { resolveDefaults, validateConfig } from './createAuth/config.js'
 import {
-	createHandlers,
 	buildRoutes,
-	createUtils,
-} from "./createAuth/handler-factory.js";
+	createHandlers,
+	createUtils
+} from './createAuth/handler-factory.js'
+import { applyPolicies, resolveSecurity } from './createAuth/security-setup.js'
+import type { AuthConfig } from './types/auth.js'
+import { setLogger } from './utils/logger.js'
 
 export function createAuth(config: AuthConfig) {
-	setLogger(config.logger);
-	validateConfig(config);
-	const defaults = resolveDefaults(config);
-	const security = resolveSecurity(config);
+	setLogger(config.logger)
+	validateConfig(config)
+	const defaults = resolveDefaults(config)
+	const security = resolveSecurity(config)
 	const handlers = applyPolicies(
 		createHandlers(config, defaults, security),
-		security,
-	);
-	const routes = buildRoutes(handlers);
+		security
+	)
+	const routes = buildRoutes(handlers)
 	return {
 		adapters: config.adapters,
 		providers: config.providers ?? {},
@@ -28,6 +28,6 @@ export function createAuth(config: AuthConfig) {
 		hooks: config.hooks ?? {},
 		handlers,
 		routes,
-		utils: createUtils(defaults.isAuthenticated),
-	};
+		utils: createUtils(defaults.isAuthenticated)
+	}
 }

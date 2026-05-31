@@ -13,8 +13,8 @@ export abstract class TokenAdapter {
 	abstract storeTokens(
 		userId: string,
 		provider: string,
-		tokens: import("../../types/core.js").OAuthTokens,
-	): Promise<void>;
+		tokens: import('../../types/core.js').OAuthTokens,
+	): Promise<void>
 
 	/**
 	 * Get OAuth tokens for a user
@@ -25,7 +25,7 @@ export abstract class TokenAdapter {
 	abstract getTokens(
 		userId: string,
 		provider: string,
-	): Promise<import("../../types/core.js").OAuthTokens | null>;
+	): Promise<import('../../types/core.js').OAuthTokens | null>
 
 	/**
 	 * Refresh OAuth tokens
@@ -36,7 +36,7 @@ export abstract class TokenAdapter {
 	abstract refreshTokens(
 		userId: string,
 		provider: string,
-	): Promise<import("../../types/core.js").OAuthTokens | null>;
+	): Promise<import('../../types/core.js').OAuthTokens | null>
 
 	/**
 	 * Delete OAuth tokens
@@ -44,5 +44,5 @@ export abstract class TokenAdapter {
 	 * @param {string} provider - Provider name
 	 * @returns {Promise<void>}
 	 */
-	abstract deleteTokens(userId: string, provider: string): Promise<void>;
+	abstract deleteTokens(userId: string, provider: string): Promise<void>
 }
