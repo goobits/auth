@@ -4,7 +4,8 @@ export function isSafeRedirectPath(value: string): boolean {
 
 	// Must be a relative path. Disallow protocol-relative, absolute URLs, and backslashes.
 	if (!v.startsWith('/')) return false
-	if (v.startsWith('//')) return false
+	if (/^\/[/\\]/.test(v)) return false
+	if (/^\/(?:%2f|%5c)/i.test(v)) return false
 	if (v.includes('\\')) return false
 
 	// Basic guard against newlines or control characters.
