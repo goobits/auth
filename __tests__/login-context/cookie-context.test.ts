@@ -81,6 +81,9 @@ describe('safe redirect normalization', () => {
 	it('rejects absolute, protocol-relative, and control-character redirects', () => {
 		expect(normalizeSafeRedirectPath('https://example.com/calendar')).toBeNull()
 		expect(normalizeSafeRedirectPath('//example.com/calendar')).toBeNull()
+		expect(normalizeSafeRedirectPath('/\\example.com/calendar')).toBeNull()
+		expect(normalizeSafeRedirectPath('/%2fexample.com/calendar')).toBeNull()
+		expect(normalizeSafeRedirectPath('/%5cexample.com/calendar')).toBeNull()
 		expect(normalizeSafeRedirectPath('/calendar\nLocation: /admin')).toBeNull()
 		expect(normalizeSafeRedirectPath('/calendar', { baseUrl: 'not a url' })).toBeNull()
 	})

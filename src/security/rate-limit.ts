@@ -38,6 +38,10 @@ export class MemoryRateLimitStore implements RateLimitStore {
 		this._data.delete(key)
 	}
 
+	clear(): void {
+		this._data.clear()
+	}
+
 	private compact(): void {
 		const now = Date.now()
 		for (const [ key, record ] of this._data.entries()) {
@@ -106,6 +110,7 @@ type RateLimiterConfig = {
 	windowMs?: number;
 	max?: number;
 	keyPrefix?: string;
+	now?: () => number;
 }
 
 type RateLimitResult = {
@@ -118,15 +123,16 @@ export function createRateLimiter({
 	store = new MemoryRateLimitStore(),
 	windowMs = 60 * 1000,
 	max = 5,
-	keyPrefix = 'rl'
+	keyPrefix = 'rl',
+	now = Date.now
 }: RateLimiterConfig = {}): (key: string) => Promise<RateLimitResult> {
 	return async function checkRateLimit(key: string): Promise<RateLimitResult> {
-		const now = Date.now()
+		const timestamp = now()
 		const fullKey = `${ keyPrefix }:${ key }`
 		const record = await store.get(fullKey)
 
-		if (!record || now >= record.resetAt) {
-			const resetAt = now + windowMs
+		if (!record || timestamp >= record.resetAt) {
+			const resetAt = timestamp + windowMs
 			const next = { count: 1, resetAt }
 			await store.set(fullKey, next, windowMs)
 			return { allowed: true, remaining: max - 1, resetAt }
@@ -137,7 +143,7 @@ export function createRateLimiter({
 		}
 
 		const next = { count: record.count + 1, resetAt: record.resetAt }
-		await store.set(fullKey, next, record.resetAt - now)
+		await store.set(fullKey, next, record.resetAt - timestamp)
 		return { allowed: true, remaining: max - next.count, resetAt: next.resetAt }
 	}
 }
