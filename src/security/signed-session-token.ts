@@ -29,14 +29,6 @@ export type VerifySignedSessionTokenOptions = {
 	secret: string;
 }
 
-function toBase64Url(value: string): string {
-	return bytesToBase64Url(textToBytes(value))
-}
-
-function fromBase64Url(value: string): string {
-	return bytesToText(base64UrlToBytes(value))
-}
-
 async function signPayload(payload: string, secret: string): Promise<string> {
 	return (await signHmac(payload, secret)).value
 }
@@ -70,7 +62,7 @@ export async function createSignedSessionToken({
 		sid: sessionId ?? (await generateRandomUUID()),
 		exp: expiresAt ?? Date.now() + ttlMs
 	})
-	const encodedPayload = toBase64Url(payload)
+	const encodedPayload = bytesToBase64Url(textToBytes(payload))
 	const signature = await signPayload(encodedPayload, secret)
 	return `${ encodedPayload }.${ signature }`
 }
@@ -105,7 +97,7 @@ export async function verifySignedSessionToken(
 			return null
 		}
 
-		const data = JSON.parse(fromBase64Url(encodedPayload)) as Record<string, unknown>
+		const data = JSON.parse(bytesToText(base64UrlToBytes(encodedPayload))) as Record<string, unknown>
 		if (
 			typeof data['sub'] !== 'string' ||
 			typeof data['sid'] !== 'string' ||

@@ -1,4 +1,5 @@
 import { decodeBase64IgnorePadding } from '@oslojs/encoding'
+import { base64UrlToBytes, bytesToText } from '@goobits/security/crypto'
 import { Apple } from 'arctic'
 
 import type { OAuthProfile, OAuthTokens } from '../types/index.js'
@@ -231,7 +232,7 @@ export class AppleProvider extends OAuthProvider {
 			[ 'verify' ]
 		)
 		const signingInput = new TextEncoder().encode(`${ headerPart }.${ payloadPart }`)
-		const signature = base64UrlToBytes(signaturePart)
+		const signature = new Uint8Array(base64UrlToBytes(signaturePart))
 		const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, signature, signingInput)
 		if (!valid) {
 			throw new Error('Invalid Apple ID token signature')
@@ -279,20 +280,8 @@ export class AppleProvider extends OAuthProvider {
 	}
 }
 
-function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {
-	const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
-	const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
-	const binary = atob(padded)
-	const bytes = new Uint8Array(new ArrayBuffer(binary.length))
-	for (let i = 0; i < binary.length; i += 1) {
-		bytes[i] = binary.charCodeAt(i)
-	}
-	return bytes
-}
-
 function parseJwtPart(value: string): unknown {
-	const bytes = base64UrlToBytes(value)
-	return JSON.parse(new TextDecoder().decode(bytes))
+	return JSON.parse(bytesToText(base64UrlToBytes(value)))
 }
 
 async function getAppleJwks(): Promise<{ keys: JsonWebKey[] }> {
