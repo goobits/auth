@@ -3,6 +3,7 @@ import { redirect } from '@sveltejs/kit'
 import type { OAuthProvider } from '../providers/base.js'
 import type { AuthLocals, RequestEventLike } from '../types/auth.js'
 import { createOAuthCookies } from '../utils/oauth.js'
+import { isSafeRedirectPath } from '../utils/redirect.js'
 
 type LoginHandlerConfig = {
 	providers: Record<string, { provider: OAuthProvider; scopes?: string[] }>;
@@ -51,7 +52,7 @@ export function createLoginHandler(config: LoginHandlerConfig) {
 	return async({ cookies, params, locals }: RequestEventLike) => {
 		// Check if already authenticated
 		if (isAuthenticated(locals)) {
-			throw redirect(302, redirectAfterLogin)
+			throw redirect(302, isSafeRedirectPath(redirectAfterLogin) ? redirectAfterLogin : '/')
 		}
 
 		const providerName = String(params['provider'] ?? '')
