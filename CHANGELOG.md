@@ -9,6 +9,7 @@
 - 👤 Trusted proxy headers now require explicit trusted-header configuration before forwarded client IPs are accepted.
 - 👤 OAuth routes no longer use the global OAuth POST fallback, and redirect endpoints enforce safer request paths.
 - 👤 Auth error logging now avoids raw exception objects so sensitive provider, password, and token details are not emitted.
+- 👤 Auth crypto-sensitive helpers for API keys, CSRF tokens, signed session tokens, token encryption, random bytes, and SHA-256 now use `@goobits/security/crypto` while preserving the auth-facing helper APIs.
 
 ### 🏠 Internal
 

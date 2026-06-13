@@ -1,7 +1,15 @@
-import { generateRandomUUID, timingSafeEqual } from '../utils/crypto.js'
+import {
+	base64UrlToBytes,
+	bytesToBase64Url,
+	bytesToText,
+	signHmac,
+	textToBytes,
+	verifyHmac
+} from '@goobits/security/crypto'
+
+import { generateRandomUUID } from '../utils/crypto.js'
 
 const DEFAULT_SESSION_TTL_MS = 24 * 60 * 60 * 1000
-const HMAC_ALGORITHM = { name: 'HMAC', hash: 'SHA-256' }
 
 export type SignedSessionTokenClaims = {
 	subject: string;
@@ -22,48 +30,15 @@ export type VerifySignedSessionTokenOptions = {
 }
 
 function toBase64Url(value: string): string {
-	const bytes = new TextEncoder().encode(value)
-	let binary = ''
-	for (const byte of bytes) {
-		binary += String.fromCharCode(byte)
-	}
-	return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '')
+	return bytesToBase64Url(textToBytes(value))
 }
 
 function fromBase64Url(value: string): string {
-	const padded = value.replaceAll('-', '+').replaceAll('_', '/').padEnd(
-		Math.ceil(value.length / 4) * 4,
-		'='
-	)
-	const binary = atob(padded)
-	const bytes = Uint8Array.from(binary, char => char.charCodeAt(0))
-	return new TextDecoder().decode(bytes)
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-	return Array.from(bytes)
-		.map(byte => byte.toString(16).padStart(2, '0'))
-		.join('')
+	return bytesToText(base64UrlToBytes(value))
 }
 
 async function signPayload(payload: string, secret: string): Promise<string> {
-	if (!globalThis.crypto?.subtle) {
-		throw new Error('WebCrypto HMAC support is required')
-	}
-
-	const key = await globalThis.crypto.subtle.importKey(
-		'raw',
-		new TextEncoder().encode(secret) as BufferSource,
-		HMAC_ALGORITHM,
-		false,
-		[ 'sign' ]
-	)
-	const signature = await globalThis.crypto.subtle.sign(
-		HMAC_ALGORITHM.name,
-		key,
-		new TextEncoder().encode(payload) as BufferSource
-	)
-	return bytesToHex(new Uint8Array(signature))
+	return (await signHmac(payload, secret)).value
 }
 
 /**
@@ -126,8 +101,7 @@ export async function verifySignedSessionToken(
 			return null
 		}
 
-		const expectedSignature = await signPayload(encodedPayload, secret)
-		if (!timingSafeEqual(signature, expectedSignature)) {
+		if (!(await verifyHmac(encodedPayload, { algorithm: 'HS256', value: signature }, secret))) {
 			return null
 		}
 

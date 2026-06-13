@@ -1,25 +1,20 @@
-import { getRandomBytes, timingSafeEqual } from '../utils/crypto.js'
+import {
+	bytesToHex,
+	constantTimeEqual as securityConstantTimeEqual,
+	randomBytes,
+	sha256Hex
+} from '@goobits/security/crypto'
 
-function bytesToHex(bytes: Uint8Array): string {
-	return Array.from(bytes)
-		.map(b => b.toString(16).padStart(2, '0'))
-		.join('')
-}
-
-async function sha256Hex(value: string): Promise<string> {
-	const data = new TextEncoder().encode(value)
-	if (!globalThis.crypto?.subtle) {
-		throw new Error('WebCrypto is required')
-	}
-	const digest = await globalThis.crypto.subtle.digest('SHA-256', data)
-	return bytesToHex(new Uint8Array(digest))
+export function timingSafeEqual(a: string, b: string): boolean {
+	if (!a || !b) return false
+	return securityConstantTimeEqual(a, b)
 }
 
 export async function createAdminApiKey({
 	prefix = 'adm',
 	bytes = 32
 }: { prefix?: string; bytes?: number } = {}): Promise<string> {
-	const random = await getRandomBytes(bytes)
+	const random = randomBytes(bytes)
 	return `${ prefix }_${ bytesToHex(random) }`
 }
 
@@ -47,5 +42,3 @@ export function parseApiKeyHeader(value: string | null): string | null {
 	if (value.startsWith('Bearer ')) return value.slice(7)
 	return value
 }
-
-export { timingSafeEqual }

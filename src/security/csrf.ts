@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit'
 
-import { getRandomBytes, timingSafeEqual } from '../utils/crypto.js'
+import { constantTimeEqual as securityConstantTimeEqual, randomHex } from '@goobits/security/crypto'
 type CsrfStoreRecord = { value: boolean; expiresAt: number | null }
 
 type CookiesLike = Pick<Cookies, 'set' | 'get' | 'delete'>
@@ -13,6 +13,11 @@ export type CsrfStore = {
 
 export const CSRF_COOKIE_NAME = 'csrf-token'
 export const CSRF_HEADER_NAME = 'x-csrf-token'
+
+function timingSafeEqual(a: string, b: string): boolean {
+	if (!a || !b) return false
+	return securityConstantTimeEqual(a, b)
+}
 
 export class MemoryCsrfStore {
 	private _data: Map<string, CsrfStoreRecord>
@@ -41,15 +46,8 @@ export class MemoryCsrfStore {
 	}
 }
 
-function bytesToHex(bytes: Uint8Array): string {
-	return Array.from(bytes)
-		.map(b => b.toString(16).padStart(2, '0'))
-		.join('')
-}
-
 export async function createCsrfToken(): Promise<string> {
-	const bytes = await getRandomBytes(32)
-	return bytesToHex(bytes)
+	return randomHex(32)
 }
 
 export async function issueCsrfToken({
