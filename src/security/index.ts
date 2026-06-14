@@ -3,7 +3,7 @@ export { createAdminApiKey, hashAdminApiKey, parseApiKeyHeader, verifyAdminApiKe
 export { createWebhookAlerter } from './alerting.js'
 export { createSecurityAlertObserver } from './alerts.js'
 export type { AuthAuditEvent } from './audit.js'
-export { auditAuthEvent, auditLog, withAuditLogging } from './audit.js'
+export { auditAuthEvent } from './audit.js'
 export { requireAuthenticated, requireOwnership, requireAuthRole } from './authorize.js'
 export type { BasicAuthCredentials, BasicAuthPasswordVerifier, VerifyBasicAuthOptions } from './basic-auth.js'
 export { createBasicAuthResponse, parseBasicAuthHeader, verifyBasicAuthHeader } from './basic-auth.js'

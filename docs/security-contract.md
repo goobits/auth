@@ -35,11 +35,12 @@ const auth = new GoobitsAuth({
 
 - Library provides:
   - principal resolution and session lifecycle guarantees
-  - CSRF/rate-limit/audit policy wrappers
+  - CSRF/rate-limit policy helpers
   - auth event emission + threshold alerts
   - authorization helper primitives
 - Application must provide:
   - route-level authorization policy decisions
+  - generic route audit logging through `@goobits/security/audit`
   - security headers, TLS/HSTS/CSP at app/edge layer
   - secrets management and key rotation
 
