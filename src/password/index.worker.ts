@@ -38,7 +38,7 @@ export async function verifyPassword(storedHash: string, password: string): Prom
 		})
 	} catch(error) {
 		const { getLogger } = await import('../utils/logger.js')
-		getLogger().error?.('Password verification error:', error)
+		getLogger().error?.('Password verification error:', error instanceof Error ? error.message : String(error))
 		return false
 	}
 }

@@ -110,7 +110,7 @@ export function createPasswordResetRequestHandler(config: {
 					'If an account exists with this email, a password reset link has been sent'
 			}
 		} catch(error) {
-			log.error?.('[Password Reset Request] Error:', error)
+			log.error?.('[Password Reset Request] Error:', error instanceof Error ? error.message : String(error))
 
 			return {
 				error: 'An error occurred while processing your request',
@@ -201,7 +201,7 @@ export function createPasswordResetConfirmHandler(config: {
 					sessionsInvalidated = false
 					log.error?.(
 						'[PasswordReset] Failed to invalidate existing sessions after reset:',
-						error
+						error instanceof Error ? error.message : String(error)
 					)
 				}
 			}
@@ -215,7 +215,7 @@ export function createPasswordResetConfirmHandler(config: {
 				redirectTo: isSafeRedirectPath(redirectTo) ? redirectTo : '/sign-in'
 			}
 		} catch(error) {
-			log.error?.('[Password Reset Confirm] Error:', error)
+			log.error?.('[Password Reset Confirm] Error:', error instanceof Error ? error.message : String(error))
 
 			return {
 				error:
