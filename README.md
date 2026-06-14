@@ -92,8 +92,12 @@ export const { GET, POST } = auth.handlers;
 ## Guard Helpers
 
 - `await auth.requireUser(event)`
-- `await auth.requireRole(event, "admin")`
+- `await auth.requireAuthRole(event, "admin")`
 - `await auth.getSession(event)`
+
+`requireAuthRole()` checks website/session route roles only. Product
+permissions for Spaces, Zones, Goobits, agents, and wormholes should be checked
+through the product access system.
 
 ## Security Primitives
 

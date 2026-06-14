@@ -16,7 +16,7 @@ type AuthHandlersBundle = {
 	POST: RequestHandler;
 }
 
-type RoleResolver = (user: User) => string[]
+type AuthRoleResolver = (user: User) => string[]
 
 export type GoobitsAuthRoutingConfig = {
 	basePath?: string;
@@ -61,10 +61,10 @@ function hasSessionPrincipal(locals: AuthLocals): locals is AuthLocals & {
 	return !!locals.session && !!locals.user
 }
 
-function resolveUserRoles(user: User): string[] {
-	const roles: string[] = []
+function resolveUserAuthRoles(user: User): string[] {
+	const authRoles: string[] = []
 	if (typeof user.role === 'string' && user.role.length > 0) {
-		roles.push(user.role)
+		authRoles.push(user.role)
 	}
 	const settings = user.settings
 	if (settings && typeof settings === 'object' && !Array.isArray(settings)) {
@@ -72,12 +72,12 @@ function resolveUserRoles(user: User): string[] {
 		if (Array.isArray(maybeRoles)) {
 			for (const entry of maybeRoles) {
 				if (typeof entry === 'string' && entry.length > 0) {
-					roles.push(entry)
+					authRoles.push(entry)
 				}
 			}
 		}
 	}
-	return Array.from(new Set(roles))
+	return Array.from(new Set(authRoles))
 }
 
 export class GoobitsAuth {
@@ -206,21 +206,21 @@ export class GoobitsAuth {
 	}
 
 	/**
-	 * Returns the current user when they have any required role, otherwise throws a 403.
+	 * Returns the current user when they have any required route-auth role, otherwise throws a 403.
 	 *
 	 * @param event - Event payload.
-	 * @param role - role value.
+	 * @param authRole - route-auth role value.
 	 * @param options - Options for this operation.
 	 */
-	async requireRole(
+	async requireAuthRole(
 		event: RequestEventLike,
-		role: string | string[],
-		options?: { resolveRoles?: RoleResolver }
+		authRole: string | string[],
+		options?: { resolveAuthRoles?: AuthRoleResolver }
 	): Promise<User> {
 		const user = await this.requireUser(event)
-		const roles = options?.resolveRoles ? options.resolveRoles(user) : resolveUserRoles(user)
-		const required = Array.isArray(role) ? role : [ role ]
-		const allowed = required.some(entry => roles.includes(entry))
+		const authRoles = options?.resolveAuthRoles ? options.resolveAuthRoles(user) : resolveUserAuthRoles(user)
+		const required = Array.isArray(authRole) ? authRole : [ authRole ]
+		const allowed = required.some(entry => authRoles.includes(entry))
 		if (!allowed) {
 			const emitter = this.core.security.audit.emitter
 			await emitter?.({
@@ -229,11 +229,11 @@ export class GoobitsAuth {
 				route: event.url.pathname,
 				method: event.request.method,
 				status: 403,
-				message: 'Missing required role',
+				message: 'Missing required auth role',
 				userId: user.id,
 				details: {
-					requiredRoles: required,
-					actorRoles: roles
+					requiredAuthRoles: required,
+					actorAuthRoles: authRoles
 				},
 				timestamp: new Date().toISOString()
 			})

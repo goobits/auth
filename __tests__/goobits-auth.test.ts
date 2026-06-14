@@ -108,7 +108,7 @@ describe('GoobitsAuth', () => {
 		})
 	})
 
-	it('enforces requireRole', async() => {
+	it('enforces requireAuthRole', async() => {
 		const user: User = {
 			id: 'u2',
 			email: 'u2@example.com',
@@ -128,6 +128,6 @@ describe('GoobitsAuth', () => {
 		const event = createRequestEvent({ url: 'http://localhost/protected' })
 		event.locals.session = session
 		event.locals.user = user
-		await expect(auth.requireRole(event, 'admin')).rejects.toMatchObject({ status: 403 })
+		await expect(auth.requireAuthRole(event, 'admin')).rejects.toMatchObject({ status: 403 })
 	})
 })

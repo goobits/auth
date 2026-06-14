@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
 	requireAuthenticated,
+	requireAuthRole,
 	requireOwnership,
-	requireRole
 } from '../../src/security/authorize.ts'
 import type { RequestEventLike } from '../../src/types/auth.ts'
 import type { User } from '../../src/types/index.ts'
@@ -37,7 +37,7 @@ describe('security authorize helpers', () => {
 		).not.toThrow()
 	})
 
-	it('enforces role and ownership checks', async() => {
+	it('enforces auth-role and ownership checks', async() => {
 		const event = createEvent({
 			id: 'u1',
 			role: 'admin',
@@ -46,7 +46,7 @@ describe('security authorize helpers', () => {
 			avatar: null,
 			emailVerified: true
 		} as User & { role: string })
-		await expect(requireRole({ event }, [ 'admin' ])).resolves.toBeUndefined()
+		await expect(requireAuthRole({ event }, [ 'admin' ])).resolves.toBeUndefined()
 		await expect(requireOwnership({ event }, 'u1')).resolves.toBeUndefined()
 		await expect(requireOwnership({ event }, 'u2')).rejects.toThrow('Forbidden')
 	})

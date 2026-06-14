@@ -12,7 +12,7 @@ type AuthorizerContext = {
 	emitter?: AuthEventEmitter;
 }
 
-function resolveRoles(actor: Actor): string[] {
+function resolveAuthRoles(actor: Actor): string[] {
 	const base = actor.role ? [ actor.role ] : []
 	return [ ...base, ...(actor.roles ?? []) ]
 }
@@ -45,18 +45,18 @@ export function requireAuthenticated(
 	}
 }
 
-export async function requireRole(
+export async function requireAuthRole(
 	context: AuthorizerContext,
-	requiredRoles: string[]
+	requiredAuthRoles: string[]
 ): Promise<void> {
 	requireAuthenticated(context.event.locals)
 	const actor = context.event.locals.user as Actor
-	const roles = resolveRoles(actor)
-	const ok = requiredRoles.some(role => roles.includes(role))
+	const authRoles = resolveAuthRoles(actor)
+	const ok = requiredAuthRoles.some(role => authRoles.includes(role))
 	if (!ok) {
-		await emitDenied(context, 'Missing required role', {
-			requiredRoles,
-			actorRoles: roles
+		await emitDenied(context, 'Missing required auth role', {
+			requiredAuthRoles,
+			actorAuthRoles: authRoles
 		})
 		throw new Error('Forbidden')
 	}

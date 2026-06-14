@@ -46,8 +46,11 @@ export const auth = new GoobitsAuth({
 - `auth.createHandlers({ basePath? })` for custom mount paths
 - `auth.getSession(event)`
 - `auth.requireUser(event)`
-- `auth.requireRole(event, role | role[])`
+- `auth.requireAuthRole(event, authRole | authRole[])`
 - `auth.adapter` (raw adapters for advanced/manual usage)
+
+`requireAuthRole()` is for website/session route gates. It is not a product
+permission check for Spaces, Zones, Goobits, agents, or wormholes.
 
 Security alert webhooks are configured through
 `security.alerts.webhook.{url,secret,cooldownMs,maxPerHour,timeoutMs}`. The

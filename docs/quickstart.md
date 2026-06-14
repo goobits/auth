@@ -62,7 +62,7 @@ export const { GET, POST } = auth.handlers;
 import { auth } from "$lib/auth";
 
 export async function load(event) {
-  await auth.requireRole(event, "admin");
+  await auth.requireAuthRole(event, "admin");
   return {};
 }
 ```
