@@ -179,7 +179,7 @@ export class GoogleProvider extends OAuthProvider {
 				}
 			}
 		} catch(error) {
-			getLogger().error?.('Error in GoogleProvider.getUserProfile:', error)
+			getLogger().error?.('Error in GoogleProvider.getUserProfile:', error instanceof Error ? error.message : String(error))
 			throw error
 		}
 	}
