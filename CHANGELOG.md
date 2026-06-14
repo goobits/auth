@@ -21,6 +21,7 @@
 - Removed auth-side rate-limit primitives. Auth route policy now uses `@goobits/security/rate-limit` directly.
 - Routed auth-side CSRF issuance and validation through `@goobits/security/csrf`; auth keeps only SvelteKit cookie ergonomics.
 - Removed auth-side webhook alert transport. Auth threshold alerts now dispatch through `@goobits/security/alerting`.
+- Removed the unused migration notification UI export.
 
 ## 0.2.0
 
