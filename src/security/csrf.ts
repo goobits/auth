@@ -1,54 +1,17 @@
 import type { Cookies } from '@sveltejs/kit'
+import {
+	CSRF_COOKIE_NAME,
+	CSRF_HEADER_NAME,
+	createCsrf,
+	type CsrfTokenStore,
+	MemoryCsrfStore
+} from '@goobits/security/csrf'
 
-import { constantTimeEqual as securityConstantTimeEqual, randomHex } from '@goobits/security/crypto'
-type CsrfStoreRecord = { value: boolean; expiresAt: number | null }
+export { CSRF_COOKIE_NAME, CSRF_HEADER_NAME, MemoryCsrfStore }
 
 type CookiesLike = Pick<Cookies, 'set' | 'get' | 'delete'>
 
-export type CsrfStore = {
-	get: (key: string) => Promise<CsrfStoreRecord | null>;
-	set: (key: string, value: boolean, ttlMs?: number) => Promise<void>;
-	delete: (key: string) => Promise<void>;
-}
-
-export const CSRF_COOKIE_NAME = 'csrf-token'
-export const CSRF_HEADER_NAME = 'x-csrf-token'
-
-function timingSafeEqual(a: string, b: string): boolean {
-	if (!a || !b) return false
-	return securityConstantTimeEqual(a, b)
-}
-
-export class MemoryCsrfStore {
-	private _data: Map<string, CsrfStoreRecord>
-
-	constructor() {
-		this._data = new Map()
-	}
-
-	async get(key: string): Promise<CsrfStoreRecord | null> {
-		const record = this._data.get(key)
-		if (!record) return null
-		if (record.expiresAt && Date.now() > record.expiresAt) {
-			this._data.delete(key)
-			return null
-		}
-		return record
-	}
-
-	async set(key: string, value: boolean, ttlMs?: number): Promise<void> {
-		const expiresAt = ttlMs ? Date.now() + ttlMs : null
-		this._data.set(key, { value, expiresAt })
-	}
-
-	async delete(key: string): Promise<void> {
-		this._data.delete(key)
-	}
-}
-
-export async function createCsrfToken(): Promise<string> {
-	return randomHex(32)
-}
+export type CsrfStore = CsrfTokenStore
 
 export async function issueCsrfToken({
 	cookies,
@@ -73,10 +36,20 @@ export async function issueCsrfToken({
 		throw new Error('issueCsrfToken requires cookies')
 	}
 
-	const token = await createCsrfToken()
-	if (store) {
-		await store.set(token, true, ttlMs)
-	}
+	const csrf = createCsrf({
+		cookieName,
+		headerName: CSRF_HEADER_NAME,
+		tokenExpiryMs: ttlMs,
+		cookieOptions: {
+			httpOnly,
+			secure,
+			sameSite,
+			path,
+			maxAge: Math.floor(ttlMs / 1000)
+		},
+		...(store ? { tokenStore: store } : {})
+	})
+	const token = await csrf.generate({ expiryMs: ttlMs })
 
 	cookies.set(cookieName, token, {
 		httpOnly,
@@ -110,15 +83,13 @@ export async function validateCsrfRequest({
 
 	const headerToken = request.headers.get(headerName) || ''
 	const cookieToken = cookies.get(cookieName) || ''
-
-	if (!timingSafeEqual(headerToken, cookieToken)) {
-		return false
-	}
-
-	if (checkExpiry && store) {
-		const record = await store.get(cookieToken)
-		if (!record) return false
-	}
-
-	return true
+	const headers = new Headers()
+	headers.set(headerName, headerToken)
+	headers.set('cookie', `${ cookieName }=${ cookieToken }`)
+	const csrf = createCsrf({
+		cookieName,
+		headerName,
+		...(store ? { tokenStore: store } : {})
+	})
+	return csrf.validate(new Request(request.url, { headers }), { checkExpiry })
 }
