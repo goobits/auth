@@ -128,7 +128,7 @@ export function createCallbackHandler(config: CallbackConfig) {
 			}
 
 			// Log and throw generic error
-			log.error?.('Authentication error:', err)
+			log.error?.('Authentication error:', err instanceof Error ? err.message : String(err))
 			error(500, 'Authentication system error')
 		}
 	}

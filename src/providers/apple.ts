@@ -99,7 +99,7 @@ export class AppleProvider extends OAuthProvider {
 
 			return decodeBase64IgnorePadding(cleaned)
 		} catch(error) {
-			getLogger().error?.('Error decoding Apple private key:', error)
+			getLogger().error?.('Error decoding Apple private key:', error instanceof Error ? error.message : String(error))
 			throw new Error('Invalid Apple private key format')
 		}
 	}
@@ -193,7 +193,7 @@ export class AppleProvider extends OAuthProvider {
 				}
 			}
 		} catch(error) {
-			getLogger().error?.('Error in AppleProvider.getUserProfile:', error)
+			getLogger().error?.('Error in AppleProvider.getUserProfile:', error instanceof Error ? error.message : String(error))
 			throw error
 		}
 	}

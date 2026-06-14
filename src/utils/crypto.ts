@@ -133,7 +133,7 @@ export async function encryptTokens<T extends Record<string, unknown>>(
 		})
 	} catch(error) {
 		const { getLogger } = await import('./logger.js')
-		getLogger().error?.('Token encryption error:', error)
+		getLogger().error?.('Token encryption error:', error instanceof Error ? error.message : String(error))
 		throw error
 	}
 }
@@ -173,7 +173,7 @@ export async function decryptTokens<T = Record<string, unknown>>(
 		return JSON.parse(new TextDecoder().decode(plainBuffer))
 	} catch(error) {
 		const { getLogger } = await import('./logger.js')
-		getLogger().error?.('Token decryption error:', error)
+		getLogger().error?.('Token decryption error:', error instanceof Error ? error.message : String(error))
 		return null
 	}
 }
