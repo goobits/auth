@@ -184,7 +184,7 @@ export function createSigninHandler(config: {
 				user: safeUser
 			}
 		} catch(error) {
-			log.error?.('[Signin] Error:', error)
+			log.error?.('[Signin] Error:', error instanceof Error ? error.message : String(error))
 
 			// Check if this is a redirect (don't treat as error)
 			if (

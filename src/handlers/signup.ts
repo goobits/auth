@@ -197,7 +197,7 @@ export function createSignupHandler(config: {
 				} catch(emailError) {
 					log.error?.(
 						'[Signup] Failed to send verification email:',
-						emailError
+						emailError instanceof Error ? emailError.message : String(emailError)
 					)
 
 					// Don't fail signup if email fails
@@ -220,7 +220,7 @@ export function createSignupHandler(config: {
 				user: safeUser
 			}
 		} catch(error) {
-			log.error?.('[Signup] Error:', error)
+			log.error?.('[Signup] Error:', error instanceof Error ? error.message : String(error))
 
 			// Check if this is a redirect (don't treat as error)
 			if (
