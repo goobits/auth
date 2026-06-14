@@ -11,7 +11,7 @@ import type { OAuthProvider } from '../providers/base.js'
 import type { WebhookAlerterConfig } from '../security/alerting.js'
 import type { SecurityAlertHandler } from '../security/alerts.js'
 import type { AuthEventEmitter } from '../security/events.js'
-import type { RateLimitStore } from '../security/rate-limit.js'
+import type { RateLimitStore } from '@goobits/security/rate-limit'
 import type { Logger } from '../utils/logger.js'
 import type {
 	OAuthProfile,

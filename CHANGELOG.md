@@ -18,6 +18,7 @@
 - Removed generic `auditLog` and `withAuditLogging` exports from `@goobits/auth/security`; generic audit logging now belongs to `@goobits/security/audit`, while auth keeps `auditAuthEvent` for auth-specific event names.
 - Renamed auth-side API-key helpers from admin wording to `createAuthApiKey`, `hashAuthApiKey`, and `verifyAuthApiKey`; admin route authentication belongs to `@goobits/security/admin-auth`.
 - Removed auth-side reCAPTCHA verification. Use `@goobits/security/recaptcha` directly for structured CAPTCHA verification.
+- Removed auth-side rate-limit primitives. Auth route policy now uses `@goobits/security/rate-limit` directly.
 
 ## 0.2.0
 

@@ -1,11 +1,10 @@
 import type { RequestHandler } from '@sveltejs/kit'
+import { createRateLimiter, type RateLimitStore } from '@goobits/security/rate-limit'
 
 import type { RequestEventLike, TrustedProxyHeader } from '../types/auth.js'
 import type { CsrfStore } from './csrf.js'
 import { validateCsrfRequest } from './csrf.js'
 import { type AuthEventEmitter, createAuthEvent } from './events.js'
-import type { RateLimitStore } from './rate-limit.js'
-import { createRateLimiter } from './rate-limit.js'
 
 type PolicyMode = 'required' | 'optional' | 'off'
 
@@ -100,8 +99,13 @@ export function applySecurityPolicy({
 	settings
 }: ApplyPolicyInput) {
 	const limiter = createRateLimiter({
-		windowMs: settings.rateLimit.windowMs,
-		max: settings.rateLimit.max,
+		windows: [
+			{
+				name: routeId,
+				windowMs: settings.rateLimit.windowMs,
+				maxEvents: settings.rateLimit.max
+			}
+		],
 		keyPrefix: settings.rateLimit.keyPrefix,
 		...(settings.rateLimit.store ? { store: settings.rateLimit.store } : {})
 	})
@@ -138,7 +142,7 @@ export function applySecurityPolicy({
 
 		if (rateMode !== 'off') {
 			const key = `${ routeId }:${ ip }`
-			const result = await limiter(key)
+			const result = await limiter.check(key)
 			if (!result.allowed) {
 				await emit('auth.rate_limited', 'warn', 429, 'Too many requests')
 				return jsonError(429, 'Too many requests')

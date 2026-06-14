@@ -1,12 +1,12 @@
 import type { RequestHandler } from '@sveltejs/kit'
 import { redirect } from '@sveltejs/kit'
+import { createRateLimiter } from '@goobits/security/rate-limit'
 
 import type { UserAdapter } from '../adapters/database/base.js'
 import type { MagicLinkAdapter } from '../adapters/magic-link/base.js'
 import type { SessionAdapter } from '../adapters/session/base.js'
 import { AuthPrincipalResolutionError } from '../errors/auth.js'
 import { auditAuthEvent } from '../security/audit.js'
-import { createRateLimiter } from '../security/rate-limit.js'
 import type {
 	AuthHooks,
 	AuthLocals,
@@ -248,14 +248,19 @@ export function createMagicLinkVerifyHandler(
 		throw new Error('createMagicLinkVerifyHandler requires sessionAdapter')
 	}
 
-	const internalLimiter =
+	const checkMagicLinkRateLimit =
 		typeof verifyRateLimit === 'function'
 			? verifyRateLimit
 			: createRateLimiter({
-				windowMs: verifyRateLimitWindowMs,
-				max: verifyRateLimitMax,
+				windows: [
+					{
+						name: 'magic.verify',
+						windowMs: verifyRateLimitWindowMs,
+						maxEvents: verifyRateLimitMax
+					}
+				],
 				keyPrefix: 'mlv'
-			})
+			}).check
 
 	return async(event: RequestEventLike) => {
 		if (isAuthenticated(event.locals)) {
@@ -285,7 +290,7 @@ export function createMagicLinkVerifyHandler(
 		const ipKey = getRateLimitKey(event, config)
 		const identifier = email || (token ? await hashToken(token) : 'unknown')
 		const rateKey = `${ identifier }:${ ipKey }`
-		const rateResult = await internalLimiter(rateKey)
+		const rateResult = await checkMagicLinkRateLimit(rateKey)
 		if (!rateResult?.allowed) {
 			return jsonResponse(
 				{ ok: false, error: 'Too many attempts. Try again later.' },

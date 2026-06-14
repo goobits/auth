@@ -10,7 +10,5 @@ export { createBasicAuthResponse, parseBasicAuthHeader, verifyBasicAuthHeader } 
 export { createCsrfToken, CSRF_COOKIE_NAME, CSRF_HEADER_NAME, issueCsrfToken, MemoryCsrfStore, validateCsrfRequest } from './csrf.js'
 export { createAuthEvent } from './events.js'
 export { applySecurityPolicy } from './policy.js'
-export type { RateLimitStore } from './rate-limit.js'
-export { createRateLimiter, KVRateLimitStore, MemoryRateLimitStore } from './rate-limit.js'
 export type { CreateSignedSessionTokenOptions, SignedSessionTokenClaims, VerifySignedSessionTokenOptions } from './signed-session-token.js'
 export { createSignedSessionToken, verifySignedSessionToken } from './signed-session-token.js'
