@@ -52,10 +52,10 @@ export const auth = new GoobitsAuth({
 `requireAuthRole()` is for website/session route gates. It is not a product
 permission check for Spaces, Zones, Goobits, agents, or wormholes.
 
-Security alert webhooks are configured through
-`security.alerts.webhook.{url,secret,cooldownMs,maxPerHour,timeoutMs}`. The
-legacy `SECURITY_WEBHOOK_URL` and `SECURITY_WEBHOOK_SECRET` process env fallback
-is kept for compatibility when explicit webhook fields are not provided.
+Security alert webhooks are configured through `security.alerts.webhook.url`.
+`SECURITY_WEBHOOK_URL` is read from `process.env` when no explicit URL is
+provided. Use `security.alerts.onAlert` for custom signing, cooldown, or fan-out
+behavior.
 
 ## SvelteKit wiring
 
@@ -144,7 +144,7 @@ import {
 - Basic auth parsing and verification with caller-provided password hash checks.
 - Standard Basic-auth challenge responses.
 - Signed, expiring session-token creation and verification.
-- CSRF issuance/validation, rate-limit helpers, API-key helpers, role/ownership guards, and timing-safe comparisons.
+- CSRF issuance/validation, API-key helpers, role/ownership guards, and timing-safe comparisons. Generic rate limiting lives in `@goobits/security/rate-limit`.
 
 ## Typing App locals
 

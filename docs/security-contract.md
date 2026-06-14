@@ -24,7 +24,6 @@ const auth = new GoobitsAuth({
       enabled: true,
       webhook: {
         url: env.SECURITY_WEBHOOK_URL,
-        secret: env.SECURITY_WEBHOOK_SECRET,
       },
     },
   },
@@ -35,7 +34,7 @@ const auth = new GoobitsAuth({
 
 - Library provides:
   - principal resolution and session lifecycle guarantees
-  - CSRF/rate-limit policy helpers
+  - CSRF/rate-limit policy wiring powered by `@goobits/security`
   - auth event emission + threshold alerts
   - authorization helper primitives
 - Application must provide:
@@ -85,15 +84,12 @@ security: {
     enabled: true,
     webhook: {
       url: env.SECURITY_WEBHOOK_URL,
-      secret: env.SECURITY_WEBHOOK_SECRET,
-      cooldownMs: 10 * 60 * 1000,
-      maxPerHour: 10,
-      timeoutMs: 5000,
     },
   },
 }
 ```
 
-For compatibility, `SECURITY_WEBHOOK_URL` and `SECURITY_WEBHOOK_SECRET` are
-read from `process.env` when `security.alerts.webhook.url` or `.secret` is not
-set. New integrations should pass the webhook config directly.
+`SECURITY_WEBHOOK_URL` is read from `process.env` when
+`security.alerts.webhook.url` is not set. New integrations should pass the
+webhook config directly. Use `security.alerts.onAlert` for custom signing,
+cooldown, or fan-out behavior.

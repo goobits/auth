@@ -118,7 +118,8 @@ import {
 
 - Basic auth parsing and verification with caller-owned password hash checks.
 - Signed, expiring session-token claims for custom session stores.
-- CSRF, rate-limit, API-key, authorization, and timing-safe comparison helpers.
+- CSRF cookie helpers, API-key helpers, authorization guards, and timing-safe
+  comparisons. Generic rate limiting lives in `@goobits/security/rate-limit`.
 
 ## Credentials Provider
 
@@ -157,16 +158,16 @@ export const auth = new GoobitsAuth({
       enabled: true,
       webhook: {
         url: env.SECURITY_WEBHOOK_URL,
-        secret: env.SECURITY_WEBHOOK_SECRET,
       },
     },
   },
 });
 ```
 
-For compatibility, `SECURITY_WEBHOOK_URL` and `SECURITY_WEBHOOK_SECRET` are
-also read from `process.env` when no explicit `security.alerts.webhook` value
-is provided. Prefer the explicit config in new apps.
+`SECURITY_WEBHOOK_URL` is also read from `process.env` when no explicit
+`security.alerts.webhook.url` value is provided. Prefer explicit config in new
+apps. Use `security.alerts.onAlert` for custom signing, cooldown, or fan-out
+behavior.
 
 ## Docs
 
