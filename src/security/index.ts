@@ -1,6 +1,5 @@
 export { timingSafeEqual } from '../utils/crypto.js'
 export { createAuthApiKey, hashAuthApiKey, parseApiKeyHeader, verifyAuthApiKey } from './api-key.js'
-export { createWebhookAlerter } from './alerting.js'
 export { createSecurityAlertObserver } from './alerts.js'
 export type { AuthAuditEvent } from './audit.js'
 export { auditAuthEvent } from './audit.js'

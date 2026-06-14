@@ -8,7 +8,7 @@ import type { SessionAdapter } from '../adapters/session/base.js'
 import type { VerificationTokenAdapter } from '../adapters/verification-token/base.js'
 import type { WebAuthnAdapter } from '../adapters/webauthn/base.js'
 import type { OAuthProvider } from '../providers/base.js'
-import type { WebhookAlerterConfig } from '../security/alerting.js'
+import type { WebhookChannelOptions } from '@goobits/security/alerting'
 import type { SecurityAlertHandler } from '../security/alerts.js'
 import type { AuthEventEmitter } from '../security/events.js'
 import type { RateLimitStore } from '@goobits/security/rate-limit'
@@ -139,6 +139,9 @@ export type SessionsConfig = {
 export type SecurityProfile = 'basic' | 'secure' | 'strict'
 export type SecurityMode = 'required' | 'optional' | 'off'
 export type TrustedProxyHeader = 'cf-connecting-ip' | 'x-forwarded-for'
+export type AuthAlertWebhookConfig = Omit<WebhookChannelOptions, 'url'> & {
+	url?: string | null;
+}
 
 export type AuthSecurityConfig = {
 	csrf?: {
@@ -164,7 +167,7 @@ export type AuthSecurityConfig = {
 	alerts?: {
 		enabled?: boolean;
 		onAlert?: SecurityAlertHandler;
-		webhook?: WebhookAlerterConfig;
+		webhook?: AuthAlertWebhookConfig;
 	};
 }
 

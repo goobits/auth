@@ -1,4 +1,4 @@
-import { createWebhookAlerter } from '../security/alerting.js'
+import { createWebhookChannel, type AlertChannel } from '@goobits/security/alerting'
 import { createSecurityAlertObserver } from '../security/alerts.js'
 import {
 	CSRF_COOKIE_NAME,
@@ -84,21 +84,26 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 	const webhook = merged.alerts?.webhook
 	const fallbackWebhookUrl =
 		typeof process !== 'undefined' ? process.env['SECURITY_WEBHOOK_URL'] : undefined
-	const fallbackWebhookSecret =
-		typeof process !== 'undefined' ? process.env['SECURITY_WEBHOOK_SECRET'] : undefined
-	const alerter =
-		merged.alerts?.enabled === false
+	const webhookUrl = webhook?.url ?? fallbackWebhookUrl
+	const alertChannel: AlertChannel | null =
+		merged.alerts?.enabled === false || !webhookUrl
 			? null
-			: createWebhookAlerter({
+			: createWebhookChannel({
 				...webhook,
-				url: webhook?.url ?? fallbackWebhookUrl ?? null,
-				secret: webhook?.secret ?? fallbackWebhookSecret ?? null
+				url: webhookUrl
 			})
 	const alertObserver = createSecurityAlertObserver({
 		onAlert: async alert => {
 			await merged.alerts?.onAlert?.(alert)
-			if (alerter) {
-				await alerter({ ...alert }, 'auth_threshold')
+			if (alertChannel) {
+				await alertChannel.send({
+					severity: alert.severity === 'error' ? 'critical' : 'warning',
+					title: 'Auth threshold exceeded',
+					message: `${ alert.eventName } exceeded ${ alert.count } events`,
+					source: 'goobits/auth',
+					timestamp: alert.timestamp,
+					context: { ...alert }
+				})
 			}
 		}
 	})

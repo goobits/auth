@@ -20,6 +20,7 @@
 - Removed auth-side reCAPTCHA verification. Use `@goobits/security/recaptcha` directly for structured CAPTCHA verification.
 - Removed auth-side rate-limit primitives. Auth route policy now uses `@goobits/security/rate-limit` directly.
 - Routed auth-side CSRF issuance and validation through `@goobits/security/csrf`; auth keeps only SvelteKit cookie ergonomics.
+- Removed auth-side webhook alert transport. Auth threshold alerts now dispatch through `@goobits/security/alerting`.
 
 ## 0.2.0
 
