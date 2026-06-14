@@ -1,80 +1,78 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-	createAdminApiKey,
-	hashAdminApiKey,
+	createAuthApiKey,
+	hashAuthApiKey,
 	parseApiKeyHeader,
 	timingSafeEqual,
-	verifyAdminApiKey
-} from '../../src/security/admin-auth.ts'
+	verifyAuthApiKey
+} from '../../src/security/api-key.ts'
 
-describe('admin-auth', () => {
-	describe('createAdminApiKey', () => {
+describe('auth API-key helpers', () => {
+	describe('createAuthApiKey', () => {
 		it('returns a prefixed hex string by default', async() => {
-			const key = await createAdminApiKey()
-			expect(key.startsWith('adm_')).toBe(true)
-			const hex = key.slice(4)
+			const key = await createAuthApiKey()
+			expect(key.startsWith('auth_')).toBe(true)
+			const hex = key.slice(5)
 			expect(hex).toMatch(/^[0-9a-f]+$/)
-
-			// 32 bytes -> 64 hex chars
 			expect(hex.length).toBe(64)
 		})
 
 		it('honors a custom prefix and byte length', async() => {
-			const key = await createAdminApiKey({ prefix: 'test', bytes: 8 })
+			const key = await createAuthApiKey({ prefix: 'test', bytes: 8 })
 			expect(key.startsWith('test_')).toBe(true)
 			expect(key.slice(5).length).toBe(16)
 		})
 
 		it('returns unique keys across calls', async() => {
-			const a = await createAdminApiKey()
-			const b = await createAdminApiKey()
+			const a = await createAuthApiKey()
+			const b = await createAuthApiKey()
 			expect(a).not.toBe(b)
 		})
 	})
 
-	describe('hashAdminApiKey', () => {
+	describe('hashAuthApiKey', () => {
 		it('returns a 64-char hex string', async() => {
-			const hash = await hashAdminApiKey('some-api-key')
+			const hash = await hashAuthApiKey('some-api-key')
 			expect(hash).toMatch(/^[0-9a-f]{64}$/)
 		})
 
 		it('changes when the salt changes', async() => {
-			const a = await hashAdminApiKey('k', { salt: 'alpha' })
-			const b = await hashAdminApiKey('k', { salt: 'beta' })
+			const a = await hashAuthApiKey('k', { salt: 'alpha' })
+			const b = await hashAuthApiKey('k', { salt: 'beta' })
 			expect(a).not.toBe(b)
 		})
 
 		it('throws when the apiKey is empty', async() => {
-			await expect(hashAdminApiKey('')).rejects.toThrow('apiKey is required')
+			await expect(hashAuthApiKey('')).rejects.toThrow('apiKey is required')
 		})
 	})
 
-	describe('verifyAdminApiKey', () => {
+	describe('verifyAuthApiKey', () => {
 		it('returns true when the apiKey matches the stored hash', async() => {
-			const apiKey = await createAdminApiKey()
-			const hash = await hashAdminApiKey(apiKey, { salt: 's' })
-			const ok = await verifyAdminApiKey(apiKey, hash, { salt: 's' })
+			const apiKey = await createAuthApiKey()
+			const hash = await hashAuthApiKey(apiKey, { salt: 's' })
+			const ok = await verifyAuthApiKey(apiKey, hash, { salt: 's' })
 			expect(ok).toBe(true)
 		})
 
 		it('returns false when the apiKey does not match', async() => {
-			const apiKey = await createAdminApiKey()
-			const hash = await hashAdminApiKey(apiKey)
-			const ok = await verifyAdminApiKey('wrong-key', hash)
+			const apiKey = await createAuthApiKey()
+			const hash = await hashAuthApiKey(apiKey)
+			const ok = await verifyAuthApiKey('wrong-key', hash)
 			expect(ok).toBe(false)
 		})
 
 		it('returns false when the salt is different from the hashing salt', async() => {
-			const apiKey = await createAdminApiKey()
-			const hash = await hashAdminApiKey(apiKey, { salt: 'alpha' })
-			const ok = await verifyAdminApiKey(apiKey, hash, { salt: 'beta' })
+			const apiKey = await createAuthApiKey()
+			const hash = await hashAuthApiKey(apiKey, { salt: 'alpha' })
+			const ok = await verifyAuthApiKey(apiKey, hash, { salt: 'beta' })
 			expect(ok).toBe(false)
 		})
 
 		it('returns false when either input is empty', async() => {
-			expect(await verifyAdminApiKey('', 'hash')).toBe(false)
-			expect(await verifyAdminApiKey('key', '')).toBe(false)
+			expect(await verifyAuthApiKey('', 'hash')).toBe(false)
+			expect(await verifyAuthApiKey('key', '')).toBe(false)
 		})
 	})
 

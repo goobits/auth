@@ -10,15 +10,15 @@ export function timingSafeEqual(a: string, b: string): boolean {
 	return securityConstantTimeEqual(a, b)
 }
 
-export async function createAdminApiKey({
-	prefix = 'adm',
+export async function createAuthApiKey({
+	prefix = 'auth',
 	bytes = 32
 }: { prefix?: string; bytes?: number } = {}): Promise<string> {
 	const random = randomBytes(bytes)
 	return `${ prefix }_${ bytesToHex(random) }`
 }
 
-export async function hashAdminApiKey(
+export async function hashAuthApiKey(
 	apiKey: string,
 	{ salt = '' }: { salt?: string } = {}
 ): Promise<string> {
@@ -26,13 +26,13 @@ export async function hashAdminApiKey(
 	return sha256Hex(`${ salt }${ apiKey }`)
 }
 
-export async function verifyAdminApiKey(
+export async function verifyAuthApiKey(
 	apiKey: string,
 	hashed: string,
 	{ salt = '' }: { salt?: string } = {}
 ): Promise<boolean> {
 	if (!apiKey || !hashed) return false
-	const candidate = await hashAdminApiKey(apiKey, { salt })
+	const candidate = await hashAuthApiKey(apiKey, { salt })
 	return timingSafeEqual(candidate, hashed)
 }
 

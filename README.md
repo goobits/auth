@@ -106,9 +106,12 @@ their own route policy or session store:
 
 ```ts
 import {
+  createAuthApiKey,
   createBasicAuthResponse,
   createSignedSessionToken,
+  hashAuthApiKey,
   verifyBasicAuthHeader,
+  verifyAuthApiKey,
   verifySignedSessionToken,
 } from "@goobits/auth/security";
 ```

@@ -129,11 +129,14 @@ layer but should share auth primitives:
 
 ```ts
 import {
+  createAuthApiKey,
   createBasicAuthResponse,
   createSignedSessionToken,
+  hashAuthApiKey,
   parseBasicAuthHeader,
   validateCsrfRequest,
   verifyBasicAuthHeader,
+  verifyAuthApiKey,
   verifySignedSessionToken,
 } from "@goobits/auth/security";
 ```
