@@ -70,7 +70,7 @@ export function createLogoutHandler(config: {
 				throw error
 			}
 
-			log.error?.('Error during logout:', error)
+			log.error?.('Error during logout:', error instanceof Error ? error.message : String(error))
 			throw redirect(302, isSafeRedirectPath(redirectAfterLogout) ? redirectAfterLogout : '/')
 		}
 	}
