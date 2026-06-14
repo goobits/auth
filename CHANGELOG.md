@@ -17,6 +17,7 @@
 - 📦 Development dependencies refreshed for the current package toolchain.
 - Removed generic `auditLog` and `withAuditLogging` exports from `@goobits/auth/security`; generic audit logging now belongs to `@goobits/security/audit`, while auth keeps `auditAuthEvent` for auth-specific event names.
 - Renamed auth-side API-key helpers from admin wording to `createAuthApiKey`, `hashAuthApiKey`, and `verifyAuthApiKey`; admin route authentication belongs to `@goobits/security/admin-auth`.
+- Routed auth-side reCAPTCHA verification through `@goobits/security/recaptcha` so auth no longer maintains duplicate network verification logic.
 
 ## 0.2.0
 

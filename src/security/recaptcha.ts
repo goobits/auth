@@ -1,4 +1,4 @@
-const DEFAULT_TIMEOUT_MS = 5000
+import { type RecaptchaOptions as SecurityRecaptchaOptions, verifyRecaptcha } from '@goobits/security/recaptcha'
 
 type RecaptchaOptions = {
 	secretKey?: string;
@@ -8,62 +8,26 @@ type RecaptchaOptions = {
 	allowInDevelopment?: boolean;
 }
 
-type RecaptchaResponse = {
-	success?: boolean;
-	score?: number;
-	action?: string;
-}
-
-function readEnv(key: string): string | undefined {
-	if (typeof process === 'undefined') return undefined
-	return process.env[key]
-}
-
 export async function verifyRecaptchaToken(
 	token: string | null,
 	options: RecaptchaOptions = {}
 ): Promise<boolean> {
 	const {
-		secretKey = readEnv('RECAPTCHA_SECRET_KEY'),
+		secretKey,
 		action = null,
 		minScore = 0.5,
-		timeoutMs = DEFAULT_TIMEOUT_MS,
+		timeoutMs = 5000,
 		allowInDevelopment = true
 	} = options
 
-	if (!token) return false
-	if (!secretKey) {
-		return readEnv('NODE_ENV') === 'production' ? false : allowInDevelopment
+	const verifyOptions: SecurityRecaptchaOptions = {
+		minScore,
+		timeoutMs,
+		allowInDevelopment
 	}
+	if (secretKey !== undefined) verifyOptions.secretKey = secretKey
+	if (action) verifyOptions.action = action
 
-	const controller = new AbortController()
-	const timeout = setTimeout(() => controller.abort(), timeoutMs)
-
-	try {
-		const response = await fetch(
-			'https://www.google.com/recaptcha/api/siteverify',
-			{
-				method: 'POST',
-				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-				body: new URLSearchParams({ secret: secretKey, response: token }),
-				signal: controller.signal
-			}
-		)
-
-		if (!response.ok) return false
-		const data = (await response.json()) as RecaptchaResponse
-
-		if (!data.success) return false
-
-		if (typeof data.score === 'number') {
-			if (data.score < minScore) return false
-			if (action && data.action !== action) return false
-		}
-
-		return true
-	} catch {
-		return false
-	} finally {
-		clearTimeout(timeout)
-	}
+	const result = await verifyRecaptcha(token, verifyOptions)
+	return result.success
 }
