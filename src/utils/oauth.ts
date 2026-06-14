@@ -157,18 +157,7 @@ export async function handleOAuthCallback({
 	overrideParams?: OAuthCallbackOverrides | null;
 }): Promise<{ profile: OAuthProfile; tokens: OAuthTokens }> {
 	const { cookies, url } = event
-	let override: OAuthCallbackOverrides = overrideParams || {}
-	if (!overrideParams) {
-		try {
-			if (event.request.method === 'POST') {
-				const formData = await event.request.formData()
-				override = {
-					code: formData.get('code')?.toString() ?? null,
-					state: formData.get('state')?.toString() ?? null
-				}
-			}
-		} catch {}
-	}
+	const override: OAuthCallbackOverrides = overrideParams || {}
 
 	try {
 		// Extract and validate callback parameters

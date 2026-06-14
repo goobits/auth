@@ -4,6 +4,7 @@ import type { VerificationTokenAdapter } from '../adapters/verification-token/ba
 import type { RequestEventLike } from '../types/auth.js'
 import type { User } from '../types/index.js'
 import { getLogger } from '../utils/logger.js'
+import { isSafeRedirectPath } from '../utils/redirect.js'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.js'
 
 type RateLimitConfig = {
@@ -211,7 +212,7 @@ export function createSignupHandler(config: {
 
 			// Redirect if configured
 			if (redirectTo) {
-				throw redirect(303, redirectTo)
+				throw redirect(303, isSafeRedirectPath(redirectTo) ? redirectTo : '/')
 			}
 
 			return {

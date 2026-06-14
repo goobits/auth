@@ -16,6 +16,7 @@ import type { VerificationTokenAdapter } from '../adapters/verification-token/ba
 import type { RequestEventLike } from '../types/auth.js'
 import type { User } from '../types/index.js'
 import { getLogger } from '../utils/logger.js'
+import { isSafeRedirectPath } from '../utils/redirect.js'
 
 type RateLimitConfig = {
 	check?: (key: string) => Promise<{ allowed: boolean }>;
@@ -211,7 +212,7 @@ export function createPasswordResetConfirmHandler(config: {
 					? 'Password has been reset successfully'
 					: 'Password reset, but existing sessions could not be invalidated. Sign out from all devices manually.',
 				sessionsInvalidated,
-				redirectTo
+				redirectTo: isSafeRedirectPath(redirectTo) ? redirectTo : '/sign-in'
 			}
 		} catch(error) {
 			log.error?.('[Password Reset Confirm] Error:', error)

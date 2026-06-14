@@ -7,6 +7,7 @@ import type { AuthLocals, RequestEventLike } from '../types/auth.js'
 import type { OAuthProfile, OAuthTokens } from '../types/index.js'
 import { getLogger } from '../utils/logger.js'
 import { handleOAuthCallback } from '../utils/oauth.js'
+import { isSafeRedirectPath } from '../utils/redirect.js'
 
 type CallbackConfig = {
 	providers: Record<string, OAuthProvider>;
@@ -71,7 +72,7 @@ export function createCallbackHandler(config: CallbackConfig) {
 		try {
 			// Already authenticated - redirect
 			if (isAuthenticated(locals)) {
-				throw redirect(302, redirectAfterLogin)
+				throw redirect(302, isSafeRedirectPath(redirectAfterLogin) ? redirectAfterLogin : '/')
 			}
 
 			const providerName = String(params['provider'] ?? '')
@@ -111,7 +112,7 @@ export function createCallbackHandler(config: CallbackConfig) {
 				callbacks
 			})
 
-			throw redirect(302, redirectAfterLogin)
+			throw redirect(302, isSafeRedirectPath(redirectAfterLogin) ? redirectAfterLogin : '/')
 		} catch(err) {
 			// Handle OAuth2 errors
 			if (err instanceof OAuth2RequestError) {

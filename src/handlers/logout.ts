@@ -4,6 +4,7 @@ import { redirect } from '@sveltejs/kit'
 import type { SessionAdapter } from '../adapters/session/base.js'
 import type { AuthLocals, RequestEventLike } from '../types/auth.js'
 import { getLogger } from '../utils/logger.js'
+import { isSafeRedirectPath } from '../utils/redirect.js'
 
 /**
  * Create a logout route handler
@@ -57,7 +58,7 @@ export function createLogoutHandler(config: {
 				await onLogout(event)
 			}
 
-			throw redirect(302, redirectAfterLogout)
+			throw redirect(302, isSafeRedirectPath(redirectAfterLogout) ? redirectAfterLogout : '/')
 		} catch(error) {
 			// Re-throw redirects
 			if (
@@ -70,7 +71,7 @@ export function createLogoutHandler(config: {
 			}
 
 			log.error?.('Error during logout:', error)
-			throw redirect(302, redirectAfterLogout)
+			throw redirect(302, isSafeRedirectPath(redirectAfterLogout) ? redirectAfterLogout : '/')
 		}
 	}
 }
