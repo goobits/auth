@@ -23,8 +23,7 @@ export const auth = new GoobitsAuth({
 		alerts: {
 			enabled: true,
 			webhook: {
-				url: env.SECURITY_WEBHOOK_URL,
-				secret: env.SECURITY_WEBHOOK_SECRET
+				url: env.SECURITY_WEBHOOK_URL
 			}
 		}
 	}
