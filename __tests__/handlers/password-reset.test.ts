@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createPasswordResetConfirmHandler, createPasswordResetRequestHandler } from '../../src/handlers/password-reset.ts'
+import { createPasswordResetConfirmHandler, createPasswordResetRequestHandler } from '../../src/handlers/passwordReset.ts'
 
 function createEventWithForm(data: Record<string, string>) {
 	return {

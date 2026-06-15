@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { CookieTokenAdapter } from '../../src/adapters/oauth-token/cookie.ts'
-import { createCookies } from '../test-kit.ts'
+import { CookieTokenAdapter } from '../../src/adapters/oauth-token/CookieTokenAdapter.ts'
+import { createCookies } from '../testKit.ts'
 
 describe('CookieTokenAdapter', () => {
 	it('requires encryption key', () => {

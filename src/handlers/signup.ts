@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit'
 
-import type { VerificationTokenAdapter } from '../adapters/verification-token/base.js'
+import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.js'
 import type { RequestEventLike } from '../types/auth.js'
 import type { User } from '../types/index.js'
 import { getLogger } from '../utils/logger.js'
@@ -27,10 +27,10 @@ function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
 /**
  * Create a signup handler for credentials-based authentication
  * @param {Object} config - Handler configuration
- * @param {import('../providers/credentials.js').CredentialsProvider} config.credentialsProvider - Credentials provider
- * @param {import('../adapters/database/base.js').UserAdapter} config.userAdapter - User adapter
- * @param {import('../adapters/session/base.js').SessionAdapter} config.sessionAdapter - Session adapter
- * @param {import('../adapters/verification-token/base.js').VerificationTokenAdapter} [config.verificationTokenAdapter] - Verification token adapter (optional)
+ * @param {import('../providers/CredentialsProvider.js').CredentialsProvider} config.credentialsProvider - Credentials provider
+ * @param {import('../adapters/database/UserAdapter.js').UserAdapter} config.userAdapter - User adapter
+ * @param {import('../adapters/session/SessionAdapter.js').SessionAdapter} config.sessionAdapter - Session adapter
+ * @param {import('../adapters/verification-token/VerificationTokenAdapter.js').VerificationTokenAdapter} [config.verificationTokenAdapter] - Verification token adapter (optional)
  * @param {Function} [config.onSignup] - Callback after user creation (user) => Promise<void>
  * @param {Function} [config.sendVerificationEmail] - Function to send verification email (email, token) => Promise<void>
  * @param {Object} [config.csrf] - CSRF validation config

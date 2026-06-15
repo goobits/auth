@@ -7,8 +7,8 @@ import {
 	type DrizzleTable,
 	requireColumn,
 	requireCondition
-} from '../drizzle-types.js'
-import { VerificationTokenAdapter } from './base.js'
+} from '../drizzleTypes.js'
+import { VerificationTokenAdapter } from './VerificationTokenAdapter.js'
 
 type TokensTable = DrizzleTable & {
 	id: DrizzleTable[string];

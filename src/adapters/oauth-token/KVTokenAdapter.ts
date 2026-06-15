@@ -1,5 +1,5 @@
 import { decryptTokens, encryptTokens } from '../../utils/crypto.js'
-import { TokenAdapter } from './base.js'
+import { TokenAdapter } from './TokenAdapter.js'
 
 type KVNamespaceLike = {
 	put: (key: string, value: string) => Promise<void>;

@@ -1,9 +1,9 @@
 import { OAuth2RequestError } from 'arctic'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { OAuthProvider } from '../../src/providers/base.ts'
+import type { OAuthProvider } from '../../src/providers/OAuthProvider.ts'
 import type { OAuthProfile, OAuthTokens } from '../../src/types/index.ts'
-import { captureRejected, createRequestEvent, getRedirectLocation } from '../test-kit.ts'
+import { captureRejected, createRequestEvent, getRedirectLocation } from '../testKit.ts'
 
 type OAuthCallbackHandlers = {
 	onAuthenticated?: (profile: OAuthProfile, tokens: OAuthTokens) => Promise<void> | void;

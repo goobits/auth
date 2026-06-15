@@ -1,13 +1,12 @@
 import { encodeBase64url } from '@oslojs/encoding'
 import type { Cookies } from '@sveltejs/kit'
 
-import type { OAuthProfile, OAuthTokens, Session, User, WebAuthnCredential } from '../../types/index.js'
-import type { MfaStatus } from '../../types/index.js'
-import { UserAdapter } from '../database/base.js'
-import { MfaAdapter } from '../mfa/base.js'
-import { TokenAdapter } from '../oauth-token/base.js'
-import { SessionAdapter } from '../session/base.js'
-import { WebAuthnAdapter } from '../webauthn/base.js'
+import type { MfaStatus, OAuthProfile, OAuthTokens, Session, User, WebAuthnCredential } from '../../types/index.js'
+import { UserAdapter } from '../database/UserAdapter.js'
+import { MfaAdapter } from '../mfa/MfaAdapter.js'
+import { TokenAdapter } from '../oauth-token/TokenAdapter.js'
+import { SessionAdapter } from '../session/SessionAdapter.js'
+import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.js'
 
 type StoredUser = User & { password?: string | null }
 

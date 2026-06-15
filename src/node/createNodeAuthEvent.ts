@@ -1,7 +1,7 @@
 import type { IncomingMessage } from 'node:http'
 
 import type { RequestEventLike } from '../types/auth.js'
-import { NodeCookies } from './nodeCookies.js'
+import { NodeCookies } from './NodeCookies.js'
 
 export async function createNodeAuthEvent({
 	body,

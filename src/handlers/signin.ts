@@ -26,9 +26,9 @@ function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
 /**
  * Create a signin handler for credentials-based authentication
  * @param {Object} config - Handler configuration
- * @param {import('../providers/credentials.js').CredentialsProvider} config.credentialsProvider - Credentials provider
- * @param {import('../adapters/database/base.js').UserAdapter} config.userAdapter - User adapter
- * @param {import('../adapters/session/base.js').SessionAdapter} config.sessionAdapter - Session adapter
+ * @param {import('../providers/CredentialsProvider.js').CredentialsProvider} config.credentialsProvider - Credentials provider
+ * @param {import('../adapters/database/UserAdapter.js').UserAdapter} config.userAdapter - User adapter
+ * @param {import('../adapters/session/SessionAdapter.js').SessionAdapter} config.sessionAdapter - Session adapter
  * @param {Function} [config.onSignin] - Callback after successful signin (user) => Promise<void>
  * @param {Object} [config.csrf] - CSRF validation config
  * @param {Function} [config.csrf.validate] - Async function (event) => boolean

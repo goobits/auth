@@ -1,1 +1,1 @@
-export { AuthAdapterCapabilityError, AuthPrincipalResolutionError } from './auth.js'
+export { AuthAdapterCapabilityError, AuthPrincipalResolutionError } from './AuthPrincipalResolutionError.js'

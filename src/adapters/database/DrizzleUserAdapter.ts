@@ -7,8 +7,8 @@ import {
 	type DrizzleRow,
 	type DrizzleTable,
 	requireCondition
-} from '../drizzle-types.js'
-import { UserAdapter } from './base.js'
+} from '../drizzleTypes.js'
+import { UserAdapter } from './UserAdapter.js'
 
 type UsersTable = DrizzleTable & {
 	id: DrizzleTable[string];

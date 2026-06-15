@@ -4,7 +4,7 @@ import { createLogoutHandler } from '../handlers/logout.js'
 import {
 	createMagicLinkRequestHandler,
 	createMagicLinkVerifyHandler
-} from '../handlers/magic-link.js'
+} from '../handlers/magicLink.js'
 import {
 	createMfaBackupCodeHandler,
 	createMfaDisableHandler,
@@ -12,7 +12,7 @@ import {
 	createMfaStatusHandler,
 	createMfaVerifyHandler
 } from '../handlers/mfa.js'
-import { ensureSessionAfterLogin } from '../handlers/session-lifecycle.js'
+import { ensureSessionAfterLogin } from '../handlers/sessionLifecycle.js'
 import {
 	createSessionListHandler,
 	createSessionRevokeHandler
@@ -42,7 +42,7 @@ import type {
 import type { User } from '../types/index.js'
 import { jsonResponse } from '../utils/http.js'
 import type { ResolvedDefaults } from './config.js'
-import type { ResolvedSecurity } from './security-setup.js'
+import type { ResolvedSecurity } from './securitySetup.js'
 
 function resolveOnLoginUserId(
 	hookResult: AuthLoginResult,

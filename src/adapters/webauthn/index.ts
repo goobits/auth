@@ -1,3 +1,3 @@
-export { WebAuthnAdapter } from './base.js'
-export { D1WebAuthnAdapter } from './d1.js'
-export { DrizzleWebAuthnAdapter } from './drizzle.js'
+export { WebAuthnAdapter } from './WebAuthnAdapter.js'
+export { D1WebAuthnAdapter } from './D1WebAuthnAdapter.js'
+export { DrizzleWebAuthnAdapter } from './DrizzleWebAuthnAdapter.js'

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { issueCsrfToken, MemoryCsrfStore, validateCsrfRequest } from '../../src/security/csrf.ts'
-import { createCookies } from '../test-kit.ts'
+import { createCookies } from '../testKit.ts'
 
 describe('csrf', () => {
 	it('issues token and validates matching header', async() => {

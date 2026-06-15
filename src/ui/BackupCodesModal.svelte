@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { onMount, onDestroy } from "svelte";
 
   let {
@@ -7,11 +7,17 @@
     isNewEnrollment = false,
     onClose = () => {},
     onAcknowledge = () => {},
+  }: {
+    visible?: boolean;
+    backupCodes?: string[];
+    isNewEnrollment?: boolean;
+    onClose?: () => void;
+    onAcknowledge?: () => void;
   } = $props();
 
   let acknowledged = $state(false);
   let copyStatus = $state("");
-  let modalEl = $state(null);
+  let modalEl = $state<HTMLElement | null>(null);
 
   function handleDownload() {
     if (!backupCodes || backupCodes.length === 0) return;
@@ -51,18 +57,19 @@
     onClose();
   }
 
-  function handleKeydown(e) {
+  function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
       close();
       return;
     }
     if (e.key !== "Tab") return;
-    const focusable = modalEl?.querySelectorAll(
+    const focusable = Array.from(modalEl?.querySelectorAll<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
+    ) ?? []);
     if (!focusable || focusable.length === 0) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
+    if (!first || !last) return;
     if (e.shiftKey && document.activeElement === first) {
       e.preventDefault();
       last.focus();
@@ -80,7 +87,7 @@
         modalEl?.focus();
       }, 0);
     }
-    const onKey = (e) => handleKeydown(e);
+    const onKey = (e: KeyboardEvent) => handleKeydown(e);
     window.addEventListener("keydown", onKey);
     onDestroy(() => window.removeEventListener("keydown", onKey));
   });

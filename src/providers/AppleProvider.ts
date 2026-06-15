@@ -4,7 +4,7 @@ import { Apple } from 'arctic'
 
 import type { OAuthProfile, OAuthTokens } from '../types/index.js'
 import { getLogger } from '../utils/logger.js'
-import { OAuthProvider } from './base.js'
+import { OAuthProvider } from './OAuthProvider.js'
 
 type AppleProviderConfig = {
 	clientId: string;

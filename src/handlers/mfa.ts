@@ -1,4 +1,4 @@
-import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../mfa/backup-codes.js'
+import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../mfa/backupCodes.js'
 import { createOtpAuthURL, generateSecret, verifyTOTP } from '../mfa/totp.js'
 import type { RequestEventLike } from '../types/auth.js'
 

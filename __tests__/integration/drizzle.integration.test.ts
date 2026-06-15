@@ -2,15 +2,15 @@ import { randomUUID } from 'crypto'
 import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { DrizzleUserAdapter } from '../../src/adapters/database/drizzle.ts'
-import { DrizzleTokenAdapter } from '../../src/adapters/oauth-token/drizzle.ts'
-import { DrizzleSessionAdapter } from '../../src/adapters/session/drizzle.ts'
+import { DrizzleUserAdapter } from '../../src/adapters/database/DrizzleUserAdapter.ts'
+import { DrizzleTokenAdapter } from '../../src/adapters/oauth-token/DrizzleTokenAdapter.ts'
+import { DrizzleSessionAdapter } from '../../src/adapters/session/DrizzleSessionAdapter.ts'
 import {
 	createIntegrationDrizzleFixture,
 	drizzleOauthTokensTable,
 	drizzleSessionsTable,
 	drizzleUsersTable
-} from '../drizzle-test-kit.ts'
+} from '../drizzleTestKit.ts'
 
 describe('Drizzle Adapters Integration', () => {
 	let db: any

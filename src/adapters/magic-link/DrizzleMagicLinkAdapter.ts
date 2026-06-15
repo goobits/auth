@@ -8,8 +8,8 @@ import {
 	type DrizzleTable,
 	requireColumn,
 	requireCondition
-} from '../drizzle-types.js'
-import { MagicLinkAdapter } from './base.js'
+} from '../drizzleTypes.js'
+import { MagicLinkAdapter } from './MagicLinkAdapter.js'
 
 type TokensTable = DrizzleTable
 

@@ -1,5 +1,5 @@
 import type { User } from '../../types/index.js'
-import { UserAdapter } from './base.js'
+import { UserAdapter } from './UserAdapter.js'
 
 type D1Value = string | number | boolean | null
 type D1Row = Record<string, D1Value>

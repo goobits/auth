@@ -8,8 +8,8 @@ import {
 	type DrizzleTable,
 	requireColumn,
 	requireCondition
-} from '../drizzle-types.js'
-import { TokenAdapter } from './base.js'
+} from '../drizzleTypes.js'
+import { TokenAdapter } from './TokenAdapter.js'
 
 type TokensTable = DrizzleTable & {
 	userId: DrizzleTable[string];

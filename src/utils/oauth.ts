@@ -1,8 +1,7 @@
-import type { RequestEvent } from '@sveltejs/kit'
-import type { Cookies } from '@sveltejs/kit'
+import type { Cookies, RequestEvent } from '@sveltejs/kit'
 import { generateCodeVerifier, generateState } from 'arctic'
 
-import type { OAuthProvider } from '../providers/base.js'
+import type { OAuthProvider } from '../providers/OAuthProvider.js'
 import type { RequestEventLike } from '../types/auth.js'
 import type { OAuthProfile, OAuthTokens } from '../types/index.js'
 import { timingSafeEqual } from './crypto.js'
@@ -135,7 +134,7 @@ export function getOAuthCallbackParams(
  *
  * @param {import('@sveltejs/kit').RequestEvent} params.event - SvelteKit request event
  * @param {string} params.provider - Provider name
- * @param {import('../providers/base.js').OAuthProvider} params.providerInstance - Provider instance
+ * @param {import('../providers/OAuthProvider.js').OAuthProvider} params.providerInstance - Provider instance
  * @param {Object} params.callbacks - Lifecycle callbacks
  * @param {string} [params.appleUserData] - Optional Apple user data from POST body
  * @param overrideParams - override params value.

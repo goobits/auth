@@ -4,7 +4,7 @@ import {
 	generateMagicLinkToken,
 	generateOtp,
 	hashToken
-} from '../../src/handlers/magic-link.utils.ts'
+} from '../../src/handlers/magicLinkUtils.ts'
 
 describe('magic-link.utils', () => {
 	describe('generateMagicLinkToken', () => {

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { AuthPrincipalResolutionError } from '../../src/errors/auth.ts'
-import { ensureSessionAfterLogin } from '../../src/handlers/session-lifecycle.ts'
-import { createRequestEvent } from '../test-kit.ts'
+import { AuthPrincipalResolutionError } from '../../src/errors/AuthPrincipalResolutionError.ts'
+import { ensureSessionAfterLogin } from '../../src/handlers/sessionLifecycle.ts'
+import { createRequestEvent } from '../testKit.ts'
 
 function createSessionAdapter() {
 	return {

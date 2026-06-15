@@ -1,6 +1,6 @@
-import { UserAdapter } from '../adapters/database/base.js'
-import { TokenAdapter } from '../adapters/oauth-token/base.js'
-import { SessionAdapter } from '../adapters/session/base.js'
+import { UserAdapter } from '../adapters/database/UserAdapter.js'
+import { TokenAdapter } from '../adapters/oauth-token/TokenAdapter.js'
+import { SessionAdapter } from '../adapters/session/SessionAdapter.js'
 import type { OAuthProfile, OAuthTokens, Session, User } from '../types/index.js'
 
 export class MockSessionAdapter extends SessionAdapter {

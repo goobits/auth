@@ -10,9 +10,9 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { UserAdapter } from '../../src/adapters/database/base.ts'
+import type { UserAdapter } from '../../src/adapters/database/UserAdapter.ts'
 import { hashPassword } from '../../src/password/index.ts'
-import { CredentialsProvider } from '../../src/providers/credentials.ts'
+import { CredentialsProvider } from '../../src/providers/CredentialsProvider.ts'
 
 type MockUserAdapter = Pick<
 	UserAdapter,

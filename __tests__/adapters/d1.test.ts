@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { D1UserAdapter } from '../../src/adapters/database/d1.ts'
-import { D1TokenAdapter } from '../../src/adapters/oauth-token/d1.ts'
-import { D1SessionAdapter } from '../../src/adapters/session/d1.ts'
-import { D1VerificationTokenAdapter } from '../../src/adapters/verification-token/d1.ts'
+import { D1UserAdapter } from '../../src/adapters/database/D1UserAdapter.ts'
+import { D1TokenAdapter } from '../../src/adapters/oauth-token/D1TokenAdapter.ts'
+import { D1SessionAdapter } from '../../src/adapters/session/D1SessionAdapter.ts'
+import { D1VerificationTokenAdapter } from '../../src/adapters/verification-token/D1VerificationTokenAdapter.ts'
 
 type TableRow = Record<string, unknown>
 type Tables = Record<string, TableRow[]>

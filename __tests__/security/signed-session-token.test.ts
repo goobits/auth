@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
 	createSignedSessionToken,
 	verifySignedSessionToken
-} from '../../src/security/signed-session-token.ts'
+} from '../../src/security/signedSessionToken.ts'
 
 describe('signed session tokens', () => {
 	it('creates and verifies a signed token', async() => {

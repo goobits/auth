@@ -1,8 +1,8 @@
 /**
  * Create a password reset request handler
  * @param {Object} config - Handler configuration
- * @param {import('../adapters/database/base.js').UserAdapter} config.userAdapter - User adapter
- * @param {import('../adapters/verification-token/base.js').VerificationTokenAdapter} config.verificationTokenAdapter - Verification token adapter
+ * @param {import('../adapters/database/UserAdapter.js').UserAdapter} config.userAdapter - User adapter
+ * @param {import('../adapters/verification-token/VerificationTokenAdapter.js').VerificationTokenAdapter} config.verificationTokenAdapter - Verification token adapter
  * @param {Function} config.sendPasswordResetEmail - Function to send reset email (email, token) => Promise<void>
  * @param {Object} [config.csrf] - CSRF validation config
  * @param {Function} [config.csrf.validate] - Async function (event) => boolean
@@ -12,7 +12,7 @@
  * @param {Function} [config.rateLimit.key] - Function (event) => string for rate limit key
  * @returns {Function} SvelteKit request handler
  */
-import type { VerificationTokenAdapter } from '../adapters/verification-token/base.js'
+import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.js'
 import type { RequestEventLike } from '../types/auth.js'
 import type { User } from '../types/index.js'
 import { getLogger } from '../utils/logger.js'
@@ -123,10 +123,10 @@ export function createPasswordResetRequestHandler(config: {
 /**
  * Create a password reset confirmation handler
  * @param {Object} config - Handler configuration
- * @param {import('../providers/credentials.js').CredentialsProvider} config.credentialsProvider - Credentials provider
- * @param {import('../adapters/database/base.js').UserAdapter} config.userAdapter - User adapter
- * @param {import('../adapters/verification-token/base.js').VerificationTokenAdapter} config.verificationTokenAdapter - Verification token adapter
- * @param {import('../adapters/session/base.js').SessionAdapter} [config.sessionAdapter] - Session adapter (optional)
+ * @param {import('../providers/CredentialsProvider.js').CredentialsProvider} config.credentialsProvider - Credentials provider
+ * @param {import('../adapters/database/UserAdapter.js').UserAdapter} config.userAdapter - User adapter
+ * @param {import('../adapters/verification-token/VerificationTokenAdapter.js').VerificationTokenAdapter} config.verificationTokenAdapter - Verification token adapter
+ * @param {import('../adapters/session/SessionAdapter.js').SessionAdapter} [config.sessionAdapter] - Session adapter (optional)
  * @param {string} [config.redirectTo] - Redirect URL after reset (default: '/sign-in')
  * @returns {Function} SvelteKit request handler
  */

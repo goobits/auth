@@ -1,1 +1,1 @@
-export { MockSessionAdapter, MockTokenAdapter, MockUserAdapter } from './mock-adapters.js'
+export { MockSessionAdapter, MockTokenAdapter, MockUserAdapter } from './MockSessionAdapter.js'

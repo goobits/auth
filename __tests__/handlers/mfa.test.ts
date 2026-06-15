@@ -5,7 +5,7 @@ vi.mock('../../src/mfa/totp.ts', () => ({
 	createOtpAuthURL: vi.fn(() => 'otpauth://totp/test'),
 	verifyTOTP: vi.fn()
 }))
-vi.mock('../../src/mfa/backup-codes.ts', () => ({
+vi.mock('../../src/mfa/backupCodes.ts', () => ({
 	generateBackupCodes: vi.fn(() => [ 'code1', 'code2' ]),
 	hashBackupCodes: vi.fn(async() => [ 'hash1', 'hash2' ]),
 	verifyBackupCode: vi.fn()
@@ -18,9 +18,9 @@ import {
 	createMfaStatusHandler,
 	createMfaVerifyHandler
 } from '../../src/handlers/mfa.ts'
-import * as backup from '../../src/mfa/backup-codes.ts'
+import * as backup from '../../src/mfa/backupCodes.ts'
 import * as totp from '../../src/mfa/totp.ts'
-import { createRequestEvent } from '../test-kit.ts'
+import { createRequestEvent } from '../testKit.ts'
 
 function createEvent({ locals = {}, form = {} } = {}) {
 	return createRequestEvent({

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { drizzleAdapter } from '../../src/adapters/drizzle/index.ts'
-import type { DrizzleDbLike, DrizzleTable } from '../../src/adapters/drizzle-types.ts'
+import type { DrizzleDbLike, DrizzleTable } from '../../src/adapters/drizzleTypes.ts'
 
 function createMockDb(): DrizzleDbLike {
 	return {

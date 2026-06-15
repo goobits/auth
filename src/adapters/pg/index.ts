@@ -2,14 +2,12 @@ import { randomBytes, randomUUID } from 'node:crypto'
 
 import type { Cookies } from '@sveltejs/kit'
 
-import type { OAuthProfile, Session, User } from '../../types/index.js'
-import type { MagicLinkToken, MfaStatus } from '../../types/index.js'
-import type { WebAuthnCredential } from '../../types/index.js'
-import { UserAdapter } from '../database/base.js'
-import { MagicLinkAdapter } from '../magic-link/base.js'
-import { MfaAdapter } from '../mfa/base.js'
-import { SessionAdapter } from '../session/base.js'
-import { WebAuthnAdapter } from '../webauthn/base.js'
+import type { MagicLinkToken, MfaStatus, OAuthProfile, Session, User, WebAuthnCredential } from '../../types/index.js'
+import { UserAdapter } from '../database/UserAdapter.js'
+import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.js'
+import { MfaAdapter } from '../mfa/MfaAdapter.js'
+import { SessionAdapter } from '../session/SessionAdapter.js'
+import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.js'
 
 export type PgPoolLike = {
 	query<T extends Record<string, unknown> = Record<string, unknown>>(

@@ -1,11 +1,11 @@
 import type { User } from '../../types/index.js'
-import { DrizzleUserAdapter } from '../database/drizzle.js'
-import type { DrizzleDbLike, DrizzleTable } from '../drizzle-types.js'
-import { DrizzleMagicLinkAdapter } from '../magic-link/drizzle.js'
-import { DrizzleTokenAdapter } from '../oauth-token/drizzle.js'
-import { DrizzleSessionAdapter } from '../session/drizzle.js'
-import { DrizzleVerificationTokenAdapter } from '../verification-token/drizzle-verification.js'
-import { DrizzleWebAuthnAdapter } from '../webauthn/drizzle.js'
+import { DrizzleUserAdapter } from '../database/DrizzleUserAdapter.js'
+import type { DrizzleDbLike, DrizzleTable } from '../drizzleTypes.js'
+import { DrizzleMagicLinkAdapter } from '../magic-link/DrizzleMagicLinkAdapter.js'
+import { DrizzleTokenAdapter } from '../oauth-token/DrizzleTokenAdapter.js'
+import { DrizzleSessionAdapter } from '../session/DrizzleSessionAdapter.js'
+import { DrizzleVerificationTokenAdapter } from '../verification-token/DrizzleVerificationTokenAdapter.js'
+import { DrizzleWebAuthnAdapter } from '../webauthn/DrizzleWebAuthnAdapter.js'
 
 type TableKey =
 	| 'users'

@@ -9,11 +9,11 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { DrizzleMagicLinkAdapter } from '../../src/adapters/magic-link/drizzle.ts'
+import { DrizzleMagicLinkAdapter } from '../../src/adapters/magic-link/DrizzleMagicLinkAdapter.ts'
 import {
 	createIntegrationDrizzleFixture,
 	drizzleMagicLinkTokensTable
-} from '../drizzle-test-kit.ts'
+} from '../drizzleTestKit.ts'
 
 describe('Atomic consume — DrizzleMagicLinkAdapter', () => {
 	let db: any

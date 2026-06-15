@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { KVSessionAdapter } from '../../src/adapters/session/kv.ts'
+import { KVSessionAdapter } from '../../src/adapters/session/KVSessionAdapter.ts'
 
 function createNamespace() {
 	const store = new Map<string, string>()

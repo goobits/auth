@@ -1,5 +1,5 @@
-import type { SessionAdapter } from '../adapters/session/base.js'
-import { AuthAdapterCapabilityError } from '../errors/auth.js'
+import type { SessionAdapter } from '../adapters/session/SessionAdapter.js'
+import { AuthAdapterCapabilityError } from '../errors/AuthPrincipalResolutionError.js'
 import type { AuthLocals, RequestEventLike } from '../types/auth.js'
 import type { Session } from '../types/index.js'
 import { jsonResponse, parseRequestData } from '../utils/http.js'

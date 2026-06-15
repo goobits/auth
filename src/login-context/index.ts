@@ -3,4 +3,4 @@ export {
 	type CookieLoginContextConfig,
 	type CookieLoginContextRuntimeOptions,
 	createCookieLoginContext
-} from './cookie-context.js'
+} from './cookieContext.js'

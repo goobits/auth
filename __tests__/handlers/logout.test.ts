@@ -5,7 +5,7 @@ import {
 	createLogoutHandler
 } from '../../src/handlers/logout.ts'
 import type { RequestEventLike } from '../../src/types/auth.ts'
-import { createRequestEvent } from '../test-kit.ts'
+import { createRequestEvent } from '../testKit.ts'
 
 function createSessionAdapter() {
 	return {

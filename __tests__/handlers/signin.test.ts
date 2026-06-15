@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createSigninHandler } from '../../src/handlers/signin.ts'
-import { captureRejected, createRequestEvent, getRedirectLocation } from '../test-kit.ts'
+import { captureRejected, createRequestEvent, getRedirectLocation } from '../testKit.ts'
 
 describe('createSigninHandler', () => {
 	it('rejects invalid credentials without setting cookie', async() => {

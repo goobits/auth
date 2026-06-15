@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createLoginHandler } from '../../src/handlers/login.ts'
-import type { OAuthProvider } from '../../src/providers/base.ts'
-import { captureRejected, createRequestEvent, getRedirectLocation } from '../test-kit.ts'
+import type { OAuthProvider } from '../../src/providers/OAuthProvider.ts'
+import { captureRejected, createRequestEvent, getRedirectLocation } from '../testKit.ts'
 
 function createProvider(createAuthorizationURL?: () => URL): OAuthProvider {
 	return {

@@ -3,8 +3,8 @@ import {
 	buildRoutes,
 	createHandlers,
 	createUtils
-} from './createAuth/handler-factory.js'
-import { applyPolicies, resolveSecurity } from './createAuth/security-setup.js'
+} from './createAuth/handlerFactory.js'
+import { applyPolicies, resolveSecurity } from './createAuth/securitySetup.js'
 import type { AuthConfig } from './types/auth.js'
 import { setLogger } from './utils/logger.js'
 

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createSignupHandler } from '../../src/handlers/signup.ts'
-import { captureRejected, createRequestEvent, getRedirectLocation } from '../test-kit.ts'
+import { captureRejected, createRequestEvent, getRedirectLocation } from '../testKit.ts'
 
 describe('createSignupHandler', () => {
 	it('rejects if email already exists', async() => {

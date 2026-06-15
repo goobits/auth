@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { KVTokenAdapter } from '../../src/adapters/oauth-token/kv.ts'
+import { KVTokenAdapter } from '../../src/adapters/oauth-token/KVTokenAdapter.ts'
 
 function createNamespace() {
 	const store = new Map<string, string>()

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { DrizzleSessionAdapter } from '../../src/adapters/session/drizzle.ts'
-import { createMockDrizzleDb, drizzleSessionsTable, drizzleUsersTable } from '../drizzle-test-kit.ts'
+import { DrizzleSessionAdapter } from '../../src/adapters/session/DrizzleSessionAdapter.ts'
+import { createMockDrizzleDb, drizzleSessionsTable, drizzleUsersTable } from '../drizzleTestKit.ts'
 
 describe('DrizzleSessionAdapter', () => {
 	let adapter: DrizzleSessionAdapter

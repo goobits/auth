@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { MemoryCsrfStore } from '../../src/security/csrf.ts'
 import { applySecurityPolicy } from '../../src/security/policy.ts'
 import type { RequestEventLike } from '../../src/types/auth.ts'
-import { createCookies, createRequestEvent } from '../test-kit.ts'
+import { createCookies, createRequestEvent } from '../testKit.ts'
 
 function createEvent({
 	method = 'POST',

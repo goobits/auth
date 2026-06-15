@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
 	createMagicLinkRequestHandler,
 	createMagicLinkVerifyHandler
-} from '../../src/handlers/magic-link.ts'
+} from '../../src/handlers/magicLink.ts'
 import type { RequestEventLike } from '../../src/types/auth.ts'
 
 type MagicLinkTokenRecord = {

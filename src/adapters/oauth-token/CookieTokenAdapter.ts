@@ -2,7 +2,7 @@ import type { Cookies } from '@sveltejs/kit'
 
 import type { OAuthTokens } from '../../types/index.js'
 import { decryptTokens, encryptTokens } from '../../utils/crypto.js'
-import { TokenAdapter } from './base.js'
+import { TokenAdapter } from './TokenAdapter.js'
 
 /**
  * Cookie-based Token Adapter

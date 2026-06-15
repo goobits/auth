@@ -7,8 +7,8 @@ import {
 	type DrizzleRow,
 	type DrizzleTable,
 	requireColumn
-} from '../drizzle-types.js'
-import { WebAuthnAdapter } from './base.js'
+} from '../drizzleTypes.js'
+import { WebAuthnAdapter } from './WebAuthnAdapter.js'
 
 type CredentialsTable = DrizzleTable
 type ChallengesTable = DrizzleTable

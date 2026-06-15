@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../../src/mfa/backup-codes.ts'
+import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../../src/mfa/backupCodes.ts'
 
 describe('backup codes', () => {
 	it('hashes and verifies codes', async() => {

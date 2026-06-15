@@ -7,7 +7,7 @@ export { createLogoutAction, createLogoutHandler } from './logout.js'
 export {
 	createPasswordResetConfirmHandler,
 	createPasswordResetRequestHandler
-} from './password-reset.js'
+} from './passwordReset.js'
 export { createSigninHandler } from './signin.js'
 export { createSignupHandler } from './signup.js'
 
@@ -26,7 +26,7 @@ export {
 export {
 	createMagicLinkRequestHandler,
 	createMagicLinkVerifyHandler
-} from './magic-link.js'
+} from './magicLink.js'
 
 // WebAuthn handlers
 export {

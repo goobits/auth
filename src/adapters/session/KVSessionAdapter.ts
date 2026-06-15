@@ -1,10 +1,10 @@
 import type { Cookies } from '@sveltejs/kit'
 
-import { AuthAdapterCapabilityError } from '../../errors/auth.js'
+import { AuthAdapterCapabilityError } from '../../errors/AuthPrincipalResolutionError.js'
 import type { Session, User } from '../../types/index.js'
 import { generateRandomUUID } from '../../utils/crypto.js'
 import { getLogger } from '../../utils/logger.js'
-import { SessionAdapter } from './base.js'
+import { SessionAdapter } from './SessionAdapter.js'
 
 type KVNamespaceLike = {
 	put: (key: string, value: string, options?: { expirationTtl?: number }) => Promise<void>;

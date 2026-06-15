@@ -1,5 +1,5 @@
-import type { SessionAdapter } from '../adapters/session/base.js'
-import { AuthPrincipalResolutionError } from '../errors/auth.js'
+import type { SessionAdapter } from '../adapters/session/SessionAdapter.js'
+import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.js'
 import type { OnLoginMode, RequestEventLike } from '../types/auth.js'
 
 type SessionLoginAdapter = Pick<SessionAdapter, 'createSession'> &

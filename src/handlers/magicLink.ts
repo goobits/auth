@@ -1,11 +1,10 @@
-import type { RequestHandler } from '@sveltejs/kit'
-import { redirect } from '@sveltejs/kit'
+import { redirect, type RequestHandler } from '@sveltejs/kit'
 import { createRateLimiter } from '@goobits/security/rate-limit'
 
-import type { UserAdapter } from '../adapters/database/base.js'
-import type { MagicLinkAdapter } from '../adapters/magic-link/base.js'
-import type { SessionAdapter } from '../adapters/session/base.js'
-import { AuthPrincipalResolutionError } from '../errors/auth.js'
+import type { UserAdapter } from '../adapters/database/UserAdapter.js'
+import type { MagicLinkAdapter } from '../adapters/magic-link/MagicLinkAdapter.js'
+import type { SessionAdapter } from '../adapters/session/SessionAdapter.js'
+import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.js'
 import { auditAuthEvent } from '../security/audit.js'
 import type {
 	AuthHooks,
@@ -22,8 +21,8 @@ import {
 	generateMagicLinkToken,
 	generateOtp,
 	hashToken
-} from './magic-link.utils.js'
-import { ensureSessionAfterLogin } from './session-lifecycle.js'
+} from './magicLinkUtils.js'
+import { ensureSessionAfterLogin } from './sessionLifecycle.js'
 
 type MagicLinkTokenAdapter = Pick<
 	MagicLinkAdapter,
@@ -231,7 +230,6 @@ export function createMagicLinkVerifyHandler(
 		onLogin,
 		redirectAfterLogin = '/',
 		isAuthenticated = (locals: AuthLocals) => !!locals.user,
-		secureCookies = true,
 		normalizeEmail = (email: string) => email.trim().toLowerCase(),
 		verifyRateLimit,
 		verifyRateLimitMax = 5,

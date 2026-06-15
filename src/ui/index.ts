@@ -1,4 +1,4 @@
-export { auth, createAuthStore, isAuthenticated, user } from './auth-store.js'
+export { auth, createAuthStore, isAuthenticated, user } from './authStore.js'
 export { default as AuthGate } from './AuthGate.svelte'
 export { default as AuthNotification } from './AuthNotification.svelte'
 export { default as BackupCodesModal } from './BackupCodesModal.svelte'

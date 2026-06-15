@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer'
 import type { ServerResponse } from 'node:http'
 
-import type { NodeCookies } from './nodeCookies.js'
+import type { NodeCookies } from './NodeCookies.js'
 
 export async function sendFetchResponse(
 	res: ServerResponse,

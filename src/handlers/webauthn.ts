@@ -7,19 +7,18 @@ import {
 	verifyAuthenticationResponse,
 	verifyRegistrationResponse
 } from '@simplewebauthn/server'
-import type { RequestHandler } from '@sveltejs/kit'
-import { redirect } from '@sveltejs/kit'
+import { redirect, type RequestHandler } from '@sveltejs/kit'
 
-import type { SessionAdapter } from '../adapters/session/base.js'
-import type { WebAuthnAdapter } from '../adapters/webauthn/base.js'
-import { AuthPrincipalResolutionError } from '../errors/auth.js'
+import type { SessionAdapter } from '../adapters/session/SessionAdapter.js'
+import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.js'
+import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.js'
 import { auditAuthEvent } from '../security/audit.js'
 import type { AuthHooks, OnLoginMode, RequestEventLike } from '../types/auth.js'
 import type { User } from '../types/index.js'
 import { generateRandomUUID } from '../utils/crypto.js'
 import { jsonResponse, parseRequestDataWithSchema } from '../utils/http.js'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.js'
-import { ensureSessionAfterLogin } from './session-lifecycle.js'
+import { ensureSessionAfterLogin } from './sessionLifecycle.js'
 import {
 	credentialDescriptorFromRecord,
 	encodeCredential,
@@ -30,7 +29,7 @@ import {
 	toChallengeRecord,
 	toCredentialRecord,
 	toUint8Array
-} from './webauthn.utils.js'
+} from './webauthnUtils.js'
 
 export type WebAuthnRegisterOptionsHandlerConfig = {
 	webauthnAdapter: Pick<WebAuthnAdapter, 'listCredentials' | 'createChallenge'>;
@@ -89,9 +88,7 @@ export function createWebAuthnRegisterOptionsHandler(config: WebAuthnRegisterOpt
 			attestationType,
 			excludeCredentials
 		}
-		if (authenticatorSelection) {
-			optionsInput.authenticatorSelection = authenticatorSelection
-		}
+		optionsInput.authenticatorSelection = { ...authenticatorSelection, userVerification }
 		if (supportedAlgorithmIDs) {
 			optionsInput.supportedAlgorithmIDs = supportedAlgorithmIDs
 		}

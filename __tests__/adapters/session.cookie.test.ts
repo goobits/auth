@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { CookieSessionAdapter } from '../../src/adapters/session/cookie.ts'
-import { createCookies } from '../test-kit.ts'
+import { CookieSessionAdapter } from '../../src/adapters/session/CookieSessionAdapter.ts'
+import { createCookies } from '../testKit.ts'
 
 type CookieSessionAdapterInternals = {
 	_sessions: Map<string, unknown>;

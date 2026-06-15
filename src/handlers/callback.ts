@@ -1,8 +1,8 @@
 import { error, redirect } from '@sveltejs/kit'
 import { OAuth2RequestError } from 'arctic'
 
-import { AuthPrincipalResolutionError } from '../errors/auth.js'
-import type { OAuthProvider } from '../providers/base.js'
+import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.js'
+import type { OAuthProvider } from '../providers/OAuthProvider.js'
 import type { AuthLocals, RequestEventLike } from '../types/auth.js'
 import type { OAuthProfile, OAuthTokens } from '../types/index.js'
 import { getLogger } from '../utils/logger.js'
@@ -25,7 +25,7 @@ type CallbackConfig = {
  * Create a callback route handler for OAuth providers
  *
  * @param {Object} config - Handler configuration
- * @param {Object.<string, import('../providers/base.js').OAuthProvider>} config.providers - Provider instances mapped by name
+ * @param {Object.<string, import('../providers/OAuthProvider.js').OAuthProvider>} config.providers - Provider instances mapped by name
  * @param {string} [config.redirectAfterLogin] - URL to redirect to after successful auth
  * @param {Function} [config.isAuthenticated] - Function to check if user is authenticated (receives event.locals)
  * @param {Function} config.onAuthenticated - Called with (event, profile, tokens) after successful auth

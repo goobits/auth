@@ -1,6 +1,6 @@
 import type { OAuthTokens } from '../../types/index.js'
 import { decryptTokens, encryptTokens } from '../../utils/crypto.js'
-import { TokenAdapter } from './base.js'
+import { TokenAdapter } from './TokenAdapter.js'
 
 type D1Value = string | number | boolean | null
 type D1Row = Record<string, D1Value>

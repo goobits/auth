@@ -1,3 +1,3 @@
-export { VerificationTokenAdapter } from './base.js'
-export { D1VerificationTokenAdapter } from './d1.js'
-export { DrizzleVerificationTokenAdapter } from './drizzle-verification.js'
+export { VerificationTokenAdapter } from './VerificationTokenAdapter.js'
+export { D1VerificationTokenAdapter } from './D1VerificationTokenAdapter.js'
+export { DrizzleVerificationTokenAdapter } from './DrizzleVerificationTokenAdapter.js'

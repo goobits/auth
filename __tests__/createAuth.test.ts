@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SessionAdapter } from '../src/adapters/session/base.ts'
+import type { SessionAdapter } from '../src/adapters/session/SessionAdapter.ts'
 import { createAuth } from '../src/createAuth.ts'
-import type { OAuthProvider } from '../src/providers/base.ts'
+import type { OAuthProvider } from '../src/providers/OAuthProvider.ts'
 import type { RequestEventLike } from '../src/types/auth.ts'
 import type { Session } from '../src/types/index.ts'
-import { createRequestEvent } from './test-kit.ts'
+import { createRequestEvent } from './testKit.ts'
 
 function createSessionAdapter({
 	cookieName = 'session',

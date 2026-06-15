@@ -4,7 +4,7 @@ import {
 	createBasicAuthResponse,
 	parseBasicAuthHeader,
 	verifyBasicAuthHeader
-} from '../../src/security/basic-auth.ts'
+} from '../../src/security/basicAuth.ts'
 
 function basic(username: string, password: string): string {
 	return `Basic ${ Buffer.from(`${ username }:${ password }`).toString('base64') }`
