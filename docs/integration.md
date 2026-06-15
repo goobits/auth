@@ -238,6 +238,19 @@ user ID and use `@goobits/security/crypto` AES-GCM primitives, a managed KMS, or
 an equivalent authenticated-encryption service. Keep key identifiers in the
 ciphertext envelope so old keys can decrypt during controlled rotation.
 
+## Custom app adapters
+
+Apps with an existing user table can consume the same contract by wrapping
+their storage behind the adapter classes. A typical integration:
+
+1. Reuses the app database tables for users, sessions, identities, and tokens.
+2. Implements custom `UserAdapter` and `SessionAdapter` subclasses when the app
+   has extra columns or a different user shape.
+3. Hands the bundle to `new GoobitsAuth({ adapter: {...} })`.
+
+Keep the adapter boundary small: translate between app storage and package
+types at the edge, then keep auth flows package-owned.
+
 ## Things the package does not do
 
 - It does not own your schema. Drizzle and D1 adapters expect tables to
