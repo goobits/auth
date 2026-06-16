@@ -1,0 +1,631 @@
+
+  CodeAtlas
+══════════════════════════════════════════════════
+
+○ public  ◐ internal  ● private
+
+│ GoobitsAuth.ts
+├── ○ S GoobitsAuth
+    ├── ○ adapter
+    ├── ○ providers
+    ├── ○ handlers
+    ├── ○ handle
+    ├── ○ createHandlers
+    ├── ○ getSession
+    ├── ○ requireUser
+    └── ○ requireAuthRole
+
+│ adapters/database/D1UserAdapter.ts
+├── ○ S D1UserAdapter
+    ├── ○ _defaultSanitizeUser
+    ├── ○ createUser
+    ├── ○ getUserById
+    ├── ○ getUserByEmail
+    ├── ○ getUserByProviderId
+    ├── ○ updateUser
+    ├── ○ deleteUser
+    ├── ○ linkOAuthAccount
+    └── ○ getUserWithPasswordHash
+
+│ adapters/database/DrizzleUserAdapter.ts
+├── ○ S DrizzleUserAdapter
+    ├── ○ _defaultSanitizeUser
+    ├── ○ createUser
+    ├── ○ getUserById
+    ├── ○ getUserByEmail
+    ├── ○ getUserByProviderId
+    ├── ○ updateUser
+    ├── ○ deleteUser
+    ├── ○ linkOAuthAccount
+    └── ○ getUserWithPasswordHash
+
+│ adapters/database/UserAdapter.ts
+├── ○ S UserAdapter
+    ├── ○ createUser
+    ├── ○ getUserById
+    ├── ○ getUserByEmail
+    ├── ○ getUserByProviderId
+    ├── ○ updateUser
+    ├── ○ deleteUser
+    ├── ○ linkOAuthAccount
+    ├── ○ getUserWithPasswordHash
+    ├── ○ getUserByIdentifier
+    └── ○ getUserWithPasswordHashByIdentifier
+
+│ adapters/drizzle/index.ts
+└── ○ f drizzleAdapter
+
+│ adapters/drizzleTypes.ts
+├── ○ f requireColumn
+└── ○ f requireCondition
+
+│ adapters/magic-link/D1MagicLinkAdapter.ts
+├── ○ S D1MagicLinkAdapter
+    ├── ○ createToken
+    ├── ○ findByTokenHash
+    ├── ○ findByEmailAndOtpHash
+    ├── ○ deleteById
+    ├── ○ deleteByUserId
+    ├── ○ deleteByEmail
+    ├── ○ consumeByTokenHash
+    └── ○ consumeByEmailAndOtpHash
+
+│ adapters/magic-link/DrizzleMagicLinkAdapter.ts
+├── ○ S DrizzleMagicLinkAdapter
+    ├── ○ createToken
+    ├── ○ findByTokenHash
+    ├── ○ findByEmailAndOtpHash
+    ├── ○ deleteById
+    ├── ○ deleteByUserId
+    ├── ○ deleteByEmail
+    ├── ○ consumeByTokenHash
+    └── ○ consumeByEmailAndOtpHash
+
+│ adapters/magic-link/MagicLinkAdapter.ts
+├── ○ S MagicLinkAdapter
+    ├── ○ createToken
+    ├── ○ findByTokenHash
+    ├── ○ findByEmailAndOtpHash
+    ├── ○ deleteById
+    ├── ○ deleteByUserId
+    ├── ○ deleteByEmail
+    ├── ○ consumeByTokenHash
+    └── ○ consumeByEmailAndOtpHash
+
+│ adapters/memory/index.ts
+├── ○ S MemoryUserAdapter
+│   ├── ○ createUser
+│   ├── ○ getUserById
+│   ├── ○ setUser
+│   ├── ○ getUserByEmail
+│   ├── ○ getUserByProviderId
+│   ├── ○ updateUser
+│   ├── ○ deleteUser
+│   ├── ○ linkOAuthAccount
+│   └── ○ getUserWithPasswordHash
+├── ○ S MemorySessionAdapter
+│   ├── ○ cookieName
+│   ├── ○ createSession
+│   ├── ○ validateSession
+│   ├── ○ invalidateSession
+│   ├── ○ invalidateUserSessions
+│   ├── ○ listSessions
+│   ├── ○ setSessionCookie
+│   └── ○ deleteSessionCookie
+├── ○ S MemoryWebAuthnAdapter
+│   ├── ○ createChallenge
+│   ├── ○ getChallenge
+│   ├── ○ deleteChallenge
+│   ├── ○ createCredential
+│   ├── ○ getCredential
+│   ├── ○ listCredentials
+│   ├── ○ updateCredential
+│   ├── ○ deleteCredential
+│   └── ○ deleteUserCredentials
+├── ○ S MemoryMfaAdapter
+│   ├── ○ setSecret
+│   ├── ○ getSecret
+│   ├── ○ enableMfa
+│   ├── ○ disableMfa
+│   ├── ○ setBackupCodes
+│   ├── ○ getBackupCodes
+│   ├── ○ consumeBackupCode
+│   └── ○ getStatus
+├── ○ f createMemoryAuthAdapters
+├── ○ S MockUserAdapter
+├── ○ S MockSessionAdapter
+│   ├── ○ setUser
+│   ├── ○ setSessionCookie
+│   └── ○ deleteSessionCookie
+├── ○ S MockTokenAdapter
+    ├── ○ storeTokens
+    ├── ○ getTokens
+    ├── ○ refreshTokens
+    └── ○ deleteTokens
+
+│ adapters/mfa/MfaAdapter.ts
+├── ○ S MfaAdapter
+    ├── ○ setSecret
+    ├── ○ getSecret
+    ├── ○ enableMfa
+    ├── ○ disableMfa
+    ├── ○ setBackupCodes
+    ├── ○ getBackupCodes
+    ├── ○ consumeBackupCode
+    └── ○ getStatus
+
+│ adapters/oauth-token/CookieTokenAdapter.ts
+├── ○ S CookieTokenAdapter
+    ├── ○ _setCookies
+    ├── ○ storeTokens
+    ├── ○ getTokens
+    ├── ○ refreshTokens
+    └── ○ deleteTokens
+
+│ adapters/oauth-token/D1TokenAdapter.ts
+├── ○ S D1TokenAdapter
+    ├── ○ storeTokens
+    ├── ○ getTokens
+    ├── ○ refreshTokens
+    └── ○ deleteTokens
+
+│ adapters/oauth-token/DrizzleTokenAdapter.ts
+├── ○ S DrizzleTokenAdapter
+    ├── ○ storeTokens
+    ├── ○ getTokens
+    ├── ○ refreshTokens
+    └── ○ deleteTokens
+
+│ adapters/oauth-token/KVTokenAdapter.ts
+├── ○ S KVTokenAdapter
+    ├── ○ _key
+    ├── ○ storeTokens
+    ├── ○ getTokens
+    ├── ○ refreshTokens
+    └── ○ deleteTokens
+
+│ adapters/oauth-token/TokenAdapter.ts
+├── ○ S TokenAdapter
+    ├── ○ storeTokens
+    ├── ○ getTokens
+    ├── ○ refreshTokens
+    └── ○ deleteTokens
+
+│ adapters/pg/index.ts
+├── ○ S PgUserAdapter
+│   ├── ○ createUser
+│   ├── ○ getUserById
+│   ├── ○ getUserByEmail
+│   ├── ○ getUserByProviderId
+│   ├── ○ updateUser
+│   ├── ○ deleteUser
+│   ├── ○ linkOAuthAccount
+│   └── ○ getUserWithPasswordHash
+├── ○ S PgSessionAdapter
+│   ├── ○ cookieName
+│   ├── ○ createSession
+│   ├── ○ validateSession
+│   ├── ○ invalidateSession
+│   ├── ○ invalidateUserSessions
+│   ├── ○ listSessions
+│   ├── ○ setSessionCookie
+│   └── ○ deleteSessionCookie
+├── ○ S PgWebAuthnAdapter
+│   ├── ○ createChallenge
+│   ├── ○ getChallenge
+│   ├── ○ deleteChallenge
+│   ├── ○ createCredential
+│   ├── ○ getCredential
+│   ├── ○ listCredentials
+│   ├── ○ updateCredential
+│   ├── ○ deleteCredential
+│   └── ○ deleteUserCredentials
+├── ○ S PgMfaAdapter
+│   ├── ○ setSecret
+│   ├── ○ getSecret
+│   ├── ○ enableMfa
+│   ├── ○ disableMfa
+│   ├── ○ setBackupCodes
+│   ├── ○ getBackupCodes
+│   ├── ○ consumeBackupCode
+│   └── ○ getStatus
+├── ○ S PgMagicLinkAdapter
+│   ├── ○ createToken
+│   ├── ○ findByTokenHash
+│   ├── ○ findByEmailAndOtpHash
+│   ├── ○ deleteById
+│   ├── ○ deleteByUserId
+│   ├── ○ deleteByEmail
+│   ├── ○ consumeByTokenHash
+│   └── ○ consumeByEmailAndOtpHash
+└── ○ f createPgAuthAdapters
+
+│ adapters/session/CookieSessionAdapter.ts
+├── ○ S CookieSessionAdapter
+    ├── ○ _generateSessionId
+    ├── ○ createSession
+    ├── ○ validateSession
+    ├── ○ invalidateSession
+    ├── ○ invalidateUserSessions
+    ├── ○ listSessions
+    ├── ○ setSessionCookie
+    └── ○ deleteSessionCookie
+
+│ adapters/session/D1SessionAdapter.ts
+├── ○ S D1SessionAdapter
+    ├── ○ _defaultSanitizeUser
+    ├── ○ _generateSessionId
+    ├── ○ createSession
+    ├── ○ validateSession
+    ├── ○ _mapUserRow
+    ├── ○ invalidateSession
+    ├── ○ invalidateUserSessions
+    ├── ○ listSessions
+    ├── ○ setSessionCookie
+    └── ○ deleteSessionCookie
+
+│ adapters/session/DrizzleSessionAdapter.ts
+├── ○ S DrizzleSessionAdapter
+    ├── ○ _defaultSanitizeUser
+    ├── ○ _generateSessionId
+    ├── ○ createSession
+    ├── ○ validateSession
+    ├── ○ invalidateSession
+    ├── ○ invalidateUserSessions
+    ├── ○ listSessions
+    ├── ○ setSessionCookie
+    └── ○ deleteSessionCookie
+
+│ adapters/session/KVSessionAdapter.ts
+├── ○ S KVSessionAdapter
+    ├── ○ _defaultSanitizeUser
+    ├── ○ _key
+    ├── ○ createSession
+    ├── ○ validateSession
+    ├── ○ invalidateSession
+    ├── ○ invalidateUserSessions
+    ├── ○ listSessions
+    ├── ○ setSessionCookie
+    └── ○ deleteSessionCookie
+
+│ adapters/session/SessionAdapter.ts
+├── ○ S SessionAdapter
+    ├── ○ createSession
+    ├── ○ validateSession
+    ├── ○ invalidateSession
+    ├── ○ invalidateUserSessions
+    ├── ○ listSessions
+    ├── ○ setSessionCookie
+    └── ○ deleteSessionCookie
+
+│ adapters/verification-token/D1VerificationTokenAdapter.ts
+├── ○ S D1VerificationTokenAdapter
+    ├── ○ create
+    ├── ○ findByToken
+    ├── ○ deleteById
+    ├── ○ deleteByUserAndType
+    └── ○ consumeByToken
+
+│ adapters/verification-token/DrizzleVerificationTokenAdapter.ts
+├── ○ S DrizzleVerificationTokenAdapter
+    ├── ○ create
+    ├── ○ findByToken
+    ├── ○ deleteById
+    ├── ○ deleteByUserAndType
+    └── ○ consumeByToken
+
+│ adapters/verification-token/VerificationTokenAdapter.ts
+├── ○ S VerificationTokenAdapter
+    ├── ○ create
+    ├── ○ findByToken
+    ├── ○ deleteById
+    ├── ○ deleteByUserAndType
+    └── ○ consumeByToken
+
+│ adapters/webauthn/D1WebAuthnAdapter.ts
+├── ○ S D1WebAuthnAdapter
+    ├── ○ createChallenge
+    ├── ○ getChallenge
+    ├── ○ deleteChallenge
+    ├── ○ createCredential
+    ├── ○ getCredential
+    ├── ○ listCredentials
+    ├── ○ updateCredential
+    ├── ○ deleteCredential
+    ├── ○ deleteUserCredentials
+    └── ○ consumeChallenge
+
+│ adapters/webauthn/DrizzleWebAuthnAdapter.ts
+├── ○ S DrizzleWebAuthnAdapter
+    ├── ○ createChallenge
+    ├── ○ getChallenge
+    ├── ○ deleteChallenge
+    ├── ○ createCredential
+    ├── ○ getCredential
+    ├── ○ listCredentials
+    ├── ○ updateCredential
+    ├── ○ deleteCredential
+    ├── ○ deleteUserCredentials
+    └── ○ consumeChallenge
+
+│ adapters/webauthn/WebAuthnAdapter.ts
+├── ○ S WebAuthnAdapter
+    ├── ○ createChallenge
+    ├── ○ getChallenge
+    ├── ○ deleteChallenge
+    ├── ○ createCredential
+    ├── ○ getCredential
+    ├── ○ listCredentials
+    ├── ○ updateCredential
+    ├── ○ deleteCredential
+    ├── ○ deleteUserCredentials
+    └── ○ consumeChallenge
+
+│ client/index.ts
+└── ○ f createAuthClient
+
+│ createAuth.ts
+└── ○ f createAuth
+
+│ createAuth/config.ts
+├── ○ f validateConfig
+└── ○ f resolveDefaults
+
+│ createAuth/handlerFactory.ts
+├── ○ f createHandlers
+├── ○ f buildRoutes
+└── ○ f createUtils
+
+│ createAuth/securitySetup.ts
+├── ○ f resolveSecurity
+└── ○ f applyPolicies
+
+│ errors/AuthPrincipalResolutionError.ts
+├── ○ S AuthPrincipalResolutionError
+└── ○ S AuthAdapterCapabilityError
+
+│ handlers/callback.ts
+└── ○ f createCallbackHandler
+
+│ handlers/login.ts
+└── ○ f createLoginHandler
+
+│ handlers/logout.ts
+├── ○ f createLogoutHandler
+└── ○ f createLogoutAction
+
+│ handlers/magicLink.ts
+├── ○ f createMagicLinkRequestHandler
+└── ○ f createMagicLinkVerifyHandler
+
+│ handlers/magicLinkUtils.ts
+├── ○ f generateMagicLinkToken
+├── ○ f generateOtp
+└── ○ f hashToken
+
+│ handlers/mfa.ts
+├── ○ f createMfaStatusHandler
+├── ○ f createMfaEnrollHandler
+├── ○ f createMfaVerifyHandler
+├── ○ f createMfaDisableHandler
+└── ○ f createMfaBackupCodeHandler
+
+│ handlers/passwordReset.ts
+├── ○ f createPasswordResetRequestHandler
+└── ○ f createPasswordResetConfirmHandler
+
+│ handlers/sessionLifecycle.ts
+└── ○ f ensureSessionAfterLogin
+
+│ handlers/sessions.ts
+├── ○ f createSessionListHandler
+└── ○ f createSessionRevokeHandler
+
+│ handlers/signin.ts
+└── ○ f createSigninHandler
+
+│ handlers/signup.ts
+└── ○ f createSignupHandler
+
+│ handlers/webauthn.ts
+├── ○ f createWebAuthnRegisterOptionsHandler
+├── ○ f createWebAuthnRegisterVerifyHandler
+├── ○ f createWebAuthnLoginOptionsHandler
+└── ○ f createWebAuthnLoginVerifyHandler
+
+│ handlers/webauthn.worker.ts
+├── ○ f createWebAuthnRegisterOptionsHandler
+├── ○ f createWebAuthnRegisterVerifyHandler
+├── ○ f createWebAuthnLoginOptionsHandler
+└── ○ f createWebAuthnLoginVerifyHandler
+
+│ handlers/webauthnUtils.ts
+├── ○ f toUint8Array
+├── ○ f encodeCredential
+├── ○ f toChallengeRecord
+├── ○ f toCredentialRecord
+├── ○ f credentialDescriptorFromRecord
+└── ○ f toAuthenticatorTransports
+
+│ login-context/cookieContext.ts
+└── ○ f createCookieLoginContext
+
+│ mfa/backupCodes.ts
+├── ○ f generateBackupCodes
+├── ○ f hashBackupCodes
+└── ○ f verifyBackupCode
+
+│ mfa/totp.ts
+├── ○ f generateSecret
+├── ○ f createOtpAuthURL
+├── ○ f generateTOTP
+└── ○ f verifyTOTP
+
+│ node/NodeCookies.ts
+├── ○ S NodeCookies
+    ├── ○ get
+    ├── ○ getAll
+    ├── ○ serialize
+    ├── ○ set
+    ├── ○ delete
+    └── ○ writeTo
+
+│ node/createNodeAuthEvent.ts
+└── ○ f createNodeAuthEvent
+
+│ node/readRequestBody.ts
+└── ○ f readRequestBody
+
+│ node/sendFetchResponse.ts
+└── ○ f sendFetchResponse
+
+│ password/index.node.ts
+├── ○ f hashPassword
+├── ○ f verifyPassword
+└── ○ f validatePasswordStrength
+
+│ password/index.worker.ts
+├── ○ f hashPassword
+├── ○ f verifyPassword
+└── ○ f validatePasswordStrength
+
+│ providers/AppleProvider.ts
+├── ○ S AppleProvider
+    ├── ○ _decodePrivateKey
+    ├── ○ createAuthorizationURL
+    ├── ○ getUserProfile
+    └── ○ refreshAccessToken
+
+│ providers/CredentialsProvider.ts
+├── ○ S CredentialsProvider
+    ├── ○ withIdentifier
+    ├── ○ authenticate
+    ├── ○ signUp
+    ├── ○ updatePassword
+    └── ○ changePassword
+
+│ providers/GoogleProvider.ts
+├── ○ S GoogleProvider
+    ├── ○ createAuthorizationURL
+    ├── ○ getUserProfile
+    └── ○ refreshAccessToken
+
+│ providers/OAuthProvider.ts
+├── ○ S OAuthProvider
+    ├── ○ createAuthorizationURL
+    ├── ○ getUserProfile
+    └── ○ refreshAccessToken
+
+│ security/alerts.ts
+└── ○ f createSecurityAlertObserver
+
+│ security/apiKey.ts
+├── ○ f timingSafeEqual
+├── ○ f createAuthApiKey
+├── ○ f hashAuthApiKey
+├── ○ f verifyAuthApiKey
+└── ○ f parseApiKeyHeader
+
+│ security/audit.ts
+└── ○ f auditAuthEvent
+
+│ security/authorize.ts
+├── ○ f requireAuthenticated
+├── ○ f requireAuthRole
+└── ○ f requireOwnership
+
+│ security/basicAuth.ts
+├── ○ f parseBasicAuthHeader
+├── ○ f verifyBasicAuthHeader
+└── ○ f createBasicAuthResponse
+
+│ security/csrf.ts
+├── ○ f issueCsrfToken
+└── ○ f validateCsrfRequest
+
+│ security/events.ts
+└── ○ f createAuthEvent
+
+│ security/policy.ts
+└── ○ f applySecurityPolicy
+
+│ security/signedSessionToken.ts
+├── ○ f createSignedSessionToken
+└── ○ f verifySignedSessionToken
+
+│ testing/MockSessionAdapter.ts
+├── ○ S MockSessionAdapter
+│   ├── ○ setUser
+│   ├── ○ createSession
+│   ├── ○ validateSession
+│   ├── ○ invalidateSession
+│   ├── ○ invalidateUserSessions
+│   ├── ○ listSessions
+│   ├── ○ setSessionCookie
+│   └── ○ deleteSessionCookie
+├── ○ S MockUserAdapter
+│   ├── ○ createUser
+│   ├── ○ getUserById
+│   ├── ○ getUserByEmail
+│   ├── ○ getUserByProviderId
+│   ├── ○ updateUser
+│   ├── ○ deleteUser
+│   ├── ○ linkOAuthAccount
+│   └── ○ getUserWithPasswordHash
+├── ○ S MockTokenAdapter
+    ├── ○ storeTokens
+    ├── ○ getTokens
+    ├── ○ refreshTokens
+    └── ○ deleteTokens
+
+│ ui/authStore.ts
+└── ○ f createAuthStore
+
+│ utils/crypto.ts
+├── ○ f timingSafeEqual
+├── ○ f encryptTokens
+├── ○ f decryptTokens
+├── ○ f generateEncryptionKey
+├── ○ f generateRandomUUID
+├── ○ f getRandomBytes
+└── ○ f sha256Hex
+
+│ utils/http.ts
+├── ○ f parseRequestData
+├── ○ f parseRequestDataWithSchema
+└── ○ f jsonResponse
+
+│ utils/logger.ts
+├── ○ f setLogger
+└── ○ f getLogger
+
+│ utils/oauth.ts
+├── ○ f createOAuthCookies
+├── ○ f cleanupOAuthCookies
+├── ○ f validateOAuthCallback
+├── ○ f getOAuthCallbackParams
+└── ○ f handleOAuthCallback
+
+│ utils/redact.ts
+└── ○ f redactObject
+
+│ utils/redirect.ts
+├── ○ f isSafeRedirectPath
+└── ○ f normalizeSafeRedirectPath
+
+│ utils/sanitize.ts
+└── ○ f sanitizeUser
+
+│ utils/tokens.ts
+├── ○ f createVerificationToken
+├── ○ f consumeVerificationToken
+└── ○ f getUserForVerificationToken
+
+──────────────────────────────────────────────────
+
+✓ 107 files scanned
+  → 80 with public exports
+  → 156 public symbols
+  → 32 dependencies tracked
+
+Tip: Use 'codeatlas map' for visual dependency diagram
