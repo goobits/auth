@@ -1,13 +1,16 @@
+/** Basic Auth Credentials typed model for runtime integration. */
 export type BasicAuthCredentials = {
 	username: string;
 	password: string;
 }
 
+/** Basic Auth Password Verifier typed model for runtime integration. */
 export type BasicAuthPasswordVerifier = (
 	storedHash: string,
 	password: string
 ) => Promise<boolean>
 
+/** Verify Basic Auth Options typed model for runtime integration. */
 export type VerifyBasicAuthOptions = {
 	authHeader: string | null;
 	getPasswordHash: (username: string) => string | null | undefined | Promise<string | null | undefined>;

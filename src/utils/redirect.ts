@@ -1,3 +1,4 @@
+/** Checks whether a redirect target is a safe same-origin path. */
 export function isSafeRedirectPath(value: string): boolean {
 	const v = value.trim()
 	if (!v) return false
@@ -13,6 +14,7 @@ export function isSafeRedirectPath(value: string): boolean {
 	return true
 }
 
+/** Options for normalizing and constraining redirect paths. */
 export type SafeRedirectOptions = {
 	allowedPrefixes?: readonly string[];
 	baseUrl?: string;
@@ -20,6 +22,7 @@ export type SafeRedirectOptions = {
 
 const SAFE_REDIRECT_PARSE_BASE_URL = 'http://localhost'
 
+/** Normalizes a safe redirect path and rejects unsafe targets. */
 export function normalizeSafeRedirectPath(
 	value: unknown,
 	options: SafeRedirectOptions = {}

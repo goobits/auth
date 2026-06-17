@@ -2,6 +2,7 @@ import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../mfa/b
 import { createOtpAuthURL, generateSecret, verifyTOTP } from '../mfa/totp.js'
 import type { RequestEventLike } from '../types/auth.js'
 
+/** Mfa Store typed model for runtime integration. */
 export type MfaStore = {
 	setSecret: (userId: string, secret: string) => Promise<void>;
 	setBackupCodes: (userId: string, codes: string[]) => Promise<void>;
@@ -17,6 +18,7 @@ export type MfaStore = {
 	}>;
 }
 
+/** Mfa Config typed model for runtime integration. */
 export type MfaConfig = {
 	getUserId: (locals: RequestEventLike['locals']) => string | null;
 	store: MfaStore;
@@ -24,6 +26,7 @@ export type MfaConfig = {
 	label?: (userId: string, locals: RequestEventLike['locals']) => string;
 }
 
+/** Creates mfa status handler for auth HTTP handlers. */
 export function createMfaStatusHandler(config: MfaConfig) {
 	const { getUserId, store } = config
 	return async(event: RequestEventLike) => {
@@ -92,6 +95,7 @@ export function createMfaVerifyHandler(config: MfaConfig) {
 	}
 }
 
+/** Creates mfa disable handler for auth HTTP handlers. */
 export function createMfaDisableHandler(config: MfaConfig) {
 	const { getUserId, store } = config
 	return async(event: RequestEventLike) => {
@@ -102,6 +106,7 @@ export function createMfaDisableHandler(config: MfaConfig) {
 	}
 }
 
+/** Creates mfa backup code handler for auth HTTP handlers. */
 export function createMfaBackupCodeHandler(config: MfaConfig) {
 	const { getUserId, store } = config
 	return async(event: RequestEventLike) => {

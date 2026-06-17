@@ -127,6 +127,7 @@ function serializeCredential(credential: unknown) {
 	}
 }
 
+/** Creates auth client for auth runtime. */
 export function createAuthClient({
 	baseUrl = '',
 	endpoints = {},

@@ -7,6 +7,7 @@ type KVNamespaceLike = {
 	delete: (key: string) => Promise<void>;
 }
 
+/** KV token adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class KVTokenAdapter extends TokenAdapter {
 	private namespace: KVNamespaceLike
 	private encrypt: boolean
@@ -54,8 +55,8 @@ export class KVTokenAdapter extends TokenAdapter {
 	}
 
 	async refreshTokens(
-		userId: string,
-		provider: string
+		_userId: string,
+		_provider: string
 	): Promise<import('../../types/index.js').OAuthTokens | null> {
 		throw new Error(
 			'refreshTokens not implemented - use provider-specific refresh logic'

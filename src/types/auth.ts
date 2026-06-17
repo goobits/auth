@@ -1,4 +1,4 @@
-import type { Cookies, RequestEvent, RequestHandler } from '@sveltejs/kit'
+import type { RequestEvent, RequestHandler } from '@sveltejs/kit'
 
 import type { UserAdapter } from '../adapters/database/UserAdapter.js'
 import type { MagicLinkAdapter } from '../adapters/magic-link/MagicLinkAdapter.js'
@@ -21,11 +21,13 @@ import type {
 	User
 } from './core.js'
 
+/** Defines auth locals options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthLocals = {
 	user?: User | null;
 	session?: Session | null;
 }
 
+/** Defines request event like options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type RequestEventLike = Pick<
 	RequestEvent,
 	'request' | 'cookies' | 'params' | 'locals' | 'url'
@@ -35,24 +37,30 @@ export type RequestEventLike = Pick<
 	getClientAddress?: () => string;
 }
 
+/** Defines oauth provider config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type OAuthProviderConfig = {
 	provider: OAuthProvider;
 	scopes?: string[];
 }
 
+/** Defines auth urls options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthUrls = {
 	login?: string;
 	afterLogin?: string;
 	afterLogout?: string;
 }
 
+/** Defines auth cookies config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthCookiesConfig = {
 	secure?: boolean;
 }
 
+/** Defines auth login result options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthLoginResult = { userId: string | number } | void
+/** Defines on login mode options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type OnLoginMode = 'augment' | 'manual'
 
+/** Defines auth hooks options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthHooks = {
 	onSessionValidated?: (
 		event: RequestEventLike,
@@ -73,6 +81,7 @@ export type AuthHooks = {
 	onError?: (event: RequestEventLike, error: unknown) => Promise<void> | void;
 }
 
+/** Defines magic link config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type MagicLinkConfig = {
 	send: {
 		email: (payload: {
@@ -114,6 +123,7 @@ export type MagicLinkConfig = {
 	};
 }
 
+/** Defines web authn config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type WebAuthnConfig = {
 	origin?: string;
 	rpID?: string;
@@ -127,22 +137,29 @@ export type WebAuthnConfig = {
 	};
 }
 
+/** Defines totp mfa config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type TotpMfaConfig = {
 	issuer?: string;
 	label?: (userId: string, locals: RequestEventLike['locals']) => string;
 }
 
+/** Defines sessions config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type SessionsConfig = {
 	listLimit?: number;
 }
 
+/** Defines security profile options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type SecurityProfile = 'basic' | 'secure' | 'strict'
+/** Defines security mode options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type SecurityMode = 'required' | 'optional' | 'off'
+/** Defines trusted proxy headers that may supply client addresses for rate limits. */
 export type TrustedProxyHeader = 'cf-connecting-ip' | 'x-forwarded-for'
+/** Defines auth alert webhook config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthAlertWebhookConfig = Omit<WebhookChannelOptions, 'url'> & {
 	url?: string | null;
 }
 
+/** Defines auth security config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthSecurityConfig = {
 	csrf?: {
 		mode?: SecurityMode;
@@ -224,12 +241,14 @@ type AuthConfigWithBoth = CommonAuthConfigFields & {
 	webauthn: WebAuthnConfig;
 }
 
+/** Defines auth config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthConfig =
 	| AuthConfigNoFeatures
 	| AuthConfigWithMagicLink
 	| AuthConfigWithWebAuthn
 	| AuthConfigWithBoth
 
+/** Defines auth handlers options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthHandlers = {
 	login?: RequestHandler;
 	callback?: RequestHandler;
@@ -258,6 +277,7 @@ export type AuthHandlers = {
 	};
 }
 
+/** Defines auth routes options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthRoutes = {
 	login: () => { GET: RequestHandler };
 	callback: () => { GET: RequestHandler };
@@ -276,6 +296,7 @@ export type AuthRoutes = {
 	sessions: () => { GET: RequestHandler; POST: RequestHandler };
 }
 
+/** Defines session list response options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type SessionListResponse = {
 	ok: boolean;
 	sessions: SessionSummary[];

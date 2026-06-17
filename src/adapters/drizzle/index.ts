@@ -51,8 +51,10 @@ type VerificationTokensTableShape = DrizzleTable & {
 	expiresAt: DrizzleTable[string];
 }
 
+/** Drizzle Auth Schema typed model for runtime integration. */
 export type DrizzleAuthSchema = Partial<Record<TableKey, DrizzleTable>>
 
+/** Drizzle Adapter Options typed model for runtime integration. */
 export type DrizzleAdapterOptions<TSchema extends DrizzleAuthSchema = DrizzleAuthSchema> = {
 	schema?: TSchema;
 	tables?: Partial<Record<TableKey, DrizzleTable>>;
@@ -67,6 +69,7 @@ export type DrizzleAdapterOptions<TSchema extends DrizzleAuthSchema = DrizzleAut
 	sanitizeUser?: (user: User | null) => User | null;
 }
 
+/** Drizzle Adapter Bundle typed model for runtime integration. */
 export type DrizzleAdapterBundle = {
 	session: DrizzleSessionAdapter;
 	user: DrizzleUserAdapter;
@@ -98,6 +101,7 @@ function requireTable(
 	return found
 }
 
+/** Processes adapter for auth storage. */
 export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSchema>(
 	db: DrizzleDbLike,
 	options: DrizzleAdapterOptions<TSchema> = {}

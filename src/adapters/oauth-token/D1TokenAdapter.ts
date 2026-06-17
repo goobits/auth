@@ -40,6 +40,7 @@ function parseOAuthTokens(raw: string): OAuthTokens | null {
 	}
 }
 
+/** Cloudflare D1 token adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class D1TokenAdapter extends TokenAdapter {
 	private db: D1DatabaseLike
 	private tokensTable: string

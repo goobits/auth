@@ -29,6 +29,7 @@ function validateEncryptionKey(encryptionKey: string): Uint8Array {
 	return keyBytes
 }
 
+/** Encrypts OAuth token payloads using an application encryption key. */
 export async function encryptTokens<T extends Record<string, unknown>>(
 	tokens: T,
 	encryptionKey: string
@@ -47,6 +48,7 @@ export async function encryptTokens<T extends Record<string, unknown>>(
 	}
 }
 
+/** Decrypts OAuth token payloads using an application encryption key. */
 export async function decryptTokens<T = Record<string, unknown>>(
 	encryptedData: string | null,
 	encryptionKey: string
@@ -66,11 +68,13 @@ export async function decryptTokens<T = Record<string, unknown>>(
 	}
 }
 
+/** Generates a 32-byte token encryption key encoded as hex. */
 export async function generateEncryptionKey(): Promise<string> {
 	const bytes = randomBytes(32)
 	return bytesToHex(bytes)
 }
 
+/** Generates a random UUID with WebCrypto fallback support. */
 export async function generateRandomUUID(): Promise<string> {
 	if (globalThis.crypto?.randomUUID) {
 		return globalThis.crypto.randomUUID()
@@ -82,10 +86,12 @@ export async function generateRandomUUID(): Promise<string> {
 	return `${ hex.slice(0, 8) }-${ hex.slice(8, 12) }-${ hex.slice(12, 16) }-${ hex.slice(16, 20) }-${ hex.slice(20) }`
 }
 
+/** Returns cryptographically secure random bytes. */
 export async function getRandomBytes(length: number): Promise<Uint8Array> {
 	return randomBytes(length)
 }
 
+/** Hashes a value with SHA-256 and returns hex. */
 export async function sha256Hex(value: string | Uint8Array): Promise<string> {
 	return securitySha256Hex(value)
 }

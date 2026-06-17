@@ -9,11 +9,13 @@ type LoginContextCookieOptions = {
 	path?: string;
 }
 
+/** Cookie Login Context Config typed model for runtime integration. */
 export type CookieLoginContextConfig<Key extends string> = {
 	cookies: Record<Key, string>;
 	options?: LoginContextCookieOptions;
 }
 
+/** Cookie Login Context Runtime Options typed model for runtime integration. */
 export type CookieLoginContextRuntimeOptions = LoginContextCookieOptions
 
 function buildCookieOptions(
@@ -29,6 +31,7 @@ function buildCookieOptions(
 	} as const
 }
 
+/** Key registry entry for runtime integration. */
 export function createCookieLoginContext<const Key extends string>(
 	config: CookieLoginContextConfig<Key>
 ) {

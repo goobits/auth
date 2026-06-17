@@ -56,6 +56,7 @@ function toDrizzleRow(values: Record<string, DrizzleJson>): DrizzleRow {
 	return values
 }
 
+/** Drizzle user adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class DrizzleUserAdapter extends UserAdapter {
 	private db: DrizzleDbLike
 	private usersTable: UsersTable

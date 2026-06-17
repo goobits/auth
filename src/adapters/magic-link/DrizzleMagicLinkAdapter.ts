@@ -55,6 +55,7 @@ function mapTokenRow(row: DrizzleRow | null, columns: {
 	}
 }
 
+/** Drizzle magic link adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
 	private db: DrizzleDbLike
 	private tokensTable: TokensTable

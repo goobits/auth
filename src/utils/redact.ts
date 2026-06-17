@@ -25,6 +25,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 	)
 }
 
+/** Recursively redacts common secret-bearing keys from unknown data. */
 export function redactObject(
 	input: unknown,
 	keys: string[] = DEFAULT_REDACT_KEYS

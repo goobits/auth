@@ -23,6 +23,7 @@ export type AuthEvent = {
 
 export type AuthEventEmitter = (event: AuthEvent) => Promise<void> | void
 
+/** Creates auth event for auth security checks. */
 export function createAuthEvent(
 	input: Omit<AuthEvent, 'timestamp'>
 ): AuthEvent {

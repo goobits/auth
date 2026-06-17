@@ -11,12 +11,14 @@ import { generateRandomUUID } from '../utils/crypto.js'
 
 const DEFAULT_SESSION_TTL_MS = 24 * 60 * 60 * 1000
 
+/** Signed Session Token Claims typed model for runtime integration. */
 export type SignedSessionTokenClaims = {
 	subject: string;
 	sessionId: string;
 	expiresAt: number;
 }
 
+/** Create Signed Session Token Options typed model for runtime integration. */
 export type CreateSignedSessionTokenOptions = {
 	subject: string;
 	secret: string;
@@ -25,6 +27,7 @@ export type CreateSignedSessionTokenOptions = {
 	ttlMs?: number;
 }
 
+/** Verify Signed Session Token Options typed model for runtime integration. */
 export type VerifySignedSessionTokenOptions = {
 	secret: string;
 }

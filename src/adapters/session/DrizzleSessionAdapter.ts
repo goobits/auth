@@ -76,6 +76,7 @@ function pickSessionMetadata(metadata: Record<string, DrizzleJson>): DrizzleRow 
 	return values
 }
 
+/** Drizzle session adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class DrizzleSessionAdapter extends SessionAdapter {
 	private db: DrizzleDbLike
 	private sessionsTable: SessionsTable

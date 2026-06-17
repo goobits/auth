@@ -22,6 +22,7 @@ type WebAuthnChallengeRecord = {
 	expiresAt: Date;
 }
 
+/** Cloudflare D1 web authn adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class D1WebAuthnAdapter extends WebAuthnAdapter {
 	private db: D1DatabaseLike
 	private credentialsTable: string

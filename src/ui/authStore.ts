@@ -45,6 +45,7 @@ const mergeHeaders = (
 	...(extra || {})
 })
 
+/** Creates auth store for auth runtime. */
 export function createAuthStore(options: AuthStoreOptions = {}) {
 	const {
 		baseUrl = '',
@@ -265,6 +266,9 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 	return api
 }
 
+/** Auth registry entry for runtime integration. */
 export const auth = createAuthStore()
+/** Is Authenticated registry entry for runtime integration. */
 export const isAuthenticated = derived(auth, $auth => $auth.isAuthenticated)
+/** User registry entry for runtime integration. */
 export const user = derived(auth, $auth => $auth.user)

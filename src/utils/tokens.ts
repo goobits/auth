@@ -3,6 +3,7 @@ import { generateRandomUUID, sha256Hex } from './crypto.js'
 
 const DEFAULT_TOKEN_EXPIRATION_MS = 24 * 60 * 60 * 1000 // 24 hours
 
+/** Verification Token Types registry entry for runtime integration. */
 export const VERIFICATION_TOKEN_TYPES = {
 	EMAIL_VERIFICATION: 'email_verification',
 	PASSWORD_RESET: 'password_reset',
@@ -11,11 +12,6 @@ export const VERIFICATION_TOKEN_TYPES = {
 
 type VerificationTokenType =
 	(typeof VERIFICATION_TOKEN_TYPES)[keyof typeof VERIFICATION_TOKEN_TYPES] | string
-
-type VerificationTokenRecord<TUser = Record<string, unknown>> = {
-	token: { id: string; token: string; type: VerificationTokenType; expiresAt: Date };
-	user: TUser;
-}
 
 /**
  * Create a new single-use verification token for a user.

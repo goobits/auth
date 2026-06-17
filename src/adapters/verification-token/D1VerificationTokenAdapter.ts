@@ -22,6 +22,7 @@ function getOwnOrFallback(row: D1Row, key: string, fallback: D1Value | undefined
 	return Object.prototype.hasOwnProperty.call(row, key) ? row[key] : fallback
 }
 
+/** Cloudflare D1 verification token adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 	private db: D1DatabaseLike
 	private tokensTable: string

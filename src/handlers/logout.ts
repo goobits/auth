@@ -75,6 +75,7 @@ export function createLogoutHandler(config: {
 	}
 }
 
+/** Creates logout action for auth HTTP handlers. */
 export function createLogoutAction(config: {
 	sessionAdapter: SessionAdapter;
 	redirectAfterLogout?: string;

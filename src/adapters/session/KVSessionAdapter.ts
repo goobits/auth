@@ -31,6 +31,7 @@ function isKVSessionRecord(value: Record<string, unknown> | string | null): valu
 	)
 }
 
+/** KV session adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class KVSessionAdapter extends SessionAdapter {
 	private namespace: KVNamespaceLike
 	private sessionLifetime: number

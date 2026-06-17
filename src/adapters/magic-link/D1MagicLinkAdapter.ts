@@ -13,6 +13,7 @@ type D1DatabaseLike = {
 	};
 }
 
+/** Cloudflare D1 magic link adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class D1MagicLinkAdapter extends MagicLinkAdapter {
 	private db: D1DatabaseLike
 	private tokensTable: string

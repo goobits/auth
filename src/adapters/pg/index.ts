@@ -9,6 +9,7 @@ import { MfaAdapter } from '../mfa/MfaAdapter.js'
 import { SessionAdapter } from '../session/SessionAdapter.js'
 import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.js'
 
+/** Pg Pool Like typed model for runtime integration. */
 export type PgPoolLike = {
 	query<T extends Record<string, unknown> = Record<string, unknown>>(
 		text: string,
@@ -81,6 +82,7 @@ type MagicLinkTokenRow = {
 	user_id: string | null;
 }
 
+/** Postgres user adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class PgUserAdapter extends UserAdapter {
 	#db: PgPoolLike
 
@@ -200,6 +202,7 @@ export class PgUserAdapter extends UserAdapter {
 	}
 }
 
+/** Postgres session adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class PgSessionAdapter extends SessionAdapter {
 	#cookieDomain: string | undefined
 	#cookieName: string
@@ -340,6 +343,7 @@ export class PgSessionAdapter extends SessionAdapter {
 	}
 }
 
+/** Postgres web authn adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class PgWebAuthnAdapter extends WebAuthnAdapter {
 	#db: PgPoolLike
 
@@ -503,6 +507,7 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 	}
 }
 
+/** Postgres mfa adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class PgMfaAdapter extends MfaAdapter {
 	#db: PgPoolLike
 
@@ -596,6 +601,7 @@ export class PgMfaAdapter extends MfaAdapter {
 	}
 }
 
+/** Postgres magic link adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class PgMagicLinkAdapter extends MagicLinkAdapter {
 	#db: PgPoolLike
 
@@ -708,6 +714,7 @@ export class PgMagicLinkAdapter extends MagicLinkAdapter {
 	}
 }
 
+/** Creates pg auth adapters for auth storage. */
 export function createPgAuthAdapters(input: {
 	cookieDomain?: string;
 	cookieName: string;
@@ -723,6 +730,7 @@ export function createPgAuthAdapters(input: {
 	}
 }
 
+/** Pg Auth Schema Sql registry entry for runtime integration. */
 export const pgAuthSchemaSql = `
 CREATE TABLE IF NOT EXISTS auth_users (
 	id TEXT PRIMARY KEY,

@@ -22,6 +22,7 @@ type D1UserAdapterOptions = {
 	allowedFields?: string[];
 }
 
+/** Cloudflare D1 user adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class D1UserAdapter extends UserAdapter {
 	db: D1DatabaseLike
 	usersTable: string

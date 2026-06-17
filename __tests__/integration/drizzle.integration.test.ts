@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { DrizzleUserAdapter } from '../../src/adapters/database/DrizzleUserAdapter.ts'
+import type { DrizzleDbLike } from '../../src/adapters/drizzleTypes.ts'
 import { DrizzleTokenAdapter } from '../../src/adapters/oauth-token/DrizzleTokenAdapter.ts'
 import { DrizzleSessionAdapter } from '../../src/adapters/session/DrizzleSessionAdapter.ts'
 import {
@@ -13,7 +14,7 @@ import {
 } from '../drizzleTestKit.ts'
 
 describe('Drizzle Adapters Integration', () => {
-	let db: any
+	let db: DrizzleDbLike
 	let dispose: () => Promise<void>
 	let sessionAdapter: DrizzleSessionAdapter
 	let userAdapter: DrizzleUserAdapter

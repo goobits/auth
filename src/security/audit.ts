@@ -6,6 +6,7 @@ import {
 
 import { DEFAULT_REDACT_KEYS, redactObject } from '../utils/redact.js'
 
+/** Auth Audit Event typed model for runtime integration. */
 export type AuthAuditEvent =
 	| 'auth.success'
 	| 'auth.failure'
@@ -28,6 +29,7 @@ type AuthAuditOptions = {
 
 const defaultAuditor = createAuditLogger()
 
+/** Processes auth event for auth security checks. */
 export function auditAuthEvent(
 	event: AuthAuditEvent,
 	payload: Record<string, unknown> = {},

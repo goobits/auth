@@ -67,7 +67,7 @@ export function createCallbackHandler(config: CallbackConfig) {
 		typeof (value as { status?: unknown }).status === 'number'
 
 	return async(event: RequestEventLike) => {
-		const { params, locals, url } = event
+		const { params, locals } = event
 
 		try {
 			// Already authenticated - redirect

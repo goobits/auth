@@ -13,6 +13,7 @@ type CookiesLike = Pick<Cookies, 'set' | 'get' | 'delete'>
 
 export type CsrfStore = CsrfTokenStore
 
+/** Processes csrf token for auth security checks. */
 export async function issueCsrfToken({
 	cookies,
 	store,
@@ -62,6 +63,7 @@ export async function issueCsrfToken({
 	return token
 }
 
+/** Validates csrf request for auth security checks. */
 export async function validateCsrfRequest({
 	request,
 	cookies,

@@ -3,6 +3,7 @@ import type { ServerResponse } from 'node:http'
 
 import type { NodeCookies } from './NodeCookies.js'
 
+/** Sends fetch response for auth runtime. */
 export async function sendFetchResponse(
 	res: ServerResponse,
 	response: Response,

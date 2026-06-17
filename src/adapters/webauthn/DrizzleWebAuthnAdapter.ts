@@ -114,6 +114,7 @@ function mapCredentialRow(
 	}
 }
 
+/** Drizzle web authn adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 	private db: DrizzleDbLike
 	private credentialsTable: CredentialsTable

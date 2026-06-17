@@ -37,6 +37,7 @@ async function emitDenied(
 	)
 }
 
+/** Processes authenticated for auth security checks. */
 export function requireAuthenticated(
 	locals: AuthLocals
 ): asserts locals is AuthLocals & { user: NonNullable<AuthLocals['user']> } {
@@ -45,6 +46,7 @@ export function requireAuthenticated(
 	}
 }
 
+/** Processes auth role for auth security checks. */
 export async function requireAuthRole(
 	context: AuthorizerContext,
 	requiredAuthRoles: string[]
@@ -62,6 +64,7 @@ export async function requireAuthRole(
 	}
 }
 
+/** Processes ownership for auth security checks. */
 export async function requireOwnership(
 	context: AuthorizerContext,
 	resourceOwnerId: string | number

@@ -50,6 +50,7 @@ function normalizeOAuthTokens(value: DrizzleJson): OAuthTokens | null {
 	}
 }
 
+/** Drizzle token adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class DrizzleTokenAdapter extends TokenAdapter {
 	private db: DrizzleDbLike
 	private tokensTable: TokensTable

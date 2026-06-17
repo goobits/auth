@@ -84,8 +84,8 @@ export class CookieTokenAdapter extends TokenAdapter {
 	}
 
 	async refreshTokens(
-		userId: string,
-		provider: string
+		_userId: string,
+		_provider: string
 	): Promise<import('../../types/index.js').OAuthTokens | null> {
 		throw new Error(
 			'refreshTokens not implemented - use provider-specific refresh logic'

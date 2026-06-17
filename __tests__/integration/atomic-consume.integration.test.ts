@@ -10,13 +10,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { DrizzleMagicLinkAdapter } from '../../src/adapters/magic-link/DrizzleMagicLinkAdapter.ts'
+import type { DrizzleDbLike } from '../../src/adapters/drizzleTypes.ts'
 import {
 	createIntegrationDrizzleFixture,
 	drizzleMagicLinkTokensTable
 } from '../drizzleTestKit.ts'
 
 describe('Atomic consume — DrizzleMagicLinkAdapter', () => {
-	let db: any
+	let db: DrizzleDbLike
 	let dispose: () => Promise<void>
 	let adapter: DrizzleMagicLinkAdapter
 

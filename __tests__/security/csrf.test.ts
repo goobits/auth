@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { issueCsrfToken, MemoryCsrfStore, validateCsrfRequest } from '../../src/security/csrf.ts'
 import { createCookies } from '../testKit.ts'

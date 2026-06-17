@@ -67,12 +67,14 @@ function intToBytes(num: number): Uint8Array {
 	return bytes
 }
 
+/** Generates a base32 TOTP shared secret. */
 export function generateSecret({ length = 20 }: { length?: number } = {}): string {
 	const bytes = new Uint8Array(length)
 	crypto.getRandomValues(bytes)
 	return toBase32(bytes)
 }
 
+/** Builds an otpauth URL for authenticator apps. */
 export function createOtpAuthURL({
 	secret = '',
 	label = '',
@@ -95,6 +97,7 @@ export function createOtpAuthURL({
 	return `otpauth://totp/${ encodeURIComponent(label) }?${ params.toString() }`
 }
 
+/** Generates a TOTP token for a secret and time window. */
 export async function generateTOTP({
 	secret = '',
 	time = Date.now(),
@@ -124,6 +127,7 @@ export async function generateTOTP({
 	return otp
 }
 
+/** Verifies a TOTP token within a configurable time window. */
 export async function verifyTOTP({
 	secret = '',
 	token = '',

@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SessionAdapter } from '../src/adapters/session/SessionAdapter.ts'
 import { GoobitsAuth } from '../src/GoobitsAuth.ts'
 import type { OAuthProvider } from '../src/providers/OAuthProvider.ts'
-import type { RequestEventLike } from '../src/types/auth.ts'
 import type { Session, User } from '../src/types/index.ts'
 import { createRequestEvent } from './testKit.ts'
 

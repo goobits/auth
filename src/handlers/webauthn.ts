@@ -43,6 +43,7 @@ export type WebAuthnRegisterOptionsHandlerConfig = {
 	getUser?: (event: RequestEventLike) => User | null | Promise<User | null>;
 }
 
+/** Creates web authn register options handler for auth HTTP handlers. */
 export function createWebAuthnRegisterOptionsHandler(config: WebAuthnRegisterOptionsHandlerConfig): RequestHandler {
 	const {
 		webauthnAdapter,
@@ -116,6 +117,7 @@ export type WebAuthnRegisterVerifyHandlerConfig = {
 	onCredentialCreated?: (input: { userId: string; credentialId: string; publicKey: string }) => Promise<void> | void;
 }
 
+/** Creates web authn register verify handler for auth HTTP handlers. */
 export function createWebAuthnRegisterVerifyHandler(config: WebAuthnRegisterVerifyHandlerConfig): RequestHandler {
 	const { webauthnAdapter, rpID, origin, requireUserVerification = false, onCredentialCreated } = config
 
@@ -202,6 +204,7 @@ export type WebAuthnLoginOptionsHandlerConfig = {
 	userVerification?: GenerateAuthenticationOptionsOpts['userVerification'];
 }
 
+/** Creates web authn login options handler for auth HTTP handlers. */
 export function createWebAuthnLoginOptionsHandler(config: WebAuthnLoginOptionsHandlerConfig): RequestHandler {
 	const { webauthnAdapter, userAdapter, rpID, timeout = 60_000, userVerification = 'preferred' } = config
 
@@ -274,6 +277,7 @@ export type WebAuthnLoginVerifyHandlerConfig = {
 	onLoginMode?: OnLoginMode;
 }
 
+/** Creates web authn login verify handler for auth HTTP handlers. */
 export function createWebAuthnLoginVerifyHandler(config: WebAuthnLoginVerifyHandlerConfig): RequestHandler {
 	const {
 		webauthnAdapter,

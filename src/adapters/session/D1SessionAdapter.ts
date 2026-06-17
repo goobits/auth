@@ -48,6 +48,7 @@ type D1SessionOptions = {
 	}>;
 }
 
+/** Cloudflare D1 session adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class D1SessionAdapter extends SessionAdapter {
 	private db: D1DatabaseLike
 	private sessionsTable: string

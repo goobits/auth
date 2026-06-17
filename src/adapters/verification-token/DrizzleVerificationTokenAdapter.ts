@@ -85,6 +85,7 @@ function toUser(row: DrizzleRow | null): User | null {
 	}
 }
 
+/** Drizzle verification token adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
 	private db: DrizzleDbLike
 	private tokensTable: TokensTable

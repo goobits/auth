@@ -10,6 +10,7 @@ import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.js'
 
 type StoredUser = User & { password?: string | null }
 
+/** In-memory user adapter for local development and tests. */
 export class MemoryUserAdapter extends UserAdapter {
 	#oauthIndex = new Map<string, string>()
 	#users = new Map<string, StoredUser>()
@@ -92,6 +93,7 @@ export class MemoryUserAdapter extends UserAdapter {
 	}
 }
 
+/** In-memory session adapter with cookie helpers. */
 export class MemorySessionAdapter extends SessionAdapter {
 	#cookieDomain: string | undefined
 	#cookieName: string
@@ -188,6 +190,7 @@ export class MemorySessionAdapter extends SessionAdapter {
 	}
 }
 
+/** In-memory WebAuthn adapter for challenges and credentials. */
 export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 	#challenges = new Map<string, Record<string, unknown>>()
 	#credentials = new Map<string, WebAuthnCredential>()
@@ -300,6 +303,7 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 	}
 }
 
+/** In-memory MFA adapter for TOTP secrets and backup codes. */
 export class MemoryMfaAdapter extends MfaAdapter {
 	#backupCodes = new Map<string, Set<string>>()
 	#factors = new Map<string, { enabledAt: Date | null; secret: string }>()
@@ -354,6 +358,7 @@ export class MemoryMfaAdapter extends MfaAdapter {
 	}
 }
 
+/** Creates the default in-memory auth adapter bundle. */
 export function createMemoryAuthAdapters(input: {
 	cookieDomain?: string;
 	cookieName: string;
@@ -373,8 +378,10 @@ export function createMemoryAuthAdapters(input: {
 	}
 }
 
+/** Test user adapter backed by the memory implementation. */
 export class MockUserAdapter extends MemoryUserAdapter {}
 
+/** Test session adapter with no-op cookie writes. */
 export class MockSessionAdapter extends MemorySessionAdapter {
 	#users: MemoryUserAdapter
 
@@ -396,6 +403,7 @@ export class MockSessionAdapter extends MemorySessionAdapter {
 	deleteSessionCookie(_cookies: Cookies): void {}
 }
 
+/** Test OAuth token adapter backed by an in-memory map. */
 export class MockTokenAdapter extends TokenAdapter {
 	#tokens = new Map<string, OAuthTokens>()
 

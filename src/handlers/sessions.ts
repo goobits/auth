@@ -21,6 +21,7 @@ type SessionHandlerConfig = {
 	getSession?: (locals: AuthLocals) => Session | null;
 }
 
+/** Creates session list handler for auth HTTP handlers. */
 export function createSessionListHandler(config: SessionHandlerConfig) {
 	const {
 		sessionAdapter,
@@ -57,6 +58,7 @@ export function createSessionListHandler(config: SessionHandlerConfig) {
 	}
 }
 
+/** Creates session revoke handler for auth HTTP handlers. */
 export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 	const {
 		sessionAdapter,

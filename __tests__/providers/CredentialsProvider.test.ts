@@ -240,7 +240,7 @@ describe('CredentialsProvider', () => {
 				name: 'newuser' // Derived from email
 			})
 
-			const user = await provider.signUp({
+			await provider.signUp({
 				email,
 				password,
 				userAdapter: mockUserAdapter

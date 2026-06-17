@@ -92,6 +92,7 @@ function getClientIp(
 	return 'unknown'
 }
 
+/** Processes security policy for auth security checks. */
 export function applySecurityPolicy({
 	handler,
 	routeId,

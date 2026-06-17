@@ -1,6 +1,8 @@
 import { randomUUID } from 'crypto'
 import { pgTable, serial, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 
+import type { DrizzleDbLike } from '../src/adapters/drizzleTypes.ts'
+
 export const drizzleUsersTable = pgTable('users', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	email: text('email').notNull().unique(),
@@ -62,7 +64,7 @@ export function createMockDrizzleDb() {
 }
 
 type IntegrationDbFixture = {
-	db: any
+	db: DrizzleDbLike
 	dispose: () => Promise<void>
 }
 
@@ -99,7 +101,7 @@ export async function createIntegrationDrizzleFixture(): Promise<IntegrationDbFi
 		)`
 
 		return {
-			db,
+			db: db as DrizzleDbLike,
 			dispose: async() => {
 				await client.end({ timeout: 5 })
 			}
@@ -184,7 +186,7 @@ export async function createIntegrationDrizzleFixture(): Promise<IntegrationDbFi
 	})
 
 	return {
-		db,
+		db: db as DrizzleDbLike,
 		dispose: async() => {}
 	}
 }

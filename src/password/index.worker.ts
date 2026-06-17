@@ -10,6 +10,7 @@ const DEFAULTS = {
 	saltLength: 16
 } as const
 
+/** Hashes password for auth runtime. */
 export async function hashPassword(password: string): Promise<string> {
 	if (!password || typeof password !== 'string') {
 		throw new Error('Password must be a non-empty string')
@@ -29,6 +30,7 @@ export async function hashPassword(password: string): Promise<string> {
 	})
 }
 
+/** Verifies password for auth runtime. */
 export async function verifyPassword(storedHash: string, password: string): Promise<boolean> {
 	if (!storedHash || !password) return false
 	try {
@@ -43,6 +45,7 @@ export async function verifyPassword(storedHash: string, password: string): Prom
 	}
 }
 
+/** Validates password strength for auth runtime. */
 export function validatePasswordStrength(password: string): {
 	valid: boolean;
 	errors: string[];

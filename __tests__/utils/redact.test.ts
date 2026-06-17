@@ -8,6 +8,16 @@ type RedactedOutput = {
 	ok: boolean;
 }
 
+type SensitiveRedactedOutput = {
+	api_key: string;
+	apiKey: string;
+	client_secret: string;
+	clientSecret: string;
+	verification_token: string;
+	totp: string;
+	passphrase: string;
+}
+
 describe('redactObject', () => {
 	it('redacts nested sensitive keys case-insensitively', () => {
 		const input = {
@@ -35,7 +45,7 @@ describe('redactObject', () => {
 			totp: '123456',
 			passphrase: 'correct horse battery staple'
 		}
-		const output = redactObject(input) as any
+		const output = redactObject(input) as SensitiveRedactedOutput
 		expect(output.api_key).toBe('[redacted]')
 		expect(output.apiKey).toBe('[redacted]')
 		expect(output.client_secret).toBe('[redacted]')

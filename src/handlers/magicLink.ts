@@ -117,6 +117,7 @@ function getRateLimitKey(event: RequestEventLike, config: RateLimitKeyConfig): s
 	return 'unknown'
 }
 
+/** Creates magic link request handler for auth HTTP handlers. */
 export function createMagicLinkRequestHandler(
 	config: MagicLinkRequestConfig
 ): RequestHandler {
@@ -218,6 +219,7 @@ export function createMagicLinkRequestHandler(
 	}
 }
 
+/** Creates magic link verify handler for auth HTTP handlers. */
 export function createMagicLinkVerifyHandler(
 	config: MagicLinkVerifyConfig
 ) {

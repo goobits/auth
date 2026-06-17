@@ -24,6 +24,7 @@ type RateLimitConfig = {
 	trustProxyHeader?: boolean;
 }
 
+/** Creates password reset request handler for auth HTTP handlers. */
 export function createPasswordResetRequestHandler(config: {
 	userAdapter: { getUserByEmail: (email: string) => Promise<User | null> };
 	verificationTokenAdapter: VerificationTokenAdapter;

@@ -18,12 +18,14 @@ type AuthHandlersBundle = {
 
 type AuthRoleResolver = (user: User) => string[]
 
+/** Route paths used by the SvelteKit auth integration. */
 export type GoobitsAuthRoutingConfig = {
 	basePath?: string;
 	signInPath?: string;
 	signOutPath?: string;
 }
 
+/** Configuration for the high-level Goobits auth facade. */
 export type GoobitsAuthConfig = Omit<AuthConfig, 'adapters'> & {
 	adapter: AuthConfig['adapters'];
 	routing?: GoobitsAuthRoutingConfig;
@@ -80,6 +82,7 @@ function resolveUserAuthRoles(user: User): string[] {
 	return Array.from(new Set(authRoles))
 }
 
+/** High-level SvelteKit auth facade with handlers, hooks, and role guards. */
 export class GoobitsAuth {
 	private readonly core: CoreAuth
 	private readonly routing: Required<GoobitsAuthRoutingConfig>
@@ -339,4 +342,5 @@ export class GoobitsAuth {
 	}
 }
 
+/** Auth typed model for runtime integration. */
 export type Auth = GoobitsAuth
