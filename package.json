@@ -194,7 +194,7 @@
   },
   "dependencies": {
     "@oslojs/encoding": "^1.1.0",
-    "@simplewebauthn/server": "^13.3.0",
+    "@simplewebauthn/server": "^13.3.1",
     "arctic": "^3.7.0",
     "hash-wasm": "^4.12.0",
     "zod": "^4.4.3"
@@ -203,15 +203,15 @@
     "@node-rs/argon2": "^2.0.2"
   },
   "devDependencies": {
-    "@sveltejs/kit": "^2.60.1",
-    "@types/node": "^25.8.0",
+    "@sveltejs/kit": "^2.66.0",
+    "@types/node": "^26.0.0",
     "pg-mem": "^3.0.14",
+    "pg-server": "^0.1.8",
     "postgres": "^3.4.9",
-    "svelte": "^5.0.0",
+    "svelte": "^5.56.3",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.6",
-    "pg-server": "^0.1.8"
+    "vitest": "^4.1.9"
   },
   "engines": {
     "node": ">=20.0.0"
