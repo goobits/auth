@@ -138,6 +138,7 @@ export type SessionsConfig = {
 
 export type SecurityProfile = 'basic' | 'secure' | 'strict'
 export type SecurityMode = 'required' | 'optional' | 'off'
+export type TrustedProxyHeader = 'cf-connecting-ip' | 'x-forwarded-for'
 
 export type AuthSecurityConfig = {
 	csrf?: {
@@ -153,6 +154,7 @@ export type AuthSecurityConfig = {
 		windowMs?: number;
 		keyPrefix?: string;
 		trustProxyHeader?: boolean;
+		trustedProxyHeaders?: TrustedProxyHeader[];
 		store?: RateLimitStore;
 	};
 	audit?: {

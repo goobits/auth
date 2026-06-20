@@ -14,7 +14,8 @@ import type {
 	AuthConfig,
 	AuthHandlers,
 	AuthSecurityConfig,
-	SecurityProfile
+	SecurityProfile,
+	TrustedProxyHeader
 } from '../types/auth.js'
 
 export type ResolvedSecurity = SecurityPolicySettings & {
@@ -51,6 +52,23 @@ const PROFILE_DEFAULTS: Record<SecurityProfile, AuthSecurityConfig> = {
 		audit: { mode: 'required' },
 		alerts: { enabled: true }
 	}
+}
+
+const TRUSTED_PROXY_HEADERS = new Set<TrustedProxyHeader>([
+	'cf-connecting-ip',
+	'x-forwarded-for'
+])
+
+function resolveTrustedProxyHeaders(
+	rateLimit: AuthSecurityConfig['rateLimit']
+): TrustedProxyHeader[] {
+	const explicitHeaders = rateLimit?.trustedProxyHeaders
+	if (explicitHeaders && explicitHeaders.length > 0) {
+		return Array.from(
+			new Set(explicitHeaders.filter(header => TRUSTED_PROXY_HEADERS.has(header)))
+		)
+	}
+	return rateLimit?.trustProxyHeader === true ? ['x-forwarded-for'] : []
 }
 
 export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
@@ -104,6 +122,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			windowMs: merged.rateLimit?.windowMs ?? 60_000,
 			keyPrefix: merged.rateLimit?.keyPrefix ?? 'auth',
 			trustProxyHeader: merged.rateLimit?.trustProxyHeader ?? false,
+			trustedProxyHeaders: resolveTrustedProxyHeaders(merged.rateLimit),
 			...(merged.rateLimit?.store ? { store: merged.rateLimit.store } : {})
 		},
 		audit: {

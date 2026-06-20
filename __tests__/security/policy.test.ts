@@ -46,7 +46,8 @@ describe('security policy wrapper', () => {
 					max: 10,
 					windowMs: 60_000,
 					keyPrefix: 'test',
-					trustProxyHeader: false
+					trustProxyHeader: false,
+					trustedProxyHeaders: []
 				},
 				audit: { mode: 'off' },
 				routes: {}
@@ -76,7 +77,8 @@ describe('security policy wrapper', () => {
 					max: 1,
 					windowMs: 60_000,
 					keyPrefix: 'test',
-					trustProxyHeader: false
+					trustProxyHeader: false,
+					trustedProxyHeaders: []
 				},
 				audit: { mode: 'off' },
 				routes: {}
@@ -114,7 +116,8 @@ describe('security policy wrapper', () => {
 					max: 1,
 					windowMs: 60_000,
 					keyPrefix: 'test-forwarded',
-					trustProxyHeader: true
+					trustProxyHeader: true,
+					trustedProxyHeaders: ['x-forwarded-for']
 				},
 				audit: { mode: 'off' },
 				routes: {}
@@ -142,5 +145,101 @@ describe('security policy wrapper', () => {
 		expect(first.status).toBe(200)
 		expect(secondSameForwardedIp.status).toBe(429)
 		expect(thirdDifferentForwardedIp.status).toBe(200)
+	})
+
+	it('uses the Cloudflare connecting ip when explicitly trusted', async() => {
+		const handler = applySecurityPolicy({
+			handler: async() => new Response(JSON.stringify({ ok: true })),
+			routeId: 'magic.request',
+			settings: {
+				csrf: {
+					mode: 'off',
+					cookieName: 'csrf-token',
+					headerName: 'x-csrf-token',
+					checkExpiry: false
+				},
+				rateLimit: {
+					mode: 'required',
+					max: 1,
+					windowMs: 60_000,
+					keyPrefix: 'test-cloudflare',
+					trustProxyHeader: false,
+					trustedProxyHeaders: ['cf-connecting-ip']
+				},
+				audit: { mode: 'off' },
+				routes: {}
+			}
+		})
+		const first = await handler(
+			createEvent({
+				headers: {
+					'cf-connecting-ip': '198.51.100.10',
+					'x-forwarded-for': '203.0.113.10, 10.0.0.2'
+				},
+				clientAddress: '10.0.0.1'
+			}) as Parameters<typeof handler>[0]
+		)
+		const secondSameCloudflareIp = await handler(
+			createEvent({
+				headers: {
+					'cf-connecting-ip': '198.51.100.10',
+					'x-forwarded-for': '203.0.113.11, 10.0.0.3'
+				},
+				clientAddress: '10.0.0.99'
+			}) as Parameters<typeof handler>[0]
+		)
+		const thirdDifferentCloudflareIp = await handler(
+			createEvent({
+				headers: {
+					'cf-connecting-ip': '198.51.100.11',
+					'x-forwarded-for': '203.0.113.10'
+				},
+				clientAddress: '10.0.0.1'
+			}) as Parameters<typeof handler>[0]
+		)
+
+		expect(first.status).toBe(200)
+		expect(secondSameCloudflareIp.status).toBe(429)
+		expect(thirdDifferentCloudflareIp.status).toBe(200)
+	})
+
+	it('ignores untrusted forwarded headers', async() => {
+		const handler = applySecurityPolicy({
+			handler: async() => new Response(JSON.stringify({ ok: true })),
+			routeId: 'magic.request',
+			settings: {
+				csrf: {
+					mode: 'off',
+					cookieName: 'csrf-token',
+					headerName: 'x-csrf-token',
+					checkExpiry: false
+				},
+				rateLimit: {
+					mode: 'required',
+					max: 1,
+					windowMs: 60_000,
+					keyPrefix: 'test-untrusted-forwarded',
+					trustProxyHeader: false,
+					trustedProxyHeaders: ['cf-connecting-ip']
+				},
+				audit: { mode: 'off' },
+				routes: {}
+			}
+		})
+		const first = await handler(
+			createEvent({
+				headers: { 'x-forwarded-for': '203.0.113.10, 10.0.0.2' },
+				clientAddress: '10.0.0.1'
+			}) as Parameters<typeof handler>[0]
+		)
+		const secondSameForwardedIp = await handler(
+			createEvent({
+				headers: { 'x-forwarded-for': '203.0.113.10, 10.0.0.3' },
+				clientAddress: '10.0.0.99'
+			}) as Parameters<typeof handler>[0]
+		)
+
+		expect(first.status).toBe(200)
+		expect(secondSameForwardedIp.status).toBe(200)
 	})
 })

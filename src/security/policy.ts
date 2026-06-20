@@ -1,6 +1,6 @@
 import type { RequestHandler } from '@sveltejs/kit'
 
-import type { RequestEventLike } from '../types/auth.js'
+import type { RequestEventLike, TrustedProxyHeader } from '../types/auth.js'
 import type { CsrfStore } from './csrf.js'
 import { validateCsrfRequest } from './csrf.js'
 import { type AuthEventEmitter, createAuthEvent } from './events.js'
@@ -48,6 +48,7 @@ export type SecurityPolicySettings = {
 		windowMs: number;
 		keyPrefix: string;
 		trustProxyHeader: boolean;
+		trustedProxyHeaders: readonly TrustedProxyHeader[];
 		store?: RateLimitStore;
 	};
 	audit: {
@@ -70,11 +71,24 @@ function jsonError(status: number, message: string): Response {
 	})
 }
 
-function getClientIp(event: RequestEventLike, trustProxyHeader: boolean): string {
-	if (trustProxyHeader) {
-		const forwardedFor = event.request.headers.get('x-forwarded-for')
-		const firstForwardedIp = forwardedFor?.split(',')[0]?.trim()
-		if (firstForwardedIp) return firstForwardedIp
+function getFirstHeaderIp(value: string | null): string | null {
+	const firstIp = value?.split(',')[0]?.trim()
+	return firstIp || null
+}
+
+function getClientIp(
+	event: RequestEventLike,
+	trustedProxyHeaders: readonly TrustedProxyHeader[]
+): string {
+	for (const header of trustedProxyHeaders) {
+		if (header === 'cf-connecting-ip') {
+			const cloudflareIp = event.request.headers.get('cf-connecting-ip')?.trim()
+			if (cloudflareIp) return cloudflareIp
+		}
+		if (header === 'x-forwarded-for') {
+			const forwardedIp = getFirstHeaderIp(event.request.headers.get('x-forwarded-for'))
+			if (forwardedIp) return forwardedIp
+		}
 	}
 	if (event.getClientAddress) return event.getClientAddress()
 	return 'unknown'
@@ -98,7 +112,7 @@ export function applySecurityPolicy({
 		const csrfMode = routePolicy.csrf ?? settings.csrf.mode
 		const rateMode = routePolicy.rateLimit ?? settings.rateLimit.mode
 		const auditMode = routePolicy.audit ?? settings.audit.mode
-		const ip = getClientIp(event, settings.rateLimit.trustProxyHeader)
+		const ip = getClientIp(event, settings.rateLimit.trustedProxyHeaders)
 
 		const emit = async(
 			name: Parameters<typeof createAuthEvent>[0]['name'],
