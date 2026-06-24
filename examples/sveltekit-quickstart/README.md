@@ -10,7 +10,7 @@ package first, then install it into a SvelteKit app:
 cd ../../
 pnpm pack
 cd examples/sveltekit-quickstart
-pnpm add ../../goobits-auth-0.2.0.tgz
+pnpm add ../../goobits-auth-*.tgz
 ```
 
 The important files are:

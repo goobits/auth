@@ -1,5 +1,20 @@
 # Changelog
 
+<!-- CHANGELOG audit cutoff: 2026-06-24. commit 9037d71 on main. -->
+
+## [Unreleased]
+
+### 🔒 Security
+
+- 👤 Trusted proxy headers now require explicit trusted-header configuration before forwarded client IPs are accepted.
+- 👤 OAuth routes no longer use the global OAuth POST fallback, and redirect endpoints enforce safer request paths.
+- 👤 Auth error logging now avoids raw exception objects so sensitive provider, password, and token details are not emitted.
+
+### 🏠 Internal
+
+- 📚 Public API docs now describe the curated package entrypoints and low-level subpaths.
+- 📦 Development dependencies refreshed for the current package toolchain.
+
 ## 0.2.0
 
 - Added the class-first `GoobitsAuth` API.
