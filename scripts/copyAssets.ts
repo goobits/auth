@@ -37,15 +37,13 @@ async function copyDirFiltered({ srcDir, patterns, outSubdir }) {
 }
 
 // Convert the TypeScript barrel at src/ui/index.ts into a runtime-loadable
-// barrel: keep raw .svelte imports (loaders process them downstream) and
-// rewrite the .js extension to point at the emitted auth-store output.
+// barrel: keep raw .svelte imports and point the store export at emitted JS.
 async function buildUiBarrelFromSource() {
 	const source = await readFile(join(root, 'src', 'ui', 'index.ts'), 'utf8')
 
-	// No transformation needed today — .svelte imports stay raw and the
-	// .js import already matches the emitted output filename. Strip any
-	// TypeScript-only `type` re-exports if they're ever added later.
-	return source.replace(/^export type .*;\n/gm, '')
+	return source
+		.replace('./authStore.ts', './authStore.js')
+		.replace(/^export type .*;\n/gm, '')
 }
 
 for (const dir of ASSET_DIRS) {

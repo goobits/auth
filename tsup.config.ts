@@ -43,7 +43,7 @@ const commonEntries = [
 	'src/types/index.ts',
 	'src/testing/index.ts',
 	'src/mfa/index.ts',
-	'src/ui/auth-store.ts',
+	'src/ui/authStore.ts',
 	'src/security/index.ts',
 	'src/errors/index.ts'
 ]
