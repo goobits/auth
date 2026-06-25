@@ -96,8 +96,10 @@ function createMockDb() {
 						return { meta: insert('oauth_tokens', { user_id, provider, tokens }) }
 					}
 					if (sql.startsWith('INSERT INTO verification_tokens')) {
-						const [ id, user_id, type, token, expires_at ] = bound
-						return { meta: insert('verification_tokens', { id, user_id, type, token, expires_at }) }
+						const [ id, user_id, type, token, expires_at, created_at ] = bound
+						const row: TableRow = { id, user_id, type, token, expires_at }
+						if (sql.includes('created_at')) row.created_at = created_at
+						return { meta: insert('verification_tokens', row) }
 					}
 					if (sql.startsWith('DELETE FROM verification_tokens')) {
 						if (sql.includes('id = ?')) {
@@ -156,6 +158,9 @@ function createMockDb() {
 								token_type: vt.type,
 								verification_token: vt.token,
 								token_expires_at: vt.expires_at,
+								...(sql.includes(' AS token_created_at')
+									? { token_created_at: vt.created_at }
+									: {}),
 								user_id: user?.id,
 								user_email: user?.email,
 								user_name: user?.name,
@@ -212,6 +217,29 @@ describe('D1 adapters', () => {
 		await tokens.create({ userId: user.id, type: 'email_verification', token: 't', expiresAt: new Date(Date.now() + 1000) })
 		const record = await tokens.findByToken({ token: 't', type: 'email_verification' })
 		expect(record?.user?.email).toBe('c@d.com')
+	})
+
+	it('supports verification token tables with required created_at columns', async() => {
+		const db = createMockDb()
+		const userAdapter = new D1UserAdapter(db)
+		const user = await userAdapter.createUser({ email: 'created@example.com', name: 'Created' })
+		const tokens = new D1VerificationTokenAdapter(db, {
+			columns: { createdAt: 'created_at' }
+		})
+
+		await tokens.create({
+			userId: user.id,
+			type: 'email_verification',
+			token: 'created-token',
+			expiresAt: new Date(Date.now() + 1000)
+		})
+		const record = await tokens.findByToken({
+			token: 'created-token',
+			type: 'email_verification'
+		})
+
+		expect(record?.token.createdAt).toBeInstanceOf(Date)
+		expect(record?.token.createdAt.getTime()).toBeGreaterThan(0)
 	})
 
 	it('keeps D1 verification token and user ids distinct', async() => {

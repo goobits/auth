@@ -22,6 +22,19 @@ function getOwnOrFallback(row: D1Row, key: string, fallback: D1Value | undefined
 	return Object.prototype.hasOwnProperty.call(row, key) ? row[key] : fallback
 }
 
+function coerceTokenDate(value: D1Value | undefined): Date | null {
+	if (typeof value === 'number') {
+		const date = new Date(value * 1000)
+		return Number.isNaN(date.getTime()) ? null : date
+	}
+	if (typeof value === 'string') {
+		const normalized = /^\d+$/.test(value) ? Number(value) * 1000 : value
+		const date = new Date(normalized)
+		return Number.isNaN(date.getTime()) ? null : date
+	}
+	return null
+}
+
 /** Cloudflare D1 verification token adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 	private db: D1DatabaseLike
@@ -33,6 +46,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		type: string;
 		token: string;
 		expiresAt: string;
+		createdAt?: string;
 	}
 	private userColumns: {
 		id: string;
@@ -61,6 +75,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 			token: options.columns?.['token'] || 'token',
 			expiresAt: options.columns?.['expiresAt'] || 'expires_at'
 		}
+		if (options.columns?.['createdAt']) this.columns.createdAt = options.columns['createdAt']
 		this.userColumns = {
 			id: options.userColumns?.['id'] || 'id',
 			email: options.userColumns?.['email'] || 'email',
@@ -80,6 +95,9 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		const type = row['token_type'] ?? row[this.columns.type]
 		const token = row['verification_token'] ?? row[this.columns.token]
 		const expiresAt = row['token_expires_at'] ?? row[this.columns.expiresAt]
+		const createdAt = row['token_created_at'] ?? (
+			this.columns.createdAt ? row[this.columns.createdAt] : null
+		)
 		const userId = row['user_id'] ?? row[this.userColumns.id] ?? tokenUserId
 		const email = row['user_email'] ?? row[this.userColumns.email]
 		const name = row['user_name'] ?? row[this.userColumns.name]
@@ -99,13 +117,14 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		}
 		const expiresAtDate = new Date(expiresAt)
 		if (Number.isNaN(expiresAtDate.getTime())) return null
+		const createdAtDate = coerceTokenDate(createdAt) ?? new Date()
 		const tokenRecord: VerificationToken = {
 			id: String(tokenId),
 			userId: String(tokenUserId),
 			type,
 			token,
 			expiresAt: expiresAtDate,
-			createdAt: new Date()
+			createdAt: createdAtDate
 		}
 		const user: User = {
 			id: String(userId),
@@ -128,24 +147,39 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		token: string;
 		expiresAt: Date;
 	}) {
+		const columns = [
+			this.columns.id,
+			this.columns.userId,
+			this.columns.type,
+			this.columns.token,
+			this.columns.expiresAt
+		]
+		const values: D1Value[] = [
+			crypto.randomUUID(),
+			this.coerceDbId(userId),
+			type,
+			token,
+			expiresAt.toISOString()
+		]
+		if (this.columns.createdAt) {
+			columns.push(this.columns.createdAt)
+			values.push(Math.floor(Date.now() / 1000))
+		}
 		await this.db
 			.prepare(
-				`INSERT INTO ${ this.tokensTable } (${ this.columns.id }, ${ this.columns.userId }, ${ this.columns.type }, ${ this.columns.token }, ${ this.columns.expiresAt }) VALUES (?, ?, ?, ?, ?)`
+				`INSERT INTO ${ this.tokensTable } (${ columns.join(', ') }) VALUES (${ columns.map(() => '?').join(', ') })`
 			)
-			.bind(
-				crypto.randomUUID(),
-				this.coerceDbId(userId),
-				type,
-				token,
-				expiresAt.toISOString()
-			)
+			.bind(...values)
 			.run()
 	}
 
 	async findByToken({ token, type }: { token: string; type: string }): Promise<TokenUserRecord | null> {
+		const createdAtSelect = this.columns.createdAt
+			? `, t.${ this.columns.createdAt } AS token_created_at`
+			: ''
 		const row = await this.db
 			.prepare(
-				`SELECT t.${ this.columns.id } AS token_id, t.${ this.columns.userId } AS token_user_id, t.${ this.columns.type } AS token_type, t.${ this.columns.token } AS verification_token, t.${ this.columns.expiresAt } AS token_expires_at, u.${ this.userColumns.id } AS user_id, u.${ this.userColumns.email } AS user_email, u.${ this.userColumns.name } AS user_name, u.${ this.userColumns.avatar } AS user_avatar FROM ${ this.tokensTable } t JOIN ${ this.usersTable } u ON t.${ this.columns.userId } = u.${ this.userColumns.id } WHERE t.${ this.columns.token } = ? AND t.${ this.columns.type } = ? LIMIT 1`
+				`SELECT t.${ this.columns.id } AS token_id, t.${ this.columns.userId } AS token_user_id, t.${ this.columns.type } AS token_type, t.${ this.columns.token } AS verification_token, t.${ this.columns.expiresAt } AS token_expires_at${ createdAtSelect }, u.${ this.userColumns.id } AS user_id, u.${ this.userColumns.email } AS user_email, u.${ this.userColumns.name } AS user_name, u.${ this.userColumns.avatar } AS user_avatar FROM ${ this.tokensTable } t JOIN ${ this.usersTable } u ON t.${ this.columns.userId } = u.${ this.userColumns.id } WHERE t.${ this.columns.token } = ? AND t.${ this.columns.type } = ? LIMIT 1`
 			)
 			.bind(token, type)
 			.first()
@@ -200,6 +234,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 			token_type: deletedRow[this.columns.type] ?? null,
 			verification_token: deletedRow[this.columns.token] ?? null,
 			token_expires_at: deletedRow[this.columns.expiresAt] ?? null,
+			token_created_at: this.columns.createdAt ? deletedRow[this.columns.createdAt] ?? null : null,
 			user_id: userRow?.[this.userColumns.id] ?? userId,
 			user_email: userRow?.[this.userColumns.email] ?? null,
 			user_name: userRow?.[this.userColumns.name] ?? null,
