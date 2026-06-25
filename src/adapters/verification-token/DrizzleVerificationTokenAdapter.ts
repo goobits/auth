@@ -1,14 +1,14 @@
 import { and, eq } from 'drizzle-orm'
 
-import type { User, VerificationToken } from '../../types/index.js'
+import type { User, VerificationToken } from '../../types/index.ts'
 import {
 	type DrizzleDbLike,
 	type DrizzleRow,
 	type DrizzleTable,
 	requireColumn,
 	requireCondition
-} from '../drizzleTypes.js'
-import { VerificationTokenAdapter } from './VerificationTokenAdapter.js'
+} from '../drizzleTypes.ts'
+import { VerificationTokenAdapter } from './VerificationTokenAdapter.ts'
 
 type TokensTable = DrizzleTable & {
 	id: DrizzleTable[string];

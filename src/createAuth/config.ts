@@ -1,4 +1,4 @@
-import type { AuthConfig, AuthLocals } from '../types/auth.js'
+import type { AuthConfig, AuthLocals } from '../types/auth.ts'
 
 export type ResolvedDefaults = {
 	urlConfig: {

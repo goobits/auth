@@ -1,8 +1,8 @@
 import { Google } from 'arctic'
 
-import type { OAuthProfile, OAuthTokens } from '../types/index.js'
-import { getLogger } from '../utils/logger.js'
-import { OAuthProvider } from './OAuthProvider.js'
+import type { OAuthProfile, OAuthTokens } from '../types/index.ts'
+import { getLogger } from '../utils/logger.ts'
+import { OAuthProvider } from './OAuthProvider.ts'
 
 type GoogleProviderConfig = {
 	clientId: string;

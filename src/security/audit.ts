@@ -4,7 +4,7 @@ import {
 	type AuditOutcome
 } from '@goobits/security/audit'
 
-import { DEFAULT_REDACT_KEYS, redactObject } from '../utils/redact.js'
+import { DEFAULT_REDACT_KEYS, redactObject } from '../utils/redact.ts'
 
 /** Auth Audit Event typed model for runtime integration. */
 export type AuthAuditEvent =

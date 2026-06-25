@@ -9,16 +9,16 @@ import {
 } from '@simplewebauthn/server'
 import { redirect, type RequestHandler } from '@sveltejs/kit'
 
-import type { SessionAdapter } from '../adapters/session/SessionAdapter.js'
-import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.js'
-import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.js'
-import { auditAuthEvent } from '../security/audit.js'
-import type { AuthHooks, OnLoginMode, RequestEventLike } from '../types/auth.js'
-import type { User } from '../types/index.js'
-import { generateRandomUUID } from '../utils/crypto.js'
-import { jsonResponse, parseRequestDataWithSchema } from '../utils/http.js'
-import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.js'
-import { ensureSessionAfterLogin } from './sessionLifecycle.js'
+import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
+import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
+import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
+import { auditAuthEvent } from '../security/audit.ts'
+import type { AuthHooks, OnLoginMode, RequestEventLike } from '../types/auth.ts'
+import type { User } from '../types/index.ts'
+import { generateRandomUUID } from '../utils/crypto.ts'
+import { jsonResponse, parseRequestDataWithSchema } from '../utils/http.ts'
+import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
+import { ensureSessionAfterLogin } from './sessionLifecycle.ts'
 import {
 	credentialDescriptorFromRecord,
 	encodeCredential,
@@ -29,7 +29,7 @@ import {
 	toChallengeRecord,
 	toCredentialRecord,
 	toUint8Array
-} from './webauthnUtils.js'
+} from './webauthnUtils.ts'
 
 export type WebAuthnRegisterOptionsHandlerConfig = {
 	webauthnAdapter: Pick<WebAuthnAdapter, 'listCredentials' | 'createChallenge'>;

@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 
-import type { MagicLinkToken } from '../../types/index.js'
+import type { MagicLinkToken } from '../../types/index.ts'
 import {
 	type DrizzleDbLike,
 	type DrizzleJson,
@@ -8,8 +8,8 @@ import {
 	type DrizzleTable,
 	requireColumn,
 	requireCondition
-} from '../drizzleTypes.js'
-import { MagicLinkAdapter } from './MagicLinkAdapter.js'
+} from '../drizzleTypes.ts'
+import { MagicLinkAdapter } from './MagicLinkAdapter.ts'
 
 type TokensTable = DrizzleTable
 

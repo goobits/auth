@@ -1,25 +1,25 @@
 import type { RequestEvent, RequestHandler } from '@sveltejs/kit'
 
-import type { UserAdapter } from '../adapters/database/UserAdapter.js'
-import type { MagicLinkAdapter } from '../adapters/magic-link/MagicLinkAdapter.js'
-import type { MfaAdapter } from '../adapters/mfa/MfaAdapter.js'
-import type { TokenAdapter } from '../adapters/oauth-token/TokenAdapter.js'
-import type { SessionAdapter } from '../adapters/session/SessionAdapter.js'
-import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.js'
-import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.js'
-import type { OAuthProvider } from '../providers/OAuthProvider.js'
+import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
+import type { MagicLinkAdapter } from '../adapters/magic-link/MagicLinkAdapter.ts'
+import type { MfaAdapter } from '../adapters/mfa/MfaAdapter.ts'
+import type { TokenAdapter } from '../adapters/oauth-token/TokenAdapter.ts'
+import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
+import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.ts'
+import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
+import type { OAuthProvider } from '../providers/OAuthProvider.ts'
 import type { WebhookChannelOptions } from '@goobits/security/alerting'
-import type { SecurityAlertHandler } from '../security/alerts.js'
-import type { AuthEventEmitter } from '../security/events.js'
+import type { SecurityAlertHandler } from '../security/alerts.ts'
+import type { AuthEventEmitter } from '../security/events.ts'
 import type { RateLimitStore } from '@goobits/security/rate-limit'
-import type { Logger } from '../utils/logger.js'
+import type { Logger } from '../utils/logger.ts'
 import type {
 	OAuthProfile,
 	OAuthTokens,
 	Session,
 	SessionSummary,
 	User
-} from './core.js'
+} from './core.ts'
 
 /** Defines auth locals options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthLocals = {

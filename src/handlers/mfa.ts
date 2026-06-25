@@ -1,6 +1,6 @@
-import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../mfa/backupCodes.js'
-import { createOtpAuthURL, generateSecret, verifyTOTP } from '../mfa/totp.js'
-import type { RequestEventLike } from '../types/auth.js'
+import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../mfa/backupCodes.ts'
+import { createOtpAuthURL, generateSecret, verifyTOTP } from '../mfa/totp.ts'
+import type { RequestEventLike } from '../types/auth.ts'
 
 /** Mfa Store typed model for runtime integration. */
 export type MfaStore = {

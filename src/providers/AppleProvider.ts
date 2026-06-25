@@ -2,9 +2,9 @@ import { decodeBase64IgnorePadding } from '@oslojs/encoding'
 import { base64UrlToBytes, bytesToText } from '@goobits/security/crypto'
 import { Apple } from 'arctic'
 
-import type { OAuthProfile, OAuthTokens } from '../types/index.js'
-import { getLogger } from '../utils/logger.js'
-import { OAuthProvider } from './OAuthProvider.js'
+import type { OAuthProfile, OAuthTokens } from '../types/index.ts'
+import { getLogger } from '../utils/logger.ts'
+import { OAuthProvider } from './OAuthProvider.ts'
 
 type AppleProviderConfig = {
 	clientId: string;

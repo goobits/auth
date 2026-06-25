@@ -1,22 +1,22 @@
-import { createCallbackHandler } from '../handlers/callback.js'
-import { createLoginHandler } from '../handlers/login.js'
-import { createLogoutHandler } from '../handlers/logout.js'
+import { createCallbackHandler } from '../handlers/callback.ts'
+import { createLoginHandler } from '../handlers/login.ts'
+import { createLogoutHandler } from '../handlers/logout.ts'
 import {
 	createMagicLinkRequestHandler,
 	createMagicLinkVerifyHandler
-} from '../handlers/magicLink.js'
+} from '../handlers/magicLink.ts'
 import {
 	createMfaBackupCodeHandler,
 	createMfaDisableHandler,
 	createMfaEnrollHandler,
 	createMfaStatusHandler,
 	createMfaVerifyHandler
-} from '../handlers/mfa.js'
-import { ensureSessionAfterLogin } from '../handlers/sessionLifecycle.js'
+} from '../handlers/mfa.ts'
+import { ensureSessionAfterLogin } from '../handlers/sessionLifecycle.ts'
 import {
 	createSessionListHandler,
 	createSessionRevokeHandler
-} from '../handlers/sessions.js'
+} from '../handlers/sessions.ts'
 import {
 	createWebAuthnLoginOptionsHandler,
 	createWebAuthnLoginVerifyHandler,
@@ -26,8 +26,8 @@ import {
 	type WebAuthnLoginVerifyHandlerConfig,
 	type WebAuthnRegisterOptionsHandlerConfig,
 	type WebAuthnRegisterVerifyHandlerConfig
-} from '../handlers/webauthn.js'
-import { issueCsrfToken } from '../security/csrf.js'
+} from '../handlers/webauthn.ts'
+import { issueCsrfToken } from '../security/csrf.ts'
 import type {
 	AuthConfig,
 	AuthHandlers,
@@ -38,11 +38,11 @@ import type {
 	OAuthProviderConfig,
 	OnLoginMode,
 	RequestEventLike
-} from '../types/auth.js'
-import type { User } from '../types/index.js'
-import { jsonResponse } from '../utils/http.js'
-import type { ResolvedDefaults } from './config.js'
-import type { ResolvedSecurity } from './securitySetup.js'
+} from '../types/auth.ts'
+import type { User } from '../types/index.ts'
+import { jsonResponse } from '../utils/http.ts'
+import type { ResolvedDefaults } from './config.ts'
+import type { ResolvedSecurity } from './securitySetup.ts'
 
 function resolveOnLoginUserId(
 	hookResult: AuthLoginResult,

@@ -1,15 +1,15 @@
 import { redirect, type Actions, type RequestHandler } from '@sveltejs/kit'
 
-import type { SessionAdapter } from '../adapters/session/SessionAdapter.js'
-import type { AuthLocals, RequestEventLike } from '../types/auth.js'
-import { getLogger } from '../utils/logger.js'
-import { isSafeRedirectPath } from '../utils/redirect.js'
+import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
+import type { AuthLocals, RequestEventLike } from '../types/auth.ts'
+import { getLogger } from '../utils/logger.ts'
+import { isSafeRedirectPath } from '../utils/redirect.ts'
 
 /**
  * Create a logout route handler
  *
  * @param {Object} config - Handler configuration
- * @param {import('../adapters/session/SessionAdapter.js').SessionAdapter} config.sessionAdapter - Session adapter instance
+ * @param {import('../adapters/session/SessionAdapter.ts').SessionAdapter} config.sessionAdapter - Session adapter instance
  * @param {string} [config.redirectAfterLogout='/'] - URL to redirect to after logout
  * @param {Function} [config.getSession] - Function to get session from event.locals (default: locals => locals.session)
  * @param {Function} [config.onLogout] - Optional callback after session is invalidated, receives event

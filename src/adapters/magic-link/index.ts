@@ -1,3 +1,3 @@
-export { MagicLinkAdapter } from './MagicLinkAdapter.js'
-export { D1MagicLinkAdapter } from './D1MagicLinkAdapter.js'
-export { DrizzleMagicLinkAdapter } from './DrizzleMagicLinkAdapter.js'
+export { MagicLinkAdapter } from './MagicLinkAdapter.ts'
+export { D1MagicLinkAdapter } from './D1MagicLinkAdapter.ts'
+export { DrizzleMagicLinkAdapter } from './DrizzleMagicLinkAdapter.ts'

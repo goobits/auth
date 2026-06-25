@@ -1,8 +1,8 @@
-import type { SessionAdapter } from '../adapters/session/SessionAdapter.js'
-import { AuthAdapterCapabilityError } from '../errors/AuthPrincipalResolutionError.js'
-import type { AuthLocals, RequestEventLike } from '../types/auth.js'
-import type { Session } from '../types/index.js'
-import { jsonResponse, parseRequestData } from '../utils/http.js'
+import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
+import { AuthAdapterCapabilityError } from '../errors/AuthPrincipalResolutionError.ts'
+import type { AuthLocals, RequestEventLike } from '../types/auth.ts'
+import type { Session } from '../types/index.ts'
+import { jsonResponse, parseRequestData } from '../utils/http.ts'
 
 type SessionManagementAdapter = Partial<
 	Pick<

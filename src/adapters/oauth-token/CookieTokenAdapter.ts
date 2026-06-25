@@ -1,8 +1,8 @@
 import type { Cookies } from '@sveltejs/kit'
 
-import type { OAuthTokens } from '../../types/index.js'
-import { decryptTokens, encryptTokens } from '../../utils/crypto.js'
-import { TokenAdapter } from './TokenAdapter.js'
+import type { OAuthTokens } from '../../types/index.ts'
+import { decryptTokens, encryptTokens } from '../../utils/crypto.ts'
+import { TokenAdapter } from './TokenAdapter.ts'
 
 /**
  * Cookie-based Token Adapter
@@ -86,7 +86,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 	async refreshTokens(
 		_userId: string,
 		_provider: string
-	): Promise<import('../../types/index.js').OAuthTokens | null> {
+	): Promise<import('../../types/index.ts').OAuthTokens | null> {
 		throw new Error(
 			'refreshTokens not implemented - use provider-specific refresh logic'
 		)

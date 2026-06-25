@@ -1,5 +1,5 @@
-import type { User, VerificationToken } from '../../types/index.js'
-import { VerificationTokenAdapter } from './VerificationTokenAdapter.js'
+import type { User, VerificationToken } from '../../types/index.ts'
+import { VerificationTokenAdapter } from './VerificationTokenAdapter.ts'
 
 type D1Value = string | number | boolean | null
 type D1Row = Record<string, D1Value>

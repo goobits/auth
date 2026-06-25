@@ -1,4 +1,4 @@
-import type { OAuthProfile, User } from '../../types/core.js'
+import type { OAuthProfile, User } from '../../types/core.ts'
 
 /**
  * Base Database Adapter Interface
@@ -7,9 +7,9 @@ import type { OAuthProfile, User } from '../../types/core.js'
 export abstract class UserAdapter {
 	/**
 	 * Create a new user (returns SANITIZED user)
-	 * @param {import('../../types/core.js').OAuthProfile} profile - OAuth profile
+	 * @param {import('../../types/core.ts').OAuthProfile} profile - OAuth profile
 	 * @param {Object} [metadata] - Additional user metadata
-	 * @returns {Promise<import('../../types/core.js').User>}
+	 * @returns {Promise<import('../../types/core.ts').User>}
 	 */
 	abstract createUser(
 		profile: OAuthProfile,
@@ -19,14 +19,14 @@ export abstract class UserAdapter {
 	/**
 	 * Get user by ID (returns SANITIZED user)
 	 * @param {string} id - User ID
-	 * @returns {Promise<import('../../types/core.js').User | null>}
+	 * @returns {Promise<import('../../types/core.ts').User | null>}
 	 */
 	abstract getUserById(id: string): Promise<User | null>
 
 	/**
 	 * Get user by email (returns SANITIZED user)
 	 * @param {string} email - Email address
-	 * @returns {Promise<import('../../types/core.js').User | null>}
+	 * @returns {Promise<import('../../types/core.ts').User | null>}
 	 */
 	abstract getUserByEmail(email: string): Promise<User | null>
 
@@ -34,7 +34,7 @@ export abstract class UserAdapter {
 	 * Get user by OAuth provider ID (returns SANITIZED user)
 	 * @param {string} provider - Provider name (e.g., 'google', 'apple')
 	 * @param {string} providerId - Provider-specific user ID
-	 * @returns {Promise<import('../../types/core.js').User | null>}
+	 * @returns {Promise<import('../../types/core.ts').User | null>}
 	 */
 	abstract getUserByProviderId(
 		provider: string,
@@ -44,8 +44,8 @@ export abstract class UserAdapter {
 	/**
 	 * Update user (returns SANITIZED user)
 	 * @param {string} id - User ID
-	 * @param {Partial<import('../../types/core.js').User>} data - Fields to update
-	 * @returns {Promise<import('../../types/core.js').User>}
+	 * @param {Partial<import('../../types/core.ts').User>} data - Fields to update
+	 * @returns {Promise<import('../../types/core.ts').User>}
 	 */
 	abstract updateUser(
 		id: string,
@@ -86,7 +86,7 @@ export abstract class UserAdapter {
 	 * OPTIONAL: Get user by identifier (returns SANITIZED user)
 	 * @param {string} identifier - Identifier value (e.g. nickname)
 	 * @param {string} [field] - Identifier field name
-	 * @returns {Promise<import('../../types/core.js').User | null>}
+	 * @returns {Promise<import('../../types/core.ts').User | null>}
 	 */
 	getUserByIdentifier?(
 		identifier: string,

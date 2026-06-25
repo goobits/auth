@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit'
 
-import type { Session, User } from '../../types/core.js'
+import type { Session, User } from '../../types/core.ts'
 
 /**
  * Base Session Adapter Interface
@@ -11,7 +11,7 @@ export abstract class SessionAdapter {
 	 * Create a new session for a user
 	 * @param {string} userId - User ID to create session for
 	 * @param {Object} [metadata] - Additional session metadata
-	 * @returns {Promise<import('../../types/core.js').Session>}
+	 * @returns {Promise<import('../../types/core.ts').Session>}
 	 */
 	abstract createSession(
 		userId: string,
@@ -21,7 +21,7 @@ export abstract class SessionAdapter {
 	/**
 	 * Validate a session and return session + sanitized user
 	 * @param {string} sessionId - Session ID to validate
-	 * @returns {Promise<{session: import('../../types/core.js').Session | null, user: import('../../types/core.js').User | null}>}
+	 * @returns {Promise<{session: import('../../types/core.ts').Session | null, user: import('../../types/core.ts').User | null}>}
 	 */
 	abstract validateSession(
 		sessionId: string,
@@ -44,14 +44,14 @@ export abstract class SessionAdapter {
 	/**
 	 * List sessions for a user
 	 * @param {string} userId - User ID
-	 * @returns {Promise<Array<import('../../types/core.js').Session>>}
+	 * @returns {Promise<Array<import('../../types/core.ts').Session>>}
 	 */
 	abstract listSessions(userId: string): Promise<Session[]>
 
 	/**
 	 * Set session cookie
 	 * @param {import('@sveltejs/kit').Cookies} cookies - SvelteKit cookies object
-	 * @param {import('../../types/core.js').Session} session - Session to set
+	 * @param {import('../../types/core.ts').Session} session - Session to set
 	 * @returns {void}
 	 */
 	abstract setSessionCookie(cookies: Cookies, session: Session): void

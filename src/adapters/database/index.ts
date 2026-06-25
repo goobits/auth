@@ -1,3 +1,3 @@
-export { UserAdapter } from './UserAdapter.js'
-export { D1UserAdapter } from './D1UserAdapter.js'
-export { DrizzleUserAdapter } from './DrizzleUserAdapter.js'
+export { UserAdapter } from './UserAdapter.ts'
+export { D1UserAdapter } from './D1UserAdapter.ts'
+export { DrizzleUserAdapter } from './DrizzleUserAdapter.ts'

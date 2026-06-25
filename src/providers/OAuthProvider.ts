@@ -1,4 +1,4 @@
-import type { OAuthProfile, OAuthTokens } from '../types/core.js'
+import type { OAuthProfile, OAuthTokens } from '../types/core.ts'
 
 /**
  * Base OAuth Provider Interface.

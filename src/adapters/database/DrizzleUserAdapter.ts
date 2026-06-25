@@ -1,14 +1,14 @@
 import { and, eq } from 'drizzle-orm'
 
-import type { OAuthProfile, User } from '../../types/index.js'
+import type { OAuthProfile, User } from '../../types/index.ts'
 import {
 	type DrizzleDbLike,
 	type DrizzleJson,
 	type DrizzleRow,
 	type DrizzleTable,
 	requireCondition
-} from '../drizzleTypes.js'
-import { UserAdapter } from './UserAdapter.js'
+} from '../drizzleTypes.ts'
+import { UserAdapter } from './UserAdapter.ts'
 
 type UsersTable = DrizzleTable & {
 	id: DrizzleTable[string];

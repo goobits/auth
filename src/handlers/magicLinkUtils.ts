@@ -1,6 +1,6 @@
 import { encodeBase64url } from '@oslojs/encoding'
 
-import { getRandomBytes, sha256Hex } from '../utils/crypto.js'
+import { getRandomBytes, sha256Hex } from '../utils/crypto.ts'
 
 export async function generateMagicLinkToken(
 	bytesLength: number = 32

@@ -1,22 +1,22 @@
 import { createWebhookChannel, type AlertChannel } from '@goobits/security/alerting'
-import { createSecurityAlertObserver } from '../security/alerts.js'
+import { createSecurityAlertObserver } from '../security/alerts.ts'
 import {
 	CSRF_COOKIE_NAME,
 	CSRF_HEADER_NAME,
 	MemoryCsrfStore
-} from '../security/csrf.js'
-import { createAuthEvent } from '../security/events.js'
+} from '../security/csrf.ts'
+import { createAuthEvent } from '../security/events.ts'
 import {
 	applySecurityPolicy,
 	type SecurityPolicySettings
-} from '../security/policy.js'
+} from '../security/policy.ts'
 import type {
 	AuthConfig,
 	AuthHandlers,
 	AuthSecurityConfig,
 	SecurityProfile,
 	TrustedProxyHeader
-} from '../types/auth.js'
+} from '../types/auth.ts'
 
 export type ResolvedSecurity = SecurityPolicySettings & {
 	profile: SecurityProfile;

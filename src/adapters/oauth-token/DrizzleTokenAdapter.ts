@@ -1,15 +1,15 @@
 import { and, eq } from 'drizzle-orm'
 
-import type { OAuthTokens } from '../../types/index.js'
-import { decryptTokens, encryptTokens } from '../../utils/crypto.js'
+import type { OAuthTokens } from '../../types/index.ts'
+import { decryptTokens, encryptTokens } from '../../utils/crypto.ts'
 import {
 	type DrizzleDbLike,
 	type DrizzleJson,
 	type DrizzleTable,
 	requireColumn,
 	requireCondition
-} from '../drizzleTypes.js'
-import { TokenAdapter } from './TokenAdapter.js'
+} from '../drizzleTypes.ts'
+import { TokenAdapter } from './TokenAdapter.ts'
 
 type TokensTable = DrizzleTable & {
 	userId: DrizzleTable[string];

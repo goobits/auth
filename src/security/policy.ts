@@ -1,9 +1,8 @@
 import type { RequestHandler } from '@sveltejs/kit'
 import { createRateLimiter, type RateLimitStore } from '@goobits/security/rate-limit'
-
-import type { RequestEventLike, TrustedProxyHeader } from '../types/auth.js'
-import { validateCsrfRequest, type CsrfStore } from './csrf.js'
-import { type AuthEventEmitter, createAuthEvent } from './events.js'
+import type { RequestEventLike, TrustedProxyHeader } from '../types/auth.ts'
+import { validateCsrfRequest, type CsrfStore } from './csrf.ts'
+import { type AuthEventEmitter, createAuthEvent } from './events.ts'
 
 type PolicyMode = 'required' | 'optional' | 'off'
 

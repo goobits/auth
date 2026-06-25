@@ -1,6 +1,6 @@
-export { isSafeRedirectPath, normalizeSafeRedirectPath } from '../utils/redirect.js'
+export { isSafeRedirectPath, normalizeSafeRedirectPath } from '../utils/redirect.ts'
 export {
 	type CookieLoginContextConfig,
 	type CookieLoginContextRuntimeOptions,
 	createCookieLoginContext
-} from './cookieContext.js'
+} from './cookieContext.ts'

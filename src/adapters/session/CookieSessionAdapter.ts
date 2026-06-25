@@ -1,7 +1,7 @@
 import { encodeBase64url } from '@oslojs/encoding'
 import type { Cookies } from '@sveltejs/kit'
 
-import { SessionAdapter } from './SessionAdapter.js'
+import { SessionAdapter } from './SessionAdapter.ts'
 
 /**
  * Cookie-based Session Adapter

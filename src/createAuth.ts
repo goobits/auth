@@ -1,12 +1,12 @@
-import { resolveDefaults, validateConfig } from './createAuth/config.js'
+import { resolveDefaults, validateConfig } from './createAuth/config.ts'
 import {
 	buildRoutes,
 	createHandlers,
 	createUtils
-} from './createAuth/handlerFactory.js'
-import { applyPolicies, resolveSecurity } from './createAuth/securitySetup.js'
-import type { AuthConfig } from './types/auth.js'
-import { setLogger } from './utils/logger.js'
+} from './createAuth/handlerFactory.ts'
+import { applyPolicies, resolveSecurity } from './createAuth/securitySetup.ts'
+import type { AuthConfig } from './types/auth.ts'
+import { setLogger } from './utils/logger.ts'
 
 export function createAuth(config: AuthConfig) {
 	setLogger(config.logger)

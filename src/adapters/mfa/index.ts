@@ -1,1 +1,1 @@
-export { MfaAdapter } from './MfaAdapter.js'
+export { MfaAdapter } from './MfaAdapter.ts'

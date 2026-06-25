@@ -7,7 +7,7 @@ import {
 	verifyHmac
 } from '@goobits/security/crypto'
 
-import { generateRandomUUID } from '../utils/crypto.js'
+import { generateRandomUUID } from '../utils/crypto.ts'
 
 const DEFAULT_SESSION_TTL_MS = 24 * 60 * 60 * 1000
 

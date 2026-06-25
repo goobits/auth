@@ -3,9 +3,9 @@
   "version": "0.2.0",
   "description": "Pluggable authentication system for SvelteKit applications",
   "type": "module",
-  "main": "./dist/node/index.js",
-  "module": "./dist/node/index.js",
-  "types": "./dist/types/index.d.ts",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/goobits/auth.git"
@@ -22,7 +22,7 @@
     "**/*.svelte"
   ],
   "files": [
-    "dist",
+    "src",
     "docs",
     "examples",
     "scripts",
@@ -33,128 +33,178 @@
   ],
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
-      "node": "./dist/node/index.js",
-      "default": "./dist/worker/index.js"
+      "types": "./src/index.ts",
+      "node": "./src/index.ts",
+      "source": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
     },
     "./adapters/database": {
-      "types": "./dist/types/adapters/database/index.d.ts",
-      "node": "./dist/node/adapters/database/index.js",
-      "default": "./dist/worker/adapters/database/index.js"
+      "types": "./src/adapters/database/index.ts",
+      "node": "./src/adapters/database/index.ts",
+      "source": "./src/adapters/database/index.ts",
+      "import": "./src/adapters/database/index.ts",
+      "default": "./src/adapters/database/index.ts"
     },
     "./adapters/session": {
-      "types": "./dist/types/adapters/session/index.d.ts",
-      "node": "./dist/node/adapters/session/index.js",
-      "default": "./dist/worker/adapters/session/index.js"
+      "types": "./src/adapters/session/index.ts",
+      "node": "./src/adapters/session/index.ts",
+      "source": "./src/adapters/session/index.ts",
+      "import": "./src/adapters/session/index.ts",
+      "default": "./src/adapters/session/index.ts"
     },
     "./adapters/oauth-token": {
-      "types": "./dist/types/adapters/oauth-token/index.d.ts",
-      "node": "./dist/node/adapters/oauth-token/index.js",
-      "default": "./dist/worker/adapters/oauth-token/index.js"
+      "types": "./src/adapters/oauth-token/index.ts",
+      "node": "./src/adapters/oauth-token/index.ts",
+      "source": "./src/adapters/oauth-token/index.ts",
+      "import": "./src/adapters/oauth-token/index.ts",
+      "default": "./src/adapters/oauth-token/index.ts"
     },
     "./adapters/drizzle": {
-      "types": "./dist/types/adapters/drizzle/index.d.ts",
-      "node": "./dist/node/adapters/drizzle/index.js",
-      "default": "./dist/worker/adapters/drizzle/index.js"
+      "types": "./src/adapters/drizzle/index.ts",
+      "node": "./src/adapters/drizzle/index.ts",
+      "source": "./src/adapters/drizzle/index.ts",
+      "import": "./src/adapters/drizzle/index.ts",
+      "default": "./src/adapters/drizzle/index.ts"
     },
     "./adapters/memory": {
-      "types": "./dist/types/adapters/memory/index.d.ts",
-      "node": "./dist/node/adapters/memory/index.js",
-      "default": "./dist/worker/adapters/memory/index.js"
+      "types": "./src/adapters/memory/index.ts",
+      "node": "./src/adapters/memory/index.ts",
+      "source": "./src/adapters/memory/index.ts",
+      "import": "./src/adapters/memory/index.ts",
+      "default": "./src/adapters/memory/index.ts"
     },
     "./adapters/pg": {
-      "types": "./dist/types/adapters/pg/index.d.ts",
-      "node": "./dist/node/adapters/pg/index.js"
+      "types": "./src/adapters/pg/index.ts",
+      "node": "./src/adapters/pg/index.ts",
+      "source": "./src/adapters/pg/index.ts",
+      "import": "./src/adapters/pg/index.ts"
     },
     "./adapters/verification-token": {
-      "types": "./dist/types/adapters/verification-token/index.d.ts",
-      "node": "./dist/node/adapters/verification-token/index.js",
-      "default": "./dist/worker/adapters/verification-token/index.js"
+      "types": "./src/adapters/verification-token/index.ts",
+      "node": "./src/adapters/verification-token/index.ts",
+      "source": "./src/adapters/verification-token/index.ts",
+      "import": "./src/adapters/verification-token/index.ts",
+      "default": "./src/adapters/verification-token/index.ts"
     },
     "./adapters/magic-link": {
-      "types": "./dist/types/adapters/magic-link/index.d.ts",
-      "node": "./dist/node/adapters/magic-link/index.js",
-      "default": "./dist/worker/adapters/magic-link/index.js"
+      "types": "./src/adapters/magic-link/index.ts",
+      "node": "./src/adapters/magic-link/index.ts",
+      "source": "./src/adapters/magic-link/index.ts",
+      "import": "./src/adapters/magic-link/index.ts",
+      "default": "./src/adapters/magic-link/index.ts"
     },
     "./adapters/mfa": {
-      "types": "./dist/types/adapters/mfa/index.d.ts",
-      "node": "./dist/node/adapters/mfa/index.js",
-      "default": "./dist/worker/adapters/mfa/index.js"
+      "types": "./src/adapters/mfa/index.ts",
+      "node": "./src/adapters/mfa/index.ts",
+      "source": "./src/adapters/mfa/index.ts",
+      "import": "./src/adapters/mfa/index.ts",
+      "default": "./src/adapters/mfa/index.ts"
     },
     "./adapters/webauthn": {
-      "types": "./dist/types/adapters/webauthn/index.d.ts",
-      "node": "./dist/node/adapters/webauthn/index.js",
-      "default": "./dist/worker/adapters/webauthn/index.js"
+      "types": "./src/adapters/webauthn/index.ts",
+      "node": "./src/adapters/webauthn/index.ts",
+      "source": "./src/adapters/webauthn/index.ts",
+      "import": "./src/adapters/webauthn/index.ts",
+      "default": "./src/adapters/webauthn/index.ts"
     },
     "./providers": {
-      "types": "./dist/types/providers/index.d.ts",
-      "node": "./dist/node/providers/index.js",
-      "default": "./dist/worker/providers/index.js"
+      "types": "./src/providers/index.ts",
+      "node": "./src/providers/index.ts",
+      "source": "./src/providers/index.ts",
+      "import": "./src/providers/index.ts",
+      "default": "./src/providers/index.ts"
     },
     "./password": {
-      "types": "./dist/types/password/index.d.ts",
-      "node": "./dist/node/password/index.js",
-      "default": "./dist/worker/password/index.js"
+      "types": "./src/password/index.ts",
+      "node": "./src/password/index.node.ts",
+      "source": "./src/password/index.ts",
+      "import": "./src/password/index.ts",
+      "default": "./src/password/index.worker.ts"
     },
     "./types": {
-      "types": "./dist/types/types/index.d.ts",
-      "node": "./dist/node/types/index.js",
-      "default": "./dist/worker/types/index.js"
+      "types": "./src/types/index.ts",
+      "node": "./src/types/index.ts",
+      "source": "./src/types/index.ts",
+      "import": "./src/types/index.ts",
+      "default": "./src/types/index.ts"
     },
     "./mfa": {
-      "types": "./dist/types/mfa/index.d.ts",
-      "node": "./dist/node/mfa/index.js",
-      "default": "./dist/worker/mfa/index.js"
+      "types": "./src/mfa/index.ts",
+      "node": "./src/mfa/index.ts",
+      "source": "./src/mfa/index.ts",
+      "import": "./src/mfa/index.ts",
+      "default": "./src/mfa/index.ts"
     },
     "./node": {
-      "types": "./dist/types/node/index.d.ts",
-      "node": "./dist/node/node/index.js"
+      "types": "./src/node/index.ts",
+      "node": "./src/node/index.ts",
+      "source": "./src/node/index.ts",
+      "import": "./src/node/index.ts"
     },
     "./ui": {
-      "types": "./dist/types/ui/index.d.ts",
-      "node": "./dist/node/ui/index.js",
-      "default": "./dist/worker/ui/index.js"
+      "types": "./src/ui/index.ts",
+      "node": "./src/ui/index.ts",
+      "source": "./src/ui/index.ts",
+      "import": "./src/ui/index.ts",
+      "default": "./src/ui/index.ts"
     },
-    "./ui/theme.css": "./dist/worker/ui/theme.css",
+    "./ui/theme.css": "./src/ui/theme.css",
     "./security": {
-      "types": "./dist/types/security/index.d.ts",
-      "node": "./dist/node/security/index.js",
-      "default": "./dist/worker/security/index.js"
+      "types": "./src/security/index.ts",
+      "node": "./src/security/index.ts",
+      "source": "./src/security/index.ts",
+      "import": "./src/security/index.ts",
+      "default": "./src/security/index.ts"
     },
     "./adapters": {
-      "types": "./dist/types/adapters/index.d.ts",
-      "node": "./dist/node/adapters/index.js",
-      "default": "./dist/worker/adapters/index.js"
+      "types": "./src/adapters/index.ts",
+      "node": "./src/adapters/index.ts",
+      "source": "./src/adapters/index.ts",
+      "import": "./src/adapters/index.ts",
+      "default": "./src/adapters/index.ts"
     },
     "./handlers": {
-      "types": "./dist/types/handlers/index.d.ts",
-      "node": "./dist/node/handlers/index.js",
-      "default": "./dist/worker/handlers/index.js"
+      "types": "./src/handlers/index.ts",
+      "node": "./src/handlers/index.ts",
+      "source": "./src/handlers/index.ts",
+      "import": "./src/handlers/index.ts",
+      "default": "./src/handlers/index.ts"
     },
     "./login-context": {
-      "types": "./dist/types/login-context/index.d.ts",
-      "node": "./dist/node/login-context/index.js",
-      "default": "./dist/worker/login-context/index.js"
+      "types": "./src/login-context/index.ts",
+      "node": "./src/login-context/index.ts",
+      "source": "./src/login-context/index.ts",
+      "import": "./src/login-context/index.ts",
+      "default": "./src/login-context/index.ts"
     },
     "./client": {
-      "types": "./dist/types/client/index.d.ts",
-      "node": "./dist/node/client/index.js",
-      "default": "./dist/worker/client/index.js"
+      "types": "./src/client/index.ts",
+      "node": "./src/client/index.ts",
+      "source": "./src/client/index.ts",
+      "import": "./src/client/index.ts",
+      "default": "./src/client/index.ts"
     },
     "./testing": {
-      "types": "./dist/types/testing/index.d.ts",
-      "node": "./dist/node/testing/index.js",
-      "default": "./dist/worker/testing/index.js"
+      "types": "./src/testing/index.ts",
+      "node": "./src/testing/index.ts",
+      "source": "./src/testing/index.ts",
+      "import": "./src/testing/index.ts",
+      "default": "./src/testing/index.ts"
     },
     "./errors": {
-      "types": "./dist/types/errors/index.d.ts",
-      "node": "./dist/node/errors/index.js",
-      "default": "./dist/worker/errors/index.js"
+      "types": "./src/errors/index.ts",
+      "node": "./src/errors/index.ts",
+      "source": "./src/errors/index.ts",
+      "import": "./src/errors/index.ts",
+      "default": "./src/errors/index.ts"
     },
     "./utils": {
-      "types": "./dist/types/utils/index.d.ts",
-      "node": "./dist/node/utils/index.js",
-      "default": "./dist/worker/utils/index.js"
+      "types": "./src/utils/index.ts",
+      "node": "./src/utils/index.ts",
+      "source": "./src/utils/index.ts",
+      "import": "./src/utils/index.ts",
+      "default": "./src/utils/index.ts"
     }
   },
   "scripts": {
@@ -220,79 +270,79 @@
   "typesVersions": {
     "*": {
       "": [
-        "./dist/types/index.d.ts"
+        "./src/index.ts"
       ],
       "adapters": [
-        "./dist/types/adapters/index.d.ts"
+        "./src/adapters/index.ts"
       ],
       "adapters/database": [
-        "./dist/types/adapters/database/index.d.ts"
+        "./src/adapters/database/index.ts"
       ],
       "adapters/session": [
-        "./dist/types/adapters/session/index.d.ts"
+        "./src/adapters/session/index.ts"
       ],
       "adapters/oauth-token": [
-        "./dist/types/adapters/oauth-token/index.d.ts"
+        "./src/adapters/oauth-token/index.ts"
       ],
       "adapters/drizzle": [
-        "./dist/types/adapters/drizzle/index.d.ts"
+        "./src/adapters/drizzle/index.ts"
       ],
       "adapters/memory": [
-        "./dist/types/adapters/memory/index.d.ts"
+        "./src/adapters/memory/index.ts"
       ],
       "adapters/pg": [
-        "./dist/types/adapters/pg/index.d.ts"
+        "./src/adapters/pg/index.ts"
       ],
       "adapters/verification-token": [
-        "./dist/types/adapters/verification-token/index.d.ts"
+        "./src/adapters/verification-token/index.ts"
       ],
       "adapters/magic-link": [
-        "./dist/types/adapters/magic-link/index.d.ts"
+        "./src/adapters/magic-link/index.ts"
       ],
       "adapters/mfa": [
-        "./dist/types/adapters/mfa/index.d.ts"
+        "./src/adapters/mfa/index.ts"
       ],
       "adapters/webauthn": [
-        "./dist/types/adapters/webauthn/index.d.ts"
+        "./src/adapters/webauthn/index.ts"
       ],
       "providers": [
-        "./dist/types/providers/index.d.ts"
+        "./src/providers/index.ts"
       ],
       "handlers": [
-        "./dist/types/handlers/index.d.ts"
+        "./src/handlers/index.ts"
       ],
       "login-context": [
-        "./dist/types/login-context/index.d.ts"
+        "./src/login-context/index.ts"
       ],
       "utils": [
-        "./dist/types/utils/index.d.ts"
+        "./src/utils/index.ts"
       ],
       "client": [
-        "./dist/types/client/index.d.ts"
+        "./src/client/index.ts"
       ],
       "password": [
-        "./dist/types/password/index.d.ts"
+        "./src/password/index.ts"
       ],
       "types": [
-        "./dist/types/types/index.d.ts"
+        "./src/types/index.ts"
       ],
       "testing": [
-        "./dist/types/testing/index.d.ts"
+        "./src/testing/index.ts"
       ],
       "mfa": [
-        "./dist/types/mfa/index.d.ts"
+        "./src/mfa/index.ts"
       ],
       "node": [
-        "./dist/types/node/index.d.ts"
+        "./src/node/index.ts"
       ],
       "ui": [
-        "./dist/types/ui/index.d.ts"
+        "./src/ui/index.ts"
       ],
       "security": [
-        "./dist/types/security/index.d.ts"
+        "./src/security/index.ts"
       ],
       "errors": [
-        "./dist/types/errors/index.d.ts"
+        "./src/errors/index.ts"
       ]
     }
   },

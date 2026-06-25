@@ -42,7 +42,7 @@ export async function encryptTokens<T extends Record<string, unknown>>(
 		validateEncryptionKey(encryptionKey)
 		return JSON.stringify(await sealJson(tokens, { key: encryptionKey }))
 	} catch(error) {
-		const { getLogger } = await import('./logger.js')
+		const { getLogger } = await import('./logger.ts')
 		getLogger().error?.('Token encryption error:', error instanceof Error ? error.message : String(error))
 		throw error
 	}
@@ -62,7 +62,7 @@ export async function decryptTokens<T = Record<string, unknown>>(
 		validateEncryptionKey(encryptionKey)
 		return openJson<T>({ key: encryptionKey, seal: JSON.parse(encryptedData) })
 	} catch(error) {
-		const { getLogger } = await import('./logger.js')
+		const { getLogger } = await import('./logger.ts')
 		getLogger().error?.('Token decryption error:', error instanceof Error ? error.message : String(error))
 		return null
 	}

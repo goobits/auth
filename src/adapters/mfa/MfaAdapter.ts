@@ -1,4 +1,4 @@
-import type { MfaStatus } from '../../types/index.js'
+import type { MfaStatus } from '../../types/index.ts'
 
 /**
  * Stores TOTP secrets and backup-code hashes for MFA enrollment.

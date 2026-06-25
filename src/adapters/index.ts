@@ -4,10 +4,10 @@ export {
 	D1SessionAdapter,
 	DrizzleSessionAdapter,
 	SessionAdapter
-} from './session/index.js'
+} from './session/index.ts'
 
 // Database Adapters
-export { D1UserAdapter, DrizzleUserAdapter, UserAdapter } from './database/index.js'
+export { D1UserAdapter, DrizzleUserAdapter, UserAdapter } from './database/index.ts'
 
 // Token Adapters (OAuth tokens)
 export {
@@ -15,39 +15,39 @@ export {
 	D1TokenAdapter,
 	DrizzleTokenAdapter,
 	TokenAdapter
-} from './oauth-token/index.js'
+} from './oauth-token/index.ts'
 
 // Verification Token Adapters (email verification, password reset, etc.)
 export {
 	D1VerificationTokenAdapter,
 	DrizzleVerificationTokenAdapter,
 	VerificationTokenAdapter
-} from './verification-token/index.js'
+} from './verification-token/index.ts'
 
 // Magic Link Adapters
 export {
 	D1MagicLinkAdapter,
 	DrizzleMagicLinkAdapter,
 	MagicLinkAdapter
-} from './magic-link/index.js'
+} from './magic-link/index.ts'
 
 // MFA Adapters
-export { MfaAdapter } from './mfa/index.js'
+export { MfaAdapter } from './mfa/index.ts'
 
 // WebAuthn Adapters
 export {
 	D1WebAuthnAdapter,
 	DrizzleWebAuthnAdapter,
 	WebAuthnAdapter
-} from './webauthn/index.js'
+} from './webauthn/index.ts'
 
 // One-stop Drizzle adapter bundle
 export type {
 	DrizzleAdapterBundle,
 	DrizzleAdapterOptions,
 	DrizzleAuthSchema
-} from './drizzle/index.js'
-export { drizzleAdapter } from './drizzle/index.js'
+} from './drizzle/index.ts'
+export { drizzleAdapter } from './drizzle/index.ts'
 
 // Type-only export keeps the aggregate adapter entrypoint Worker-safe.
-export type { PgPoolLike } from './pg/index.js'
+export type { PgPoolLike } from './pg/index.ts'

@@ -1,8 +1,8 @@
 import { encodeBase64url } from '@oslojs/encoding'
 import type { Cookies } from '@sveltejs/kit'
 
-import type { Session, User } from '../../types/index.js'
-import { SessionAdapter } from './SessionAdapter.js'
+import type { Session, User } from '../../types/index.ts'
+import { SessionAdapter } from './SessionAdapter.ts'
 
 type D1Value = string | number | boolean | null
 type D1Row = Record<string, D1Value>

@@ -2,12 +2,12 @@ import { randomBytes, randomUUID } from 'node:crypto'
 
 import type { Cookies } from '@sveltejs/kit'
 
-import type { MagicLinkToken, MfaStatus, OAuthProfile, Session, User, WebAuthnCredential } from '../../types/index.js'
-import { UserAdapter } from '../database/UserAdapter.js'
-import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.js'
-import { MfaAdapter } from '../mfa/MfaAdapter.js'
-import { SessionAdapter } from '../session/SessionAdapter.js'
-import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.js'
+import type { MagicLinkToken, MfaStatus, OAuthProfile, Session, User, WebAuthnCredential } from '../../types/index.ts'
+import { UserAdapter } from '../database/UserAdapter.ts'
+import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
+import { MfaAdapter } from '../mfa/MfaAdapter.ts'
+import { SessionAdapter } from '../session/SessionAdapter.ts'
+import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.ts'
 
 /** Pg Pool Like typed model for runtime integration. */
 export type PgPoolLike = {

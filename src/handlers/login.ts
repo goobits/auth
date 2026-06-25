@@ -1,9 +1,9 @@
 import { redirect } from '@sveltejs/kit'
 
-import type { OAuthProvider } from '../providers/OAuthProvider.js'
-import type { AuthLocals, RequestEventLike } from '../types/auth.js'
-import { createOAuthCookies } from '../utils/oauth.js'
-import { isSafeRedirectPath } from '../utils/redirect.js'
+import type { OAuthProvider } from '../providers/OAuthProvider.ts'
+import type { AuthLocals, RequestEventLike } from '../types/auth.ts'
+import { createOAuthCookies } from '../utils/oauth.ts'
+import { isSafeRedirectPath } from '../utils/redirect.ts'
 
 type LoginHandlerConfig = {
 	providers: Record<string, { provider: OAuthProvider; scopes?: string[] }>;
@@ -16,7 +16,7 @@ type LoginHandlerConfig = {
  * Create a login route handler for OAuth providers
  *
  * @param {Object} config - Handler configuration
- * @param {Object.<string, {provider: import('../providers/OAuthProvider.js').OAuthProvider, scopes?: string[]}>} config.providers - Provider instances and their configs
+ * @param {Object.<string, {provider: import('../providers/OAuthProvider.ts').OAuthProvider, scopes?: string[]}>} config.providers - Provider instances and their configs
  * @param {string} [config.redirectAfterLogin] - URL to redirect to if already logged in
  * @param {boolean} [config.secureCookies=true] - Use secure cookies
  * @param {Function} [config.isAuthenticated] - Function to check if user is authenticated (receives event.locals)
