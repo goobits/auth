@@ -53,7 +53,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 		this._cookies = cookies
 	}
 
-	async storeTokens(userId: string, provider: string, tokens: Record<string, unknown>) {
+	async storeTokens(_userId: string, provider: string, tokens: Record<string, unknown>) {
 		if (!this._cookies) {
 			throw new Error('Cookies not set. Call _setCookies() first.')
 		}
@@ -70,7 +70,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 		})
 	}
 
-	async getTokens(userId: string, provider: string): Promise<OAuthTokens | null> {
+	async getTokens(_userId: string, provider: string): Promise<OAuthTokens | null> {
 		if (!this._cookies) {
 			throw new Error('Cookies not set. Call _setCookies() first.')
 		}
@@ -92,7 +92,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 		)
 	}
 
-	async deleteTokens(userId: string, provider: string) {
+	async deleteTokens(_userId: string, provider: string) {
 		if (!this._cookies) {
 			throw new Error('Cookies not set. Call _setCookies() first.')
 		}
