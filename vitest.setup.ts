@@ -1,4 +1,4 @@
-import { shouldSuppressConsoleArgs } from './__tests__/console-suppressions.js'
+import { shouldSuppressConsoleArgs } from './__tests__/consoleSuppressions.js'
 
 const wrapConsole = method => {
 	const original = console[method]
