@@ -136,6 +136,13 @@
       "import": "./src/mfa/index.ts",
       "default": "./src/mfa/index.ts"
     },
+    "./qr": {
+      "types": "./src/qr/index.ts",
+      "node": "./src/qr/index.ts",
+      "source": "./src/qr/index.ts",
+      "import": "./src/qr/index.ts",
+      "default": "./src/qr/index.ts"
+    },
     "./node": {
       "types": "./src/node/index.ts",
       "node": "./src/node/index.ts",
@@ -218,8 +225,8 @@
     "build:types": "tsc -p tsconfig.build.json",
     "audit": "tsx scripts/auditPackage.ts",
     "security:check": "pnpm run typecheck && pnpm test && pnpm run audit",
-    "api:scan": "npx @goobits/codeatlas . --format json --out .codeatlas --suggest --entrypoints src/index.ts,src/adapters/index.ts,src/adapters/database/index.ts,src/adapters/session/index.ts,src/adapters/oauth-token/index.ts,src/adapters/drizzle/index.ts,src/adapters/memory/index.ts,src/adapters/pg/index.ts,src/adapters/verification-token/index.ts,src/adapters/magic-link/index.ts,src/adapters/mfa/index.ts,src/adapters/webauthn/index.ts,src/providers/index.ts,src/handlers/index.ts,src/login-context/index.ts,src/utils/index.ts,src/client/index.ts,src/password/index.ts,src/types/index.ts,src/testing/index.ts,src/mfa/index.ts,src/node/index.ts,src/ui/index.ts,src/security/index.ts,src/errors/index.ts",
-    "api:map": "npx @goobits/codeatlas . --format mermaid --out .codeatlas --entrypoints src/index.ts,src/adapters/index.ts,src/adapters/database/index.ts,src/adapters/session/index.ts,src/adapters/oauth-token/index.ts,src/adapters/drizzle/index.ts,src/adapters/memory/index.ts,src/adapters/pg/index.ts,src/adapters/verification-token/index.ts,src/adapters/magic-link/index.ts,src/adapters/mfa/index.ts,src/adapters/webauthn/index.ts,src/providers/index.ts,src/handlers/index.ts,src/login-context/index.ts,src/utils/index.ts,src/client/index.ts,src/password/index.ts,src/types/index.ts,src/testing/index.ts,src/mfa/index.ts,src/node/index.ts,src/ui/index.ts,src/security/index.ts,src/errors/index.ts",
+    "api:scan": "npx @goobits/codeatlas . --format json --out .codeatlas --suggest --entrypoints src/index.ts,src/adapters/index.ts,src/adapters/database/index.ts,src/adapters/session/index.ts,src/adapters/oauth-token/index.ts,src/adapters/drizzle/index.ts,src/adapters/memory/index.ts,src/adapters/pg/index.ts,src/adapters/verification-token/index.ts,src/adapters/magic-link/index.ts,src/adapters/mfa/index.ts,src/adapters/webauthn/index.ts,src/providers/index.ts,src/handlers/index.ts,src/login-context/index.ts,src/utils/index.ts,src/client/index.ts,src/password/index.ts,src/types/index.ts,src/testing/index.ts,src/mfa/index.ts,src/qr/index.ts,src/node/index.ts,src/ui/index.ts,src/security/index.ts,src/errors/index.ts",
+    "api:map": "npx @goobits/codeatlas . --format mermaid --out .codeatlas --entrypoints src/index.ts,src/adapters/index.ts,src/adapters/database/index.ts,src/adapters/session/index.ts,src/adapters/oauth-token/index.ts,src/adapters/drizzle/index.ts,src/adapters/memory/index.ts,src/adapters/pg/index.ts,src/adapters/verification-token/index.ts,src/adapters/magic-link/index.ts,src/adapters/mfa/index.ts,src/adapters/webauthn/index.ts,src/providers/index.ts,src/handlers/index.ts,src/login-context/index.ts,src/utils/index.ts,src/client/index.ts,src/password/index.ts,src/types/index.ts,src/testing/index.ts,src/mfa/index.ts,src/qr/index.ts,src/node/index.ts,src/ui/index.ts,src/security/index.ts,src/errors/index.ts",
     "prepublishOnly": "pnpm run build && pnpm run test:dist && pnpm run security:check"
   },
   "keywords": [
@@ -248,6 +255,7 @@
     "@simplewebauthn/server": "^13.3.2",
     "arctic": "^3.7.0",
     "hash-wasm": "^4.12.0",
+    "uqr": "^0.1.3",
     "zod": "^4.4.3"
   },
   "optionalDependencies": {
@@ -331,6 +339,9 @@
       ],
       "mfa": [
         "./src/mfa/index.ts"
+      ],
+      "qr": [
+        "./src/qr/index.ts"
       ],
       "node": [
         "./src/node/index.ts"
