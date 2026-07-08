@@ -15,14 +15,10 @@ const ASSET_DIRS = [
 
 const OUT_DIRS = [ join(root, 'dist', 'node'), join(root, 'dist', 'worker') ]
 
-async function ensureDir(path) {
-	await mkdir(path, { recursive: true })
-}
-
 async function copyDirFiltered({ srcDir, patterns, outSubdir }) {
 	const entries = await readdir(srcDir, { withFileTypes: true })
 	for (const outDir of OUT_DIRS) {
-		await ensureDir(join(outDir, outSubdir))
+		await mkdir(join(outDir, outSubdir), { recursive: true })
 	}
 	for (const entry of entries) {
 		if (!entry.isFile()) continue
