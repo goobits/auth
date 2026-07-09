@@ -17,7 +17,10 @@ import { CredentialsProvider } from '../../src/providers/CredentialsProvider.ts'
 type MockUserAdapter = Pick<
 	UserAdapter,
 	'getUserByEmail' | 'createUser' | 'updateUser' | 'getUserWithPasswordHash'
->
+> & {
+	getUserByIdentifier: ReturnType<typeof vi.fn>
+	getUserWithPasswordHashByIdentifier: ReturnType<typeof vi.fn>
+}
 
 describe('CredentialsProvider', () => {
 	let provider: CredentialsProvider
@@ -29,7 +32,9 @@ describe('CredentialsProvider', () => {
 			getUserByEmail: vi.fn(),
 			createUser: vi.fn(),
 			updateUser: vi.fn(),
-			getUserWithPasswordHash: vi.fn()
+			getUserWithPasswordHash: vi.fn(),
+			getUserByIdentifier: vi.fn(),
+			getUserWithPasswordHashByIdentifier: vi.fn()
 		}
 
 		provider = new CredentialsProvider()
@@ -188,6 +193,88 @@ describe('CredentialsProvider', () => {
 
 			expect(result.valid).toBe(true)
 			expect(mockUserAdapter.getUserWithPasswordHash).toHaveBeenCalledWith(email.toLowerCase())
+		})
+
+		it('should authenticate with a custom identifier field', async() => {
+			const password = 'ValidPassword123!'
+			const hashedPassword = await hashPassword(password)
+			const usernameProvider = provider.withIdentifier('username')
+
+			mockUserAdapter.getUserWithPasswordHashByIdentifier.mockResolvedValue({
+				id: 'user-username',
+				email: 'user@example.com',
+				password: hashedPassword,
+				name: 'Username User'
+			})
+			mockUserAdapter.getUserByIdentifier.mockResolvedValue({
+				id: 'user-username',
+				email: 'user@example.com',
+				name: 'Username User'
+			})
+
+			const result = await usernameProvider.authenticate({
+				identifier: ' UserName ',
+				password,
+				userAdapter: mockUserAdapter
+			})
+
+			expect(result.valid).toBe(true)
+			expect(result.user).toMatchObject({ id: 'user-username' })
+			expect(mockUserAdapter.getUserWithPasswordHashByIdentifier).toHaveBeenCalledWith(
+				'username',
+				'username'
+			)
+			expect(mockUserAdapter.getUserByIdentifier).toHaveBeenCalledWith('username', 'username')
+			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled()
+		})
+
+		it('should fall back to email when allowBoth is enabled', async() => {
+			const password = 'ValidPassword123!'
+			const hashedPassword = await hashPassword(password)
+			const usernameProvider = provider.withIdentifier('username', { allowBoth: true })
+
+			mockUserAdapter.getUserWithPasswordHashByIdentifier.mockResolvedValue(null)
+			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
+				id: 'user-email',
+				email: 'fallback@example.com',
+				password: hashedPassword
+			})
+			mockUserAdapter.getUserByEmail.mockResolvedValue({
+				id: 'user-email',
+				email: 'fallback@example.com'
+			})
+
+			const result = await usernameProvider.authenticate({
+				email: 'Fallback@Example.com',
+				password,
+				userAdapter: mockUserAdapter
+			})
+
+			expect(result.valid).toBe(true)
+			expect(mockUserAdapter.getUserWithPasswordHashByIdentifier).toHaveBeenCalledWith(
+				'fallback@example.com',
+				'username'
+			)
+			expect(mockUserAdapter.getUserWithPasswordHash).toHaveBeenCalledWith('fallback@example.com')
+			expect(mockUserAdapter.getUserByEmail).toHaveBeenCalledWith('fallback@example.com')
+		})
+
+		it('should fail custom identifier auth when the adapter does not expose identifier lookup', async() => {
+			const usernameProvider = provider.withIdentifier('username')
+			const adapterWithoutIdentifierLookup = {
+				...mockUserAdapter,
+				getUserWithPasswordHashByIdentifier: undefined,
+				getUserByIdentifier: undefined
+			} as unknown as UserAdapter
+
+			const result = await usernameProvider.authenticate({
+				identifier: 'username',
+				password: 'ValidPassword123!',
+				userAdapter: adapterWithoutIdentifierLookup
+			})
+
+			expect(result.valid).toBe(false)
+			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled()
 		})
 	})
 
