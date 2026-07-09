@@ -212,7 +212,7 @@
     "test:dist": "tsx scripts/smokeDist.ts",
     "test:watch": "vitest watch",
     "test:ui": "vitest --ui",
-    "test:integration": "vitest run --testPathPattern=integration",
+    "test:integration": "vitest run __tests__/integration",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "rm -rf dist && tsup && tsx scripts/copyAssets.ts && pnpm run build:types",
     "build:types": "tsc -p tsconfig.build.json",
