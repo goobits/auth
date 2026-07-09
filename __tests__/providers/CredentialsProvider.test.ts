@@ -11,7 +11,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { UserAdapter } from '../../src/adapters/database/UserAdapter.ts'
-import { hashPassword } from '../../src/password/index.ts'
 import { CredentialsProvider } from '../../src/providers/CredentialsProvider.ts'
 
 type MockUserAdapter = Pick<
@@ -25,9 +24,15 @@ type MockUserAdapter = Pick<
 describe('CredentialsProvider', () => {
 	let provider: CredentialsProvider
 	let mockUserAdapter: MockUserAdapter
+	const hashPassword = vi.fn((password: string) => Promise.resolve(`test:${password}`))
+	const verifyPassword = vi.fn((storedHash: string, password: string) =>
+		Promise.resolve(storedHash === `test:${password}`)
+	)
+	const testHash = (password: string) => `test:${password}`
 
 	beforeEach(() => {
-		// Create mock user adapter
+		hashPassword.mockClear()
+		verifyPassword.mockClear()
 		mockUserAdapter = {
 			getUserByEmail: vi.fn(),
 			createUser: vi.fn(),
@@ -37,13 +42,14 @@ describe('CredentialsProvider', () => {
 			getUserWithPasswordHashByIdentifier: vi.fn()
 		}
 
-		provider = new CredentialsProvider()
+		provider = new CredentialsProvider({ hashPassword, verifyPassword })
 	})
 
 	describe('constructor', () => {
 		it('should create provider with default options', () => {
-			expect(provider).toBeDefined()
-			expect(provider.name).toBe('credentials')
+			const defaultProvider = new CredentialsProvider()
+			expect(defaultProvider).toBeDefined()
+			expect(defaultProvider.name).toBe('credentials')
 		})
 
 		it('should accept custom password validator', () => {
@@ -60,7 +66,7 @@ describe('CredentialsProvider', () => {
 		it('should authenticate user with valid credentials', async() => {
 			const email = 'test@example.com'
 			const password = 'ValidPassword123!'
-			const hashedPassword = await hashPassword(password)
+			const hashedPassword = testHash(password)
 
 			// Mock getUserWithPasswordHash to return user with password
 			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
@@ -96,7 +102,7 @@ describe('CredentialsProvider', () => {
 			const email = 'test@example.com'
 			const correctPassword = 'CorrectPassword123!'
 			const incorrectPassword = 'WrongPassword123!'
-			const hashedPassword = await hashPassword(correctPassword)
+			const hashedPassword = testHash(correctPassword)
 
 			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'user-123',
@@ -172,7 +178,7 @@ describe('CredentialsProvider', () => {
 		it('should handle email case-insensitively', async() => {
 			const email = 'Test@Example.COM'
 			const password = 'ValidPassword123!'
-			const hashedPassword = await hashPassword(password)
+			const hashedPassword = testHash(password)
 
 			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'user-123',
@@ -197,7 +203,7 @@ describe('CredentialsProvider', () => {
 
 		it('should authenticate with a custom identifier field', async() => {
 			const password = 'ValidPassword123!'
-			const hashedPassword = await hashPassword(password)
+			const hashedPassword = testHash(password)
 			const usernameProvider = provider.withIdentifier('username')
 
 			mockUserAdapter.getUserWithPasswordHashByIdentifier.mockResolvedValue({
@@ -230,7 +236,7 @@ describe('CredentialsProvider', () => {
 
 		it('should fall back to email when allowBoth is enabled', async() => {
 			const password = 'ValidPassword123!'
-			const hashedPassword = await hashPassword(password)
+			const hashedPassword = testHash(password)
 			const usernameProvider = provider.withIdentifier('username', { allowBoth: true })
 
 			mockUserAdapter.getUserWithPasswordHashByIdentifier.mockResolvedValue(null)
@@ -309,12 +315,13 @@ describe('CredentialsProvider', () => {
 					name,
 					verified_email: false
 				}),
-				expect.objectContaining({
-					provider: 'email',
-					emailVerified: false,
-					password: expect.stringMatching(/^\$argon2id\$/) // Argon2id hash format
-				})
-			)
+					expect.objectContaining({
+						provider: 'email',
+						emailVerified: false,
+						password: testHash(password)
+					})
+				)
+			expect(hashPassword).toHaveBeenCalledWith(password)
 		})
 
 		it('should create user without name (use email prefix)', async() => {
@@ -456,10 +463,9 @@ describe('CredentialsProvider', () => {
 			expect(user.id).toBe(userId)
 			expect(mockUserAdapter.updateUser).toHaveBeenCalledWith(
 				userId,
-				expect.objectContaining({
-					password: expect.stringMatching(/^\$argon2id\$/)
-				})
+					expect.objectContaining({ password: testHash(newPassword) })
 			)
+			expect(hashPassword).toHaveBeenCalledWith(newPassword)
 		})
 
 		it('should throw error for missing userId', async() => {
@@ -507,7 +513,7 @@ describe('CredentialsProvider', () => {
 			const email = 'test@example.com'
 			const currentPassword = 'CurrentPassword123!'
 			const newPassword = 'NewPassword123!'
-			const currentHash = await hashPassword(currentPassword)
+			const currentHash = testHash(currentPassword)
 
 			// Mock authenticate to succeed
 			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
@@ -540,9 +546,7 @@ describe('CredentialsProvider', () => {
 			expect(result.user.id).toBe('user-123')
 			expect(mockUserAdapter.updateUser).toHaveBeenCalledWith(
 				'user-123',
-				expect.objectContaining({
-					password: expect.stringMatching(/^\$argon2id\$/)
-				})
+					expect.objectContaining({ password: testHash(newPassword) })
 			)
 		})
 
@@ -551,7 +555,7 @@ describe('CredentialsProvider', () => {
 			const currentPassword = 'CorrectPassword123!'
 			const wrongPassword = 'WrongPassword123!'
 			const newPassword = 'NewPassword123!'
-			const currentHash = await hashPassword(currentPassword)
+			const currentHash = testHash(currentPassword)
 
 			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'user-123',
@@ -609,7 +613,7 @@ describe('CredentialsProvider', () => {
 			expect(signedUpUser.id).toBe('user-int')
 
 			// 2. Authenticate (simulate signin)
-			const hashedPassword = await hashPassword(password)
+			const hashedPassword = testHash(password)
 			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'user-int',
 				email,
@@ -637,8 +641,8 @@ describe('CredentialsProvider', () => {
 			const email = 'change@example.com'
 			const oldPassword = 'OldPassword123!'
 			const newPassword = 'NewPassword123!'
-			const oldHash = await hashPassword(oldPassword)
-			const newHash = await hashPassword(newPassword)
+			const oldHash = testHash(oldPassword)
+			const newHash = testHash(newPassword)
 
 			// 1. Initial state: user has old password
 			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
