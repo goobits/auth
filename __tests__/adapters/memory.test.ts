@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { createMemoryAuthAdapters, MemoryUserAdapter } from '../../src/adapters/memory/index.ts'
+import {
+	createMemoryAuthAdapters,
+	MemoryMagicLinkAdapter,
+	MemoryUserAdapter
+} from '../../src/adapters/memory/index.ts'
 
 describe('memory auth adapters', () => {
 	it('create users, sessions, and validate session principals', async() => {
@@ -39,5 +43,26 @@ describe('memory auth adapters', () => {
 			password: 'secret'
 		})
 		expect(await adapter.getUserByEmail('test@example.com')).not.toHaveProperty('password')
+	})
+
+	it('stores and consumes magic link tokens atomically', async() => {
+		const adapter = new MemoryMagicLinkAdapter()
+		await adapter.createToken({
+			userId: null,
+			email: 'dev@example.com',
+			tokenHash: 'token-hash',
+			otpHash: 'otp-hash',
+			expiresAt: new Date(Date.now() + 60_000),
+			metadata: { grantId: 'grant-1' }
+		})
+
+		await expect(adapter.findByTokenHash('token-hash')).resolves.toMatchObject({
+			email: 'dev@example.com',
+			metadata: { grantId: 'grant-1' }
+		})
+		await expect(adapter.consumeByTokenHash('token-hash')).resolves.toMatchObject({
+			email: 'dev@example.com'
+		})
+		await expect(adapter.consumeByTokenHash('token-hash')).resolves.toBeNull()
 	})
 })
