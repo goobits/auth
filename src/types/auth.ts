@@ -28,11 +28,11 @@ export type AuthLocals = {
 }
 
 /** Defines request event like options for wiring providers, adapters, cookies, hooks, and route handlers. */
-export type RequestEventLike = Pick<
-	RequestEvent,
-	'request' | 'cookies' | 'params' | 'locals' | 'url'
+export type RequestEventLike = Omit<
+	Pick<RequestEvent, 'request' | 'cookies' | 'params' | 'locals' | 'url'>,
+	'params' | 'locals'
 > & {
-	params: Record<string, string>;
+	params: Record<string, string | undefined>;
 	locals: AuthLocals;
 	getClientAddress?: () => string;
 }
