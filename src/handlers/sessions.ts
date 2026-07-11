@@ -48,9 +48,10 @@ export function createSessionListHandler(config: SessionHandlerConfig) {
 		const user = getUser(event.locals);
 		const current = getSession(event.locals);
 		const sessions = await sessionAdapter.listSessions(user.id);
+		const currentManagementId = current?.managementId ?? current?.id;
 		const normalized = sessions.map((session) => ({
 			...session,
-			current: current?.id === session.id,
+			current: currentManagementId === (session.managementId ?? session.id),
 		}));
 
 		return jsonResponse({ ok: true, sessions: normalized });
@@ -83,6 +84,7 @@ export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 		const data = await parseRequestData(event.request);
 		const user = getUser(event.locals);
 		const current = getSession(event.locals);
+		const currentManagementId = current?.managementId ?? current?.id;
 
 		const sessionId =
 			typeof data["sessionId"] === "string"
@@ -124,7 +126,7 @@ export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 				}
 				return jsonResponse({ ok: false, error: "Failed to revoke session" }, 500);
 			}
-			if (current?.id === sessionId && sessionAdapter.deleteSessionCookie) {
+			if (currentManagementId === sessionId && sessionAdapter.deleteSessionCookie) {
 				sessionAdapter.deleteSessionCookie(event.cookies);
 			}
 			return jsonResponse({ ok: true });
@@ -171,7 +173,10 @@ export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 			try {
 				await Promise.all(
 					sessions
-						.filter((session) => session.id !== current?.id)
+						.filter(
+							(session) =>
+								(session.managementId ?? session.id) !== currentManagementId,
+						)
 						.map((session) => sessionAdapter.invalidateSession!(session.id)),
 				);
 			} catch (error) {

@@ -1,5 +1,7 @@
 export type Session = {
 	id: string;
+	/** Non-secret handle for listing and revoking a persisted session. */
+	managementId?: string;
 	userId: string;
 	expiresAt: Date;
 	fresh?: boolean;
