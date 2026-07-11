@@ -3,7 +3,7 @@ import {
 	createSessionListHandler,
 	createSessionRevokeHandler,
 } from "../../src/handlers/sessions.ts";
-import type { SessionSummary } from "../../src/types/index.ts";
+import type { Session, SessionSummary } from "../../src/types/index.ts";
 
 function createEvent(body: Record<string, unknown> | string | null = null) {
 	const headers = new Headers();
@@ -45,6 +45,59 @@ describe("session handlers", () => {
 
 		expect(payload.ok).toBe(true);
 		expect(sessions.find((s) => s.id === "s1")?.current).toBe(true);
+	});
+
+	it("projects management handles without exposing bearer credentials", async () => {
+		const expiresAt = new Date(Date.now() + 60_000);
+		const sessionAdapter = {
+			listSessions: vi.fn(async () => [
+				{
+					id: "secret-bearer",
+					managementId: "public-handle",
+					userId: "u1",
+					expiresAt,
+					fingerprint: "secret-fingerprint",
+				},
+			]),
+		};
+		const event = createEvent();
+		const currentSession: Session = {
+			id: "current-secret-bearer",
+			managementId: "public-handle",
+			userId: "u1",
+			expiresAt,
+		};
+		event.locals.session = currentSession;
+
+		const response = await createSessionListHandler({ sessionAdapter })(event);
+		const payload = await response.json();
+
+		expect(payload.sessions).toEqual([
+			expect.objectContaining({ id: "public-handle", current: true }),
+		]);
+		expect(JSON.stringify(payload)).not.toContain("secret-bearer");
+		expect(JSON.stringify(payload)).not.toContain("secret-fingerprint");
+	});
+
+	it("revokes distinct management handles rather than bearer credentials", async () => {
+		const sessionAdapter = {
+			listSessions: vi.fn(async () => [
+				{
+					id: "secret-bearer",
+					managementId: "public-handle",
+					userId: "u1",
+					expiresAt: new Date(),
+				},
+			]),
+			invalidateSession: vi.fn(async () => {}),
+		};
+		const handler = createSessionRevokeHandler({ sessionAdapter });
+
+		const response = await handler(createEvent({ id: "public-handle" }));
+
+		expect(response.status).toBe(200);
+		expect(sessionAdapter.invalidateSession).toHaveBeenCalledWith("public-handle");
+		expect(sessionAdapter.invalidateSession).not.toHaveBeenCalledWith("secret-bearer");
 	});
 
 	it("revokes other sessions", async () => {

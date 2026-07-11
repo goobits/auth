@@ -21,6 +21,19 @@ type SessionHandlerConfig = {
 	getSession?: (locals: AuthLocals) => Session | null;
 };
 
+const managementIdFor = (session: Session): string => session.managementId ?? session.id;
+
+const toSafeSessionSummary = (session: Session, currentManagementId?: string) => ({
+	id: managementIdFor(session),
+	userId: session.userId,
+	expiresAt: session.expiresAt,
+	createdAt: session.createdAt ?? null,
+	lastActiveAt: session.lastActiveAt ?? null,
+	ip: session.ip ?? null,
+	userAgent: session.userAgent ?? null,
+	current: currentManagementId === managementIdFor(session),
+});
+
 export function createSessionListHandler(config: SessionHandlerConfig) {
 	const {
 		sessionAdapter,
@@ -49,10 +62,9 @@ export function createSessionListHandler(config: SessionHandlerConfig) {
 		const current = getSession(event.locals);
 		const sessions = await sessionAdapter.listSessions(user.id);
 		const currentManagementId = current?.managementId ?? current?.id;
-		const normalized = sessions.map((session) => ({
-			...session,
-			current: currentManagementId === (session.managementId ?? session.id),
-		}));
+		const normalized = sessions.map((session) =>
+			toSafeSessionSummary(session, currentManagementId),
+		);
 
 		return jsonResponse({ ok: true, sessions: normalized });
 	};
@@ -105,8 +117,8 @@ export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 				);
 			}
 			const sessions = await sessionAdapter.listSessions(user.id);
-			const ownsSession = sessions.some((session) => session.id === sessionId);
-			if (!ownsSession) {
+			const ownedSession = sessions.find((session) => managementIdFor(session) === sessionId);
+			if (!ownedSession) {
 				return jsonResponse({ ok: false, error: "Session not found" }, 404);
 			}
 			if (typeof sessionAdapter.invalidateSession !== "function") {
@@ -116,7 +128,7 @@ export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 				);
 			}
 			try {
-				await sessionAdapter.invalidateSession(sessionId);
+				await sessionAdapter.invalidateSession(managementIdFor(ownedSession));
 			} catch (error) {
 				if (isUnsupportedError(error)) {
 					return jsonResponse(
@@ -173,11 +185,8 @@ export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 			try {
 				await Promise.all(
 					sessions
-						.filter(
-							(session) =>
-								(session.managementId ?? session.id) !== currentManagementId,
-						)
-						.map((session) => sessionAdapter.invalidateSession!(session.id)),
+						.filter((session) => managementIdFor(session) !== currentManagementId)
+						.map((session) => sessionAdapter.invalidateSession!(managementIdFor(session))),
 				);
 			} catch (error) {
 				if (isUnsupportedError(error)) {
