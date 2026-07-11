@@ -4,6 +4,7 @@ export type Session = {
 	managementId?: string;
 	userId: string;
 	expiresAt: Date;
+	/** Replace the request cookie with `id`; concurrent refreshes must return the same value. */
 	fresh?: boolean;
 	createdAt?: Date;
 	lastActiveAt?: Date | null;

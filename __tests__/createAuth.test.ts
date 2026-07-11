@@ -93,4 +93,33 @@ describe('createAuth', () => {
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalledWith(event.cookies, session)
 		expect(event.locals.user).toEqual(user)
 	})
+
+	it('converges concurrent refreshes on the same cookie without clearing either response', async () => {
+		const currentSession = { id: 'current-session', fresh: true }
+		const user = { id: 'u1' }
+		const sessionAdapter = createSessionAdapter({
+			validateResult: { session: currentSession, user }
+		})
+		const auth = createAuth({ adapters: { session: sessionAdapter } })
+		const events = [createRequestEvent(), createRequestEvent()]
+		for (const event of events) event.cookies.set('session', 'previous-session')
+
+		await Promise.all(
+			events.map((event) =>
+				auth.handlers.hooks({
+					event,
+					resolve: (_event: RequestEventLike) => new Response('ok')
+				})
+			)
+		)
+
+		expect(sessionAdapter.validateSession).toHaveBeenCalledTimes(2)
+		expect(sessionAdapter.validateSession).toHaveBeenNthCalledWith(1, 'previous-session')
+		expect(sessionAdapter.validateSession).toHaveBeenNthCalledWith(2, 'previous-session')
+		expect(sessionAdapter.setSessionCookie).toHaveBeenCalledTimes(2)
+		for (const event of events) {
+			expect(sessionAdapter.setSessionCookie).toHaveBeenCalledWith(event.cookies, currentSession)
+		}
+		expect(sessionAdapter.deleteSessionCookie).not.toHaveBeenCalled()
+	})
 })
