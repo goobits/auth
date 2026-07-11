@@ -1,56 +1,19 @@
-import { getRandomBytes, timingSafeEqual } from "../utils/crypto.js";
-import type { Cookies } from "@sveltejs/kit";
-type CsrfStoreRecord = { value: boolean; expiresAt: number | null };
+import type { Cookies } from '@sveltejs/kit'
+import {
+	CSRF_COOKIE_NAME,
+	CSRF_HEADER_NAME,
+	createCsrf,
+	type CsrfTokenStore,
+	MemoryCsrfStore
+} from '@goobits/security/csrf'
 
-type CookiesLike = Pick<Cookies, "set" | "get" | "delete">;
+export { CSRF_COOKIE_NAME, CSRF_HEADER_NAME, MemoryCsrfStore }
 
-export type CsrfStore = {
-	get: (key: string) => Promise<CsrfStoreRecord | null>;
-	set: (key: string, value: boolean, ttlMs?: number) => Promise<void>;
-	delete: (key: string) => Promise<void>;
-};
+type CookiesLike = Pick<Cookies, 'set' | 'get' | 'delete'>
 
-export const CSRF_COOKIE_NAME = "csrf-token";
-export const CSRF_HEADER_NAME = "x-csrf-token";
+export type CsrfStore = CsrfTokenStore
 
-export class MemoryCsrfStore {
-	private _data: Map<string, CsrfStoreRecord>;
-
-	constructor() {
-		this._data = new Map();
-	}
-
-	async get(key: string): Promise<CsrfStoreRecord | null> {
-		const record = this._data.get(key);
-		if (!record) return null;
-		if (record.expiresAt && Date.now() > record.expiresAt) {
-			this._data.delete(key);
-			return null;
-		}
-		return record;
-	}
-
-	async set(key: string, value: boolean, ttlMs?: number): Promise<void> {
-		const expiresAt = ttlMs ? Date.now() + ttlMs : null;
-		this._data.set(key, { value, expiresAt });
-	}
-
-	async delete(key: string): Promise<void> {
-		this._data.delete(key);
-	}
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-	return Array.from(bytes)
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("");
-}
-
-export async function createCsrfToken(): Promise<string> {
-	const bytes = await getRandomBytes(32);
-	return bytesToHex(bytes);
-}
-
+/** Processes csrf token for auth security checks. */
 export async function issueCsrfToken({
 	cookies,
 	store,
@@ -58,8 +21,8 @@ export async function issueCsrfToken({
 	cookieName = CSRF_COOKIE_NAME,
 	secure = true,
 	httpOnly = false,
-	sameSite = "lax",
-	path = "/",
+	sameSite = 'lax',
+	path = '/'
 }: {
 	cookies?: CookiesLike;
 	store?: CsrfStore;
@@ -67,36 +30,47 @@ export async function issueCsrfToken({
 	cookieName?: string;
 	secure?: boolean;
 	httpOnly?: boolean;
-	sameSite?: "lax" | "strict" | "none";
+	sameSite?: 'lax' | 'strict' | 'none';
 	path?: string;
 } = {}): Promise<string> {
 	if (!cookies) {
-		throw new Error("issueCsrfToken requires cookies");
+		throw new Error('issueCsrfToken requires cookies')
 	}
 
-	const token = await createCsrfToken();
-	if (store) {
-		await store.set(token, true, ttlMs);
-	}
+	const csrf = createCsrf({
+		cookieName,
+		headerName: CSRF_HEADER_NAME,
+		tokenExpiryMs: ttlMs,
+		cookieOptions: {
+			httpOnly,
+			secure,
+			sameSite,
+			path,
+			maxAge: Math.floor(ttlMs / 1000)
+		},
+		...(store ? { tokenStore: store } : {})
+	})
+	const token = await csrf.generate({ expiryMs: ttlMs })
 
 	cookies.set(cookieName, token, {
 		httpOnly,
 		secure,
 		sameSite,
 		path,
-		maxAge: Math.floor(ttlMs / 1000),
-	});
+		maxAge: Math.floor(ttlMs / 1000)
+	})
 
-	return token;
+	return token
 }
 
+/** Validates csrf request for auth security checks. */
 export async function validateCsrfRequest({
 	request,
 	cookies,
 	store,
 	headerName = CSRF_HEADER_NAME,
 	cookieName = CSRF_COOKIE_NAME,
-	checkExpiry = false,
+	checkExpiry = false
 }: {
 	request?: Request;
 	cookies?: CookiesLike;
@@ -106,20 +80,18 @@ export async function validateCsrfRequest({
 	checkExpiry?: boolean;
 } = {}): Promise<boolean> {
 	if (!request || !cookies) {
-		throw new Error("validateCsrfRequest requires request and cookies");
+		throw new Error('validateCsrfRequest requires request and cookies')
 	}
 
-	const headerToken = request.headers.get(headerName) || "";
-	const cookieToken = cookies.get(cookieName) || "";
-
-	if (!timingSafeEqual(headerToken, cookieToken)) {
-		return false;
-	}
-
-	if (checkExpiry && store) {
-		const record = await store.get(cookieToken);
-		if (!record) return false;
-	}
-
-	return true;
+	const headerToken = request.headers.get(headerName) || ''
+	const cookieToken = cookies.get(cookieName) || ''
+	const headers = new Headers()
+	headers.set(headerName, headerToken)
+	headers.set('cookie', `${ cookieName }=${ cookieToken }`)
+	const csrf = createCsrf({
+		cookieName,
+		headerName,
+		...(store ? { tokenStore: store } : {})
+	})
+	return csrf.validate(new Request(request.url, { headers }), { checkExpiry })
 }

@@ -1,76 +1,87 @@
-import type { Cookies, RequestEvent, RequestHandler } from "@sveltejs/kit";
-import type { OAuthProvider } from "../providers/base.js";
+import type { RequestEvent, RequestHandler } from '@sveltejs/kit'
+
+import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
+import type { MagicLinkAdapter } from '../adapters/magic-link/MagicLinkAdapter.ts'
+import type { MfaAdapter } from '../adapters/mfa/MfaAdapter.ts'
+import type { TokenAdapter } from '../adapters/oauth-token/TokenAdapter.ts'
+import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
+import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.ts'
+import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
+import type { OAuthProvider } from '../providers/OAuthProvider.ts'
+import type { WebhookChannelOptions } from '@goobits/security/alerting'
+import type { SecurityAlertHandler } from '../security/alerts.ts'
+import type { AuthEventEmitter } from '../security/events.ts'
+import type { RateLimitStore } from '@goobits/security/rate-limit'
+import type { Logger } from '../utils/logger.ts'
 import type {
 	OAuthProfile,
 	OAuthTokens,
 	Session,
 	SessionSummary,
-	User,
-} from "./core.js";
-import type { SessionAdapter } from "../adapters/session/base.js";
-import type { UserAdapter } from "../adapters/database/base.js";
-import type { TokenAdapter } from "../adapters/oauth-token/base.js";
-import type { MagicLinkAdapter } from "../adapters/magic-link/base.js";
-import type { MfaAdapter } from "../adapters/mfa/base.js";
-import type { WebAuthnAdapter } from "../adapters/webauthn/base.js";
-import type { VerificationTokenAdapter } from "../adapters/verification-token/base.js";
-import type { Logger } from "../utils/logger.js";
-import type { AuthEventEmitter } from "../security/events.js";
-import type { RateLimitStore } from "../security/rate-limit.js";
-import type { SecurityAlertHandler } from "../security/alerts.js";
-import type { WebhookAlerterConfig } from "../security/alerting.js";
+	User
+} from './core.ts'
 
+/** Defines auth locals options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthLocals = {
 	user?: User | null;
 	session?: Session | null;
-};
+}
 
+/** Defines request event like options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type RequestEventLike = Pick<
 	RequestEvent,
-	"request" | "cookies" | "params" | "locals" | "url"
+	'request' | 'cookies' | 'params' | 'locals' | 'url'
 > & {
 	params: Record<string, string>;
 	locals: AuthLocals;
 	getClientAddress?: () => string;
-};
+}
 
+/** Defines oauth provider config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type OAuthProviderConfig = {
 	provider: OAuthProvider;
 	scopes?: string[];
-};
+}
 
+/** Defines auth urls options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthUrls = {
 	login?: string;
 	afterLogin?: string;
 	afterLogout?: string;
-};
+}
 
+/** Defines auth cookies config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthCookiesConfig = {
 	secure?: boolean;
-};
+}
 
-export type AuthLoginResult = { userId: string | number } | void;
-export type OnLoginMode = "augment" | "manual";
+/** Defines auth login result options for wiring providers, adapters, cookies, hooks, and route handlers. */
+export type AuthLoginResult = { userId: string | number } | void
+/** Defines on login mode options for wiring providers, adapters, cookies, hooks, and route handlers. */
+export type OnLoginMode = 'augment' | 'manual'
 
+/** Defines auth hooks options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthHooks = {
 	onSessionValidated?: (
 		event: RequestEventLike,
 		session: Session,
-		user: User,
+		user: User
 	) => Promise<void> | void;
 	onLogin?: (
 		event: RequestEventLike,
 		profile: OAuthProfile,
 		tokens: OAuthTokens | null,
-		user?: User | null,
+		user?: User | null
 	) => Promise<AuthLoginResult> | AuthLoginResult;
+
 	// "augment" keeps framework-managed session creation (default).
 	// "manual" lets advanced callers fully manage session creation.
 	onLoginMode?: OnLoginMode;
 	onLogout?: (event: RequestEventLike) => Promise<void> | void;
 	onError?: (event: RequestEventLike, error: unknown) => Promise<void> | void;
-};
+}
 
+/** Defines magic link config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type MagicLinkConfig = {
 	send: {
 		email: (payload: {
@@ -105,38 +116,50 @@ export type MagicLinkConfig = {
 		verifyWindowMs?: number;
 	};
 	hooks?: {
-		onLogin?: AuthHooks["onLogin"];
+		onLogin?: AuthHooks['onLogin'];
 		getMetadata?: (event: RequestEventLike) => Promise<Record<string, unknown>>;
 		createUser?: (email: string, event: RequestEventLike) => Promise<User>;
 		sanitizeUser?: (user: User | null) => User | null;
 	};
-};
+}
 
+/** Defines web authn config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type WebAuthnConfig = {
 	origin?: string;
 	rpID?: string;
 	rpName?: string;
 	timeoutMs?: number;
-	attestation?: "none" | "indirect" | "direct" | "enterprise";
-	userVerification?: "required" | "preferred" | "discouraged";
+	attestation?: 'none' | 'indirect' | 'direct' | 'enterprise';
+	userVerification?: 'required' | 'preferred' | 'discouraged';
 	credentialName?: string;
 	hooks?: {
-		onLogin?: AuthHooks["onLogin"];
+		onLogin?: AuthHooks['onLogin'];
 	};
-};
+}
 
+/** Defines totp mfa config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type TotpMfaConfig = {
 	issuer?: string;
-	label?: (userId: string, locals: RequestEventLike["locals"]) => string;
-};
+	label?: (userId: string, locals: RequestEventLike['locals']) => string;
+}
 
+/** Defines sessions config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type SessionsConfig = {
 	listLimit?: number;
-};
+}
 
-export type SecurityProfile = "basic" | "secure" | "strict";
-export type SecurityMode = "required" | "optional" | "off";
+/** Defines security profile options for wiring providers, adapters, cookies, hooks, and route handlers. */
+export type SecurityProfile = 'basic' | 'secure' | 'strict'
+/** Defines security mode options for wiring providers, adapters, cookies, hooks, and route handlers. */
+export type SecurityMode = 'required' | 'optional' | 'off'
+/** Defines trusted proxy headers that may supply client addresses for rate limits. */
+export type TrustedProxyHeader = 'cf-connecting-ip' | 'x-forwarded-for'
+/** Defines auth alert webhook config options for wiring providers, adapters, cookies, hooks, and route handlers. */
+export type AuthAlertWebhookConfig = Omit<WebhookChannelOptions, 'url'> & {
+	url?: string | null;
+}
 
+/** Defines auth security config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthSecurityConfig = {
 	csrf?: {
 		mode?: SecurityMode;
@@ -151,6 +174,7 @@ export type AuthSecurityConfig = {
 		windowMs?: number;
 		keyPrefix?: string;
 		trustProxyHeader?: boolean;
+		trustedProxyHeaders?: TrustedProxyHeader[];
 		store?: RateLimitStore;
 	};
 	audit?: {
@@ -160,9 +184,9 @@ export type AuthSecurityConfig = {
 	alerts?: {
 		enabled?: boolean;
 		onAlert?: SecurityAlertHandler;
-		webhook?: WebhookAlerterConfig;
+		webhook?: AuthAlertWebhookConfig;
 	};
-};
+}
 
 type BaseAuthAdapters = {
 	session: SessionAdapter;
@@ -172,7 +196,7 @@ type BaseAuthAdapters = {
 	magicLink?: MagicLinkAdapter;
 	mfa?: MfaAdapter;
 	webauthn?: WebAuthnAdapter;
-};
+}
 
 type CommonAuthConfigFields = {
 	providers?: Record<string, OAuthProviderConfig>;
@@ -188,25 +212,25 @@ type CommonAuthConfigFields = {
 	sessions?: SessionsConfig;
 	mfa?: TotpMfaConfig;
 	logger?: Logger;
-};
+}
 
 type AuthConfigNoFeatures = CommonAuthConfigFields & {
 	adapters: BaseAuthAdapters;
 	magicLink?: undefined;
 	webauthn?: undefined;
-};
+}
 
 type AuthConfigWithMagicLink = CommonAuthConfigFields & {
 	adapters: BaseAuthAdapters & { magicLink: MagicLinkAdapter };
 	magicLink: MagicLinkConfig;
 	webauthn?: undefined;
-};
+}
 
 type AuthConfigWithWebAuthn = CommonAuthConfigFields & {
 	adapters: BaseAuthAdapters & { webauthn: WebAuthnAdapter };
 	magicLink?: undefined;
 	webauthn: WebAuthnConfig;
-};
+}
 
 type AuthConfigWithBoth = CommonAuthConfigFields & {
 	adapters: BaseAuthAdapters & {
@@ -215,14 +239,16 @@ type AuthConfigWithBoth = CommonAuthConfigFields & {
 	};
 	magicLink: MagicLinkConfig;
 	webauthn: WebAuthnConfig;
-};
+}
 
+/** Defines auth config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthConfig =
 	| AuthConfigNoFeatures
 	| AuthConfigWithMagicLink
 	| AuthConfigWithWebAuthn
-	| AuthConfigWithBoth;
+	| AuthConfigWithBoth
 
+/** Defines auth handlers options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthHandlers = {
 	login?: RequestHandler;
 	callback?: RequestHandler;
@@ -249,8 +275,9 @@ export type AuthHandlers = {
 		list: RequestHandler;
 		revoke: RequestHandler;
 	};
-};
+}
 
+/** Defines auth routes options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthRoutes = {
 	login: () => { GET: RequestHandler };
 	callback: () => { GET: RequestHandler };
@@ -267,9 +294,10 @@ export type AuthRoutes = {
 	mfaDisable: () => { POST: RequestHandler };
 	mfaBackupCode: () => { POST: RequestHandler };
 	sessions: () => { GET: RequestHandler; POST: RequestHandler };
-};
+}
 
+/** Defines session list response options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type SessionListResponse = {
 	ok: boolean;
 	sessions: SessionSummary[];
-};
+}

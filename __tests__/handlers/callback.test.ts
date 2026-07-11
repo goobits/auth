@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { OAuth2RequestError } from 'arctic'
-import type { OAuthProvider } from '../../src/providers/base.ts'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { OAuthProvider } from '../../src/providers/OAuthProvider.ts'
 import type { OAuthProfile, OAuthTokens } from '../../src/types/index.ts'
-import { captureRejected, createRequestEvent, getRedirectLocation } from '../test-kit.ts'
+import { captureRejected, createRequestEvent, getRedirectLocation } from '../testKit.ts'
 
 type OAuthCallbackHandlers = {
 	onAuthenticated?: (profile: OAuthProfile, tokens: OAuthTokens) => Promise<void> | void;
@@ -13,7 +14,7 @@ type OAuthCallbackInput = {
 	callbacks?: OAuthCallbackHandlers;
 }
 
-const handleOAuthCallback = vi.fn(async ({ callbacks }: OAuthCallbackInput) => {
+const handleOAuthCallback = vi.fn(async({ callbacks }: OAuthCallbackInput) => {
 	if (callbacks?.onAuthenticated) {
 		await callbacks.onAuthenticated({ id: 'p1', email: 'p1@example.com' }, { accessToken: 't1' })
 	}
@@ -28,7 +29,7 @@ import { createCallbackHandler } from '../../src/handlers/callback.ts'
 function createProvider(): OAuthProvider {
 	return {
 		createAuthorizationURL: () => new URL('https://example.com/auth'),
-		getUserProfile: vi.fn(async () => ({
+		getUserProfile: vi.fn(async() => ({
 			profile: { id: 'p1', email: 'p1@example.com' },
 			tokens: { accessToken: 't1' }
 		}))
@@ -40,7 +41,7 @@ beforeEach(() => {
 })
 
 describe('createCallbackHandler', () => {
-	it('rejects unknown provider', async () => {
+	it('rejects unknown provider', async() => {
 		const handler = createCallbackHandler({
 			providers: {},
 			onAuthenticated: vi.fn()
@@ -53,7 +54,7 @@ describe('createCallbackHandler', () => {
 			.rejects.toMatchObject({ status: 400 })
 	})
 
-	it('handles OAuth2RequestError as 400', async () => {
+	it('handles OAuth2RequestError as 400', async() => {
 		handleOAuthCallback.mockImplementation(() => {
 			throw new OAuth2RequestError('bad', 'invalid_grant', undefined, undefined)
 		})
@@ -70,7 +71,7 @@ describe('createCallbackHandler', () => {
 			.rejects.toMatchObject({ status: 400 })
 	})
 
-	it('accepts apple POST form and calls onAuthenticated', async () => {
+	it('accepts apple POST form and calls onAuthenticated', async() => {
 		const onAuthenticated = vi.fn()
 
 		const handler = createCallbackHandler({

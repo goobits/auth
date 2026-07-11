@@ -1,25 +1,27 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { eq } from 'drizzle-orm'
 import { randomUUID } from 'crypto'
-import { DrizzleSessionAdapter } from '../../src/adapters/session/drizzle.ts'
-import { DrizzleUserAdapter } from '../../src/adapters/database/drizzle.ts'
-import { DrizzleTokenAdapter } from '../../src/adapters/oauth-token/drizzle.ts'
+import { eq } from 'drizzle-orm'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+
+import { DrizzleUserAdapter } from '../../src/adapters/database/DrizzleUserAdapter.ts'
+import type { DrizzleDbLike } from '../../src/adapters/drizzleTypes.ts'
+import { DrizzleTokenAdapter } from '../../src/adapters/oauth-token/DrizzleTokenAdapter.ts'
+import { DrizzleSessionAdapter } from '../../src/adapters/session/DrizzleSessionAdapter.ts'
 import {
 	createIntegrationDrizzleFixture,
 	drizzleOauthTokensTable,
 	drizzleSessionsTable,
 	drizzleUsersTable
-} from '../drizzle-test-kit.ts'
+} from '../drizzleTestKit.ts'
 
 describe('Drizzle Adapters Integration', () => {
-	let db: any
+	let db: DrizzleDbLike
 	let dispose: () => Promise<void>
 	let sessionAdapter: DrizzleSessionAdapter
 	let userAdapter: DrizzleUserAdapter
 	let tokenAdapter: DrizzleTokenAdapter
 	let testUserId = ''
 
-	beforeAll(async () => {
+	beforeAll(async() => {
 		const fixture = await createIntegrationDrizzleFixture()
 		db = fixture.db
 		dispose = fixture.dispose
@@ -42,7 +44,7 @@ describe('Drizzle Adapters Integration', () => {
 		})
 	})
 
-	afterAll(async () => {
+	afterAll(async() => {
 		if (testUserId) {
 			await db.delete(drizzleSessionsTable).where(eq(drizzleSessionsTable.userId, testUserId))
 			await db.delete(drizzleOauthTokensTable).where(eq(drizzleOauthTokensTable.userId, testUserId))
@@ -51,16 +53,16 @@ describe('Drizzle Adapters Integration', () => {
 		await dispose()
 	})
 
-	beforeEach(async () => {
+	beforeEach(async() => {
 		testUserId = randomUUID()
 		await db.insert(drizzleUsersTable).values({
 			id: testUserId,
-			email: `test-${Date.now()}@example.com`,
+			email: `test-${ Date.now() }@example.com`,
 			name: 'Test User'
 		})
 	})
 
-	it('creates and validates a session', async () => {
+	it('creates and validates a session', async() => {
 		const session = await sessionAdapter.createSession(testUserId)
 
 		expect(session.id).toBeDefined()
@@ -71,7 +73,7 @@ describe('Drizzle Adapters Integration', () => {
 		expect(user?.id).toBe(testUserId)
 	})
 
-	it('invalidates a session', async () => {
+	it('invalidates a session', async() => {
 		const session = await sessionAdapter.createSession(testUserId)
 		await sessionAdapter.invalidateSession(session.id)
 
@@ -79,7 +81,7 @@ describe('Drizzle Adapters Integration', () => {
 		expect(validatedSession).toBeNull()
 	})
 
-	it('gets a user by email and id', async () => {
+	it('gets a user by email and id', async() => {
 		const byId = await userAdapter.getUserById(testUserId)
 		const byEmail = await userAdapter.getUserByEmail(byId?.email || '')
 
@@ -87,7 +89,7 @@ describe('Drizzle Adapters Integration', () => {
 		expect(byEmail?.id).toBe(testUserId)
 	})
 
-	it('stores encrypted OAuth tokens and deletes them', async () => {
+	it('stores encrypted OAuth tokens and deletes them', async() => {
 		const tokens = {
 			accessToken: 'secret-access-token',
 			refreshToken: 'secret-refresh-token',
@@ -100,7 +102,7 @@ describe('Drizzle Adapters Integration', () => {
 		expect(retrieved?.accessToken).toBe(tokens.accessToken)
 		expect(retrieved?.refreshToken).toBe(tokens.refreshToken)
 
-		const [row] = await db
+		const [ row ] = await db
 			.select()
 			.from(drizzleOauthTokensTable)
 			.where(eq(drizzleOauthTokensTable.userId, testUserId))

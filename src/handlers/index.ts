@@ -1,40 +1,40 @@
 // OAuth handlers
-export { createLoginHandler } from "./login.js";
-export { createCallbackHandler } from "./callback.js";
-export { createLogoutHandler, createLogoutAction } from "./logout.js";
+export { createCallbackHandler } from './callback.ts'
+export { createLoginHandler } from './login.ts'
+export { createLogoutAction, createLogoutHandler } from './logout.ts'
 
 // Credentials handlers
-export { createSignupHandler } from "./signup.js";
-export { createSigninHandler } from "./signin.js";
 export {
-	createPasswordResetRequestHandler,
 	createPasswordResetConfirmHandler,
-} from "./password-reset.js";
+	createPasswordResetRequestHandler
+} from './passwordReset.ts'
+export { createSigninHandler } from './signin.ts'
+export { createSignupHandler } from './signup.ts'
 
 // MFA handlers
 export {
-	createMfaStatusHandler,
-	createMfaEnrollHandler,
-	createMfaVerifyHandler,
-	createMfaDisableHandler,
 	createMfaBackupCodeHandler,
+	createMfaDisableHandler,
+	createMfaEnrollHandler,
+	createMfaStatusHandler,
+	createMfaVerifyHandler,
 	type MfaConfig,
-	type MfaStore,
-} from "./mfa.js";
+	type MfaStore
+} from './mfa.ts'
 
 // Magic link handlers
 export {
 	createMagicLinkRequestHandler,
-	createMagicLinkVerifyHandler,
-} from "./magic-link.js";
+	createMagicLinkVerifyHandler
+} from './magicLink.ts'
 
 // WebAuthn handlers
 export {
-	createWebAuthnRegisterOptionsHandler,
-	createWebAuthnRegisterVerifyHandler,
 	createWebAuthnLoginOptionsHandler,
 	createWebAuthnLoginVerifyHandler,
-} from "./webauthn.js";
+	createWebAuthnRegisterOptionsHandler,
+	createWebAuthnRegisterVerifyHandler
+} from './webauthn.ts'
 
 // Session management handlers
-export { createSessionListHandler, createSessionRevokeHandler } from "./sessions.js";
+export { createSessionListHandler, createSessionRevokeHandler } from './sessions.ts'

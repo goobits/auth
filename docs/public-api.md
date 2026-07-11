@@ -46,13 +46,16 @@ export const auth = new GoobitsAuth({
 - `auth.createHandlers({ basePath? })` for custom mount paths
 - `auth.getSession(event)`
 - `auth.requireUser(event)`
-- `auth.requireRole(event, role | role[])`
+- `auth.requireAuthRole(event, authRole | authRole[])`
 - `auth.adapter` (raw adapters for advanced/manual usage)
 
-Security alert webhooks are configured through
-`security.alerts.webhook.{url,secret,cooldownMs,maxPerHour,timeoutMs}`. The
-legacy `SECURITY_WEBHOOK_URL` and `SECURITY_WEBHOOK_SECRET` process env fallback
-is kept for compatibility when explicit webhook fields are not provided.
+`requireAuthRole()` is for website/session route gates. It is not a product
+permission check for Spaces, Zones, Goobits, agents, or wormholes.
+
+Security alert webhooks are configured through `security.alerts.webhook.url`.
+`SECURITY_WEBHOOK_URL` is read from `process.env` when no explicit URL is
+provided. Use `security.alerts.onAlert` for custom signing, cooldown, or fan-out
+behavior.
 
 ## SvelteKit wiring
 
@@ -126,11 +129,14 @@ layer but should share auth primitives:
 
 ```ts
 import {
+  createAuthApiKey,
   createBasicAuthResponse,
   createSignedSessionToken,
+  hashAuthApiKey,
   parseBasicAuthHeader,
   validateCsrfRequest,
   verifyBasicAuthHeader,
+  verifyAuthApiKey,
   verifySignedSessionToken,
 } from "@goobits/auth/security";
 ```
@@ -138,7 +144,7 @@ import {
 - Basic auth parsing and verification with caller-provided password hash checks.
 - Standard Basic-auth challenge responses.
 - Signed, expiring session-token creation and verification.
-- CSRF issuance/validation, rate-limit helpers, API-key helpers, role/ownership guards, and timing-safe comparisons.
+- CSRF issuance/validation, API-key helpers, role/ownership guards, and timing-safe comparisons. Generic rate limiting lives in `@goobits/security/rate-limit`.
 
 ## Typing App locals
 

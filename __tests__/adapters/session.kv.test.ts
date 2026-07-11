@@ -1,17 +1,18 @@
-import { describe, it, expect, vi } from 'vitest'
-import { KVSessionAdapter } from '../../src/adapters/session/kv.ts'
+import { describe, expect, it, vi } from 'vitest'
+
+import { KVSessionAdapter } from '../../src/adapters/session/KVSessionAdapter.ts'
 
 function createNamespace() {
 	const store = new Map<string, string>()
 	return {
-		get: async (key: string, opts?: { type?: string }) => {
+		get: async(key: string, opts?: { type?: string }) => {
 			const raw = store.get(key)
 			if (!raw) return null
 			return opts?.type === 'json' ? JSON.parse(raw) : raw
 		},
-		put: async (key: string, value: string) => { store.set(key, value) },
-		delete: async (key: string) => { store.delete(key) },
-		list: async ({ prefix }: { prefix?: string }) => {
+		put: async(key: string, value: string) => { store.set(key, value) },
+		delete: async(key: string) => { store.delete(key) },
+		list: async({ prefix }: { prefix?: string }) => {
 			const keys: { name: string }[] = []
 			for (const key of store.keys()) {
 				if (!prefix || key.startsWith(prefix)) {
@@ -25,7 +26,7 @@ function createNamespace() {
 }
 
 describe('KVSessionAdapter', () => {
-	it('refreshes near expiry and marks session fresh', async () => {
+	it('refreshes near expiry and marks session fresh', async() => {
 		const namespace = createNamespace()
 		const adapter = new KVSessionAdapter(namespace, {
 			sessionLifetime: 1000,
@@ -42,7 +43,7 @@ describe('KVSessionAdapter', () => {
 		expect(validated!.expiresAt.getTime()).toBeGreaterThan(700)
 	})
 
-	it('deletes expired sessions', async () => {
+	it('deletes expired sessions', async() => {
 		const namespace = createNamespace()
 		const adapter = new KVSessionAdapter(namespace, { sessionLifetime: 10 })
 		vi.spyOn(Date, 'now').mockReturnValue(0)
@@ -53,7 +54,7 @@ describe('KVSessionAdapter', () => {
 		expect(result.session).toBeNull()
 	})
 
-	it('lists sessions for a user when list is available', async () => {
+	it('lists sessions for a user when list is available', async() => {
 		const namespace = createNamespace()
 		const adapter = new KVSessionAdapter(namespace)
 		const s1 = await adapter.createSession('u1')

@@ -1,38 +1,38 @@
-import { generateState, generateCodeVerifier } from "arctic";
-import type { RequestEvent } from "@sveltejs/kit";
-import type { Cookies } from "@sveltejs/kit";
-import type { OAuthProvider } from "../providers/base.js";
-import type { OAuthProfile, OAuthTokens } from "../types/index.js";
-import { timingSafeEqual } from "./crypto.js";
-import type { RequestEventLike } from "../types/auth.js";
+import type { Cookies, RequestEvent } from '@sveltejs/kit'
+import { generateCodeVerifier, generateState } from 'arctic'
 
-type CookiesLike = Pick<Cookies, "set" | "get" | "delete">;
+import type { OAuthProvider } from '../providers/OAuthProvider.ts'
+import type { RequestEventLike } from '../types/auth.ts'
+import type { OAuthProfile, OAuthTokens } from '../types/index.ts'
+import { timingSafeEqual } from './crypto.ts'
+
+type CookiesLike = Pick<Cookies, 'set' | 'get' | 'delete'>
 
 type CookieOptions = {
 	secure?: boolean;
 	maxAge?: number;
-	sameSite?: "lax" | "strict" | "none";
-};
+	sameSite?: 'lax' | 'strict' | 'none';
+}
 
 type OAuthCallbackParams = {
 	code: string | null;
 	state: string | null;
 	storedState: string | null;
 	storedCodeVerifier: string | null;
-};
+}
 
 type OAuthCallbackOverrides = {
 	code?: string | null;
 	state?: string | null;
-};
+}
 
 type OAuthCallbackHandlers = {
 	onAuthenticated?: (
 		profile: OAuthProfile,
-		tokens: OAuthTokens,
+		tokens: OAuthTokens
 	) => Promise<void> | void;
 	onError?: (error: unknown) => Promise<void> | void;
-};
+}
 
 /**
  * Create OAuth state and code verifier cookies
@@ -46,31 +46,31 @@ type OAuthCallbackHandlers = {
 export function createOAuthCookies(
 	cookies: CookiesLike,
 	provider: string,
-	options: CookieOptions = {},
+	options: CookieOptions = {}
 ): { state: string; codeVerifier: string } {
-	const { secure = true, maxAge = 30 * 60, sameSite = "lax" } = options;
+	const { secure = true, maxAge = 30 * 60, sameSite = 'lax' } = options
 
-	const state = generateState();
-	const codeVerifier = generateCodeVerifier();
+	const state = generateState()
+	const codeVerifier = generateCodeVerifier()
 
 	const cookieOptions = {
 		httpOnly: true,
-		path: "/",
+		path: '/',
 		secure,
 		sameSite,
-		maxAge,
-	};
+		maxAge
+	}
 
 	// Store state cookie
-	cookies.set(`${provider}_oauth_state`, state, cookieOptions);
+	cookies.set(`${ provider }_oauth_state`, state, cookieOptions)
 
 	// Store code verifier cookie
-	cookies.set(`${provider}_oauth_code_verifier`, codeVerifier, {
+	cookies.set(`${ provider }_oauth_code_verifier`, codeVerifier, {
 		...cookieOptions,
-		secure,
-	});
+		secure
+	})
 
-	return { state, codeVerifier };
+	return { state, codeVerifier }
 }
 
 /**
@@ -79,8 +79,8 @@ export function createOAuthCookies(
  * @param {string} provider - Provider name
  */
 export function cleanupOAuthCookies(cookies: CookiesLike, provider: string): void {
-	cookies.delete(`${provider}_oauth_state`, { path: "/" });
-	cookies.delete(`${provider}_oauth_code_verifier`, { path: "/" });
+	cookies.delete(`${ provider }_oauth_state`, { path: '/' })
+	cookies.delete(`${ provider }_oauth_code_verifier`, { path: '/' })
 }
 
 /**
@@ -93,51 +93,51 @@ export function cleanupOAuthCookies(cookies: CookiesLike, provider: string): voi
  * @returns {boolean}
  */
 export function validateOAuthCallback(params: OAuthCallbackParams): boolean {
-	const { code, state, storedState, storedCodeVerifier } = params;
+	const { code, state, storedState, storedCodeVerifier } = params
 
-	const stateMatches = timingSafeEqual(state ?? "", storedState ?? "");
+	const stateMatches = timingSafeEqual(state ?? '', storedState ?? '')
 	return !!(
 		code &&
 		storedCodeVerifier &&
 		storedState &&
 		stateMatches
-	);
+	)
 }
 
 /**
  * Extract OAuth callback parameters from request
+ *
  * @param {Object} cookies - SvelteKit cookies object
  * @param {URL} url - Request URL
  * @param {string} provider - Provider name
+ * @param overrides - overrides value.
  * @returns {{code: string | null, state: string | null, storedState: string | null, storedCodeVerifier: string | null}}
  */
 export function getOAuthCallbackParams(
 	cookies: CookiesLike,
 	url: URL,
 	provider: string,
-	overrides: OAuthCallbackOverrides = {},
+	overrides: OAuthCallbackOverrides = {}
 ): OAuthCallbackParams {
-	const code = overrides.code ?? url.searchParams.get("code");
-	const state = overrides.state ?? url.searchParams.get("state");
-	const storedState = cookies.get(`${provider}_oauth_state`) ?? null;
+	const code = overrides.code ?? url.searchParams.get('code')
+	const state = overrides.state ?? url.searchParams.get('state')
+	const storedState = cookies.get(`${ provider }_oauth_state`) ?? null
 	const storedCodeVerifier =
-		cookies.get(`${provider}_oauth_code_verifier`) ?? null;
+		cookies.get(`${ provider }_oauth_code_verifier`) ?? null
 
-	return { code, state, storedState, storedCodeVerifier };
+	return { code, state, storedState, storedCodeVerifier }
 }
 
 /**
  * Create a generic OAuth callback handler
  * This handles the full OAuth flow including validation, profile fetching, and cleanup
  *
- * @param {Object} params
  * @param {import('@sveltejs/kit').RequestEvent} params.event - SvelteKit request event
  * @param {string} params.provider - Provider name
- * @param {import('../providers/base.js').OAuthProvider} params.providerInstance - Provider instance
+ * @param {import('../providers/OAuthProvider.ts').OAuthProvider} params.providerInstance - Provider instance
  * @param {Object} params.callbacks - Lifecycle callbacks
- * @param {Function} params.callbacks.onAuthenticated - Called with (profile, tokens) after successful auth
- * @param {Function} [params.callbacks.onError] - Optional error handler
  * @param {string} [params.appleUserData] - Optional Apple user data from POST body
+ * @param overrideParams - override params value.
  * @returns {Promise<{profile: Object, tokens: Object}>}
  */
 export async function handleOAuthCallback({
@@ -146,7 +146,7 @@ export async function handleOAuthCallback({
 	providerInstance,
 	callbacks,
 	appleUserData = null,
-	overrideParams = null,
+	overrideParams = null
 }: {
 	event: RequestEvent | RequestEventLike | { cookies: CookiesLike; url: URL; request: Request };
 	provider: string;
@@ -155,67 +155,57 @@ export async function handleOAuthCallback({
 	appleUserData?: string | null;
 	overrideParams?: OAuthCallbackOverrides | null;
 }): Promise<{ profile: OAuthProfile; tokens: OAuthTokens }> {
-	const { cookies, url } = event;
-	let override: OAuthCallbackOverrides = overrideParams || {};
-	if (!overrideParams) {
-		try {
-			if (event.request.method === "POST") {
-				const formData = await event.request.formData();
-				override = {
-					code: formData.get("code")?.toString() ?? null,
-					state: formData.get("state")?.toString() ?? null,
-				};
-			}
-		} catch {}
-	}
+	const { cookies, url } = event
+	const override: OAuthCallbackOverrides = overrideParams || {}
 
 	try {
 		// Extract and validate callback parameters
-		const params = getOAuthCallbackParams(cookies, url, provider, override);
+		const params = getOAuthCallbackParams(cookies, url, provider, override)
 
 		if (!validateOAuthCallback(params)) {
-			throw new Error("Invalid OAuth callback parameters");
+			throw new Error('Invalid OAuth callback parameters')
 		}
 		if (!params.code || !params.storedCodeVerifier) {
-			throw new Error("Missing OAuth parameters");
+			throw new Error('Missing OAuth parameters')
 		}
 
 		// Fetch user profile from provider
 		let profile:
 			| { profile: OAuthProfile; tokens: OAuthTokens }
-			| null = null;
-		if (provider === "apple" && appleUserData) {
-				profile = await providerInstance.getUserProfile(
-					params.code,
-					params.storedCodeVerifier,
-					appleUserData,
-				);
-			} else {
-				profile = await providerInstance.getUserProfile(
-					params.code,
-					params.storedCodeVerifier,
-				);
-			}
+			| null = null
+		if (provider === 'apple' && appleUserData) {
+			profile = await providerInstance.getUserProfile(
+				params.code,
+				params.storedCodeVerifier,
+				appleUserData
+			)
+		} else {
+			profile = await providerInstance.getUserProfile(
+				params.code,
+				params.storedCodeVerifier
+			)
+		}
 
 		if (!profile?.profile) {
-			throw new Error("Invalid provider profile");
+			throw new Error('Invalid provider profile')
 		}
 
 		// Cleanup OAuth cookies
-		cleanupOAuthCookies(cookies, provider);
+		cleanupOAuthCookies(cookies, provider)
 
 		// Call user-provided authentication handler
 		if (callbacks.onAuthenticated) {
-			await callbacks.onAuthenticated(profile.profile, profile.tokens);
+			await callbacks.onAuthenticated(profile.profile, profile.tokens)
 		}
 
-		return profile;
-	} catch (error) {
+		return profile
+	} catch(error) {
 		if (callbacks.onError) {
-			await callbacks.onError(error);
+			await callbacks.onError(error)
 		}
+
 		// Cleanup OAuth cookies on error
-		cleanupOAuthCookies(cookies, provider);
-		throw error;
+		cleanupOAuthCookies(cookies, provider)
+		throw error
 	}
 }

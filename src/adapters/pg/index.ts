@@ -2,15 +2,14 @@ import { randomBytes, randomUUID } from 'node:crypto'
 
 import type { Cookies } from '@sveltejs/kit'
 
-import type { OAuthProfile, Session, User } from '../../types/index.js'
-import type { MagicLinkToken, MfaStatus } from '../../types/index.js'
-import type { WebAuthnCredential } from '../../types/index.js'
-import { UserAdapter } from '../database/base.js'
-import { MagicLinkAdapter } from '../magic-link/base.js'
-import { MfaAdapter } from '../mfa/base.js'
-import { SessionAdapter } from '../session/base.js'
-import { WebAuthnAdapter } from '../webauthn/base.js'
+import type { MagicLinkToken, MfaStatus, OAuthProfile, Session, User, WebAuthnCredential } from '../../types/index.ts'
+import { UserAdapter } from '../database/UserAdapter.ts'
+import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
+import { MfaAdapter } from '../mfa/MfaAdapter.ts'
+import { SessionAdapter } from '../session/SessionAdapter.ts'
+import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.ts'
 
+/** Pg Pool Like typed model for runtime integration. */
 export type PgPoolLike = {
 	query<T extends Record<string, unknown> = Record<string, unknown>>(
 		text: string,
@@ -83,6 +82,7 @@ type MagicLinkTokenRow = {
 	user_id: string | null;
 }
 
+/** Postgres user adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class PgUserAdapter extends UserAdapter {
 	#db: PgPoolLike
 
@@ -202,6 +202,7 @@ export class PgUserAdapter extends UserAdapter {
 	}
 }
 
+/** Postgres session adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class PgSessionAdapter extends SessionAdapter {
 	#cookieDomain: string | undefined
 	#cookieName: string
@@ -342,6 +343,7 @@ export class PgSessionAdapter extends SessionAdapter {
 	}
 }
 
+/** Postgres web authn adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class PgWebAuthnAdapter extends WebAuthnAdapter {
 	#db: PgPoolLike
 
@@ -457,25 +459,25 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		updates: Record<string, unknown>
 	): Promise<void> {
 		const allowed = new Map([
-			['counter', updates['counter']],
-			['name', updates['name']],
-			['transports', updates['transports']]
+			[ 'counter', updates['counter'] ],
+			[ 'name', updates['name'] ],
+			[ 'transports', updates['transports'] ]
 		])
 		const fields: string[] = []
 		const values: unknown[] = []
-		for (const [key, value] of allowed.entries()) {
+		for (const [ key, value ] of allowed.entries()) {
 			if (value === undefined) continue
 			if (key === 'counter' && typeof value !== 'number') continue
 			if (key === 'name' && value !== null && typeof value !== 'string') continue
 			if (key === 'transports') {
-				if (value !== null && (!Array.isArray(value) || value.some((entry) => typeof entry !== 'string'))) {
+				if (value !== null && (!Array.isArray(value) || value.some(entry => typeof entry !== 'string'))) {
 					continue
 				}
-				fields.push(`transports = $${fields.length + 1}::jsonb`)
+				fields.push(`transports = $${ fields.length + 1 }::jsonb`)
 				values.push(JSON.stringify(value))
 				continue
 			}
-			fields.push(`${ key } = $${fields.length + 1}`)
+			fields.push(`${ key } = $${ fields.length + 1 }`)
 			values.push(value)
 		}
 		if (fields.length === 0) {
@@ -505,6 +507,7 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 	}
 }
 
+/** Postgres mfa adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class PgMfaAdapter extends MfaAdapter {
 	#db: PgPoolLike
 
@@ -565,7 +568,7 @@ export class PgMfaAdapter extends MfaAdapter {
 				[ userId ]
 			)
 		).rows
-		return rows.map((row) => row.code_hash)
+		return rows.map(row => row.code_hash)
 	}
 
 	async consumeBackupCode(userId: string, hash: string): Promise<void> {
@@ -598,6 +601,7 @@ export class PgMfaAdapter extends MfaAdapter {
 	}
 }
 
+/** Postgres magic link adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class PgMagicLinkAdapter extends MagicLinkAdapter {
 	#db: PgPoolLike
 
@@ -710,6 +714,7 @@ export class PgMagicLinkAdapter extends MagicLinkAdapter {
 	}
 }
 
+/** Creates pg auth adapters for auth storage. */
 export function createPgAuthAdapters(input: {
 	cookieDomain?: string;
 	cookieName: string;
@@ -725,6 +730,7 @@ export function createPgAuthAdapters(input: {
 	}
 }
 
+/** Pg Auth Schema Sql registry entry for runtime integration. */
 export const pgAuthSchemaSql = `
 CREATE TABLE IF NOT EXISTS auth_users (
 	id TEXT PRIMARY KEY,

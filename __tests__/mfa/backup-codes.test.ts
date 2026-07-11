@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest'
-import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../../src/mfa/backup-codes.ts'
+import { describe, expect, it } from 'vitest'
+
+import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../../src/mfa/backupCodes.ts'
 
 describe('backup codes', () => {
-	it('hashes and verifies codes', async () => {
+	it('hashes and verifies codes', async() => {
 		const codes = generateBackupCodes({ count: 3, length: 8 })
 		const hashes = await hashBackupCodes(codes)
 		const result = await verifyBackupCode({ code: codes[1]!, hashedCodes: hashes })

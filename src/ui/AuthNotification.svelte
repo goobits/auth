@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	let {
 		visible = $bindable(false),
 		title = 'Notice',
@@ -6,6 +6,13 @@
 		onClose = () => {},
 		ctaLabel = null,
 		onCta = () => {}
+	}: {
+		visible?: boolean
+		title?: string
+		message?: string
+		onClose?: () => void
+		ctaLabel?: string | null
+		onCta?: () => void
 	} = $props()
 
 	function close() {

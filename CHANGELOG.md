@@ -1,5 +1,28 @@
 # Changelog
 
+<!-- CHANGELOG audit cutoff: 2026-06-24. commit 9037d71 on main. -->
+
+## [Unreleased]
+
+### 🔒 Security
+
+- 👤 Trusted proxy headers now require explicit trusted-header configuration before forwarded client IPs are accepted.
+- 👤 OAuth routes no longer use the global OAuth POST fallback, and redirect endpoints enforce safer request paths.
+- 👤 Auth error logging now avoids raw exception objects so sensitive provider, password, and token details are not emitted.
+- 👤 Auth crypto-sensitive helpers for API keys, CSRF tokens, signed session tokens, token encryption, random bytes, and SHA-256 now use `@goobits/security/crypto` while preserving the auth-facing helper APIs.
+
+### 🏠 Internal
+
+- 📚 Public API docs now describe the curated package entrypoints and low-level subpaths.
+- 📦 Development dependencies refreshed for the current package toolchain.
+- Removed generic `auditLog` and `withAuditLogging` exports from `@goobits/auth/security`; generic audit logging now belongs to `@goobits/security/audit`, while auth keeps `auditAuthEvent` for auth-specific event names.
+- Renamed auth-side API-key helpers from admin wording to `createAuthApiKey`, `hashAuthApiKey`, and `verifyAuthApiKey`; admin route authentication belongs to `@goobits/security/admin-auth`.
+- Removed auth-side reCAPTCHA verification. Use `@goobits/security/recaptcha` directly for structured CAPTCHA verification.
+- Removed auth-side rate-limit primitives. Auth route policy now uses `@goobits/security/rate-limit` directly.
+- Routed auth-side CSRF issuance and validation through `@goobits/security/csrf`; auth keeps only SvelteKit cookie ergonomics.
+- Removed auth-side webhook alert transport. Auth threshold alerts now dispatch through `@goobits/security/alerting`.
+- Removed the unused migration notification UI export.
+
 ## 0.2.0
 
 - Added the class-first `GoobitsAuth` API.

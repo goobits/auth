@@ -1,16 +1,26 @@
 import { encodeBase64url } from '@oslojs/encoding'
 import type { Cookies } from '@sveltejs/kit'
 
-import type { OAuthProfile, OAuthTokens, Session, User, WebAuthnCredential } from '../../types/index.js'
-import type { MfaStatus } from '../../types/index.js'
-import { UserAdapter } from '../database/base.js'
-import { MfaAdapter } from '../mfa/base.js'
-import { TokenAdapter } from '../oauth-token/base.js'
-import { SessionAdapter } from '../session/base.js'
-import { WebAuthnAdapter } from '../webauthn/base.js'
+import type { MfaStatus, OAuthProfile, OAuthTokens, Session, User, WebAuthnCredential } from '../../types/index.ts'
+import { UserAdapter } from '../database/UserAdapter.ts'
+import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
+import { MfaAdapter } from '../mfa/MfaAdapter.ts'
+import { TokenAdapter } from '../oauth-token/TokenAdapter.ts'
+import { SessionAdapter } from '../session/SessionAdapter.ts'
+import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.ts'
 
 type StoredUser = User & { password?: string | null }
+type StoredMagicLinkToken = {
+	id: string;
+	userId: string | null;
+	email: string;
+	tokenHash: string;
+	otpHash?: string | null;
+	expiresAt: Date;
+	metadata?: Record<string, unknown>;
+}
 
+/** In-memory user adapter for local development and tests. */
 export class MemoryUserAdapter extends UserAdapter {
 	#oauthIndex = new Map<string, string>()
 	#users = new Map<string, StoredUser>()
@@ -93,6 +103,95 @@ export class MemoryUserAdapter extends UserAdapter {
 	}
 }
 
+/** In-memory magic link adapter for local development and tests. */
+export class MemoryMagicLinkAdapter extends MagicLinkAdapter {
+	#counter = 0
+	#tokens = new Map<string, StoredMagicLinkToken>()
+
+	async createToken({
+		userId,
+		email,
+		tokenHash,
+		otpHash,
+		expiresAt,
+		metadata
+	}: {
+		userId: string | null;
+		email: string;
+		tokenHash: string;
+		otpHash?: string | null;
+		expiresAt: Date;
+		metadata?: Record<string, unknown>;
+	}): Promise<Record<string, unknown>> {
+		const id = `magic-${ ++this.#counter }`
+		const token: StoredMagicLinkToken = {
+			id,
+			userId,
+			email,
+			tokenHash,
+			otpHash: otpHash ?? null,
+			expiresAt,
+			...(metadata ? { metadata } : {})
+		}
+		this.#tokens.set(id, token)
+		return token
+	}
+
+	async findByTokenHash(tokenHash: string): Promise<Record<string, unknown> | null> {
+		for (const token of this.#tokens.values()) {
+			if (token.tokenHash === tokenHash) return token
+		}
+		return null
+	}
+
+	async findByEmailAndOtpHash({
+		email,
+		otpHash
+	}: {
+		email: string;
+		otpHash: string;
+	}): Promise<Record<string, unknown> | null> {
+		for (const token of this.#tokens.values()) {
+			if (token.email === email && token.otpHash === otpHash) return token
+		}
+		return null
+	}
+
+	async deleteById(tokenId: string): Promise<void> {
+		this.#tokens.delete(tokenId)
+	}
+
+	async deleteByUserId(userId: string): Promise<void> {
+		for (const [ id, token ] of this.#tokens.entries()) {
+			if (token.userId === userId) this.#tokens.delete(id)
+		}
+	}
+
+	async deleteByEmail(email: string): Promise<void> {
+		for (const [ id, token ] of this.#tokens.entries()) {
+			if (token.email === email) this.#tokens.delete(id)
+		}
+	}
+
+	async consumeByTokenHash(tokenHash: string): Promise<Record<string, unknown> | null> {
+		const token = await this.findByTokenHash(tokenHash)
+		const id = typeof token?.['id'] === 'string' ? token['id'] : null
+		if (id) this.#tokens.delete(id)
+		return token
+	}
+
+	async consumeByEmailAndOtpHash(params: {
+		email: string;
+		otpHash: string;
+	}): Promise<Record<string, unknown> | null> {
+		const token = await this.findByEmailAndOtpHash(params)
+		const id = typeof token?.['id'] === 'string' ? token['id'] : null
+		if (id) this.#tokens.delete(id)
+		return token
+	}
+}
+
+/** In-memory session adapter with cookie helpers. */
 export class MemorySessionAdapter extends SessionAdapter {
 	#cookieDomain: string | undefined
 	#cookieName: string
@@ -189,6 +288,7 @@ export class MemorySessionAdapter extends SessionAdapter {
 	}
 }
 
+/** In-memory WebAuthn adapter for challenges and credentials. */
 export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 	#challenges = new Map<string, Record<string, unknown>>()
 	#credentials = new Map<string, WebAuthnCredential>()
@@ -257,7 +357,7 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 	}
 
 	async listCredentials(userId: string): Promise<WebAuthnCredential[]> {
-		return [ ...this.#credentials.values() ].filter((credential) => credential.userId === userId)
+		return [ ...this.#credentials.values() ].filter(credential => credential.userId === userId)
 	}
 
 	async updateCredential(
@@ -281,7 +381,7 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 		if (
 			updates['transports'] === null ||
 			(Array.isArray(updates['transports']) &&
-				updates['transports'].every((entry) => typeof entry === 'string'))
+				updates['transports'].every(entry => typeof entry === 'string'))
 		) {
 			next.transports = updates['transports']
 		}
@@ -301,6 +401,7 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 	}
 }
 
+/** In-memory MFA adapter for TOTP secrets and backup codes. */
 export class MemoryMfaAdapter extends MfaAdapter {
 	#backupCodes = new Map<string, Set<string>>()
 	#factors = new Map<string, { enabledAt: Date | null; secret: string }>()
@@ -355,6 +456,7 @@ export class MemoryMfaAdapter extends MfaAdapter {
 	}
 }
 
+/** Creates the default in-memory auth adapter bundle. */
 export function createMemoryAuthAdapters(input: {
 	cookieDomain?: string;
 	cookieName: string;
@@ -362,6 +464,7 @@ export function createMemoryAuthAdapters(input: {
 }) {
 	const user = new MemoryUserAdapter()
 	return {
+		magicLink: new MemoryMagicLinkAdapter(),
 		session: new MemorySessionAdapter({
 			...(input.cookieDomain ? { cookieDomain: input.cookieDomain } : {}),
 			cookieName: input.cookieName,
@@ -374,8 +477,10 @@ export function createMemoryAuthAdapters(input: {
 	}
 }
 
+/** Test user adapter backed by the memory implementation. */
 export class MockUserAdapter extends MemoryUserAdapter {}
 
+/** Test session adapter with no-op cookie writes. */
 export class MockSessionAdapter extends MemorySessionAdapter {
 	#users: MemoryUserAdapter
 
@@ -397,6 +502,7 @@ export class MockSessionAdapter extends MemorySessionAdapter {
 	deleteSessionCookie(_cookies: Cookies): void {}
 }
 
+/** Test OAuth token adapter backed by an in-memory map. */
 export class MockTokenAdapter extends TokenAdapter {
 	#tokens = new Map<string, OAuthTokens>()
 

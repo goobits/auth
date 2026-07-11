@@ -1,14 +1,15 @@
-import { redirect } from "@sveltejs/kit";
-import type { Actions, RequestHandler } from "@sveltejs/kit";
-import type { SessionAdapter } from "../adapters/session/base.js";
-import type { AuthLocals, RequestEventLike } from "../types/auth.js";
-import { getLogger } from "../utils/logger.js";
+import { redirect, type Actions, type RequestHandler } from '@sveltejs/kit'
+
+import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
+import type { AuthLocals, RequestEventLike } from '../types/auth.ts'
+import { getLogger } from '../utils/logger.ts'
+import { isSafeRedirectPath } from '../utils/redirect.ts'
 
 /**
  * Create a logout route handler
  *
  * @param {Object} config - Handler configuration
- * @param {import('../adapters/session/base.js').SessionAdapter} config.sessionAdapter - Session adapter instance
+ * @param {import('../adapters/session/SessionAdapter.ts').SessionAdapter} config.sessionAdapter - Session adapter instance
  * @param {string} [config.redirectAfterLogout='/'] - URL to redirect to after logout
  * @param {Function} [config.getSession] - Function to get session from event.locals (default: locals => locals.session)
  * @param {Function} [config.onLogout] - Optional callback after session is invalidated, receives event
@@ -36,52 +37,53 @@ export function createLogoutHandler(config: {
 }): RequestHandler {
 	const {
 		sessionAdapter,
-		redirectAfterLogout = "/",
+		redirectAfterLogout = '/',
 		getSession = (locals: AuthLocals) => locals.session ?? null,
-		onLogout,
-	} = config;
-	const log = getLogger();
+		onLogout
+	} = config
+	const log = getLogger()
 
-	return async (event) => {
+	return async event => {
 		try {
-			const session = getSession(event.locals);
+			const session = getSession(event.locals)
 
 			if (session) {
-				await sessionAdapter.invalidateSession(session.id);
-				sessionAdapter.deleteSessionCookie(event.cookies);
+				await sessionAdapter.invalidateSession(session.id)
+				sessionAdapter.deleteSessionCookie(event.cookies)
 			}
 
 			// Call optional cleanup callback
 			if (onLogout) {
-				await onLogout(event);
+				await onLogout(event)
 			}
 
-			throw redirect(302, redirectAfterLogout);
-		} catch (error) {
+			throw redirect(302, isSafeRedirectPath(redirectAfterLogout) ? redirectAfterLogout : '/')
+		} catch(error) {
 			// Re-throw redirects
 			if (
 				error &&
-				typeof error === "object" &&
-				"status" in error &&
+				typeof error === 'object' &&
+				'status' in error &&
 				(error as { status?: number }).status === 302
 			) {
-				throw error;
+				throw error
 			}
 
-			log.error?.("Error during logout:", error);
-			throw redirect(302, redirectAfterLogout);
+			log.error?.('Error during logout:', error instanceof Error ? error.message : String(error))
+			throw redirect(302, isSafeRedirectPath(redirectAfterLogout) ? redirectAfterLogout : '/')
 		}
-	};
+	}
 }
 
+/** Creates logout action for auth HTTP handlers. */
 export function createLogoutAction(config: {
 	sessionAdapter: SessionAdapter;
 	redirectAfterLogout?: string;
 	getSession?: (locals: AuthLocals) => { id: string } | null;
 	onLogout?: (event: RequestEventLike) => Promise<void> | void;
 }): Actions {
-	const handler = createLogoutHandler(config);
+	const handler = createLogoutHandler(config)
 	return {
-		default: handler,
-	};
+		default: handler
+	}
 }

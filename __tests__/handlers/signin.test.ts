@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
 import { createSigninHandler } from '../../src/handlers/signin.ts'
-import { captureRejected, createRequestEvent, getRedirectLocation } from '../test-kit.ts'
+import { captureRejected, createRequestEvent, getRedirectLocation } from '../testKit.ts'
 
 describe('createSigninHandler', () => {
-	it('rejects invalid credentials without setting cookie', async () => {
+	it('rejects invalid credentials without setting cookie', async() => {
 		const credentialsProvider = { authenticate: vi.fn().mockResolvedValue({ user: null, valid: false }) }
 		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
 		const userAdapter = {}
@@ -21,7 +22,7 @@ describe('createSigninHandler', () => {
 		expect(sessionAdapter.setSessionCookie).not.toHaveBeenCalled()
 	})
 
-	it('creates session and redirects on success', async () => {
+	it('creates session and redirects on success', async() => {
 		const credentialsProvider = { authenticate: vi.fn().mockResolvedValue({ user: { id: 'u1' }, valid: true }) }
 		const sessionAdapter = {
 			createSession: vi.fn().mockResolvedValue({ id: 's1', expiresAt: new Date(Date.now() + 1000) }),

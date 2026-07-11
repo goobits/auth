@@ -1,0 +1,56 @@
+import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const here = dirname(fileURLToPath(import.meta.url))
+const root = join(here, '..')
+
+const ASSET_DIRS = [
+	{
+		srcDir: join(root, 'src', 'ui'),
+		patterns: [ '.svelte', '.css' ],
+		outSubdir: join('ui')
+	}
+]
+
+const OUT_DIRS = [ join(root, 'dist', 'node'), join(root, 'dist', 'worker') ]
+
+async function ensureDir(path) {
+	await mkdir(path, { recursive: true })
+}
+
+async function copyDirFiltered({ srcDir, patterns, outSubdir }) {
+	const entries = await readdir(srcDir, { withFileTypes: true })
+	for (const outDir of OUT_DIRS) {
+		await ensureDir(join(outDir, outSubdir))
+	}
+	for (const entry of entries) {
+		if (!entry.isFile()) continue
+		const ext = entry.name.slice(entry.name.lastIndexOf('.'))
+		if (!patterns.includes(ext)) continue
+		const from = join(srcDir, entry.name)
+		for (const outDir of OUT_DIRS) {
+			const to = join(outDir, outSubdir, entry.name)
+			await copyFile(from, to)
+		}
+	}
+}
+
+// Convert the TypeScript barrel at src/ui/index.ts into a runtime-loadable
+// barrel: keep raw .svelte imports and point the store export at emitted JS.
+async function buildUiBarrelFromSource() {
+	const source = await readFile(join(root, 'src', 'ui', 'index.ts'), 'utf8')
+
+	return source
+		.replace('./authStore.ts', './authStore.js')
+		.replace(/^export type .*;\n/gm, '')
+}
+
+for (const dir of ASSET_DIRS) {
+	await copyDirFiltered(dir)
+}
+
+const uiBarrel = await buildUiBarrelFromSource()
+for (const outDir of OUT_DIRS) {
+	await writeFile(join(outDir, 'ui', 'index.js'), uiBarrel)
+}

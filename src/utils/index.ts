@@ -1,21 +1,21 @@
 export {
-	encryptTokens,
 	decryptTokens,
-	generateEncryptionKey,
-} from "./crypto.js";
-export { sanitizeUser } from "./sanitize.js";
+	encryptTokens,
+	generateEncryptionKey
+} from './crypto.ts'
 export {
-	createOAuthCookies,
 	cleanupOAuthCookies,
-	validateOAuthCallback,
+	createOAuthCookies,
 	getOAuthCallbackParams,
 	handleOAuthCallback,
-} from "./oauth.js";
+	validateOAuthCallback
+} from './oauth.ts'
+export { DEFAULT_REDACT_KEYS, redactObject } from './redact.ts'
+export { isSafeRedirectPath, normalizeSafeRedirectPath } from './redirect.ts'
+export { sanitizeUser } from './sanitize.ts'
 export {
-	VERIFICATION_TOKEN_TYPES,
-	createVerificationToken,
 	consumeVerificationToken,
+	createVerificationToken,
 	getUserForVerificationToken,
-} from "./tokens.js";
-export { redactObject, DEFAULT_REDACT_KEYS } from "./redact.js";
-export { isSafeRedirectPath, normalizeSafeRedirectPath } from "./redirect.js";
+	VERIFICATION_TOKEN_TYPES
+} from './tokens.ts'

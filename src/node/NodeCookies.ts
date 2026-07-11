@@ -10,6 +10,7 @@ type CookieOptions = {
 	secure?: boolean;
 }
 
+/** Node HTTP cookie adapter compatible with SvelteKit-style cookie APIs. */
 export class NodeCookies {
 	#cookies: Map<string, string>
 	#setCookieHeaders: string[] = []

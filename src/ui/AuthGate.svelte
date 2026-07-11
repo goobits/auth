@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte'
-	import { auth } from './auth-store.js'
+	import { auth } from './authStore.ts'
 
 	let {
 		user = undefined,

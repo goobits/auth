@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
+
 import { redactObject } from '../../src/utils/redact.ts'
 
 type RedactedOutput = {
@@ -7,13 +8,23 @@ type RedactedOutput = {
 	ok: boolean;
 }
 
+type SensitiveRedactedOutput = {
+	api_key: string;
+	apiKey: string;
+	client_secret: string;
+	clientSecret: string;
+	verification_token: string;
+	totp: string;
+	passphrase: string;
+}
+
 describe('redactObject', () => {
 	it('redacts nested sensitive keys case-insensitively', () => {
 		const input = {
 			password: 'secret',
 			profile: {
 				token: 'abc',
-				nested: [{ Access_Token: 'def' }]
+				nested: [ { Access_Token: 'def' } ]
 			},
 			ok: true
 		}
@@ -34,7 +45,7 @@ describe('redactObject', () => {
 			totp: '123456',
 			passphrase: 'correct horse battery staple'
 		}
-		const output = redactObject(input) as any
+		const output = redactObject(input) as SensitiveRedactedOutput
 		expect(output.api_key).toBe('[redacted]')
 		expect(output.apiKey).toBe('[redacted]')
 		expect(output.client_secret).toBe('[redacted]')

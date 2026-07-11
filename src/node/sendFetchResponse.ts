@@ -1,8 +1,9 @@
 import { Buffer } from 'node:buffer'
 import type { ServerResponse } from 'node:http'
 
-import type { NodeCookies } from './nodeCookies.js'
+import type { NodeCookies } from './NodeCookies.ts'
 
+/** Sends fetch response for auth runtime. */
 export async function sendFetchResponse(
 	res: ServerResponse,
 	response: Response,

@@ -1,32 +1,34 @@
-import { redirect } from "@sveltejs/kit";
-import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.js";
-import type { RequestEventLike } from "../types/auth.js";
-import { getLogger } from "../utils/logger.js";
-import type { User } from "../types/index.js";
+import { redirect } from '@sveltejs/kit'
+
+import type { RequestEventLike } from '../types/auth.ts'
+import type { User } from '../types/index.ts'
+import { getLogger } from '../utils/logger.ts'
+import { isSafeRedirectPath } from '../utils/redirect.ts'
+import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 
 type RateLimitConfig = {
 	check?: (key: string) => Promise<{ allowed: boolean }>;
 	key?: (event: RequestEventLike) => string;
 	trustProxyHeader?: boolean;
-};
+}
 
 function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
-	if (rateLimit?.key) return rateLimit.key(event);
+	if (rateLimit?.key) return rateLimit.key(event)
 	if (rateLimit?.trustProxyHeader) {
-		const forwardedFor = event.request.headers.get("x-forwarded-for");
-		const firstForwardedIp = forwardedFor?.split(",")[0]?.trim();
-		if (firstForwardedIp) return firstForwardedIp;
+		const forwardedFor = event.request.headers.get('x-forwarded-for')
+		const firstForwardedIp = forwardedFor?.split(',')[0]?.trim()
+		if (firstForwardedIp) return firstForwardedIp
 	}
-	if (event.getClientAddress) return event.getClientAddress();
-	return "unknown";
+	if (event.getClientAddress) return event.getClientAddress()
+	return 'unknown'
 }
 
 /**
  * Create a signin handler for credentials-based authentication
  * @param {Object} config - Handler configuration
- * @param {import('../providers/credentials.js').CredentialsProvider} config.credentialsProvider - Credentials provider
- * @param {import('../adapters/database/base.js').UserAdapter} config.userAdapter - User adapter
- * @param {import('../adapters/session/base.js').SessionAdapter} config.sessionAdapter - Session adapter
+ * @param {import('../providers/CredentialsProvider.ts').CredentialsProvider} config.credentialsProvider - Credentials provider
+ * @param {import('../adapters/database/UserAdapter.ts').UserAdapter} config.userAdapter - User adapter
+ * @param {import('../adapters/session/SessionAdapter.ts').SessionAdapter} config.sessionAdapter - Session adapter
  * @param {Function} [config.onSignin] - Callback after successful signin (user) => Promise<void>
  * @param {Object} [config.csrf] - CSRF validation config
  * @param {Function} [config.csrf.validate] - Async function (event) => boolean
@@ -55,11 +57,11 @@ export function createSigninHandler(config: {
 	sessionAdapter: {
 		createSession: (
 			userId: string,
-			metadata?: Record<string, unknown>,
+			metadata?: Record<string, unknown>
 		) => Promise<{ id: string; expiresAt: Date }>;
 		setSessionCookie: (
-			cookies: RequestEventLike["cookies"],
-			session: { id: string; expiresAt: Date },
+			cookies: RequestEventLike['cookies'],
+			session: { id: string; expiresAt: Date }
 		) => void;
 	};
 	onSignin?: (user: User | null) => Promise<void> | void;
@@ -78,56 +80,56 @@ export function createSigninHandler(config: {
 		onSignin,
 		csrf,
 		rateLimit,
-		redirectTo = "/",
+		redirectTo = '/',
 		sanitizeUser = defaultSanitizeUser,
 		fields,
 		identifierField,
-		allowBoth,
-	} = config;
+		allowBoth
+	} = config
 
-	const log = getLogger();
+	const log = getLogger()
 
-	return async (event: RequestEventLike) => {
+	return async(event: RequestEventLike) => {
 		if (csrf?.validate) {
-			const valid = await csrf.validate(event);
+			const valid = await csrf.validate(event)
 			if (!valid) {
 				return {
-					error: csrf.errorMessage || "Invalid CSRF token",
-					success: false,
-				};
+					error: csrf.errorMessage || 'Invalid CSRF token',
+					success: false
+				}
 			}
 		}
 
 		if (rateLimit?.check) {
-			const key = getRateLimitKey(event, rateLimit);
-			const result = await rateLimit.check(key);
+			const key = getRateLimitKey(event, rateLimit)
+			const result = await rateLimit.check(key)
 			if (!result?.allowed) {
 				return {
-					error: "Too many attempts. Try again later.",
-					success: false,
-				};
+					error: 'Too many attempts. Try again later.',
+					success: false
+				}
 			}
 		}
 
-		const formData = await event.request.formData();
+		const formData = await event.request.formData()
 		const identifierFieldName =
-			fields?.identifier ?? identifierField ?? fields?.email ?? "email";
-		const emailFieldName = fields?.email ?? "email";
-		const passwordFieldName = fields?.password ?? "password";
-		const rememberFieldName = fields?.remember ?? "remember";
+			fields?.identifier ?? identifierField ?? fields?.email ?? 'email'
+		const emailFieldName = fields?.email ?? 'email'
+		const passwordFieldName = fields?.password ?? 'password'
+		const rememberFieldName = fields?.remember ?? 'remember'
 
-		const identifier = formData.get(identifierFieldName)?.toString();
-		const email = formData.get(emailFieldName)?.toString();
-		const password = formData.get(passwordFieldName)?.toString();
+		const identifier = formData.get(identifierFieldName)?.toString()
+		const email = formData.get(emailFieldName)?.toString()
+		const password = formData.get(passwordFieldName)?.toString()
 		const remember =
-			formData.get(rememberFieldName)?.toString() === "on" ||
-			formData.get(rememberFieldName)?.toString() === "true";
+			formData.get(rememberFieldName)?.toString() === 'on' ||
+			formData.get(rememberFieldName)?.toString() === 'true'
 
 		if ((!identifier && !email) || !password) {
 			return {
-				error: "Email and password are required",
-				success: false,
-			};
+				error: 'Email and password are required',
+				success: false
+			}
 		}
 
 		try {
@@ -141,64 +143,64 @@ export function createSigninHandler(config: {
 				userAdapter: unknown;
 			} = {
 				password,
-				userAdapter,
-			};
-			if (email) authInput.email = email;
-			if (identifier) authInput.identifier = identifier;
-			if (identifierField) authInput.identifierField = identifierField;
-			if (allowBoth !== undefined) authInput.allowBoth = allowBoth;
+				userAdapter
+			}
+			if (email) authInput.email = email
+			if (identifier) authInput.identifier = identifier
+			if (identifierField) authInput.identifierField = identifierField
+			if (allowBoth !== undefined) authInput.allowBoth = allowBoth
 
-			const { user, valid } = await credentialsProvider.authenticate(authInput);
+			const { user, valid } = await credentialsProvider.authenticate(authInput)
 
 			if (!valid || !user) {
 				return {
-					error: "Invalid email or password",
-					success: false,
-				};
+					error: 'Invalid email or password',
+					success: false
+				}
 			}
 
-			const safeUser = sanitizeUser(user) as User | null;
+			const safeUser = sanitizeUser(user) as User | null
 
 			// Call onSignin hook if provided
 			if (onSignin) {
-				await onSignin(safeUser);
+				await onSignin(safeUser)
 			}
 
 			// Create session
 			const session = await sessionAdapter.createSession(user.id, {
 				rememberMe: remember,
 				ip: event.getClientAddress?.(),
-				userAgent: event.request.headers.get("user-agent") ?? undefined,
-			});
-			sessionAdapter.setSessionCookie(event.cookies, session);
+				userAgent: event.request.headers.get('user-agent') ?? undefined
+			})
+			sessionAdapter.setSessionCookie(event.cookies, session)
 
 			// Redirect if configured
 			if (redirectTo) {
-				throw redirect(303, redirectTo);
+				throw redirect(303, isSafeRedirectPath(redirectTo) ? redirectTo : '/')
 			}
 
 			return {
 				success: true,
-				user: safeUser,
-			};
-		} catch (error) {
-			log.error?.("[Signin] Error:", error);
+				user: safeUser
+			}
+		} catch(error) {
+			log.error?.('[Signin] Error:', error instanceof Error ? error.message : String(error))
 
 			// Check if this is a redirect (don't treat as error)
 			if (
 				error &&
-				typeof error === "object" &&
-				"status" in error &&
+				typeof error === 'object' &&
+				'status' in error &&
 				((error as { status?: number }).status === 302 ||
 					(error as { status?: number }).status === 303)
 			) {
-				throw error;
+				throw error
 			}
 
-				return {
-					error: "An error occurred during signin",
-					success: false,
-				};
+			return {
+				error: 'An error occurred during signin',
+				success: false
+			}
 		}
-	};
+	}
 }

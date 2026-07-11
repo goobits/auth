@@ -1,34 +1,36 @@
-import { redirect } from "@sveltejs/kit";
-import { sanitizeUser as defaultSanitizeUser } from "../utils/sanitize.js";
-import type { RequestEventLike } from "../types/auth.js";
-import { getLogger } from "../utils/logger.js";
-import type { User } from "../types/index.js";
-import type { VerificationTokenAdapter } from "../adapters/verification-token/base.js";
+import { redirect } from '@sveltejs/kit'
+
+import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.ts'
+import type { RequestEventLike } from '../types/auth.ts'
+import type { User } from '../types/index.ts'
+import { getLogger } from '../utils/logger.ts'
+import { isSafeRedirectPath } from '../utils/redirect.ts'
+import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 
 type RateLimitConfig = {
 	check?: (key: string) => Promise<{ allowed: boolean }>;
 	key?: (event: RequestEventLike) => string;
 	trustProxyHeader?: boolean;
-};
+}
 
 function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
-	if (rateLimit?.key) return rateLimit.key(event);
+	if (rateLimit?.key) return rateLimit.key(event)
 	if (rateLimit?.trustProxyHeader) {
-		const forwardedFor = event.request.headers.get("x-forwarded-for");
-		const firstForwardedIp = forwardedFor?.split(",")[0]?.trim();
-		if (firstForwardedIp) return firstForwardedIp;
+		const forwardedFor = event.request.headers.get('x-forwarded-for')
+		const firstForwardedIp = forwardedFor?.split(',')[0]?.trim()
+		if (firstForwardedIp) return firstForwardedIp
 	}
-	if (event.getClientAddress) return event.getClientAddress();
-	return "unknown";
+	if (event.getClientAddress) return event.getClientAddress()
+	return 'unknown'
 }
 
 /**
  * Create a signup handler for credentials-based authentication
  * @param {Object} config - Handler configuration
- * @param {import('../providers/credentials.js').CredentialsProvider} config.credentialsProvider - Credentials provider
- * @param {import('../adapters/database/base.js').UserAdapter} config.userAdapter - User adapter
- * @param {import('../adapters/session/base.js').SessionAdapter} config.sessionAdapter - Session adapter
- * @param {import('../adapters/verification-token/base.js').VerificationTokenAdapter} [config.verificationTokenAdapter] - Verification token adapter (optional)
+ * @param {import('../providers/CredentialsProvider.ts').CredentialsProvider} config.credentialsProvider - Credentials provider
+ * @param {import('../adapters/database/UserAdapter.ts').UserAdapter} config.userAdapter - User adapter
+ * @param {import('../adapters/session/SessionAdapter.ts').SessionAdapter} config.sessionAdapter - Session adapter
+ * @param {import('../adapters/verification-token/VerificationTokenAdapter.ts').VerificationTokenAdapter} [config.verificationTokenAdapter] - Verification token adapter (optional)
  * @param {Function} [config.onSignup] - Callback after user creation (user) => Promise<void>
  * @param {Function} [config.sendVerificationEmail] - Function to send verification email (email, token) => Promise<void>
  * @param {Object} [config.csrf] - CSRF validation config
@@ -58,8 +60,8 @@ export function createSignupHandler(config: {
 	sessionAdapter?: {
 		createSession: (userId: string) => Promise<{ id: string; expiresAt: Date }>;
 		setSessionCookie: (
-			cookies: RequestEventLike["cookies"],
-			session: { id: string; expiresAt: Date },
+			cookies: RequestEventLike['cookies'],
+			session: { id: string; expiresAt: Date }
 		) => void;
 	};
 	verificationTokenAdapter?: VerificationTokenAdapter;
@@ -83,62 +85,62 @@ export function createSignupHandler(config: {
 		sendVerificationEmail,
 		csrf,
 		rateLimit,
-		redirectTo = "/",
+		redirectTo = '/',
 		autoLogin = true,
 		sanitizeUser = defaultSanitizeUser,
 		fields,
 		metadataFields,
-		getSignupMetadata,
-	} = config;
+		getSignupMetadata
+	} = config
 
-	const log = getLogger();
+	const log = getLogger()
 
-	return async (event: RequestEventLike) => {
+	return async(event: RequestEventLike) => {
 		if (csrf?.validate) {
-			const valid = await csrf.validate(event);
+			const valid = await csrf.validate(event)
 			if (!valid) {
 				return {
-					error: csrf.errorMessage || "Invalid CSRF token",
-					success: false,
-				};
+					error: csrf.errorMessage || 'Invalid CSRF token',
+					success: false
+				}
 			}
 		}
 
 		if (rateLimit?.check) {
-			const key = getRateLimitKey(event, rateLimit);
-			const result = await rateLimit.check(key);
+			const key = getRateLimitKey(event, rateLimit)
+			const result = await rateLimit.check(key)
 			if (!result?.allowed) {
 				return {
-					error: "Too many attempts. Try again later.",
-					success: false,
-				};
+					error: 'Too many attempts. Try again later.',
+					success: false
+				}
 			}
 		}
 
-		const formData = await event.request.formData();
-		const emailFieldName = fields?.email ?? "email";
-		const passwordFieldName = fields?.password ?? "password";
-		const nameFieldName = fields?.name ?? "name";
+		const formData = await event.request.formData()
+		const emailFieldName = fields?.email ?? 'email'
+		const passwordFieldName = fields?.password ?? 'password'
+		const nameFieldName = fields?.name ?? 'name'
 
-		const email = formData.get(emailFieldName)?.toString();
-		const password = formData.get(passwordFieldName)?.toString();
-		const name = formData.get(nameFieldName)?.toString();
+		const email = formData.get(emailFieldName)?.toString()
+		const password = formData.get(passwordFieldName)?.toString()
+		const name = formData.get(nameFieldName)?.toString()
 
 		if (!email || !password) {
 			return {
-				error: "Email and password are required",
-				success: false,
-			};
+				error: 'Email and password are required',
+				success: false
+			}
 		}
 
 		try {
 			// Check if user already exists
-			const existingUser = await userAdapter.getUserByEmail(email);
+			const existingUser = await userAdapter.getUserByEmail(email)
 			if (existingUser) {
 				return {
-					error: "Unable to create account with those details",
-					success: false,
-				};
+					error: 'Unable to create account with those details',
+					success: false
+				}
 			}
 
 			// Create user
@@ -151,89 +153,90 @@ export function createSignupHandler(config: {
 			} = {
 				email,
 				password,
-				userAdapter,
-			};
-			if (name) signUpInput.name = name;
+				userAdapter
+			}
+			if (name) signUpInput.name = name
 			if (metadataFields?.length) {
-				signUpInput.metadata = {};
+				signUpInput.metadata = {}
 				for (const field of metadataFields) {
-					const value = formData.get(field);
-					if (typeof value === "string" && value.trim().length > 0) {
-						signUpInput.metadata[field] = value;
+					const value = formData.get(field)
+					if (typeof value === 'string' && value.trim().length > 0) {
+						signUpInput.metadata[field] = value
 					}
 				}
 			}
 			if (getSignupMetadata) {
-				const extra = await getSignupMetadata(formData);
+				const extra = await getSignupMetadata(formData)
 				signUpInput.metadata = {
 					...(signUpInput.metadata ?? {}),
-					...extra,
-				};
+					...extra
+				}
 			}
-			const user = await credentialsProvider.signUp(signUpInput);
+			const user = await credentialsProvider.signUp(signUpInput)
 
-			const safeUser = sanitizeUser(user) as User | null;
+			const safeUser = sanitizeUser(user) as User | null
 
 			// Call onSignup hook if provided
 			if (onSignup) {
-				await onSignup(safeUser);
+				await onSignup(safeUser)
 			}
 
 			// Send verification email if adapter and sender provided
 			if (verificationTokenAdapter && sendVerificationEmail) {
 				try {
 					const { createVerificationToken, VERIFICATION_TOKEN_TYPES } =
-						await import("../utils/tokens.js");
+						await import('../utils/tokens.ts')
 
 					const token = await createVerificationToken({
 						adapter: verificationTokenAdapter,
 						userId: user.id,
-						type: VERIFICATION_TOKEN_TYPES.EMAIL_VERIFICATION,
-					});
+						type: VERIFICATION_TOKEN_TYPES.EMAIL_VERIFICATION
+					})
 
-					await sendVerificationEmail(user.email, token);
-				} catch (emailError) {
+					await sendVerificationEmail(user.email, token)
+				} catch(emailError) {
 					log.error?.(
-						"[Signup] Failed to send verification email:",
-						emailError,
-					);
+						'[Signup] Failed to send verification email:',
+						emailError instanceof Error ? emailError.message : String(emailError)
+					)
+
 					// Don't fail signup if email fails
 				}
 			}
 
 			// Auto-login if enabled
 			if (autoLogin && sessionAdapter) {
-				const session = await sessionAdapter.createSession(user.id);
-				sessionAdapter.setSessionCookie(event.cookies, session);
+				const session = await sessionAdapter.createSession(user.id)
+				sessionAdapter.setSessionCookie(event.cookies, session)
 			}
 
 			// Redirect if configured
 			if (redirectTo) {
-				throw redirect(303, redirectTo);
+				throw redirect(303, isSafeRedirectPath(redirectTo) ? redirectTo : '/')
 			}
 
 			return {
 				success: true,
-				user: safeUser,
-			};
-		} catch (error) {
-			log.error?.("[Signup] Error:", error);
+				user: safeUser
+			}
+		} catch(error) {
+			log.error?.('[Signup] Error:', error instanceof Error ? error.message : String(error))
 
 			// Check if this is a redirect (don't treat as error)
 			if (
 				error &&
-				typeof error === "object" &&
-				"status" in error &&
+				typeof error === 'object' &&
+				'status' in error &&
 				((error as { status?: number }).status === 302 ||
 					(error as { status?: number }).status === 303)
 			) {
-				throw error;
+				throw error
 			}
 
-				return {
-					error: "An error occurred during signup",
-					success: false,
-				};
+			return {
+				error: 'An error occurred during signup',
+				success: false
+			}
 		}
-	};
+	}
 }

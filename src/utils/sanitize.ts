@@ -4,12 +4,12 @@
  * @returns {Object|null} Sanitized user object safe for client exposure
  */
 export function sanitizeUser(
-	user: Record<string, unknown> | null,
+	user: Record<string, unknown> | null
 ): Record<string, unknown> | null {
-	if (!user) return null;
+	if (!user) return null
 
 	// Remove sensitive fields that should never reach the client
-	const { password: _password, token: _token, ...safeUser } = user;
+	const { password: _password, token: _token, ...safeUser } = user
 
-	return safeUser;
+	return safeUser
 }
