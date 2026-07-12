@@ -13,6 +13,8 @@
 
 ### 🏠 Internal
 
+- 📦 Published entrypoints now resolve compiled Node/Worker JavaScript and declarations; the source-only security runtime is bundled at this distribution boundary, and smoke checks cover every export and the packed file list.
+- 🧭 Removed the auth type cycle, stale source-entrypoint map, undeclared TypeScript script runner, unpinned API-map commands, and unused `pg-server` fixture dependency.
 - 📚 Public API docs now describe the curated package entrypoints and low-level subpaths.
 - 📦 Development dependencies refreshed for the current package toolchain.
 - Removed generic `auditLog` and `withAuditLogging` exports from `@goobits/auth/security`; generic audit logging now belongs to `@goobits/security/audit`, while auth keeps `auditAuthEvent` for auth-specific event names.

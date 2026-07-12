@@ -32,13 +32,12 @@ browser and authenticator behavior evolves.
 
 ## Usage
 
-This package is designed to be used from a SvelteKit build pipeline.
+Published installations consume the compiled package in `dist`; raw TypeScript
+source is not part of the public runtime contract.
 
-- Workspace/git install (recommended while developing):
-  - `pnpm add @goobits/auth --workspace` (monorepo)
-  - or install from a git URL (if you publish a repo)
-- Registry install:
-  - Publish to npm/GitHub Packages first, then `pnpm add @goobits/auth`
+- Registry install: `pnpm add @goobits/auth`
+- Workspace/submodule development: build the package after checkout with
+  `pnpm --filter @goobits/auth build`. BandAMP owns this through `pnpm auth:build`.
 
 ## 5-Minute Setup
 
@@ -71,9 +70,11 @@ export const auth = new GoobitsAuth({
 ## Runtime Targets
 
 - Cloudflare Workers / Pages:
-  - Use default imports (`@goobits/auth`). Avoid WebAuthn.
+  - Default exports use the Worker build and WASM-backed password hashing.
+  - WebAuthn handlers return `501`; do not enable WebAuthn on this target.
 - Node runtime:
-  - Use Node-optimized entrypoints automatically via `exports` conditions.
+  - Node 22+ selects the Node build and native Argon2 automatically.
+  - `@goobits/auth/node` and `@goobits/auth/adapters/pg` are Node-only.
 
 ```ts
 // src/hooks.server.ts

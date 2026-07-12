@@ -13,6 +13,14 @@ outside SvelteKit should prefer low-level subpaths such as
 The documented exports are stable for the `0.2.x` line. WebAuthn and MFA may
 receive additive options as platform behavior evolves.
 
+## Distribution
+
+The package publishes compiled JavaScript and declarations from `dist`.
+Conditional exports select native Argon2 and WebAuthn support on Node 22+, while
+the default Worker build uses WASM-backed password hashing and explicit
+unsupported WebAuthn handlers. `@goobits/auth/node` and
+`@goobits/auth/adapters/pg` intentionally have no Worker target.
+
 ## Main entrypoint
 
 ```ts

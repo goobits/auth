@@ -6,8 +6,15 @@ Run the package checks from the package root:
 pnpm install --frozen-lockfile
 pnpm run typecheck
 pnpm test
+pnpm run build
 pnpm run test:dist
 ```
+
+`test:dist` treats `package.json` as the public entrypoint inventory. It checks
+that every Node, Worker, and declaration target exists and imports, verifies
+the runtime-specific password/WebAuthn builds, checks the copied Svelte UI
+assets, and inspects the packed file list so source and release tooling cannot
+leak into the published package.
 
 ## Integration Tests
 

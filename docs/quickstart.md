@@ -34,8 +34,8 @@ export const auth = new GoobitsAuth({
 - The main `@goobits/auth` entrypoint is SvelteKit-first. Use low-level
   subpaths such as `@goobits/auth/security`, `@goobits/auth/password`, or
   `@goobits/auth/adapters/pg` for framework-neutral primitives.
-- Cloudflare Workers/Pages: avoid enabling WebAuthn/passkeys initially; password hashing uses a Workers-compatible Argon2id (WASM).
-- Node runtime: uses a Node-optimized build via conditional exports.
+- Cloudflare Workers/Pages: WebAuthn handlers are unsupported; password hashing uses a Workers-compatible Argon2id (WASM).
+- Node 22+: conditional exports select native Argon2 and the Node WebAuthn handlers.
 
 ## 2. Wire SvelteKit hook
 

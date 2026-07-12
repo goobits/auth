@@ -43,6 +43,7 @@ const commonEntries = [
 	'src/types/index.ts',
 	'src/testing/index.ts',
 	'src/mfa/index.ts',
+	'src/qr/index.ts',
 	'src/ui/authStore.ts',
 	'src/security/index.ts',
 	'src/errors/index.ts'
@@ -62,7 +63,8 @@ const common: Options = {
 	sourcemap: false,
 	treeshake: true,
 	clean: false,
-	skipNodeModulesBundle: true
+	skipNodeModulesBundle: true,
+	noExternal: [ '@goobits/security' ]
 }
 
 export default defineConfig([
