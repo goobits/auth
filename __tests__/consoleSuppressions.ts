@@ -1,4 +1,4 @@
-export const SUPPRESSED_SNIPPETS = [
+const SUPPRESSED_SNIPPETS = [
 	'src/app.html does not exist',
 	'[Signin] Error: Redirect',
 	'[Signup] Failed to send verification email',

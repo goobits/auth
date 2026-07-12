@@ -28,7 +28,7 @@ export type UpdateQuery = {
 	};
 }
 
-export type DeleteWhereResult = Promise<void> & {
+type DeleteWhereResult = Promise<void> & {
 	returning: () => Promise<DrizzleRow[]>;
 }
 

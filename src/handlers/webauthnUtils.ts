@@ -6,7 +6,7 @@ import {
 } from '@simplewebauthn/server'
 import { z } from 'zod'
 
-export type ChallengeRecord = {
+type ChallengeRecord = {
 	id: string;
 	userId: string | null;
 	challenge: string;
@@ -14,7 +14,7 @@ export type ChallengeRecord = {
 	expiresAt: string | number | Date;
 }
 
-export type CredentialRecord = {
+type CredentialRecord = {
 	credentialId: string;
 	userId: string;
 	publicKey: string;
@@ -42,7 +42,7 @@ export function encodeCredential(value: unknown): string {
 	return encodeBase64url(toUint8Array(value))
 }
 
-export const registrationResponseSchema = z.custom<RegistrationResponseJSON>(
+const registrationResponseSchema = z.custom<RegistrationResponseJSON>(
 	(value: unknown): value is RegistrationResponseJSON =>
 		typeof value === 'object' &&
 		value !== null &&
@@ -55,7 +55,7 @@ export const registrationResponseSchema = z.custom<RegistrationResponseJSON>(
 			))
 )
 
-export const authenticationResponseSchema = z.custom<AuthenticationResponseJSON>(
+const authenticationResponseSchema = z.custom<AuthenticationResponseJSON>(
 	(value: unknown): value is AuthenticationResponseJSON =>
 		typeof value === 'object' &&
 		value !== null &&

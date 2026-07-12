@@ -15,7 +15,7 @@ export function isSafeRedirectPath(value: string): boolean {
 }
 
 /** Options for normalizing and constraining redirect paths. */
-export type SafeRedirectOptions = {
+type SafeRedirectOptions = {
 	allowedPrefixes?: readonly string[];
 	baseUrl?: string;
 }
