@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { argon2id } from 'hash-wasm'
 
 import { hashPassword, validatePasswordStrength, verifyPassword } from '../../src/password/index.ts'
 
@@ -21,6 +22,7 @@ describe('Password Utilities', () => {
 			expect(hash).toBeDefined()
 			expect(typeof hash).toBe('string')
 			expect(hash.startsWith('$argon2id$')).toBe(true)
+			expect(hash).toContain('m=12288,t=3,p=1')
 		})
 
 		it('should produce different hashes for the same password', async() => {
@@ -73,6 +75,21 @@ describe('Password Utilities', () => {
 	})
 
 	describe('verifyPassword', () => {
+		it('continues to verify hashes created with the previous cost', async() => {
+			const password = 'ExistingPassword123!'
+			const legacyHash = await argon2id({
+				password,
+				salt: new Uint8Array(16).fill(7),
+				iterations: 2,
+				memorySize: 12_288,
+				parallelism: 1,
+				hashLength: 32,
+				outputType: 'encoded'
+			})
+
+			await expect(verifyPassword(legacyHash, password)).resolves.toBe(true)
+		})
+
 		it('should verify correct password', async() => {
 			const password = 'CorrectPassword123!'
 			const hash = await hashPassword(password)

@@ -5,6 +5,8 @@ import { join } from 'node:path'
 
 const root = process.cwd()
 const tempDir = await mkdtemp(join(tmpdir(), 'goobits-auth-audit-'))
+const auditEnv = { ...process.env }
+delete auditEnv['npm_config_recursive']
 
 function run(command, args, options) {
 	return new Promise((resolve, reject) => {
@@ -26,7 +28,7 @@ function run(command, args, options) {
 try {
 	await cp(join(root, 'package.json'), join(tempDir, 'package.json'))
 	await cp(join(root, 'pnpm-lock.yaml'), join(tempDir, 'pnpm-lock.yaml'))
-	await run('pnpm', [ 'audit', '--prod', '--audit-level', 'high' ], { cwd: tempDir })
+	await run('pnpm', [ 'audit', '--prod', '--audit-level', 'high' ], { cwd: tempDir, env: auditEnv })
 } finally {
 	await rm(tempDir, { recursive: true, force: true })
 }

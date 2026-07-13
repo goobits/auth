@@ -4,7 +4,7 @@ import { argon2id, argon2Verify } from 'hash-wasm'
 // Tuned for reasonable cost under edge CPU limits; apps should enforce rate limiting.
 const DEFAULTS = {
 	memorySize: 12_288, // KiB (12 MiB)
-	iterations: 2,
+	iterations: 3,
 	parallelism: 1,
 	hashLength: 32,
 	saltLength: 16
@@ -76,4 +76,3 @@ export function validatePasswordStrength(password: string): {
 
 	return { valid: errors.length === 0, errors }
 }
-

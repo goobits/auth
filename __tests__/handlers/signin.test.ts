@@ -54,4 +54,36 @@ describe('createSigninHandler', () => {
 		)
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
+
+	it('passes configured identifier fields to the credentials provider', async() => {
+		const credentialsProvider = { authenticate: vi.fn().mockResolvedValue({ user: null, valid: false }) }
+		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
+		const userAdapter = {}
+
+		const handler = createSigninHandler({
+			credentialsProvider,
+			userAdapter,
+			sessionAdapter,
+			fields: { identifier: 'username', password: 'passcode' },
+			identifierField: 'username',
+			allowBoth: true
+		})
+
+		const result = await handler(
+			createRequestEvent({
+				url: 'http://localhost/signin',
+				method: 'POST',
+				form: { username: ' LaunchUser ', passcode: 'pw' }
+			})
+		)
+
+		expect(result.success).toBe(false)
+		expect(credentialsProvider.authenticate).toHaveBeenCalledWith({
+			identifier: ' LaunchUser ',
+			identifierField: 'username',
+			allowBoth: true,
+			password: 'pw',
+			userAdapter
+		})
+	})
 })
