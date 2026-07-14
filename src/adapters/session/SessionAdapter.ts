@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit'
 
-import type { Session, User } from '../../types/core.ts'
+import type { Session, SessionMetadata, User } from '../../types/core.ts'
 
 /**
  * Base Session Adapter Interface
@@ -15,7 +15,7 @@ export abstract class SessionAdapter {
 	 */
 	abstract createSession(
 		userId: string,
-		metadata?: Record<string, unknown>,
+		metadata?: SessionMetadata,
 	): Promise<Session>
 
 	/**

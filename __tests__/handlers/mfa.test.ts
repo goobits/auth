@@ -209,7 +209,8 @@ describe('MFA handlers', () => {
 
 		expect(result.success).toBe(true)
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1', {
-			rememberMe: true
+			rememberMe: true,
+			mfaVerifiedAt: expect.any(Date)
 		})
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 		expect(cookies.get('goobits_mfa_login')).toBeNull()

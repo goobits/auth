@@ -1,6 +1,6 @@
 import type { AuthEvent } from './events.ts'
 
-type AlertSeverity = 'warn' | 'error'
+export type AlertSeverity = 'warn' | 'error'
 
 export type SecurityAlert = {
 	type: 'threshold_exceeded';
@@ -13,14 +13,14 @@ export type SecurityAlert = {
 
 export type SecurityAlertHandler = (alert: SecurityAlert) => Promise<void> | void
 
-type ThresholdRule = {
+export type ThresholdRule = {
 	eventName: AuthEvent['name'];
 	max: number;
 	windowMs: number;
 	severity: AlertSeverity;
 }
 
-type SecurityAlertConfig = {
+export type SecurityAlertConfig = {
 	rules?: ThresholdRule[];
 	onAlert?: SecurityAlertHandler;
 }

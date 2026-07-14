@@ -9,17 +9,21 @@ export type Session = {
 	fresh?: boolean;
 	createdAt?: Date;
 	lastActiveAt?: Date | null;
+	/** Time the current session most recently completed a second-factor challenge. */
+	mfaVerifiedAt?: Date | null;
 	ip?: string | null;
 	userAgent?: string | null;
 	fingerprint?: string | null;
 }
 
 /** Describes the auth domain record used for session metadata. */
-export type SessionMetadata = {
+export type SessionMetadata = Record<string, unknown> & {
 	rememberMe?: boolean;
 	ip?: string;
 	userAgent?: string;
 	fingerprint?: string;
+	/** Set by an MFA verification handler, never by untrusted request metadata. */
+	mfaVerifiedAt?: Date;
 }
 
 /** Describes the auth domain record used for user. */
@@ -33,11 +37,6 @@ export type User = {
 	settings?: Record<string, unknown>;
 	createdAt?: Date;
 	updatedAt?: Date;
-	user_id?: number;
-	nickname?: string;
-	is_admin?: boolean;
-	is_moderator?: boolean;
-	u_posts?: number;
 }
 
 /** Describes the auth domain record used for oauth tokens. */

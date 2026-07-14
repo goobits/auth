@@ -1,5 +1,5 @@
 import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.ts'
-import type { Session } from '../types/core.ts'
+import type { Session, SessionMetadata } from '../types/core.ts'
 import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../mfa/backupCodes.ts'
 import { createOtpAuthURL, generateSecret, verifyTOTP } from '../mfa/totp.ts'
 import type { RequestEventLike } from '../types/auth.ts'
@@ -55,7 +55,7 @@ export type MfaLoginConfig = {
 type MfaLoginSessionAdapter = {
 	createSession: (
 		userId: string,
-		metadata?: Record<string, unknown>
+		metadata?: SessionMetadata
 	) => Promise<Session>;
 	setSessionCookie: (
 		cookies: RequestEventLike['cookies'],
@@ -73,9 +73,9 @@ function challengeCookieName(config: MfaLoginConfig): string {
 	return config.challengeCookieName ?? DEFAULT_LOGIN_CHALLENGE_COOKIE
 }
 
-function challengeMetadata(record: Record<string, unknown> | undefined): Record<string, unknown> {
+function challengeMetadata(record: Record<string, unknown> | undefined): SessionMetadata {
 	if (!record) return {}
-	const metadata: Record<string, unknown> = {}
+	const metadata: SessionMetadata = {}
 	if (record['rememberMe'] === true) metadata['rememberMe'] = true
 	if (typeof record['ip'] === 'string') metadata['ip'] = record['ip']
 	if (typeof record['userAgent'] === 'string') metadata['userAgent'] = record['userAgent']
@@ -92,7 +92,7 @@ export async function beginMfaLoginChallenge({
 }: {
 	event: RequestEventLike;
 	user: User;
-	sessionMetadata: Record<string, unknown>;
+	sessionMetadata: SessionMetadata;
 	config: MfaLoginConfig;
 }): Promise<
 	| { handled: false }
@@ -196,10 +196,10 @@ export function createMfaLoginVerifyHandler(config: MfaLoginConfig & {
 		}
 
 		if (backupHash) await config.store.consumeBackupCode(userId, backupHash)
-		const session = await config.sessionAdapter.createSession(
-			userId,
-			challengeMetadata(consumed.token.metadata)
-		)
+		const session = await config.sessionAdapter.createSession(userId, {
+			...challengeMetadata(consumed.token.metadata),
+			mfaVerifiedAt: new Date()
+		})
 		config.sessionAdapter.setSessionCookie(event.cookies, session)
 		event.cookies.delete(cookieName, { path: '/' })
 

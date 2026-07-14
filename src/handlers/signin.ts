@@ -4,7 +4,7 @@ import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import type { CredentialsProvider } from '../providers/CredentialsProvider.ts'
 import type { RequestEventLike } from '../types/auth.ts'
-import type { User } from '../types/index.ts'
+import type { SessionMetadata, User } from '../types/index.ts'
 import { getLogger } from '../utils/logger.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
@@ -63,7 +63,7 @@ export function createSigninHandler(config: {
 		event: RequestEventLike,
 		user: User,
 		rememberMe: boolean
-	) => Record<string, unknown> | Promise<Record<string, unknown>>;
+	) => SessionMetadata | Promise<SessionMetadata>;
 }) {
 	const {
 		credentialsProvider,
@@ -154,7 +154,7 @@ export function createSigninHandler(config: {
 			}
 
 			const safeUser = sanitizeUser(user) as User | null
-			const sessionMetadata: Record<string, unknown> = { rememberMe: remember }
+			const sessionMetadata: SessionMetadata = { rememberMe: remember }
 			const ip = event.getClientAddress?.()
 			if (ip) sessionMetadata['ip'] = ip
 			const userAgent = event.request.headers.get('user-agent')

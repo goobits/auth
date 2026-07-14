@@ -143,6 +143,12 @@ Credential MFA is a two-step flow:
 - complete the short-lived, single-use challenge with
   `createMfaLoginVerifyHandler`; only that handler creates the session
 
+Sessions created by the MFA verification handler receive
+`Session.mfaVerifiedAt`. Persistent session adapters must store and restore this
+optional field when the consuming application uses session assurance for
+privileged authorization. It must not be populated from request-controlled
+metadata.
+
 MFA login challenges reuse `VerificationTokenAdapter`. Adapters should preserve
 the optional token metadata when remember-me or session context must survive
 between the password and second-factor requests.
@@ -177,12 +183,16 @@ import {
 // src/app.d.ts
 import type { Session, User } from "@goobits/auth/types";
 
+type AppUser = User & {
+  organizationId: string;
+};
+
 declare global {
   namespace App {
     interface Locals {
-      user?: User | null;
+      user?: AppUser | null;
       session?: Session | null;
-      auth?: { user: User; session: Session } | null;
+      auth?: { user: AppUser; session: Session } | null;
     }
   }
 }
