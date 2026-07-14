@@ -13,6 +13,8 @@
  * @returns {Function} SvelteKit request handler
  */
 import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.ts'
+import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
+import type { CredentialsProvider } from '../providers/CredentialsProvider.ts'
 import type { RequestEventLike } from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { getLogger } from '../utils/logger.ts'
@@ -144,15 +146,8 @@ export function createPasswordResetRequestHandler(config: {
  * @returns {Function} SvelteKit request handler
  */
 export function createPasswordResetConfirmHandler(config: {
-	credentialsProvider: {
-		createPasswordHash?: (password: string) => Promise<string>;
-		updatePassword: (input: {
-			userId: string;
-			newPassword: string;
-			userAdapter: unknown;
-		}) => Promise<void>;
-	};
-	userAdapter: unknown;
+	credentialsProvider: Pick<CredentialsProvider, 'createPasswordHash' | 'updatePassword'>;
+	userAdapter: UserAdapter;
 	verificationTokenAdapter: VerificationTokenAdapter;
 	sessionAdapter?: { invalidateUserSessions?: (userId: string) => Promise<void> };
 	completePasswordReset?: (input: {
