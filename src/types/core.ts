@@ -73,7 +73,7 @@ export const VERIFICATION_TOKEN_TYPES = {
 	PASSWORD_RESET: 'password_reset',
 	EMAIL_UPDATE: 'email_update',
 	MFA_LOGIN: 'mfa_login'
-}
+} as const
 
 /** Describes the auth domain record used for magic link token. */
 export type MagicLinkToken = {

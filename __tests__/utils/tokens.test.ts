@@ -1,7 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { sha256Hex } from '../../src/utils/crypto.ts'
-import { consumeVerificationToken, createVerificationToken, getUserForVerificationToken, VERIFICATION_TOKEN_TYPES } from '../../src/utils/tokens.ts'
+import {
+	consumeVerificationToken,
+	consumeVerificationTokenRecord,
+	createVerificationToken,
+	getUserForVerificationToken,
+	getVerificationTokenRecord,
+	hashVerificationToken,
+	VERIFICATION_TOKEN_TYPES
+} from '../../src/utils/index.ts'
 
 type TokenRecord = {
 	id: string;
@@ -44,6 +51,12 @@ function createAdapter() {
 }
 
 describe('verification tokens', () => {
+	it('exposes one hashing boundary for adapter storage and lookup', async() => {
+		expect(await hashVerificationToken('hello')).toBe(
+			'2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
+		)
+	})
+
 	it('replaces existing tokens of the same type', async() => {
 		const adapter = createAdapter()
 		const token = await createVerificationToken({
@@ -51,7 +64,7 @@ describe('verification tokens', () => {
 			userId: 'u1',
 			type: VERIFICATION_TOKEN_TYPES.EMAIL_VERIFICATION
 		})
-		const tokenHash = await sha256Hex(token)
+		const tokenHash = await hashVerificationToken(token)
 		expect(adapter.deleteByUserAndType).toHaveBeenCalled()
 		expect(adapter._tokens.has(tokenHash)).toBe(true)
 	})
@@ -74,7 +87,7 @@ describe('verification tokens', () => {
 		const adapter = createAdapter()
 		const expiresAt = new Date(Date.now() + 10000)
 		const token = 't1'
-		const tokenHash = await sha256Hex(token)
+		const tokenHash = await hashVerificationToken(token)
 		await adapter.create({ userId: 'u1', type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET, token: tokenHash, expiresAt })
 		const user = await consumeVerificationToken({ adapter, token, type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET })
 		expect((user as { id: string }).id).toBe('u1')
@@ -84,7 +97,7 @@ describe('verification tokens', () => {
 	it('returns null for expired tokens', async() => {
 		const adapter = createAdapter()
 		const token = 't2'
-		const tokenHash = await sha256Hex(token)
+		const tokenHash = await hashVerificationToken(token)
 		await adapter.create({ userId: 'u1', type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET, token: tokenHash, expiresAt: new Date(Date.now() - 1000) })
 		const user = await consumeVerificationToken({ adapter, token, type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET })
 		expect(user).toBeNull()
@@ -93,7 +106,7 @@ describe('verification tokens', () => {
 	it('getUserForVerificationToken respects expiry and sanitize', async() => {
 		const adapter = createAdapter()
 		const token = 't3'
-		const tokenHash = await sha256Hex(token)
+		const tokenHash = await hashVerificationToken(token)
 		await adapter.create({ userId: 'u1', type: VERIFICATION_TOKEN_TYPES.EMAIL_UPDATE, token: tokenHash, expiresAt: new Date(Date.now() + 1000) })
 		const user = await getUserForVerificationToken({
 			adapter,
@@ -102,5 +115,32 @@ describe('verification tokens', () => {
 			sanitizeUser: (u: Record<string, unknown>) => ({ id: u['id'] })
 		})
 		expect(user).toEqual({ id: 'u1' })
+	})
+
+	it('exposes record-level inspection and atomic consumption', async() => {
+		const adapter = createAdapter()
+		const token = 'record-token'
+		const tokenHash = await hashVerificationToken(token)
+		await adapter.create({
+			userId: 'u1',
+			type: VERIFICATION_TOKEN_TYPES.EMAIL_UPDATE,
+			token: tokenHash,
+			expiresAt: new Date(Date.now() + 1000)
+		})
+
+		const inspected = await getVerificationTokenRecord({
+			adapter,
+			token,
+			type: VERIFICATION_TOKEN_TYPES.EMAIL_UPDATE
+		})
+		expect(inspected?.user).toMatchObject({ id: 'u1' })
+
+		const consumed = await consumeVerificationTokenRecord({
+			adapter,
+			token,
+			type: VERIFICATION_TOKEN_TYPES.EMAIL_UPDATE
+		})
+		expect(consumed?.user).toMatchObject({ id: 'u1' })
+		expect(adapter._tokens.has(tokenHash)).toBe(false)
 	})
 })

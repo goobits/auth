@@ -2,20 +2,18 @@ import {
 	VerificationTokenAdapter,
 	type VerificationTokenRecord
 } from '../adapters/verification-token/VerificationTokenAdapter.ts'
+import { VERIFICATION_TOKEN_TYPES } from '../types/core.ts'
 import { generateRandomUUID, sha256Hex } from './crypto.ts'
 
 const DEFAULT_TOKEN_EXPIRATION_MS = 24 * 60 * 60 * 1000 // 24 hours
 
-/** Verification Token Types registry entry for runtime integration. */
-export const VERIFICATION_TOKEN_TYPES = {
-	EMAIL_VERIFICATION: 'email_verification',
-	PASSWORD_RESET: 'password_reset',
-	EMAIL_UPDATE: 'email_update',
-	MFA_LOGIN: 'mfa_login'
-}
+export { VERIFICATION_TOKEN_TYPES } from '../types/core.ts'
 
 type VerificationTokenType =
 	(typeof VERIFICATION_TOKEN_TYPES)[keyof typeof VERIFICATION_TOKEN_TYPES] | string
+
+/** Hashes an opaque verification token for adapter storage or lookup. */
+export const hashVerificationToken = (token: string): Promise<string> => sha256Hex(token)
 
 /**
  * Create a new single-use verification token for a user.
@@ -41,7 +39,7 @@ export async function createVerificationToken({
 	metadata?: Record<string, unknown>;
 }): Promise<string> {
 	const tokenValue = await generateRandomUUID()
-	const tokenHash = await sha256Hex(tokenValue)
+	const tokenHash = await hashVerificationToken(tokenValue)
 	const expiresAt = new Date(Date.now() + expiresInMs)
 
 	// Remove existing tokens of the same type
@@ -76,7 +74,7 @@ export async function getVerificationTokenRecord({
 	token: string;
 	type: VerificationTokenType;
 }): Promise<VerificationTokenRecord | null> {
-	const tokenHash = await sha256Hex(token)
+	const tokenHash = await hashVerificationToken(token)
 	const record = await adapter.findByToken({ token: tokenHash, type })
 	if (!record || record.token.expiresAt.getTime() < Date.now()) return null
 	return record
@@ -92,7 +90,7 @@ export async function consumeVerificationTokenRecord({
 	token: string;
 	type: VerificationTokenType;
 }): Promise<VerificationTokenRecord | null> {
-	const tokenHash = await sha256Hex(token)
+	const tokenHash = await hashVerificationToken(token)
 	const record = await adapter.consumeByToken({ token: tokenHash, type })
 	if (!record || record.token.expiresAt.getTime() < Date.now()) return null
 	return record
