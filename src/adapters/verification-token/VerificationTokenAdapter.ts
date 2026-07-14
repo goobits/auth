@@ -1,12 +1,12 @@
 export type VerificationTokenRecord<TUser = Record<string, unknown>> = {
 	token: {
-		id: string;
-		token: string;
-		type: string;
-		expiresAt: Date;
-		metadata?: Record<string, unknown>;
-	};
-	user: TUser;
+		id: string
+		token: string
+		type: string
+		expiresAt: Date
+		metadata?: Record<string, unknown>
+	}
+	user: TUser
 }
 
 /**
@@ -29,11 +29,11 @@ export abstract class VerificationTokenAdapter {
 		expiresAt,
 		metadata
 	}: {
-		userId: string;
-		type: string;
-		token: string;
-		expiresAt: Date;
-		metadata?: Record<string, unknown>;
+		userId: string
+		type: string
+		token: string
+		expiresAt: Date
+		metadata?: Record<string, unknown>
 	}): Promise<void>
 
 	/**
@@ -46,8 +46,8 @@ export abstract class VerificationTokenAdapter {
 		token,
 		type
 	}: {
-		token: string;
-		type: string;
+		token: string
+		type: string
 	}): Promise<VerificationTokenRecord | null>
 
 	/**
@@ -63,13 +63,7 @@ export abstract class VerificationTokenAdapter {
 	 * @param userId - Identifier to use.
 	 * @param type - Type identifier.
 	 */
-	abstract deleteByUserAndType({
-		userId,
-		type
-	}: {
-		userId: string;
-		type: string;
-	}): Promise<void>
+	abstract deleteByUserAndType({ userId, type }: { userId: string; type: string }): Promise<void>
 
 	/**
 	 * Atomically find-and-consume a token. Should be the only call site
@@ -80,8 +74,8 @@ export abstract class VerificationTokenAdapter {
 	 * @param params - params value.
 	 */
 	async consumeByToken(params: {
-		token: string;
-		type: string;
+		token: string
+		type: string
 	}): Promise<VerificationTokenRecord | null> {
 		const record = await this.findByToken(params)
 		if (!record) return null

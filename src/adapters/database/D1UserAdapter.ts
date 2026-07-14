@@ -7,19 +7,19 @@ type D1Row = Record<string, D1Value>
 type D1DatabaseLike = {
 	prepare: (sql: string) => {
 		bind: (...args: D1Value[]) => {
-			run: () => Promise<{ meta?: { last_row_id?: string | number } } | undefined>;
-			first: () => Promise<D1Row | null>;
-		};
-	};
+			run: () => Promise<{ meta?: { last_row_id?: string | number } } | undefined>
+			first: () => Promise<D1Row | null>
+		}
+	}
 }
 
 type D1UserAdapterOptions = {
-	usersTable?: string;
-	oauthAccountsTable?: string;
-	sanitizeUser?: (user: User | null) => User | null;
-	columns?: Partial<Record<string, string>>;
-	oauthColumns?: Partial<Record<string, string>>;
-	allowedFields?: string[];
+	usersTable?: string
+	oauthAccountsTable?: string
+	sanitizeUser?: (user: User | null) => User | null
+	columns?: Partial<Record<string, string>>
+	oauthColumns?: Partial<Record<string, string>>
+	allowedFields?: string[]
 }
 
 /** Cloudflare D1 user adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
@@ -29,21 +29,21 @@ export class D1UserAdapter extends UserAdapter {
 	oauthAccountsTable: string
 	sanitizeUser: (user: User | null) => User | null
 	columns: {
-		id: string;
-		email: string;
-		name: string;
-		avatar: string;
-		emailVerified: string;
-		password: string;
-		role: string;
-		settings: string;
-		createdAt: string;
-		updatedAt: string;
+		id: string
+		email: string
+		name: string
+		avatar: string
+		emailVerified: string
+		password: string
+		role: string
+		settings: string
+		createdAt: string
+		updatedAt: string
 	}
 	oauthColumns: {
-		userId: string;
-		provider: string;
-		providerAccountId: string;
+		userId: string
+		provider: string
+		providerAccountId: string
 	}
 	allowedFields: string[]
 
@@ -68,21 +68,19 @@ export class D1UserAdapter extends UserAdapter {
 		this.oauthColumns = {
 			userId: options.oauthColumns?.['userId'] || 'user_id',
 			provider: options.oauthColumns?.['provider'] || 'provider',
-			providerAccountId:
-				options.oauthColumns?.['providerAccountId'] || 'provider_account_id'
+			providerAccountId: options.oauthColumns?.['providerAccountId'] || 'provider_account_id'
 		}
-		this.allowedFields =
-			options.allowedFields || [
-				'email',
-				'name',
-				'avatar',
-				'emailVerified',
-				'password',
-				'role',
-				'settings',
-				'createdAt',
-				'updatedAt'
-			]
+		this.allowedFields = options.allowedFields || [
+			'email',
+			'name',
+			'avatar',
+			'emailVerified',
+			'password',
+			'role',
+			'settings',
+			'createdAt',
+			'updatedAt'
+		]
 	}
 
 	private mapUser(row: D1Row | null): User | null {
@@ -101,18 +99,17 @@ export class D1UserAdapter extends UserAdapter {
 		if (typeof email !== 'string') return null
 
 		// Normalize data from SQLite/D1 which may represent values as numbers/strings.
-		const id =
-			typeof rawId === 'string' || typeof rawId === 'number'
-				? String(rawId)
-				: null
+		const id = typeof rawId === 'string' || typeof rawId === 'number' ? String(rawId) : null
 		if (!id) return null
 
 		const name = typeof rawName === 'string' ? rawName : email
 		const avatar = typeof rawAvatar === 'string' ? rawAvatar : null
 		let emailVerified = false
 		if (typeof rawEmailVerified === 'boolean') emailVerified = rawEmailVerified
-		else if (rawEmailVerified === 0 || rawEmailVerified === 1) emailVerified = Boolean(rawEmailVerified)
-		else if (rawEmailVerified === '0' || rawEmailVerified === '1') emailVerified = rawEmailVerified === '1'
+		else if (rawEmailVerified === 0 || rawEmailVerified === 1)
+			emailVerified = Boolean(rawEmailVerified)
+		else if (rawEmailVerified === '0' || rawEmailVerified === '1')
+			emailVerified = rawEmailVerified === '1'
 
 		const role = typeof rawRole === 'string' ? rawRole : undefined
 
@@ -197,18 +194,21 @@ export class D1UserAdapter extends UserAdapter {
 		}
 
 		// Persist only fields that are explicitly allowed (including password hash).
-		for (const [ key, value ] of Object.entries(metadata)) {
+		for (const [key, value] of Object.entries(metadata)) {
 			if (!this.allowedFields.includes(key)) continue
 			userData[key] = value
 		}
 
 		const fields = Object.keys(userData)
-		const columns = fields.map(field => this.mapFieldToColumn(field))
+		const columns = fields.map((field) => this.mapFieldToColumn(field))
 		const placeholders = fields.map(() => '?').join(', ')
-		const values = fields.map(field => this.toD1Value(userData[field]))
+		const values = fields.map((field) => this.toD1Value(userData[field]))
 
-		const sql = `INSERT INTO ${ this.usersTable } (${ columns.join(', ') }) VALUES (${ placeholders })`
-		const result = await this.db.prepare(sql).bind(...values).run()
+		const sql = `INSERT INTO ${this.usersTable} (${columns.join(', ')}) VALUES (${placeholders})`
+		const result = await this.db
+			.prepare(sql)
+			.bind(...values)
+			.run()
 
 		// Prefer looking up by email (works even when table IDs aren't rowid-backed).
 		const createdByEmail = await this.getUserByEmail(normalizedEmail)
@@ -225,7 +225,7 @@ export class D1UserAdapter extends UserAdapter {
 	}
 
 	async getUserById(id: string, rawId?: string | number): Promise<User | null> {
-		const sql = `SELECT * FROM ${ this.usersTable } WHERE ${ this.columns.id } = ? LIMIT 1`
+		const sql = `SELECT * FROM ${this.usersTable} WHERE ${this.columns.id} = ? LIMIT 1`
 		const normalizedRow = await this.db.prepare(sql).bind(id).first()
 		if (normalizedRow) {
 			return this.sanitizeUser(this.mapUser(normalizedRow))
@@ -238,15 +238,15 @@ export class D1UserAdapter extends UserAdapter {
 	}
 
 	async getUserByEmail(email: string): Promise<User | null> {
-		const sql = `SELECT * FROM ${ this.usersTable } WHERE lower(${ this.columns.email }) = lower(?) ORDER BY ${ this.columns.id } ASC LIMIT 1`
+		const sql = `SELECT * FROM ${this.usersTable} WHERE lower(${this.columns.email}) = lower(?) ORDER BY ${this.columns.id} ASC LIMIT 1`
 		const row = await this.db.prepare(sql).bind(email.trim()).first()
 		return this.sanitizeUser(this.mapUser(row))
 	}
 
 	async getUserByProviderId(provider: string, providerId: string): Promise<User | null> {
-		const sql = `SELECT u.* FROM ${ this.oauthAccountsTable } o
-			JOIN ${ this.usersTable } u ON o.${ this.oauthColumns.userId } = u.${ this.columns.id }
-			WHERE o.${ this.oauthColumns.provider } = ? AND o.${ this.oauthColumns.providerAccountId } = ? LIMIT 1`
+		const sql = `SELECT u.* FROM ${this.oauthAccountsTable} o
+			JOIN ${this.usersTable} u ON o.${this.oauthColumns.userId} = u.${this.columns.id}
+			WHERE o.${this.oauthColumns.provider} = ? AND o.${this.oauthColumns.providerAccountId} = ? LIMIT 1`
 		const row = await this.db.prepare(sql).bind(provider, providerId).first()
 		return this.sanitizeUser(this.mapUser(row))
 	}
@@ -260,19 +260,16 @@ export class D1UserAdapter extends UserAdapter {
 		}
 		for (const field of fields) {
 			if (!this.allowedFields.includes(field)) {
-				throw new Error(`Field not allowed for update: ${ field }`)
+				throw new Error(`Field not allowed for update: ${field}`)
 			}
 		}
-		const mappedFields = fields.map(field => this.mapFieldToColumn(field))
-		const setClause = mappedFields.map(f => `${ f } = ?`).join(', ')
-		const values = fields.map(field => this.toD1Value(data[field]))
-		const sql = `UPDATE ${ this.usersTable } SET ${ setClause } WHERE ${ this.columns.id } = ?`
+		const mappedFields = fields.map((field) => this.mapFieldToColumn(field))
+		const setClause = mappedFields.map((f) => `${f} = ?`).join(', ')
+		const values = fields.map((field) => this.toD1Value(data[field]))
+		const sql = `UPDATE ${this.usersTable} SET ${setClause} WHERE ${this.columns.id} = ?`
 		await this.db
 			.prepare(sql)
-			.bind(
-				...values,
-				this.toD1Value(id)
-			)
+			.bind(...values, this.toD1Value(id))
 			.run()
 		const updated = await this.getUserById(id)
 		if (!updated) throw new Error('Updated user not found')
@@ -281,18 +278,24 @@ export class D1UserAdapter extends UserAdapter {
 
 	async deleteUser(id: string) {
 		await this.db
-			.prepare(`DELETE FROM ${ this.usersTable } WHERE ${ this.columns.id } = ?`)
+			.prepare(`DELETE FROM ${this.usersTable} WHERE ${this.columns.id} = ?`)
 			.bind(id)
 			.run()
 	}
 
-	async linkOAuthAccount(userId: string, provider: string, providerAccountId: string): Promise<void> {
-		const sql = `INSERT INTO ${ this.oauthAccountsTable } (${ this.oauthColumns.userId }, ${ this.oauthColumns.provider }, ${ this.oauthColumns.providerAccountId }) VALUES (?, ?, ?)`
+	async linkOAuthAccount(
+		userId: string,
+		provider: string,
+		providerAccountId: string
+	): Promise<void> {
+		const sql = `INSERT INTO ${this.oauthAccountsTable} (${this.oauthColumns.userId}, ${this.oauthColumns.provider}, ${this.oauthColumns.providerAccountId}) VALUES (?, ?, ?)`
 		await this.db.prepare(sql).bind(userId, provider, providerAccountId).run()
 	}
 
-	async getUserWithPasswordHash(email: string): Promise<(User & { password?: string | null }) | null> {
-		const sql = `SELECT * FROM ${ this.usersTable } WHERE lower(${ this.columns.email }) = lower(?) ORDER BY ${ this.columns.id } ASC LIMIT 1`
+	async getUserWithPasswordHash(
+		email: string
+	): Promise<(User & { password?: string | null }) | null> {
+		const sql = `SELECT * FROM ${this.usersTable} WHERE lower(${this.columns.email}) = lower(?) ORDER BY ${this.columns.id} ASC LIMIT 1`
 		const row = await this.db.prepare(sql).bind(email.trim()).first()
 		const mapped = this.mapUser(row)
 		if (!mapped) return null

@@ -9,29 +9,26 @@ import { timingSafeEqual } from './crypto.ts'
 type CookiesLike = Pick<Cookies, 'set' | 'get' | 'delete'>
 
 type CookieOptions = {
-	secure?: boolean;
-	maxAge?: number;
-	sameSite?: 'lax' | 'strict' | 'none';
+	secure?: boolean
+	maxAge?: number
+	sameSite?: 'lax' | 'strict' | 'none'
 }
 
 type OAuthCallbackParams = {
-	code: string | null;
-	state: string | null;
-	storedState: string | null;
-	storedCodeVerifier: string | null;
+	code: string | null
+	state: string | null
+	storedState: string | null
+	storedCodeVerifier: string | null
 }
 
 type OAuthCallbackOverrides = {
-	code?: string | null;
-	state?: string | null;
+	code?: string | null
+	state?: string | null
 }
 
 type OAuthCallbackHandlers = {
-	onAuthenticated?: (
-		profile: OAuthProfile,
-		tokens: OAuthTokens
-	) => Promise<void> | void;
-	onError?: (error: unknown) => Promise<void> | void;
+	onAuthenticated?: (profile: OAuthProfile, tokens: OAuthTokens) => Promise<void> | void
+	onError?: (error: unknown) => Promise<void> | void
 }
 
 /**
@@ -62,10 +59,10 @@ export function createOAuthCookies(
 	}
 
 	// Store state cookie
-	cookies.set(`${ provider }_oauth_state`, state, cookieOptions)
+	cookies.set(`${provider}_oauth_state`, state, cookieOptions)
 
 	// Store code verifier cookie
-	cookies.set(`${ provider }_oauth_code_verifier`, codeVerifier, {
+	cookies.set(`${provider}_oauth_code_verifier`, codeVerifier, {
 		...cookieOptions,
 		secure
 	})
@@ -79,8 +76,8 @@ export function createOAuthCookies(
  * @param {string} provider - Provider name
  */
 export function cleanupOAuthCookies(cookies: CookiesLike, provider: string): void {
-	cookies.delete(`${ provider }_oauth_state`, { path: '/' })
-	cookies.delete(`${ provider }_oauth_code_verifier`, { path: '/' })
+	cookies.delete(`${provider}_oauth_state`, { path: '/' })
+	cookies.delete(`${provider}_oauth_code_verifier`, { path: '/' })
 }
 
 /**
@@ -96,12 +93,7 @@ export function validateOAuthCallback(params: OAuthCallbackParams): boolean {
 	const { code, state, storedState, storedCodeVerifier } = params
 
 	const stateMatches = timingSafeEqual(state ?? '', storedState ?? '')
-	return !!(
-		code &&
-		storedCodeVerifier &&
-		storedState &&
-		stateMatches
-	)
+	return !!(code && storedCodeVerifier && storedState && stateMatches)
 }
 
 /**
@@ -121,9 +113,8 @@ export function getOAuthCallbackParams(
 ): OAuthCallbackParams {
 	const code = overrides.code ?? url.searchParams.get('code')
 	const state = overrides.state ?? url.searchParams.get('state')
-	const storedState = cookies.get(`${ provider }_oauth_state`) ?? null
-	const storedCodeVerifier =
-		cookies.get(`${ provider }_oauth_code_verifier`) ?? null
+	const storedState = cookies.get(`${provider}_oauth_state`) ?? null
+	const storedCodeVerifier = cookies.get(`${provider}_oauth_code_verifier`) ?? null
 
 	return { code, state, storedState, storedCodeVerifier }
 }
@@ -148,12 +139,12 @@ export async function handleOAuthCallback({
 	appleUserData = null,
 	overrideParams = null
 }: {
-	event: RequestEvent | RequestEventLike | { cookies: CookiesLike; url: URL; request: Request };
-	provider: string;
-	providerInstance: OAuthProvider;
-	callbacks: OAuthCallbackHandlers;
-	appleUserData?: string | null;
-	overrideParams?: OAuthCallbackOverrides | null;
+	event: RequestEvent | RequestEventLike | { cookies: CookiesLike; url: URL; request: Request }
+	provider: string
+	providerInstance: OAuthProvider
+	callbacks: OAuthCallbackHandlers
+	appleUserData?: string | null
+	overrideParams?: OAuthCallbackOverrides | null
 }): Promise<{ profile: OAuthProfile; tokens: OAuthTokens }> {
 	const { cookies, url } = event
 	const override: OAuthCallbackOverrides = overrideParams || {}
@@ -170,9 +161,7 @@ export async function handleOAuthCallback({
 		}
 
 		// Fetch user profile from provider
-		let profile:
-			| { profile: OAuthProfile; tokens: OAuthTokens }
-			| null = null
+		let profile: { profile: OAuthProfile; tokens: OAuthTokens } | null = null
 		if (provider === 'apple' && appleUserData) {
 			profile = await providerInstance.getUserProfile(
 				params.code,
@@ -180,10 +169,7 @@ export async function handleOAuthCallback({
 				appleUserData
 			)
 		} else {
-			profile = await providerInstance.getUserProfile(
-				params.code,
-				params.storedCodeVerifier
-			)
+			profile = await providerInstance.getUserProfile(params.code, params.storedCodeVerifier)
 		}
 
 		if (!profile?.profile) {
@@ -199,7 +185,7 @@ export async function handleOAuthCallback({
 		}
 
 		return profile
-	} catch(error) {
+	} catch (error) {
 		if (callbacks.onError) {
 			await callbacks.onError(error)
 		}

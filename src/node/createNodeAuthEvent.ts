@@ -8,13 +8,13 @@ export async function createNodeAuthEvent({
 	body,
 	req
 }: {
-	body?: Buffer;
-	req: IncomingMessage;
+	body?: Buffer
+	req: IncomingMessage
 }): Promise<{ cookies: NodeCookies; event: RequestEventLike }> {
-	const url = new URL(req.url || '/', `http://${ req.headers.host || '127.0.0.1' }`)
+	const url = new URL(req.url || '/', `http://${req.headers.host || '127.0.0.1'}`)
 	const method = req.method || 'GET'
 	const headers = new Headers()
-	for (const [ name, value ] of Object.entries(req.headers)) {
+	for (const [name, value] of Object.entries(req.headers)) {
 		if (Array.isArray(value)) {
 			for (const entry of value) {
 				headers.append(name, entry)

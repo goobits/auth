@@ -17,7 +17,7 @@ export async function createAuthApiKey({
 	bytes = 32
 }: { prefix?: string; bytes?: number } = {}): Promise<string> {
 	const random = randomBytes(bytes)
-	return `${ prefix }_${ bytesToHex(random) }`
+	return `${prefix}_${bytesToHex(random)}`
 }
 
 /** Hashes an auth API key with an optional salt. */
@@ -26,7 +26,7 @@ export async function hashAuthApiKey(
 	{ salt = '' }: { salt?: string } = {}
 ): Promise<string> {
 	if (!apiKey) throw new Error('apiKey is required')
-	return sha256Hex(`${ salt }${ apiKey }`)
+	return sha256Hex(`${salt}${apiKey}`)
 }
 
 /** Verifies an auth API key against a stored hash. */

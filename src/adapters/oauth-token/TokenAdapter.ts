@@ -13,7 +13,7 @@ export abstract class TokenAdapter {
 	abstract storeTokens(
 		userId: string,
 		provider: string,
-		tokens: import('../../types/core.ts').OAuthTokens,
+		tokens: import('../../types/core.ts').OAuthTokens
 	): Promise<void>
 
 	/**
@@ -24,7 +24,7 @@ export abstract class TokenAdapter {
 	 */
 	abstract getTokens(
 		userId: string,
-		provider: string,
+		provider: string
 	): Promise<import('../../types/core.ts').OAuthTokens | null>
 
 	/**
@@ -35,7 +35,7 @@ export abstract class TokenAdapter {
 	 */
 	abstract refreshTokens(
 		userId: string,
-		provider: string,
+		provider: string
 	): Promise<import('../../types/core.ts').OAuthTokens | null>
 
 	/**

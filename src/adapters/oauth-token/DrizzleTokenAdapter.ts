@@ -12,9 +12,9 @@ import {
 import { TokenAdapter } from './TokenAdapter.ts'
 
 type TokensTable = DrizzleTable & {
-	userId: DrizzleTable[string];
-	provider: DrizzleTable[string];
-	tokens: DrizzleTable[string];
+	userId: DrizzleTable[string]
+	provider: DrizzleTable[string]
+	tokens: DrizzleTable[string]
 }
 
 function normalizeOAuthTokens(value: DrizzleJson): OAuthTokens | null {
@@ -27,13 +27,8 @@ function normalizeOAuthTokens(value: DrizzleJson): OAuthTokens | null {
 	const accessTokenExpiresAtRaw = value['accessTokenExpiresAt']
 	if (typeof accessTokenRaw !== 'string') return null
 	const refreshToken =
-		typeof refreshTokenRaw === 'string' || refreshTokenRaw === null
-			? refreshTokenRaw
-			: null
-	const scope =
-		typeof scopeRaw === 'string' || scopeRaw === null
-			? scopeRaw
-			: null
+		typeof refreshTokenRaw === 'string' || refreshTokenRaw === null ? refreshTokenRaw : null
+	const scope = typeof scopeRaw === 'string' || scopeRaw === null ? scopeRaw : null
 	let accessTokenExpiresAt: string
 	if (typeof accessTokenExpiresAtRaw === 'string') {
 		accessTokenExpiresAt = accessTokenExpiresAtRaw
@@ -60,9 +55,9 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 	constructor(
 		db: DrizzleDbLike,
 		options: {
-			tokensTable?: TokensTable;
-			encryptionKey?: string | null;
-			encrypt?: boolean;
+			tokensTable?: TokensTable
+			encryptionKey?: string | null
+			encrypt?: boolean
 		} = {}
 	) {
 		super()
@@ -74,9 +69,7 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 		this.encryptionKey = options.encryptionKey ?? null
 		this.encrypt = options.encrypt !== false
 		if (this.encrypt && !this.encryptionKey) {
-			throw new Error(
-				'DrizzleTokenAdapter requires encryptionKey when encryption is enabled'
-			)
+			throw new Error('DrizzleTokenAdapter requires encryptionKey when encryption is enabled')
 		}
 	}
 
@@ -89,16 +82,16 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 
 	async storeTokens(userId: string, provider: string, tokens: OAuthTokens): Promise<void> {
 		const key = this.getEncryptionKey()
-		const tokenData = this.encrypt
-			? await encryptTokens(tokens, key)
-			: JSON.stringify(tokens)
+		const tokenData = this.encrypt ? await encryptTokens(tokens, key) : JSON.stringify(tokens)
 		await this.db
 			.delete(this.tokensTable)
 			.where(
-				requireCondition(and(
-					eq(requireColumn(this.tokensTable, 'userId'), userId),
-					eq(requireColumn(this.tokensTable, 'provider'), provider)
-				))
+				requireCondition(
+					and(
+						eq(requireColumn(this.tokensTable, 'userId'), userId),
+						eq(requireColumn(this.tokensTable, 'provider'), provider)
+					)
+				)
 			)
 		await this.db.insert(this.tokensTable).values({
 			userId,
@@ -108,14 +101,16 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 	}
 
 	async getTokens(userId: string, provider: string): Promise<OAuthTokens | null> {
-		const [ row ] = await this.db
+		const [row] = await this.db
 			.select()
 			.from(this.tokensTable)
 			.where(
-				requireCondition(and(
-					eq(requireColumn(this.tokensTable, 'userId'), userId),
-					eq(requireColumn(this.tokensTable, 'provider'), provider)
-				))
+				requireCondition(
+					and(
+						eq(requireColumn(this.tokensTable, 'userId'), userId),
+						eq(requireColumn(this.tokensTable, 'provider'), provider)
+					)
+				)
 			)
 		if (!row) return null
 		const raw = row['tokens']
@@ -129,19 +124,19 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 	}
 
 	async refreshTokens(_userId: string, _provider: string): Promise<OAuthTokens | null> {
-		throw new Error(
-			'refreshTokens not implemented - use provider-specific refresh logic'
-		)
+		throw new Error('refreshTokens not implemented - use provider-specific refresh logic')
 	}
 
 	async deleteTokens(userId: string, provider: string): Promise<void> {
 		await this.db
 			.delete(this.tokensTable)
 			.where(
-				requireCondition(and(
-					eq(requireColumn(this.tokensTable, 'userId'), userId),
-					eq(requireColumn(this.tokensTable, 'provider'), provider)
-				))
+				requireCondition(
+					and(
+						eq(requireColumn(this.tokensTable, 'userId'), userId),
+						eq(requireColumn(this.tokensTable, 'provider'), provider)
+					)
+				)
 			)
 	}
 }

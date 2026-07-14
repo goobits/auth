@@ -7,19 +7,19 @@ type D1Row = Record<string, D1Value>
 type D1DatabaseLike = {
 	prepare: (sql: string) => {
 		bind: (...args: D1Value[]) => {
-			run: () => Promise<unknown>;
-			first: () => Promise<D1Row | null>;
-			all: () => Promise<{ results?: D1Row[] }>;
-		};
-	};
+			run: () => Promise<unknown>
+			first: () => Promise<D1Row | null>
+			all: () => Promise<{ results?: D1Row[] }>
+		}
+	}
 }
 
 type WebAuthnChallengeRecord = {
-	id: string;
-	userId: string | null;
-	challenge: string;
-	type: string;
-	expiresAt: Date;
+	id: string
+	userId: string | null
+	challenge: string
+	type: string
+	expiresAt: Date
 }
 
 /** Cloudflare D1 web authn adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
@@ -28,27 +28,27 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 	private credentialsTable: string
 	private challengesTable: string
 	private columns: {
-		credentialId: string;
-		userId: string;
-		publicKey: string;
-		counter: string;
-		transports: string;
-		name: string;
-		createdAt: string;
-		updatedAt: string;
-		challengeId: string;
-		challenge: string;
-		challengeType: string;
-		challengeUserId: string;
-		challengeExpiresAt: string;
+		credentialId: string
+		userId: string
+		publicKey: string
+		counter: string
+		transports: string
+		name: string
+		createdAt: string
+		updatedAt: string
+		challengeId: string
+		challenge: string
+		challengeType: string
+		challengeUserId: string
+		challengeExpiresAt: string
 	}
 
 	constructor(
 		db: D1DatabaseLike,
 		options: {
-			credentialsTable?: string;
-			challengesTable?: string;
-			columns?: Partial<Record<string, string>>;
+			credentialsTable?: string
+			challengesTable?: string
+			columns?: Partial<Record<string, string>>
 		} = {}
 	) {
 		super()
@@ -79,22 +79,16 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 		type,
 		expiresAt
 	}: {
-		challengeId: string;
-		userId: string | null;
-		challenge: string;
-		type: string;
-		expiresAt: Date;
+		challengeId: string
+		userId: string | null
+		challenge: string
+		type: string
+		expiresAt: Date
 	}) {
-		const sql = `INSERT INTO ${ this.challengesTable } (${ this.columns.challengeId }, ${ this.columns.challengeUserId }, ${ this.columns.challenge }, ${ this.columns.challengeType }, ${ this.columns.challengeExpiresAt }) VALUES (?, ?, ?, ?, ?)`
+		const sql = `INSERT INTO ${this.challengesTable} (${this.columns.challengeId}, ${this.columns.challengeUserId}, ${this.columns.challenge}, ${this.columns.challengeType}, ${this.columns.challengeExpiresAt}) VALUES (?, ?, ?, ?, ?)`
 		await this.db
 			.prepare(sql)
-			.bind(
-				challengeId,
-				userId,
-				challenge,
-				type,
-				expiresAt.toISOString()
-			)
+			.bind(challengeId, userId, challenge, type, expiresAt.toISOString())
 			.run()
 	}
 
@@ -142,7 +136,7 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 		if (typeof transportsRaw === 'string') {
 			try {
 				const parsed = JSON.parse(transportsRaw)
-				if (!Array.isArray(parsed) || parsed.some(v => typeof v !== 'string')) {
+				if (!Array.isArray(parsed) || parsed.some((v) => typeof v !== 'string')) {
 					return null
 				}
 				transports = parsed
@@ -172,16 +166,14 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 	}
 
 	async getChallenge(challengeId: string): Promise<WebAuthnChallengeRecord | null> {
-		const sql = `SELECT * FROM ${ this.challengesTable } WHERE ${ this.columns.challengeId } = ? LIMIT 1`
+		const sql = `SELECT * FROM ${this.challengesTable} WHERE ${this.columns.challengeId} = ? LIMIT 1`
 		const row = await this.db.prepare(sql).bind(challengeId).first()
 		return this.mapChallenge(row)
 	}
 
 	async deleteChallenge(challengeId: string) {
 		await this.db
-			.prepare(
-				`DELETE FROM ${ this.challengesTable } WHERE ${ this.columns.challengeId } = ?`
-			)
+			.prepare(`DELETE FROM ${this.challengesTable} WHERE ${this.columns.challengeId} = ?`)
 			.bind(challengeId)
 			.run()
 	}
@@ -194,14 +186,14 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 		transports,
 		name
 	}: {
-		userId: string;
-		credentialId: string;
-		publicKey: string;
-		counter: number;
-		transports?: string[] | null;
-		name?: string | null;
+		userId: string
+		credentialId: string
+		publicKey: string
+		counter: number
+		transports?: string[] | null
+		name?: string | null
 	}) {
-		const sql = `INSERT INTO ${ this.credentialsTable } (${ this.columns.userId }, ${ this.columns.credentialId }, ${ this.columns.publicKey }, ${ this.columns.counter }, ${ this.columns.transports }, ${ this.columns.name }) VALUES (?, ?, ?, ?, ?, ?)`
+		const sql = `INSERT INTO ${this.credentialsTable} (${this.columns.userId}, ${this.columns.credentialId}, ${this.columns.publicKey}, ${this.columns.counter}, ${this.columns.transports}, ${this.columns.name}) VALUES (?, ?, ?, ?, ?, ?)`
 		await this.db
 			.prepare(sql)
 			.bind(
@@ -216,14 +208,14 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 	}
 
 	async getCredential(credentialId: string): Promise<WebAuthnCredential | null> {
-		const sql = `SELECT * FROM ${ this.credentialsTable } WHERE ${ this.columns.credentialId } = ? LIMIT 1`
+		const sql = `SELECT * FROM ${this.credentialsTable} WHERE ${this.columns.credentialId} = ? LIMIT 1`
 		const row = await this.db.prepare(sql).bind(credentialId).first()
 		if (!row) return null
 		return this.mapCredential(row)
 	}
 
 	async listCredentials(userId: string): Promise<WebAuthnCredential[]> {
-		const sql = `SELECT * FROM ${ this.credentialsTable } WHERE ${ this.columns.userId } = ?`
+		const sql = `SELECT * FROM ${this.credentialsTable} WHERE ${this.columns.userId} = ?`
 		const result = await this.db.prepare(sql).bind(userId).all()
 		const rows = result?.results ?? []
 		const credentials: WebAuthnCredential[] = []
@@ -236,40 +228,44 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 
 	async updateCredential(credentialId: string, updates: Record<string, unknown>) {
 		const payload = new Map<string, D1Value>()
-		for (const [ key, value ] of Object.entries(updates)) {
+		for (const [key, value] of Object.entries(updates)) {
 			const column = this.columns[key as keyof typeof this.columns] || key
 			if (column === this.columns.transports && Array.isArray(value)) {
-				if (value.every(entry => typeof entry === 'string')) {
+				if (value.every((entry) => typeof entry === 'string')) {
 					payload.set(column, JSON.stringify(value))
 				}
 				continue
 			}
-			if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+			if (
+				value === null ||
+				typeof value === 'string' ||
+				typeof value === 'number' ||
+				typeof value === 'boolean'
+			) {
 				payload.set(column, value)
 			}
 		}
 		const fields = Array.from(payload.keys())
 		if (fields.length === 0) return
-		const setSql = fields.map(field => `${ field } = ?`).join(', ')
-		const sql = `UPDATE ${ this.credentialsTable } SET ${ setSql } WHERE ${ this.columns.credentialId } = ?`
-		const values = fields.map(field => payload.get(field) ?? null)
-		await this.db.prepare(sql).bind(...values, credentialId).run()
+		const setSql = fields.map((field) => `${field} = ?`).join(', ')
+		const sql = `UPDATE ${this.credentialsTable} SET ${setSql} WHERE ${this.columns.credentialId} = ?`
+		const values = fields.map((field) => payload.get(field) ?? null)
+		await this.db
+			.prepare(sql)
+			.bind(...values, credentialId)
+			.run()
 	}
 
 	async deleteCredential(credentialId: string) {
 		await this.db
-			.prepare(
-				`DELETE FROM ${ this.credentialsTable } WHERE ${ this.columns.credentialId } = ?`
-			)
+			.prepare(`DELETE FROM ${this.credentialsTable} WHERE ${this.columns.credentialId} = ?`)
 			.bind(credentialId)
 			.run()
 	}
 
 	async deleteUserCredentials(userId: string) {
 		await this.db
-			.prepare(
-				`DELETE FROM ${ this.credentialsTable } WHERE ${ this.columns.userId } = ?`
-			)
+			.prepare(`DELETE FROM ${this.credentialsTable} WHERE ${this.columns.userId} = ?`)
 			.bind(userId)
 			.run()
 	}
@@ -277,7 +273,7 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 	override async consumeChallenge(challengeId: string) {
 		const row = await this.db
 			.prepare(
-				`DELETE FROM ${ this.challengesTable } WHERE ${ this.columns.challengeId } = ? RETURNING *`
+				`DELETE FROM ${this.challengesTable} WHERE ${this.columns.challengeId} = ? RETURNING *`
 			)
 			.bind(challengeId)
 			.first()

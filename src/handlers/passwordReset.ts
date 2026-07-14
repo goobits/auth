@@ -21,24 +21,24 @@ import { getLogger } from '../utils/logger.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 
 type RateLimitConfig = {
-	check?: (key: string) => Promise<{ allowed: boolean }>;
-	key?: (event: RequestEventLike) => string;
-	trustProxyHeader?: boolean;
+	check?: (key: string) => Promise<{ allowed: boolean }>
+	key?: (event: RequestEventLike) => string
+	trustProxyHeader?: boolean
 }
 
 /** Creates password reset request handler for auth HTTP handlers. */
 export function createPasswordResetRequestHandler(config: {
-	userAdapter: { getUserByEmail: (email: string) => Promise<User | null> };
-	verificationTokenAdapter: VerificationTokenAdapter;
-	sendPasswordResetEmail: (email: string, token: string) => Promise<void> | void;
+	userAdapter: { getUserByEmail: (email: string) => Promise<User | null> }
+	verificationTokenAdapter: VerificationTokenAdapter
+	sendPasswordResetEmail: (email: string, token: string) => Promise<void> | void
 	resolveUser?: (input: {
-		email: string;
-		identifier: string | null;
-		event: RequestEventLike;
-	}) => Promise<User | null>;
-	expiresInMs?: number;
-	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string };
-	rateLimit?: RateLimitConfig;
+		email: string
+		identifier: string | null
+		event: RequestEventLike
+	}) => Promise<User | null>
+	expiresInMs?: number
+	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
+	rateLimit?: RateLimitConfig
 }) {
 	const {
 		userAdapter,
@@ -52,7 +52,7 @@ export function createPasswordResetRequestHandler(config: {
 
 	const log = getLogger()
 
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		if (csrf?.validate) {
 			const valid = await csrf.validate(event)
 			if (!valid) {
@@ -99,8 +99,7 @@ export function createPasswordResetRequestHandler(config: {
 				// Don't reveal that user doesn't exist (security)
 				return {
 					success: true,
-					message:
-						'If an account exists with this email, a password reset link has been sent'
+					message: 'If an account exists with this email, a password reset link has been sent'
 				}
 			}
 
@@ -121,11 +120,13 @@ export function createPasswordResetRequestHandler(config: {
 
 			return {
 				success: true,
-				message:
-					'If an account exists with this email, a password reset link has been sent'
+				message: 'If an account exists with this email, a password reset link has been sent'
 			}
-		} catch(error) {
-			log.error?.('[Password Reset Request] Error:', error instanceof Error ? error.message : String(error))
+		} catch (error) {
+			log.error?.(
+				'[Password Reset Request] Error:',
+				error instanceof Error ? error.message : String(error)
+			)
 
 			return {
 				error: 'An error occurred while processing your request',
@@ -146,15 +147,15 @@ export function createPasswordResetRequestHandler(config: {
  * @returns {Function} SvelteKit request handler
  */
 export function createPasswordResetConfirmHandler(config: {
-	credentialsProvider: Pick<CredentialsProvider, 'createPasswordHash' | 'updatePassword'>;
-	userAdapter: UserAdapter;
-	verificationTokenAdapter: VerificationTokenAdapter;
-	sessionAdapter?: { invalidateUserSessions?: (userId: string) => Promise<void> };
+	credentialsProvider: Pick<CredentialsProvider, 'createPasswordHash' | 'updatePassword'>
+	userAdapter: UserAdapter
+	verificationTokenAdapter: VerificationTokenAdapter
+	sessionAdapter?: { invalidateUserSessions?: (userId: string) => Promise<void> }
 	completePasswordReset?: (input: {
-		token: string;
-		passwordHash: string;
-	}) => Promise<{ userId: string } | null>;
-	redirectTo?: string;
+		token: string
+		passwordHash: string
+	}) => Promise<{ userId: string } | null>
+	redirectTo?: string
 }) {
 	const {
 		credentialsProvider,
@@ -167,7 +168,7 @@ export function createPasswordResetConfirmHandler(config: {
 
 	const log = getLogger()
 
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		const formData = await event.request.formData()
 		const token = formData.get('token')?.toString()
 		const newPassword = formData.get('password')?.toString()
@@ -228,7 +229,7 @@ export function createPasswordResetConfirmHandler(config: {
 			if (sessionAdapter?.invalidateUserSessions) {
 				try {
 					await sessionAdapter.invalidateUserSessions(user.id)
-				} catch(error) {
+				} catch (error) {
 					sessionsInvalidated = false
 					log.error?.(
 						'[PasswordReset] Failed to invalidate existing sessions after reset:',
@@ -245,8 +246,11 @@ export function createPasswordResetConfirmHandler(config: {
 				sessionsInvalidated,
 				redirectTo: isSafeRedirectPath(redirectTo) ? redirectTo : '/sign-in'
 			}
-		} catch(error) {
-			log.error?.('[Password Reset Confirm] Error:', error instanceof Error ? error.message : String(error))
+		} catch (error) {
+			log.error?.(
+				'[Password Reset Confirm] Error:',
+				error instanceof Error ? error.message : String(error)
+			)
 
 			return {
 				error:

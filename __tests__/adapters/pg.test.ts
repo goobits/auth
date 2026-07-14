@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { createPgAuthAdapters, pgAuthSchemaSql, type PgPoolLike } from '../../src/adapters/pg/index.ts'
+import {
+	createPgAuthAdapters,
+	pgAuthSchemaSql,
+	type PgPoolLike
+} from '../../src/adapters/pg/index.ts'
 
 describe('pg auth adapters', () => {
 	it('exposes the default postgres schema', () => {
@@ -14,7 +18,7 @@ describe('pg auth adapters', () => {
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_magic_link_tokens')
 	})
 
-	it('creates sessions through a node-postgres compatible pool', async() => {
+	it('creates sessions through a node-postgres compatible pool', async () => {
 		const db: PgPoolLike = {
 			async query(text, values = []) {
 				if (text.includes('INSERT INTO auth_sessions')) {
@@ -33,7 +37,7 @@ describe('pg auth adapters', () => {
 						]
 					}
 				}
-				throw new Error(`Unexpected query: ${ text }`)
+				throw new Error(`Unexpected query: ${text}`)
 			}
 		}
 		const adapters = createPgAuthAdapters({
@@ -52,7 +56,7 @@ describe('pg auth adapters', () => {
 		expect(session.fingerprint).toBe('fingerprint')
 	})
 
-	it('creates WebAuthn challenges and credentials through the postgres bundle', async() => {
+	it('creates WebAuthn challenges and credentials through the postgres bundle', async () => {
 		const queries: Array<{ text: string; values: readonly unknown[] }> = []
 		const db: PgPoolLike = {
 			async query(text, values = []) {
@@ -79,7 +83,7 @@ describe('pg auth adapters', () => {
 								credential_id: values[0],
 								name: 'Work laptop',
 								public_key: 'public-key',
-								transports: [ 'internal' ],
+								transports: ['internal'],
 								updated_at: new Date('2026-01-01T00:00:00.000Z'),
 								user_id: 'user-1'
 							}
@@ -107,19 +111,23 @@ describe('pg auth adapters', () => {
 			credentialId: 'credential-1',
 			name: 'Work laptop',
 			publicKey: 'public-key',
-			transports: [ 'internal' ],
+			transports: ['internal'],
 			userId: 'user-1'
 		})
 		const challenge = await adapters.webauthn.getChallenge('challenge-1')
 		const credential = await adapters.webauthn.getCredential('credential-1')
 
 		expect(challenge?.id).toBe('challenge-1')
-		expect(credential?.transports).toEqual([ 'internal' ])
-		expect(queries.some(query => query.text.includes('INSERT INTO auth_webauthn_challenges'))).toBe(true)
-		expect(queries.some(query => query.text.includes('INSERT INTO auth_webauthn_credentials'))).toBe(true)
+		expect(credential?.transports).toEqual(['internal'])
+		expect(
+			queries.some((query) => query.text.includes('INSERT INTO auth_webauthn_challenges'))
+		).toBe(true)
+		expect(
+			queries.some((query) => query.text.includes('INSERT INTO auth_webauthn_credentials'))
+		).toBe(true)
 	})
 
-	it('stores MFA secrets and backup codes through the postgres bundle', async() => {
+	it('stores MFA secrets and backup codes through the postgres bundle', async () => {
 		const queries: Array<{ text: string; values: readonly unknown[] }> = []
 		const db: PgPoolLike = {
 			async query(text, values = []) {
@@ -136,7 +144,7 @@ describe('pg auth adapters', () => {
 					}
 				}
 				if (text.includes('SELECT code_hash FROM auth_mfa_backup_codes')) {
-					return { rows: [ { code_hash: 'hash-1' } ] }
+					return { rows: [{ code_hash: 'hash-1' }] }
 				}
 				if (text.includes('COUNT(c.code_hash)')) {
 					return {
@@ -158,7 +166,7 @@ describe('pg auth adapters', () => {
 		})
 
 		await adapters.mfa.setSecret('user-1', 'SECRET')
-		await adapters.mfa.setBackupCodes('user-1', [ 'hash-1' ])
+		await adapters.mfa.setBackupCodes('user-1', ['hash-1'])
 		await adapters.mfa.enableMfa('user-1')
 		const secret = await adapters.mfa.getSecret('user-1')
 		const backupCodes = await adapters.mfa.getBackupCodes('user-1')
@@ -166,28 +174,33 @@ describe('pg auth adapters', () => {
 		await adapters.mfa.consumeBackupCode('user-1', 'hash-1')
 
 		expect(secret).toBe('SECRET')
-		expect(backupCodes).toEqual([ 'hash-1' ])
+		expect(backupCodes).toEqual(['hash-1'])
 		expect(status).toEqual({
 			backupCodeCount: 1,
 			enabled: true,
 			enabledAt: new Date('2026-01-01T00:00:00.000Z')
 		})
-		expect(queries.some(query => query.text.includes('INSERT INTO auth_mfa_factors'))).toBe(true)
-		expect(queries.some(query => query.text.includes('INSERT INTO auth_mfa_backup_codes'))).toBe(true)
+		expect(queries.some((query) => query.text.includes('INSERT INTO auth_mfa_factors'))).toBe(true)
+		expect(queries.some((query) => query.text.includes('INSERT INTO auth_mfa_backup_codes'))).toBe(
+			true
+		)
 	})
 
-	it('stores and atomically consumes magic link tokens through the postgres bundle', async() => {
+	it('stores and atomically consumes magic link tokens through the postgres bundle', async () => {
 		const expiresAt = new Date('2099-01-01T00:00:00.000Z')
-		const rows = new Map<string, {
-			created_at: Date
-			email: string
-			expires_at: Date
-			id: string
-			metadata: Record<string, unknown>
-			otp_hash: string | null
-			token_hash: string
-			user_id: string | null
-		}>()
+		const rows = new Map<
+			string,
+			{
+				created_at: Date
+				email: string
+				expires_at: Date
+				id: string
+				metadata: Record<string, unknown>
+				otp_hash: string | null
+				token_hash: string
+				user_id: string | null
+			}
+		>()
 		const queries: Array<{ text: string; values: readonly unknown[] }> = []
 		const db: PgPoolLike = {
 			async query(text, values = []) {
@@ -204,25 +217,29 @@ describe('pg auth adapters', () => {
 						user_id: values[1] as string | null
 					}
 					rows.set(row.id, row)
-					return { rows: [ row ] }
+					return { rows: [row] }
 				}
 				if (text.includes('SELECT * FROM auth_magic_link_tokens WHERE token_hash')) {
 					return {
-						rows: [ ...rows.values() ].filter(row => row.token_hash === values[0])
+						rows: [...rows.values()].filter((row) => row.token_hash === values[0])
 					}
 				}
 				if (text.includes('SELECT * FROM auth_magic_link_tokens WHERE email')) {
 					return {
-						rows: [ ...rows.values() ].filter(row => row.email === values[0] && row.otp_hash === values[1])
+						rows: [...rows.values()].filter(
+							(row) => row.email === values[0] && row.otp_hash === values[1]
+						)
 					}
 				}
 				if (text.includes('DELETE FROM auth_magic_link_tokens WHERE token_hash')) {
-					const row = [ ...rows.values() ].find(candidate => candidate.token_hash === values[0])
+					const row = [...rows.values()].find((candidate) => candidate.token_hash === values[0])
 					if (row) rows.delete(row.id)
-					return { rows: row ? [ row ] : [] }
+					return { rows: row ? [row] : [] }
 				}
 				if (text.includes('DELETE FROM auth_magic_link_tokens WHERE email')) {
-					const deleted = [ ...rows.values() ].filter(row => row.email === values[0] && row.otp_hash === values[1])
+					const deleted = [...rows.values()].filter(
+						(row) => row.email === values[0] && row.otp_hash === values[1]
+					)
 					for (const row of deleted) rows.delete(row.id)
 					return { rows: deleted }
 				}
@@ -254,6 +271,6 @@ describe('pg auth adapters', () => {
 		expect(byOtp?.id).toBe(token.id)
 		expect(consumed?.id).toBe(token.id)
 		expect(await adapters.magicLink.findByTokenHash('token-hash')).toBeNull()
-		expect(queries.some(query => query.text.includes('RETURNING *'))).toBe(true)
+		expect(queries.some((query) => query.text.includes('RETURNING *'))).toBe(true)
 	})
 })

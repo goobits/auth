@@ -7,13 +7,13 @@ function createMockDb(): DrizzleDbLike {
 	return {
 		select: () => ({
 			from: () => ({
-				where: async() => [],
-				innerJoin: () => ({ where: async() => [] })
+				where: async () => [],
+				innerJoin: () => ({ where: async () => [] })
 			})
 		}),
-		insert: () => ({ values: async() => {} }),
-		update: () => ({ set: () => ({ where: async() => {} }) }),
-		delete: () => ({ where: async() => {} })
+		insert: () => ({ values: async () => {} }),
+		update: () => ({ set: () => ({ where: async () => {} }) }),
+		delete: () => ({ where: async () => {} })
 	}
 }
 
@@ -36,20 +36,36 @@ describe('drizzleAdapter', () => {
 	it('builds a full adapter bundle when tables exist', () => {
 		const db = createMockDb()
 		const schema = {
-			users: table([ 'id', 'email', 'name', 'avatar', 'emailVerified' ]),
-			sessions: table([ 'id', 'userId', 'expiresAt' ]),
-			oauthAccounts: table([ 'userId', 'provider', 'providerAccountId' ]),
-			oauthTokens: table([ 'userId', 'provider', 'tokens' ]),
-			verificationTokens: table([ 'id', 'userId', 'type', 'token', 'expiresAt' ]),
-			magicLinkTokens: table([ 'id', 'userId', 'email', 'tokenHash', 'otpHash', 'expiresAt', 'createdAt' ]),
-			webauthnCredentials: table([ 'credentialId', 'userId', 'publicKey', 'counter', 'transports', 'name', 'createdAt', 'updatedAt' ]),
-			webauthnChallenges: table([ 'id', 'challenge', 'type', 'userId', 'expiresAt' ])
+			users: table(['id', 'email', 'name', 'avatar', 'emailVerified']),
+			sessions: table(['id', 'userId', 'expiresAt']),
+			oauthAccounts: table(['userId', 'provider', 'providerAccountId']),
+			oauthTokens: table(['userId', 'provider', 'tokens']),
+			verificationTokens: table(['id', 'userId', 'type', 'token', 'expiresAt']),
+			magicLinkTokens: table([
+				'id',
+				'userId',
+				'email',
+				'tokenHash',
+				'otpHash',
+				'expiresAt',
+				'createdAt'
+			]),
+			webauthnCredentials: table([
+				'credentialId',
+				'userId',
+				'publicKey',
+				'counter',
+				'transports',
+				'name',
+				'createdAt',
+				'updatedAt'
+			]),
+			webauthnChallenges: table(['id', 'challenge', 'type', 'userId', 'expiresAt'])
 		}
 
 		const adapters = drizzleAdapter(db, {
 			schema,
-			oauthTokenEncryptionKey:
-				'00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
+			oauthTokenEncryptionKey: '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
 		})
 
 		expect(adapters.session).toBeDefined()

@@ -19,15 +19,15 @@ describe('DrizzleSessionAdapter', () => {
 	})
 
 	it('requires sessions and users tables', () => {
-		expect(() => new DrizzleSessionAdapter(mockDb as never, { usersTable: drizzleUsersTable })).toThrow(
-			'DrizzleSessionAdapter requires sessionsTable and usersTable options'
-		)
-		expect(() => new DrizzleSessionAdapter(mockDb as never, { sessionsTable: drizzleSessionsTable })).toThrow(
-			'DrizzleSessionAdapter requires sessionsTable and usersTable options'
-		)
+		expect(
+			() => new DrizzleSessionAdapter(mockDb as never, { usersTable: drizzleUsersTable })
+		).toThrow('DrizzleSessionAdapter requires sessionsTable and usersTable options')
+		expect(
+			() => new DrizzleSessionAdapter(mockDb as never, { sessionsTable: drizzleSessionsTable })
+		).toThrow('DrizzleSessionAdapter requires sessionsTable and usersTable options')
 	})
 
-	it('creates sessions with expiry metadata', async() => {
+	it('creates sessions with expiry metadata', async () => {
 		const session = await adapter.createSession('user-123')
 
 		expect(session.userId).toBe('user-123')
@@ -36,12 +36,12 @@ describe('DrizzleSessionAdapter', () => {
 		expect(session.expiresAt.getTime()).toBeGreaterThan(Date.now())
 	})
 
-	it('returns null when no session row exists', async() => {
+	it('returns null when no session row exists', async () => {
 		const result = await adapter.validateSession('missing')
 		expect(result).toEqual({ session: null, user: null })
 	})
 
-	it('deletes expired sessions during validation', async() => {
+	it('deletes expired sessions during validation', async () => {
 		let deleted = false
 		mockDb.select = () => ({
 			from: () => ({
@@ -72,7 +72,7 @@ describe('DrizzleSessionAdapter', () => {
 		expect(deleted).toBe(true)
 	})
 
-	it('marks near-expiry sessions as fresh and extends expiry', async() => {
+	it('marks near-expiry sessions as fresh and extends expiry', async () => {
 		let updated = false
 		mockDb.select = () => ({
 			from: () => ({
@@ -106,7 +106,7 @@ describe('DrizzleSessionAdapter', () => {
 		expect(result.user?.email).toBe('test@example.com')
 	})
 
-	it('sets and clears cookies with expected attributes', async() => {
+	it('sets and clears cookies with expected attributes', async () => {
 		const cookies = {
 			set: vi.fn(),
 			delete: vi.fn()
@@ -124,11 +124,11 @@ describe('DrizzleSessionAdapter', () => {
 		expect(cookies.delete).toHaveBeenCalledWith('session', expect.objectContaining({ path: '/' }))
 	})
 
-	it('lists sessions for a user', async() => {
+	it('lists sessions for a user', async () => {
 		mockDb.select = () => ({
 			from: () => ({
 				where: () =>
-					Promise.resolve([ { id: 's1', userId: 'u1', expiresAt: new Date(Date.now() + 60_000) } ])
+					Promise.resolve([{ id: 's1', userId: 'u1', expiresAt: new Date(Date.now() + 60_000) }])
 			})
 		})
 

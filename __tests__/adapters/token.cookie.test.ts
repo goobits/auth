@@ -8,7 +8,7 @@ describe('CookieTokenAdapter', () => {
 		expect(() => new CookieTokenAdapter({})).toThrow(/encryptionKey/)
 	})
 
-	it('stores and retrieves encrypted tokens', async() => {
+	it('stores and retrieves encrypted tokens', async () => {
 		const adapter = new CookieTokenAdapter({
 			encryptionKey: 'a'.repeat(64),
 			secureCookies: false
@@ -26,7 +26,7 @@ describe('CookieTokenAdapter', () => {
 		expect(tokens?.accessToken).toBe('tok')
 	})
 
-	it('throws if cookies not set', async() => {
+	it('throws if cookies not set', async () => {
 		const adapter = new CookieTokenAdapter({ encryptionKey: 'b'.repeat(64) })
 		await expect(adapter.getTokens('u1', 'google')).rejects.toThrow(/Cookies not set/)
 	})

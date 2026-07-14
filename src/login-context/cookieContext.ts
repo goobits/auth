@@ -3,16 +3,16 @@ import type { Cookies } from '@sveltejs/kit'
 type CookiesLike = Pick<Cookies, 'set' | 'get' | 'delete'>
 
 type LoginContextCookieOptions = {
-	secure?: boolean;
-	maxAge?: number;
-	sameSite?: 'lax' | 'strict' | 'none';
-	path?: string;
+	secure?: boolean
+	maxAge?: number
+	sameSite?: 'lax' | 'strict' | 'none'
+	path?: string
 }
 
 /** Cookie Login Context Config typed model for runtime integration. */
 export type CookieLoginContextConfig<Key extends string> = {
-	cookies: Record<Key, string>;
-	options?: LoginContextCookieOptions;
+	cookies: Record<Key, string>
+	options?: LoginContextCookieOptions
 }
 
 /** Cookie Login Context Runtime Options typed model for runtime integration. */
@@ -39,7 +39,7 @@ export function createCookieLoginContext<const Key extends string>(
 
 	function get(cookies: Pick<CookiesLike, 'get'>): Record<Key, string | null> {
 		return Object.fromEntries(
-			entries.map(([ key, cookieName ]) => [ key, cookies.get(cookieName) || null ])
+			entries.map(([key, cookieName]) => [key, cookies.get(cookieName) || null])
 		) as Record<Key, string | null>
 	}
 
@@ -49,7 +49,7 @@ export function createCookieLoginContext<const Key extends string>(
 		options?: CookieLoginContextRuntimeOptions
 	) {
 		const cookieOptions = buildCookieOptions(config.options, options)
-		for (const [ key, cookieName ] of entries) {
+		for (const [key, cookieName] of entries) {
 			const value = values[key]
 			if (value) {
 				cookies.set(cookieName, value, cookieOptions)
@@ -59,8 +59,8 @@ export function createCookieLoginContext<const Key extends string>(
 
 	function clear(cookies: Pick<CookiesLike, 'delete'>, keys?: readonly Key[]) {
 		const path = config.options?.path ?? '/'
-		const selected = keys ? entries.filter(([ key ]) => keys.includes(key)) : entries
-		for (const [ , cookieName ] of selected) {
+		const selected = keys ? entries.filter(([key]) => keys.includes(key)) : entries
+		for (const [, cookieName] of selected) {
 			cookies.delete(cookieName, { path })
 		}
 	}

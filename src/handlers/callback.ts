@@ -10,15 +10,15 @@ import { handleOAuthCallback } from '../utils/oauth.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 
 type CallbackConfig = {
-	providers: Record<string, OAuthProvider>;
-	redirectAfterLogin?: string;
-	isAuthenticated?: (locals: AuthLocals) => boolean;
+	providers: Record<string, OAuthProvider>
+	redirectAfterLogin?: string
+	isAuthenticated?: (locals: AuthLocals) => boolean
 	onAuthenticated: (
 		event: RequestEventLike,
 		profile: OAuthProfile,
 		tokens: OAuthTokens
-	) => Promise<void> | void;
-	onError?: (event: RequestEventLike, error: unknown) => Promise<void> | void;
+	) => Promise<void> | void
+	onError?: (event: RequestEventLike, error: unknown) => Promise<void> | void
 }
 
 /**
@@ -66,7 +66,7 @@ export function createCallbackHandler(config: CallbackConfig) {
 		'status' in value &&
 		typeof (value as { status?: unknown }).status === 'number'
 
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		const { params, locals } = event
 
 		try {
@@ -96,12 +96,10 @@ export function createCallbackHandler(config: CallbackConfig) {
 
 			// Handle OAuth callback
 			const callbacks: Parameters<typeof handleOAuthCallback>[0]['callbacks'] = {
-				onAuthenticated: async(userProfile: OAuthProfile, tokens: OAuthTokens) => {
+				onAuthenticated: async (userProfile: OAuthProfile, tokens: OAuthTokens) => {
 					await onAuthenticated(event, userProfile, tokens)
 				},
-				...(onError
-					? { onError: async(err: unknown) => onError(event, err) }
-					: {})
+				...(onError ? { onError: async (err: unknown) => onError(event, err) } : {})
 			}
 			await handleOAuthCallback({
 				event,
@@ -113,7 +111,7 @@ export function createCallbackHandler(config: CallbackConfig) {
 			})
 
 			throw redirect(302, isSafeRedirectPath(redirectAfterLogin) ? redirectAfterLogin : '/')
-		} catch(err) {
+		} catch (err) {
 			// Handle OAuth2 errors
 			if (err instanceof OAuth2RequestError) {
 				error(400, 'OAuth authentication failed')

@@ -1,8 +1,4 @@
-export {
-	decryptTokens,
-	encryptTokens,
-	generateEncryptionKey
-} from './crypto.ts'
+export { decryptTokens, encryptTokens, generateEncryptionKey } from './crypto.ts'
 export {
 	cleanupOAuthCookies,
 	createOAuthCookies,

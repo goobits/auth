@@ -5,10 +5,10 @@ import { getLogger } from '../utils/logger.ts'
 import { OAuthProvider } from './OAuthProvider.ts'
 
 type GoogleProviderConfig = {
-	clientId: string;
-	clientSecret: string;
-	callbackUrl: string;
-	scopes?: string[];
+	clientId: string
+	clientSecret: string
+	callbackUrl: string
+	scopes?: string[]
 }
 
 /**
@@ -20,8 +20,8 @@ export class GoogleProvider extends OAuthProvider {
 	private defaultScopes: string[]
 
 	private getAccessToken(tokens: {
-		accessToken?: string | (() => string) | undefined;
-		data?: { access_token?: string | undefined } | undefined;
+		accessToken?: string | (() => string) | undefined
+		data?: { access_token?: string | undefined } | undefined
 	}): string {
 		if (tokens.data?.access_token) return tokens.data.access_token
 		if (typeof tokens.accessToken === 'function') return tokens.accessToken()
@@ -29,9 +29,9 @@ export class GoogleProvider extends OAuthProvider {
 	}
 
 	private getRefreshToken(tokens: {
-		refreshToken?: string | (() => string) | undefined;
-		hasRefreshToken?: (() => boolean) | undefined;
-		data?: { refresh_token?: string | undefined } | undefined;
+		refreshToken?: string | (() => string) | undefined
+		hasRefreshToken?: (() => boolean) | undefined
+		data?: { refresh_token?: string | undefined } | undefined
 	}): string | null {
 		if (tokens.data?.refresh_token) return tokens.data.refresh_token
 		if (typeof tokens.hasRefreshToken === 'function' && !tokens.hasRefreshToken()) return null
@@ -40,10 +40,10 @@ export class GoogleProvider extends OAuthProvider {
 	}
 
 	private getScopes(tokens: {
-		scope?: string | null | undefined;
-		scopes?: string | (() => string[]) | null | undefined;
-		hasScopes?: (() => boolean) | undefined;
-		data?: { scope?: string | undefined } | undefined;
+		scope?: string | null | undefined
+		scopes?: string | (() => string[]) | null | undefined
+		hasScopes?: (() => boolean) | undefined
+		data?: { scope?: string | undefined } | undefined
 	}): string | null {
 		if (tokens.data?.scope) return tokens.data.scope
 		if (typeof tokens.hasScopes === 'function' && tokens.hasScopes()) {
@@ -56,10 +56,10 @@ export class GoogleProvider extends OAuthProvider {
 	}
 
 	private getAccessTokenExpiresAt(tokens: {
-		expiresIn?: number | undefined;
-		expires_in?: number | undefined;
-		accessTokenExpiresAt?: (() => Date) | undefined;
-		data?: { expires_in?: number | undefined } | undefined;
+		expiresIn?: number | undefined
+		expires_in?: number | undefined
+		accessTokenExpiresAt?: (() => Date) | undefined
+		data?: { expires_in?: number | undefined } | undefined
 	}): string {
 		if (typeof tokens.accessTokenExpiresAt === 'function') {
 			return tokens.accessTokenExpiresAt().toISOString()
@@ -79,22 +79,12 @@ export class GoogleProvider extends OAuthProvider {
 		super('google', config)
 
 		if (!config.clientId || !config.clientSecret || !config.callbackUrl) {
-			throw new Error(
-				'GoogleProvider requires clientId, clientSecret, and callbackUrl'
-			)
+			throw new Error('GoogleProvider requires clientId, clientSecret, and callbackUrl')
 		}
 
-		this.client = new Google(
-			config.clientId,
-			config.clientSecret,
-			config.callbackUrl
-		)
+		this.client = new Google(config.clientId, config.clientSecret, config.callbackUrl)
 
-		this.defaultScopes = config.scopes || [
-			'openid',
-			'profile',
-			'email'
-		]
+		this.defaultScopes = config.scopes || ['openid', 'profile', 'email']
 	}
 
 	createAuthorizationURL(
@@ -103,11 +93,7 @@ export class GoogleProvider extends OAuthProvider {
 		scopes: string[] = this.defaultScopes
 	): URL {
 		const requestedScopes = scopes || this.defaultScopes
-		return this.client.createAuthorizationURL(
-			state,
-			codeVerifier,
-			requestedScopes
-		)
+		return this.client.createAuthorizationURL(state, codeVerifier, requestedScopes)
 	}
 
 	async getUserProfile(
@@ -116,16 +102,16 @@ export class GoogleProvider extends OAuthProvider {
 	): Promise<{ profile: OAuthProfile; tokens: OAuthTokens }> {
 		try {
 			type GoogleTokenResponse = {
-				accessToken: string | (() => string);
-				refreshToken?: string | (() => string);
-				scope?: string;
-				expiresIn?: number;
+				accessToken: string | (() => string)
+				refreshToken?: string | (() => string)
+				scope?: string
+				expiresIn?: number
 				data?: {
-					access_token?: string;
-					refresh_token?: string;
-					scope?: string;
-					expires_in?: number;
-				};
+					access_token?: string
+					refresh_token?: string
+					scope?: string
+					expires_in?: number
+				}
 			}
 
 			const tokens = (await this.client.validateAuthorizationCode(
@@ -137,17 +123,17 @@ export class GoogleProvider extends OAuthProvider {
 				'https://www.googleapis.com/oauth2/v1/userinfo?alt=json',
 				{
 					headers: {
-						Authorization: `Bearer ${ this.getAccessToken(tokens) }`
+						Authorization: `Bearer ${this.getAccessToken(tokens)}`
 					}
 				}
 			)
 
 			const googleUser = (await googleUserResponse.json()) as {
-				id: string;
-				email: string;
-				name: string;
-				picture?: string;
-				verified_email?: boolean;
+				id: string
+				email: string
+				name: string
+				picture?: string
+				verified_email?: boolean
 			}
 
 			if (!googleUser.verified_email) {
@@ -155,11 +141,11 @@ export class GoogleProvider extends OAuthProvider {
 			}
 
 			const profile: {
-				id: string;
-				email: string;
-				name: string;
-				picture?: string;
-				verified_email: true;
+				id: string
+				email: string
+				name: string
+				picture?: string
+				verified_email: true
 			} = {
 				id: googleUser.id,
 				email: googleUser.email,
@@ -178,29 +164,34 @@ export class GoogleProvider extends OAuthProvider {
 					accessTokenExpiresAt: this.getAccessTokenExpiresAt(tokens)
 				}
 			}
-		} catch(error) {
-			getLogger().error?.('Error in GoogleProvider.getUserProfile:', error instanceof Error ? error.message : String(error))
+		} catch (error) {
+			getLogger().error?.(
+				'Error in GoogleProvider.getUserProfile:',
+				error instanceof Error ? error.message : String(error)
+			)
 			throw error
 		}
 	}
 
 	async refreshAccessToken(refreshToken: string): Promise<OAuthTokens> {
 		type GoogleRefreshResponse = {
-			accessToken?: string | (() => string);
-			refreshToken?: string | (() => string);
-			scope?: string;
-			scopes?: string | (() => string[]) | undefined;
-			hasScopes?: (() => boolean) | undefined;
-			hasRefreshToken?: (() => boolean) | undefined;
-			accessTokenExpiresAt?: (() => Date) | undefined;
-			expiresIn?: number | undefined;
-			expires_in?: number | undefined;
-			data?: {
-				access_token?: string | undefined;
-				refresh_token?: string | undefined;
-				scope?: string | undefined;
-				expires_in?: number | undefined;
-			} | undefined;
+			accessToken?: string | (() => string)
+			refreshToken?: string | (() => string)
+			scope?: string
+			scopes?: string | (() => string[]) | undefined
+			hasScopes?: (() => boolean) | undefined
+			hasRefreshToken?: (() => boolean) | undefined
+			accessTokenExpiresAt?: (() => Date) | undefined
+			expiresIn?: number | undefined
+			expires_in?: number | undefined
+			data?:
+				| {
+						access_token?: string | undefined
+						refresh_token?: string | undefined
+						scope?: string | undefined
+						expires_in?: number | undefined
+				  }
+				| undefined
 		}
 
 		const newTokens = (await this.client.refreshAccessToken(

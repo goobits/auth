@@ -13,23 +13,23 @@ const DEFAULT_SESSION_TTL_MS = 24 * 60 * 60 * 1000
 
 /** Signed Session Token Claims typed model for runtime integration. */
 export type SignedSessionTokenClaims = {
-	subject: string;
-	sessionId: string;
-	expiresAt: number;
+	subject: string
+	sessionId: string
+	expiresAt: number
 }
 
 /** Create Signed Session Token Options typed model for runtime integration. */
 export type CreateSignedSessionTokenOptions = {
-	subject: string;
-	secret: string;
-	sessionId?: string;
-	expiresAt?: number;
-	ttlMs?: number;
+	subject: string
+	secret: string
+	sessionId?: string
+	expiresAt?: number
+	ttlMs?: number
 }
 
 /** Verify Signed Session Token Options typed model for runtime integration. */
 export type VerifySignedSessionTokenOptions = {
-	secret: string;
+	secret: string
 }
 
 async function signPayload(payload: string, secret: string): Promise<string> {
@@ -67,7 +67,7 @@ export async function createSignedSessionToken({
 	})
 	const encodedPayload = bytesToBase64Url(textToBytes(payload))
 	const signature = await signPayload(encodedPayload, secret)
-	return `${ encodedPayload }.${ signature }`
+	return `${encodedPayload}.${signature}`
 }
 
 /**
@@ -91,7 +91,7 @@ export async function verifySignedSessionToken(
 			return null
 		}
 
-		const [ encodedPayload, signature ] = parts
+		const [encodedPayload, signature] = parts
 		if (!encodedPayload || !signature) {
 			return null
 		}
@@ -100,7 +100,10 @@ export async function verifySignedSessionToken(
 			return null
 		}
 
-		const data = JSON.parse(bytesToText(base64UrlToBytes(encodedPayload))) as Record<string, unknown>
+		const data = JSON.parse(bytesToText(base64UrlToBytes(encodedPayload))) as Record<
+			string,
+			unknown
+		>
 		if (
 			typeof data['sub'] !== 'string' ||
 			typeof data['sid'] !== 'string' ||

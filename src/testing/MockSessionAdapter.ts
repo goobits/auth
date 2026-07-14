@@ -13,7 +13,7 @@ export class MockSessionAdapter extends SessionAdapter {
 
 	async createSession(userId: string): Promise<Session> {
 		const session: Session = {
-			id: `session:${ crypto.randomUUID() }`,
+			id: `session:${crypto.randomUUID()}`,
 			userId,
 			expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
 		}
@@ -21,9 +21,11 @@ export class MockSessionAdapter extends SessionAdapter {
 		return session
 	}
 
-	async validateSession(sessionId: string): Promise<{ session: Session | null; user: User | null }> {
+	async validateSession(
+		sessionId: string
+	): Promise<{ session: Session | null; user: User | null }> {
 		const session = this.sessions.get(sessionId) ?? null
-		const user = session ? this.users.get(session.userId) ?? null : null
+		const user = session ? (this.users.get(session.userId) ?? null) : null
 		return { session, user }
 	}
 
@@ -32,13 +34,13 @@ export class MockSessionAdapter extends SessionAdapter {
 	}
 
 	async invalidateUserSessions(userId: string): Promise<void> {
-		for (const [ sessionId, session ] of this.sessions.entries()) {
+		for (const [sessionId, session] of this.sessions.entries()) {
 			if (session.userId === userId) this.sessions.delete(sessionId)
 		}
 	}
 
 	async listSessions(userId: string): Promise<Session[]> {
-		return [ ...this.sessions.values() ].filter(session => session.userId === userId)
+		return [...this.sessions.values()].filter((session) => session.userId === userId)
 	}
 
 	setSessionCookie(): void {}
@@ -49,10 +51,7 @@ export class MockUserAdapter extends UserAdapter {
 	private users = new Map<string, User & { password?: string | null }>()
 	private oauthIndex = new Map<string, string>()
 
-	async createUser(
-		profile: OAuthProfile,
-		metadata: Record<string, unknown> = {}
-	): Promise<User> {
+	async createUser(profile: OAuthProfile, metadata: Record<string, unknown> = {}): Promise<User> {
 		const id = String((metadata['id'] as string | undefined) ?? profile.id ?? profile.email)
 		const user: User & { password?: string | null } = {
 			id,
@@ -60,9 +59,7 @@ export class MockUserAdapter extends UserAdapter {
 			name: profile.name ?? profile.email,
 			avatar: profile.picture ?? null,
 			emailVerified: Boolean(profile.verified_email),
-			...(typeof metadata['password'] === 'string'
-				? { password: metadata['password'] }
-				: {})
+			...(typeof metadata['password'] === 'string' ? { password: metadata['password'] } : {})
 		}
 		this.users.set(id, user)
 		return this.sanitize(user) ?? user
@@ -81,15 +78,12 @@ export class MockUserAdapter extends UserAdapter {
 	}
 
 	async getUserByProviderId(provider: string, providerId: string): Promise<User | null> {
-		const userId = this.oauthIndex.get(`${ provider }:${ providerId }`)
+		const userId = this.oauthIndex.get(`${provider}:${providerId}`)
 		if (!userId) return null
 		return this.getUserById(userId)
 	}
 
-	async updateUser(
-		id: string,
-		data: Partial<User> & Record<string, unknown>
-	): Promise<User> {
+	async updateUser(id: string, data: Partial<User> & Record<string, unknown>): Promise<User> {
 		const user = this.users.get(String(id))
 		if (!user) throw new Error('User not found')
 		const next = { ...user, ...data }
@@ -106,7 +100,7 @@ export class MockUserAdapter extends UserAdapter {
 		provider: string,
 		providerAccountId: string
 	): Promise<void> {
-		this.oauthIndex.set(`${ provider }:${ providerAccountId }`, String(userId))
+		this.oauthIndex.set(`${provider}:${providerAccountId}`, String(userId))
 	}
 
 	async getUserWithPasswordHash(
@@ -129,11 +123,11 @@ export class MockTokenAdapter extends TokenAdapter {
 	private tokens = new Map<string, OAuthTokens>()
 
 	async storeTokens(userId: string, provider: string, tokens: OAuthTokens): Promise<void> {
-		this.tokens.set(`${ userId }:${ provider }`, tokens)
+		this.tokens.set(`${userId}:${provider}`, tokens)
 	}
 
 	async getTokens(userId: string, provider: string): Promise<OAuthTokens | null> {
-		return this.tokens.get(`${ userId }:${ provider }`) ?? null
+		return this.tokens.get(`${userId}:${provider}`) ?? null
 	}
 
 	async refreshTokens(userId: string, provider: string): Promise<OAuthTokens | null> {
@@ -141,6 +135,6 @@ export class MockTokenAdapter extends TokenAdapter {
 	}
 
 	async deleteTokens(userId: string, provider: string): Promise<void> {
-		this.tokens.delete(`${ userId }:${ provider }`)
+		this.tokens.delete(`${userId}:${provider}`)
 	}
 }

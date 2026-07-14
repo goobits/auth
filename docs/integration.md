@@ -137,7 +137,7 @@ WebAuthnAdapter.consumeChallenge(challengeId)
 ```
 
 Each has a **default implementation** that calls `findBy*` followed by
-`deleteById` / `deleteChallenge`. The default is *not* atomic — two
+`deleteById` / `deleteChallenge`. The default is _not_ atomic — two
 concurrent calls on the same key can both observe the record before
 either delete completes. That matches the framework's prior behavior, so
 existing custom adapters remain correct without changes.
@@ -159,12 +159,12 @@ record on success, `null` if no row matched.
 
 ## Prebuilt adapters
 
-| Export | Storage | Notes |
-|---|---|---|
-| `drizzleAdapter(db, options)` | Any Drizzle-supported SQL | One-stop bundle, returns all six adapters. Reads `options.schema` or `options.tables` to bind table names. |
-| `D1SessionAdapter`, `D1UserAdapter`, … | Cloudflare D1 | Hand-rolled SQL; takes a `D1Database` instance and table names. |
-| `CookieSessionAdapter`, `CookieTokenAdapter` | Signed cookie | Stateless; good for edge runtimes without a database. Don't combine with passkey/magic-link features. |
-| `KVSessionAdapter`, `KVTokenAdapter` | Cloudflare KV | For environments where D1 isn't available. |
+| Export                                       | Storage                   | Notes                                                                                                      |
+| -------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `drizzleAdapter(db, options)`                | Any Drizzle-supported SQL | One-stop bundle, returns all six adapters. Reads `options.schema` or `options.tables` to bind table names. |
+| `D1SessionAdapter`, `D1UserAdapter`, …       | Cloudflare D1             | Hand-rolled SQL; takes a `D1Database` instance and table names.                                            |
+| `CookieSessionAdapter`, `CookieTokenAdapter` | Signed cookie             | Stateless; good for edge runtimes without a database. Don't combine with passkey/magic-link features.      |
+| `KVSessionAdapter`, `KVTokenAdapter`         | Cloudflare KV             | For environments where D1 isn't available.                                                                 |
 
 If your storage doesn't fit any of these, extend the base class directly.
 

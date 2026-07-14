@@ -30,10 +30,10 @@ import { isSafeRedirectPath } from '../utils/redirect.ts'
  * });
  */
 export function createLogoutHandler(config: {
-	sessionAdapter: SessionAdapter;
-	redirectAfterLogout?: string;
-	getSession?: (locals: AuthLocals) => { id: string } | null;
-	onLogout?: (event: RequestEventLike) => Promise<void> | void;
+	sessionAdapter: SessionAdapter
+	redirectAfterLogout?: string
+	getSession?: (locals: AuthLocals) => { id: string } | null
+	onLogout?: (event: RequestEventLike) => Promise<void> | void
 }): RequestHandler {
 	const {
 		sessionAdapter,
@@ -43,7 +43,7 @@ export function createLogoutHandler(config: {
 	} = config
 	const log = getLogger()
 
-	return async event => {
+	return async (event) => {
 		try {
 			const session = getSession(event.locals)
 
@@ -58,7 +58,7 @@ export function createLogoutHandler(config: {
 			}
 
 			throw redirect(302, isSafeRedirectPath(redirectAfterLogout) ? redirectAfterLogout : '/')
-		} catch(error) {
+		} catch (error) {
 			// Re-throw redirects
 			if (
 				error &&
@@ -77,10 +77,10 @@ export function createLogoutHandler(config: {
 
 /** Creates logout action for auth HTTP handlers. */
 export function createLogoutAction(config: {
-	sessionAdapter: SessionAdapter;
-	redirectAfterLogout?: string;
-	getSession?: (locals: AuthLocals) => { id: string } | null;
-	onLogout?: (event: RequestEventLike) => Promise<void> | void;
+	sessionAdapter: SessionAdapter
+	redirectAfterLogout?: string
+	getSession?: (locals: AuthLocals) => { id: string } | null
+	onLogout?: (event: RequestEventLike) => Promise<void> | void
 }): Actions {
 	const handler = createLogoutHandler(config)
 	return {

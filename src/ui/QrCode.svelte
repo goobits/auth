@@ -1,8 +1,5 @@
 <script lang="ts">
-	import {
-		renderQrCodeSvg,
-		type QrCodeErrorCorrectionLevel
-	} from '../qr/index.ts'
+	import { renderQrCodeSvg, type QrCodeErrorCorrectionLevel } from '../qr/index.ts'
 
 	let {
 		value,
@@ -20,9 +17,7 @@
 
 	const normalizedSize = $derived(Math.max(64, Math.min(320, Math.round(size))))
 	const svg = $derived(value.trim() ? renderQrCodeSvg({ value, errorCorrection }) : '')
-	const containerClass = $derived(
-		[ 'auth-qr-code', className ].filter(Boolean).join(' ')
-	)
+	const containerClass = $derived(['auth-qr-code', className].filter(Boolean).join(' '))
 </script>
 
 <div

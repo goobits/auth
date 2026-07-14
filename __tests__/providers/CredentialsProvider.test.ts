@@ -63,7 +63,7 @@ describe('CredentialsProvider', () => {
 	})
 
 	describe('authenticate', () => {
-		it('should authenticate user with valid credentials', async() => {
+		it('should authenticate user with valid credentials', async () => {
 			const email = 'test@example.com'
 			const password = 'ValidPassword123!'
 			const hashedPassword = testHash(password)
@@ -98,7 +98,7 @@ describe('CredentialsProvider', () => {
 			expect(mockUserAdapter.getUserByEmail).toHaveBeenCalledWith(email)
 		})
 
-		it('should reject authentication with incorrect password', async() => {
+		it('should reject authentication with incorrect password', async () => {
 			const email = 'test@example.com'
 			const correctPassword = 'CorrectPassword123!'
 			const incorrectPassword = 'WrongPassword123!'
@@ -121,7 +121,7 @@ describe('CredentialsProvider', () => {
 			expect(mockUserAdapter.getUserByEmail).not.toHaveBeenCalled()
 		})
 
-		it('should reject authentication for non-existent user', async() => {
+		it('should reject authentication for non-existent user', async () => {
 			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue(null)
 
 			const result = await provider.authenticate({
@@ -134,7 +134,7 @@ describe('CredentialsProvider', () => {
 			expect(result.user).toBeNull()
 		})
 
-		it('should reject authentication for user without password', async() => {
+		it('should reject authentication for user without password', async () => {
 			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'user-123',
 				email: 'oauth-user@example.com',
@@ -151,7 +151,7 @@ describe('CredentialsProvider', () => {
 			expect(result.user).toBeNull()
 		})
 
-		it('should reject authentication with empty email', async() => {
+		it('should reject authentication with empty email', async () => {
 			const result = await provider.authenticate({
 				email: '',
 				password: 'ValidPassword123!',
@@ -163,7 +163,7 @@ describe('CredentialsProvider', () => {
 			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled()
 		})
 
-		it('should reject authentication with empty password', async() => {
+		it('should reject authentication with empty password', async () => {
 			const result = await provider.authenticate({
 				email: 'test@example.com',
 				password: '',
@@ -175,7 +175,7 @@ describe('CredentialsProvider', () => {
 			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled()
 		})
 
-		it('should handle email case-insensitively', async() => {
+		it('should handle email case-insensitively', async () => {
 			const email = 'Test@Example.COM'
 			const password = 'ValidPassword123!'
 			const hashedPassword = testHash(password)
@@ -201,7 +201,7 @@ describe('CredentialsProvider', () => {
 			expect(mockUserAdapter.getUserWithPasswordHash).toHaveBeenCalledWith(email.toLowerCase())
 		})
 
-		it('should authenticate with a custom identifier field', async() => {
+		it('should authenticate with a custom identifier field', async () => {
 			const password = 'ValidPassword123!'
 			const hashedPassword = testHash(password)
 			const usernameProvider = provider.withIdentifier('username')
@@ -234,7 +234,7 @@ describe('CredentialsProvider', () => {
 			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled()
 		})
 
-		it('should fall back to email when allowBoth is enabled', async() => {
+		it('should fall back to email when allowBoth is enabled', async () => {
 			const password = 'ValidPassword123!'
 			const hashedPassword = testHash(password)
 			const usernameProvider = provider.withIdentifier('username', { allowBoth: true })
@@ -265,7 +265,7 @@ describe('CredentialsProvider', () => {
 			expect(mockUserAdapter.getUserByEmail).toHaveBeenCalledWith('fallback@example.com')
 		})
 
-		it('should fail custom identifier auth when the adapter does not expose identifier lookup', async() => {
+		it('should fail custom identifier auth when the adapter does not expose identifier lookup', async () => {
 			const usernameProvider = provider.withIdentifier('username')
 			const adapterWithoutIdentifierLookup = {
 				...mockUserAdapter,
@@ -283,11 +283,11 @@ describe('CredentialsProvider', () => {
 			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled()
 		})
 
-		it('upgrades an accepted legacy password hash without blocking authentication', async() => {
+		it('upgrades an accepted legacy password hash without blocking authentication', async () => {
 			const password = 'ValidPassword123!'
 			const upgradeProvider = new CredentialsProvider({
 				hashPassword,
-				verifyPassword: vi.fn(async() => ({ valid: true, needsRehash: true }))
+				verifyPassword: vi.fn(async () => ({ valid: true, needsRehash: true }))
 			})
 			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
 				id: 'legacy-user',
@@ -313,7 +313,7 @@ describe('CredentialsProvider', () => {
 	})
 
 	describe('signUp', () => {
-		it('should create user with hashed password', async() => {
+		it('should create user with hashed password', async () => {
 			const email = 'newuser@example.com'
 			const password = 'SecurePassword123!'
 			const name = 'New User'
@@ -343,16 +343,16 @@ describe('CredentialsProvider', () => {
 					name,
 					verified_email: false
 				}),
-					expect.objectContaining({
-						provider: 'email',
-						emailVerified: false,
-						password: testHash(password)
-					})
-				)
+				expect.objectContaining({
+					provider: 'email',
+					emailVerified: false,
+					password: testHash(password)
+				})
+			)
 			expect(hashPassword).toHaveBeenCalledWith(password)
 		})
 
-		it('should create user without name (use email prefix)', async() => {
+		it('should create user without name (use email prefix)', async () => {
 			const email = 'newuser@example.com'
 			const password = 'SecurePassword123!'
 
@@ -377,7 +377,7 @@ describe('CredentialsProvider', () => {
 			)
 		})
 
-		it('should throw error for empty email', async() => {
+		it('should throw error for empty email', async () => {
 			await expect(
 				provider.signUp({
 					email: '',
@@ -387,7 +387,7 @@ describe('CredentialsProvider', () => {
 			).rejects.toThrow('Email and password are required')
 		})
 
-		it('should throw error for empty password', async() => {
+		it('should throw error for empty password', async () => {
 			await expect(
 				provider.signUp({
 					email: 'test@example.com',
@@ -397,10 +397,10 @@ describe('CredentialsProvider', () => {
 			).rejects.toThrow('Email and password are required')
 		})
 
-		it('should validate password with custom validator', async() => {
+		it('should validate password with custom validator', async () => {
 			const customValidator = vi.fn(() => ({
 				valid: false,
-				errors: [ 'Password too weak' ]
+				errors: ['Password too weak']
 			}))
 
 			const customProvider = new CredentialsProvider({
@@ -418,7 +418,7 @@ describe('CredentialsProvider', () => {
 			expect(customValidator).toHaveBeenCalledWith('weak')
 		})
 
-		it('should include additional metadata', async() => {
+		it('should include additional metadata', async () => {
 			const email = 'user@example.com'
 			const password = 'Password123!'
 			const metadata = {
@@ -447,7 +447,7 @@ describe('CredentialsProvider', () => {
 			)
 		})
 
-		it('should handle email case-insensitively', async() => {
+		it('should handle email case-insensitively', async () => {
 			const email = 'NewUser@Example.COM'
 			const password = 'Password123!'
 
@@ -472,7 +472,7 @@ describe('CredentialsProvider', () => {
 	})
 
 	describe('updatePassword', () => {
-		it('should update password with hashed value', async() => {
+		it('should update password with hashed value', async () => {
 			const userId = 'user-123'
 			const newPassword = 'NewPassword123!'
 
@@ -491,12 +491,12 @@ describe('CredentialsProvider', () => {
 			expect(user.id).toBe(userId)
 			expect(mockUserAdapter.updateUser).toHaveBeenCalledWith(
 				userId,
-					expect.objectContaining({ password: testHash(newPassword) })
+				expect.objectContaining({ password: testHash(newPassword) })
 			)
 			expect(hashPassword).toHaveBeenCalledWith(newPassword)
 		})
 
-		it('should throw error for missing userId', async() => {
+		it('should throw error for missing userId', async () => {
 			await expect(
 				provider.updatePassword({
 					userId: '',
@@ -506,7 +506,7 @@ describe('CredentialsProvider', () => {
 			).rejects.toThrow('User ID and new password are required')
 		})
 
-		it('should throw error for missing newPassword', async() => {
+		it('should throw error for missing newPassword', async () => {
 			await expect(
 				provider.updatePassword({
 					userId: 'user-123',
@@ -516,10 +516,10 @@ describe('CredentialsProvider', () => {
 			).rejects.toThrow('User ID and new password are required')
 		})
 
-		it('should validate new password with custom validator', async() => {
+		it('should validate new password with custom validator', async () => {
 			const customValidator = vi.fn(() => ({
 				valid: false,
-				errors: [ 'Password too weak' ]
+				errors: ['Password too weak']
 			}))
 
 			const customProvider = new CredentialsProvider({
@@ -537,7 +537,7 @@ describe('CredentialsProvider', () => {
 	})
 
 	describe('changePassword', () => {
-		it('should change password after verifying current password', async() => {
+		it('should change password after verifying current password', async () => {
 			const email = 'test@example.com'
 			const currentPassword = 'CurrentPassword123!'
 			const newPassword = 'NewPassword123!'
@@ -574,11 +574,11 @@ describe('CredentialsProvider', () => {
 			expect(result.user.id).toBe('user-123')
 			expect(mockUserAdapter.updateUser).toHaveBeenCalledWith(
 				'user-123',
-					expect.objectContaining({ password: testHash(newPassword) })
+				expect.objectContaining({ password: testHash(newPassword) })
 			)
 		})
 
-		it('should reject password change with incorrect current password', async() => {
+		it('should reject password change with incorrect current password', async () => {
 			const email = 'test@example.com'
 			const currentPassword = 'CorrectPassword123!'
 			const wrongPassword = 'WrongPassword123!'
@@ -603,7 +603,7 @@ describe('CredentialsProvider', () => {
 			expect(mockUserAdapter.updateUser).not.toHaveBeenCalled()
 		})
 
-		it('should reject password change for non-existent user', async() => {
+		it('should reject password change for non-existent user', async () => {
 			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue(null)
 
 			const result = await provider.changePassword({
@@ -620,7 +620,7 @@ describe('CredentialsProvider', () => {
 	})
 
 	describe('integration scenarios', () => {
-		it('should complete full signup and signin flow', async() => {
+		it('should complete full signup and signin flow', async () => {
 			const email = 'integration@example.com'
 			const password = 'IntegrationTest123!'
 
@@ -665,7 +665,7 @@ describe('CredentialsProvider', () => {
 			expect(authResult.user.id).toBe('user-int')
 		})
 
-		it('should complete full password change flow', async() => {
+		it('should complete full password change flow', async () => {
 			const email = 'change@example.com'
 			const oldPassword = 'OldPassword123!'
 			const newPassword = 'NewPassword123!'

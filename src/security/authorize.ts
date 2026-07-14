@@ -2,19 +2,19 @@ import type { AuthLocals, RequestEventLike } from '../types/auth.ts'
 import { type AuthEventEmitter, createAuthEvent } from './events.ts'
 
 type Actor = {
-	id: string | number;
-	role?: string;
-	roles?: string[];
+	id: string | number
+	role?: string
+	roles?: string[]
 }
 
 type AuthorizerContext = {
-	event: RequestEventLike;
-	emitter?: AuthEventEmitter;
+	event: RequestEventLike
+	emitter?: AuthEventEmitter
 }
 
 function resolveAuthRoles(actor: Actor): string[] {
-	const base = actor.role ? [ actor.role ] : []
-	return [ ...base, ...(actor.roles ?? []) ]
+	const base = actor.role ? [actor.role] : []
+	return [...base, ...(actor.roles ?? [])]
 }
 
 async function emitDenied(
@@ -54,7 +54,7 @@ export async function requireAuthRole(
 	requireAuthenticated(context.event.locals)
 	const actor = context.event.locals.user as Actor
 	const authRoles = resolveAuthRoles(actor)
-	const ok = requiredAuthRoles.some(role => authRoles.includes(role))
+	const ok = requiredAuthRoles.some((role) => authRoles.includes(role))
 	if (!ok) {
 		await emitDenied(context, 'Missing required auth role', {
 			requiredAuthRoles,

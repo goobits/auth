@@ -24,10 +24,10 @@ export class CookieTokenAdapter extends TokenAdapter {
 	 */
 	constructor(
 		options: {
-			cookieName?: string;
-			encryptionKey?: string;
-			secureCookies?: boolean;
-			maxAge?: number;
+			cookieName?: string
+			encryptionKey?: string
+			secureCookies?: boolean
+			maxAge?: number
 		} = {}
 	) {
 		super()
@@ -59,7 +59,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 		}
 
 		const encryptedTokens = await encryptTokens(tokens, this.encryptionKey)
-		const cookieName = `${ this.cookieName }_${ provider }`
+		const cookieName = `${this.cookieName}_${provider}`
 
 		this._cookies.set(cookieName, encryptedTokens, {
 			httpOnly: true,
@@ -75,7 +75,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 			throw new Error('Cookies not set. Call _setCookies() first.')
 		}
 
-		const cookieName = `${ this.cookieName }_${ provider }`
+		const cookieName = `${this.cookieName}_${provider}`
 		const encryptedTokens = this._cookies.get(cookieName)
 
 		if (!encryptedTokens) return null
@@ -87,9 +87,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 		_userId: string,
 		_provider: string
 	): Promise<import('../../types/index.ts').OAuthTokens | null> {
-		throw new Error(
-			'refreshTokens not implemented - use provider-specific refresh logic'
-		)
+		throw new Error('refreshTokens not implemented - use provider-specific refresh logic')
 	}
 
 	async deleteTokens(_userId: string, provider: string) {
@@ -97,7 +95,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 			throw new Error('Cookies not set. Call _setCookies() first.')
 		}
 
-		const cookieName = `${ this.cookieName }_${ provider }`
+		const cookieName = `${this.cookieName}_${provider}`
 		this._cookies.delete(cookieName, { path: '/' })
 	}
 }

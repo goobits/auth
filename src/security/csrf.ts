@@ -24,14 +24,14 @@ export async function issueCsrfToken({
 	sameSite = 'lax',
 	path = '/'
 }: {
-	cookies?: CookiesLike;
-	store?: CsrfStore;
-	ttlMs?: number;
-	cookieName?: string;
-	secure?: boolean;
-	httpOnly?: boolean;
-	sameSite?: 'lax' | 'strict' | 'none';
-	path?: string;
+	cookies?: CookiesLike
+	store?: CsrfStore
+	ttlMs?: number
+	cookieName?: string
+	secure?: boolean
+	httpOnly?: boolean
+	sameSite?: 'lax' | 'strict' | 'none'
+	path?: string
 } = {}): Promise<string> {
 	if (!cookies) {
 		throw new Error('issueCsrfToken requires cookies')
@@ -72,12 +72,12 @@ export async function validateCsrfRequest({
 	cookieName = CSRF_COOKIE_NAME,
 	checkExpiry = false
 }: {
-	request?: Request;
-	cookies?: CookiesLike;
-	store?: CsrfStore;
-	headerName?: string;
-	cookieName?: string;
-	checkExpiry?: boolean;
+	request?: Request
+	cookies?: CookiesLike
+	store?: CsrfStore
+	headerName?: string
+	cookieName?: string
+	checkExpiry?: boolean
 } = {}): Promise<boolean> {
 	if (!request || !cookies) {
 		throw new Error('validateCsrfRequest requires request and cookies')
@@ -87,7 +87,7 @@ export async function validateCsrfRequest({
 	const cookieToken = cookies.get(cookieName) || ''
 	const headers = new Headers()
 	headers.set(headerName, headerToken)
-	headers.set('cookie', `${ cookieName }=${ cookieToken }`)
+	headers.set('cookie', `${cookieName}=${cookieToken}`)
 	const csrf = createCsrf({
 		cookieName,
 		headerName,

@@ -1,15 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-	createLogoutAction,
-	createLogoutHandler
-} from '../../src/handlers/logout.ts'
+import { createLogoutAction, createLogoutHandler } from '../../src/handlers/logout.ts'
 import type { RequestEventLike } from '../../src/types/auth.ts'
 import { createRequestEvent } from '../testKit.ts'
 
 function createSessionAdapter() {
 	return {
-		invalidateSession: vi.fn(async() => undefined),
+		invalidateSession: vi.fn(async () => undefined),
 		deleteSessionCookie: vi.fn()
 	}
 }
@@ -19,12 +16,12 @@ function captureRedirect<T>(promise: Promise<T>) {
 		() => {
 			throw new Error('Expected handler to redirect')
 		},
-		err => err as { status?: number; location?: string }
+		(err) => err as { status?: number; location?: string }
 	)
 }
 
 describe('createLogoutHandler', () => {
-	it('invalidates the session and deletes the cookie when authenticated', async() => {
+	it('invalidates the session and deletes the cookie when authenticated', async () => {
 		const sessionAdapter = createSessionAdapter()
 		const handler = createLogoutHandler({
 			sessionAdapter: sessionAdapter as never,
@@ -43,7 +40,7 @@ describe('createLogoutHandler', () => {
 		expect(sessionAdapter.deleteSessionCookie).toHaveBeenCalledWith(event.cookies)
 	})
 
-	it('redirects without touching the adapter when there is no session', async() => {
+	it('redirects without touching the adapter when there is no session', async () => {
 		const sessionAdapter = createSessionAdapter()
 		const handler = createLogoutHandler({
 			sessionAdapter: sessionAdapter as never
@@ -57,9 +54,9 @@ describe('createLogoutHandler', () => {
 		expect(sessionAdapter.deleteSessionCookie).not.toHaveBeenCalled()
 	})
 
-	it('invokes onLogout after invalidating the session', async() => {
+	it('invokes onLogout after invalidating the session', async () => {
 		const sessionAdapter = createSessionAdapter()
-		const onLogout = vi.fn(async() => undefined)
+		const onLogout = vi.fn(async () => undefined)
 		const handler = createLogoutHandler({
 			sessionAdapter: sessionAdapter as never,
 			onLogout
@@ -74,9 +71,9 @@ describe('createLogoutHandler', () => {
 		expect(onLogout).toHaveBeenCalledWith(event)
 	})
 
-	it('still redirects when the adapter throws', async() => {
+	it('still redirects when the adapter throws', async () => {
 		const sessionAdapter = {
-			invalidateSession: vi.fn(async() => {
+			invalidateSession: vi.fn(async () => {
 				throw new Error('db unreachable')
 			}),
 			deleteSessionCookie: vi.fn()
@@ -96,7 +93,7 @@ describe('createLogoutHandler', () => {
 })
 
 describe('createLogoutAction', () => {
-	it('exposes a `default` form action that invalidates the session', async() => {
+	it('exposes a `default` form action that invalidates the session', async () => {
 		const sessionAdapter = createSessionAdapter()
 		const actions = createLogoutAction({
 			sessionAdapter: sessionAdapter as never,

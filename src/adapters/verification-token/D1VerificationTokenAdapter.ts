@@ -7,18 +7,22 @@ type D1Row = Record<string, D1Value>
 type D1DatabaseLike = {
 	prepare: (sql: string) => {
 		bind: (...args: D1Value[]) => {
-			run: () => Promise<void>;
-			first: () => Promise<D1Row | null>;
-		};
-	};
+			run: () => Promise<void>
+			first: () => Promise<D1Row | null>
+		}
+	}
 }
 
 type TokenUserRecord = {
-	token: VerificationToken;
-	user: User;
+	token: VerificationToken
+	user: User
 }
 
-function getOwnOrFallback(row: D1Row, key: string, fallback: D1Value | undefined): D1Value | undefined {
+function getOwnOrFallback(
+	row: D1Row,
+	key: string,
+	fallback: D1Value | undefined
+): D1Value | undefined {
 	return Object.prototype.hasOwnProperty.call(row, key) ? row[key] : fallback
 }
 
@@ -41,27 +45,27 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 	private tokensTable: string
 	private usersTable: string
 	private columns: {
-		id: string;
-		userId: string;
-		type: string;
-		token: string;
-		expiresAt: string;
-		createdAt?: string;
+		id: string
+		userId: string
+		type: string
+		token: string
+		expiresAt: string
+		createdAt?: string
 	}
 	private userColumns: {
-		id: string;
-		email: string;
-		name: string;
-		avatar: string;
+		id: string
+		email: string
+		name: string
+		avatar: string
 	}
 
 	constructor(
 		db: D1DatabaseLike,
 		options: {
-			tokensTable?: string;
-			usersTable?: string;
-			columns?: Partial<Record<string, string>>;
-			userColumns?: Partial<Record<string, string>>;
+			tokensTable?: string
+			usersTable?: string
+			columns?: Partial<Record<string, string>>
+			userColumns?: Partial<Record<string, string>>
 		} = {}
 	) {
 		super()
@@ -95,9 +99,8 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		const type = row['token_type'] ?? row[this.columns.type]
 		const token = row['verification_token'] ?? row[this.columns.token]
 		const expiresAt = row['token_expires_at'] ?? row[this.columns.expiresAt]
-		const createdAt = row['token_created_at'] ?? (
-			this.columns.createdAt ? row[this.columns.createdAt] : null
-		)
+		const createdAt =
+			row['token_created_at'] ?? (this.columns.createdAt ? row[this.columns.createdAt] : null)
 		const userId = row['user_id'] ?? row[this.userColumns.id] ?? tokenUserId
 		const email = row['user_email'] ?? row[this.userColumns.email]
 		const name = row['user_name'] ?? row[this.userColumns.name]
@@ -142,10 +145,10 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		token,
 		expiresAt
 	}: {
-		userId: string;
-		type: string;
-		token: string;
-		expiresAt: Date;
+		userId: string
+		type: string
+		token: string
+		expiresAt: Date
 	}) {
 		const columns = [
 			this.columns.id,
@@ -167,19 +170,25 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		}
 		await this.db
 			.prepare(
-				`INSERT INTO ${ this.tokensTable } (${ columns.join(', ') }) VALUES (${ columns.map(() => '?').join(', ') })`
+				`INSERT INTO ${this.tokensTable} (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`
 			)
 			.bind(...values)
 			.run()
 	}
 
-	async findByToken({ token, type }: { token: string; type: string }): Promise<TokenUserRecord | null> {
+	async findByToken({
+		token,
+		type
+	}: {
+		token: string
+		type: string
+	}): Promise<TokenUserRecord | null> {
 		const createdAtSelect = this.columns.createdAt
-			? `, t.${ this.columns.createdAt } AS token_created_at`
+			? `, t.${this.columns.createdAt} AS token_created_at`
 			: ''
 		const row = await this.db
 			.prepare(
-				`SELECT t.${ this.columns.id } AS token_id, t.${ this.columns.userId } AS token_user_id, t.${ this.columns.type } AS token_type, t.${ this.columns.token } AS verification_token, t.${ this.columns.expiresAt } AS token_expires_at${ createdAtSelect }, u.${ this.userColumns.id } AS user_id, u.${ this.userColumns.email } AS user_email, u.${ this.userColumns.name } AS user_name, u.${ this.userColumns.avatar } AS user_avatar FROM ${ this.tokensTable } t JOIN ${ this.usersTable } u ON t.${ this.columns.userId } = u.${ this.userColumns.id } WHERE t.${ this.columns.token } = ? AND t.${ this.columns.type } = ? LIMIT 1`
+				`SELECT t.${this.columns.id} AS token_id, t.${this.columns.userId} AS token_user_id, t.${this.columns.type} AS token_type, t.${this.columns.token} AS verification_token, t.${this.columns.expiresAt} AS token_expires_at${createdAtSelect}, u.${this.userColumns.id} AS user_id, u.${this.userColumns.email} AS user_email, u.${this.userColumns.name} AS user_name, u.${this.userColumns.avatar} AS user_avatar FROM ${this.tokensTable} t JOIN ${this.usersTable} u ON t.${this.columns.userId} = u.${this.userColumns.id} WHERE t.${this.columns.token} = ? AND t.${this.columns.type} = ? LIMIT 1`
 			)
 			.bind(token, type)
 			.first()
@@ -189,7 +198,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 
 	async deleteById(tokenId: string) {
 		await this.db
-			.prepare(`DELETE FROM ${ this.tokensTable } WHERE ${ this.columns.id } = ?`)
+			.prepare(`DELETE FROM ${this.tokensTable} WHERE ${this.columns.id} = ?`)
 			.bind(tokenId)
 			.run()
 	}
@@ -197,7 +206,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 	async deleteByUserAndType({ userId, type }: { userId: string; type: string }) {
 		await this.db
 			.prepare(
-				`DELETE FROM ${ this.tokensTable } WHERE ${ this.columns.userId } = ? AND ${ this.columns.type } = ?`
+				`DELETE FROM ${this.tokensTable} WHERE ${this.columns.userId} = ? AND ${this.columns.type} = ?`
 			)
 			.bind(this.coerceDbId(userId), type)
 			.run()
@@ -207,15 +216,15 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		token,
 		type
 	}: {
-		token: string;
-		type: string;
+		token: string
+		type: string
 	}): Promise<TokenUserRecord | null> {
 		// Atomic delete-returning closes the TOCTOU race: only one caller
 		// gets the row back, even under concurrent verifies. We then look
 		// up the user — only the winner of the delete reaches this point.
 		const deletedRow = await this.db
 			.prepare(
-				`DELETE FROM ${ this.tokensTable } WHERE ${ this.columns.token } = ? AND ${ this.columns.type } = ? RETURNING *`
+				`DELETE FROM ${this.tokensTable} WHERE ${this.columns.token} = ? AND ${this.columns.type} = ? RETURNING *`
 			)
 			.bind(token, type)
 			.first()
@@ -223,7 +232,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		const userId = deletedRow[this.columns.userId]
 		if (typeof userId !== 'string' && typeof userId !== 'number') return null
 		const userRow = await this.db
-			.prepare(`SELECT * FROM ${ this.usersTable } WHERE ${ this.userColumns.id } = ? LIMIT 1`)
+			.prepare(`SELECT * FROM ${this.usersTable} WHERE ${this.userColumns.id} = ? LIMIT 1`)
 			.bind(this.coerceDbId(String(userId)))
 			.first()
 
@@ -234,7 +243,9 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 			token_type: deletedRow[this.columns.type] ?? null,
 			verification_token: deletedRow[this.columns.token] ?? null,
 			token_expires_at: deletedRow[this.columns.expiresAt] ?? null,
-			token_created_at: this.columns.createdAt ? deletedRow[this.columns.createdAt] ?? null : null,
+			token_created_at: this.columns.createdAt
+				? (deletedRow[this.columns.createdAt] ?? null)
+				: null,
 			user_id: userRow?.[this.userColumns.id] ?? userId,
 			user_email: userRow?.[this.userColumns.email] ?? null,
 			user_name: userRow?.[this.userColumns.name] ?? null,

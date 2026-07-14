@@ -1,13 +1,13 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
 type CookieOptions = {
-	domain?: string;
-	expires?: Date;
-	httpOnly?: boolean;
-	maxAge?: number;
-	path?: string;
-	sameSite?: 'strict' | 'lax' | 'none' | boolean;
-	secure?: boolean;
+	domain?: string
+	expires?: Date
+	httpOnly?: boolean
+	maxAge?: number
+	path?: string
+	sameSite?: 'strict' | 'lax' | 'none' | boolean
+	secure?: boolean
 }
 
 /** Node HTTP cookie adapter compatible with SvelteKit-style cookie APIs. */
@@ -24,9 +24,9 @@ export class NodeCookies {
 	}
 
 	getAll(name?: string): Array<{ name: string; value: string }> {
-		return [ ...this.#cookies.entries() ]
-			.filter(([ cookieName ]) => !name || cookieName === name)
-			.map(([ cookieName, value ]) => ({
+		return [...this.#cookies.entries()]
+			.filter(([cookieName]) => !name || cookieName === name)
+			.map(([cookieName, value]) => ({
 				name: cookieName,
 				value
 			}))
@@ -65,7 +65,7 @@ function parseCookieHeader(header: string | undefined): Map<string, string> {
 		return cookies
 	}
 	for (const part of header.split(';')) {
-		const [ rawName, ...rest ] = part.trim().split('=')
+		const [rawName, ...rest] = part.trim().split('=')
 		if (!rawName || !rest.length) {
 			continue
 		}
@@ -75,18 +75,18 @@ function parseCookieHeader(header: string | undefined): Map<string, string> {
 }
 
 function serializeCookie(name: string, value: string, options: CookieOptions): string {
-	const parts = [ `${ name }=${ encodeURIComponent(value) }` ]
+	const parts = [`${name}=${encodeURIComponent(value)}`]
 	if (options.maxAge !== undefined) {
-		parts.push(`Max-Age=${ Math.trunc(options.maxAge) }`)
+		parts.push(`Max-Age=${Math.trunc(options.maxAge)}`)
 	}
 	if (options.expires) {
-		parts.push(`Expires=${ options.expires.toUTCString() }`)
+		parts.push(`Expires=${options.expires.toUTCString()}`)
 	}
 	if (options.path) {
-		parts.push(`Path=${ options.path }`)
+		parts.push(`Path=${options.path}`)
 	}
 	if (options.domain) {
-		parts.push(`Domain=${ options.domain }`)
+		parts.push(`Domain=${options.domain}`)
 	}
 	if (options.httpOnly) {
 		parts.push('HttpOnly')
@@ -95,11 +95,11 @@ function serializeCookie(name: string, value: string, options: CookieOptions): s
 		parts.push('Secure')
 	}
 	if (options.sameSite) {
-		parts.push(`SameSite=${ options.sameSite === true ? 'Strict' : capitalize(options.sameSite) }`)
+		parts.push(`SameSite=${options.sameSite === true ? 'Strict' : capitalize(options.sameSite)}`)
 	}
 	return parts.join('; ')
 }
 
 function capitalize(value: string): string {
-	return `${ value.charAt(0).toUpperCase() }${ value.slice(1) }`
+	return `${value.charAt(0).toUpperCase()}${value.slice(1)}`
 }

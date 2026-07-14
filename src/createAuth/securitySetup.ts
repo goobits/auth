@@ -1,15 +1,8 @@
 import { createWebhookChannel, type AlertChannel } from '@goobits/security/alerting'
 import { createSecurityAlertObserver } from '../security/alerts.ts'
-import {
-	CSRF_COOKIE_NAME,
-	CSRF_HEADER_NAME,
-	MemoryCsrfStore
-} from '../security/csrf.ts'
+import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME, MemoryCsrfStore } from '../security/csrf.ts'
 import { createAuthEvent } from '../security/events.ts'
-import {
-	applySecurityPolicy,
-	type SecurityPolicySettings
-} from '../security/policy.ts'
+import { applySecurityPolicy, type SecurityPolicySettings } from '../security/policy.ts'
 import type {
 	AuthConfig,
 	AuthHandlers,
@@ -19,7 +12,7 @@ import type {
 } from '../types/auth.ts'
 
 export type ResolvedSecurity = SecurityPolicySettings & {
-	profile: SecurityProfile;
+	profile: SecurityProfile
 }
 
 const PROFILE_DEFAULTS: Record<SecurityProfile, AuthSecurityConfig> = {
@@ -54,10 +47,7 @@ const PROFILE_DEFAULTS: Record<SecurityProfile, AuthSecurityConfig> = {
 	}
 }
 
-const TRUSTED_PROXY_HEADERS = new Set<TrustedProxyHeader>([
-	'cf-connecting-ip',
-	'x-forwarded-for'
-])
+const TRUSTED_PROXY_HEADERS = new Set<TrustedProxyHeader>(['cf-connecting-ip', 'x-forwarded-for'])
 
 function resolveTrustedProxyHeaders(
 	rateLimit: AuthSecurityConfig['rateLimit']
@@ -65,7 +55,7 @@ function resolveTrustedProxyHeaders(
 	const explicitHeaders = rateLimit?.trustedProxyHeaders
 	if (explicitHeaders && explicitHeaders.length > 0) {
 		return Array.from(
-			new Set(explicitHeaders.filter(header => TRUSTED_PROXY_HEADERS.has(header)))
+			new Set(explicitHeaders.filter((header) => TRUSTED_PROXY_HEADERS.has(header)))
 		)
 	}
 	return rateLimit?.trustProxyHeader === true ? ['x-forwarded-for'] : []
@@ -89,17 +79,17 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 		merged.alerts?.enabled === false || !webhookUrl
 			? null
 			: createWebhookChannel({
-				...webhook,
-				url: webhookUrl
-			})
+					...webhook,
+					url: webhookUrl
+				})
 	const alertObserver = createSecurityAlertObserver({
-		onAlert: async alert => {
+		onAlert: async (alert) => {
 			await merged.alerts?.onAlert?.(alert)
 			if (alertChannel) {
 				await alertChannel.send({
 					severity: alert.severity === 'error' ? 'critical' : 'warning',
 					title: 'Auth threshold exceeded',
-					message: `${ alert.eventName } exceeded ${ alert.count } events`,
+					message: `${alert.eventName} exceeded ${alert.count} events`,
 					source: 'goobits/auth',
 					timestamp: alert.timestamp,
 					context: { ...alert }
@@ -107,7 +97,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			}
 		}
 	})
-	const emitter = async(event: ReturnType<typeof createAuthEvent>): Promise<void> => {
+	const emitter = async (event: ReturnType<typeof createAuthEvent>): Promise<void> => {
 		await merged.audit?.emitter?.(event)
 		await alertObserver(event)
 	}
@@ -155,10 +145,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 	}
 }
 
-export function applyPolicies(
-	handlers: AuthHandlers,
-	security: ResolvedSecurity
-): AuthHandlers {
+export function applyPolicies(handlers: AuthHandlers, security: ResolvedSecurity): AuthHandlers {
 	const wrapped: AuthHandlers = {
 		...handlers,
 		logout: applySecurityPolicy({

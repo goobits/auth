@@ -25,40 +25,40 @@ export type SecurityRouteId =
 	| 'sessions.revoke'
 
 export type SecurityRoutePolicy = {
-	csrf?: PolicyMode;
-	rateLimit?: PolicyMode;
-	audit?: PolicyMode;
+	csrf?: PolicyMode
+	rateLimit?: PolicyMode
+	audit?: PolicyMode
 }
 
 export type SecurityPolicySettings = {
 	csrf: {
-		mode: PolicyMode;
-		cookieName: string;
-		headerName: string;
-		checkExpiry: boolean;
-		httpOnly?: boolean;
-		store?: CsrfStore;
-	};
+		mode: PolicyMode
+		cookieName: string
+		headerName: string
+		checkExpiry: boolean
+		httpOnly?: boolean
+		store?: CsrfStore
+	}
 	rateLimit: {
-		mode: PolicyMode;
-		max: number;
-		windowMs: number;
-		keyPrefix: string;
-		trustProxyHeader: boolean;
-		trustedProxyHeaders: readonly TrustedProxyHeader[];
-		store?: RateLimitStore;
-	};
+		mode: PolicyMode
+		max: number
+		windowMs: number
+		keyPrefix: string
+		trustProxyHeader: boolean
+		trustedProxyHeaders: readonly TrustedProxyHeader[]
+		store?: RateLimitStore
+	}
 	audit: {
-		mode: PolicyMode;
-		emitter?: AuthEventEmitter;
-	};
-	routes: Partial<Record<SecurityRouteId, SecurityRoutePolicy>>;
+		mode: PolicyMode
+		emitter?: AuthEventEmitter
+	}
+	routes: Partial<Record<SecurityRouteId, SecurityRoutePolicy>>
 }
 
 type ApplyPolicyInput = {
-	handler: RequestHandler;
-	routeId: SecurityRouteId;
-	settings: SecurityPolicySettings;
+	handler: RequestHandler
+	routeId: SecurityRouteId
+	settings: SecurityPolicySettings
 }
 
 function jsonError(status: number, message: string): Response {
@@ -92,11 +92,7 @@ function getClientIp(
 }
 
 /** Processes security policy for auth security checks. */
-export function applySecurityPolicy({
-	handler,
-	routeId,
-	settings
-}: ApplyPolicyInput) {
+export function applySecurityPolicy({ handler, routeId, settings }: ApplyPolicyInput) {
 	const limiter = createRateLimiter({
 		windows: [
 			{
@@ -109,7 +105,7 @@ export function applySecurityPolicy({
 		...(settings.rateLimit.store ? { store: settings.rateLimit.store } : {})
 	})
 
-	return async(event: RequestEventLike): Promise<Response> => {
+	return async (event: RequestEventLike): Promise<Response> => {
 		const method = event.request.method.toUpperCase()
 		const routePolicy = settings.routes[routeId] ?? {}
 		const csrfMode = routePolicy.csrf ?? settings.csrf.mode
@@ -117,7 +113,7 @@ export function applySecurityPolicy({
 		const auditMode = routePolicy.audit ?? settings.audit.mode
 		const ip = getClientIp(event, settings.rateLimit.trustedProxyHeaders)
 
-		const emit = async(
+		const emit = async (
 			name: Parameters<typeof createAuthEvent>[0]['name'],
 			severity: Parameters<typeof createAuthEvent>[0]['severity'],
 			status?: number,
@@ -140,7 +136,7 @@ export function applySecurityPolicy({
 		}
 
 		if (rateMode !== 'off') {
-			const key = `${ routeId }:${ ip }`
+			const key = `${routeId}:${ip}`
 			const result = await limiter.check(key)
 			if (!result.allowed) {
 				await emit('auth.rate_limited', 'warn', 429, 'Too many requests')
@@ -174,7 +170,7 @@ export function applySecurityPolicy({
 				response.status
 			)
 			return response
-		} catch(error) {
+		} catch (error) {
 			if (isRedirect(error)) {
 				await emit('auth.success', 'info', error.status)
 				throw error

@@ -18,27 +18,20 @@ const DEFAULT_REDACT_KEYS = [
 ]
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-	return (
-		typeof value === 'object' &&
-		value !== null &&
-		!Array.isArray(value)
-	)
+	return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /** Recursively redacts common secret-bearing keys from unknown data. */
-export function redactObject(
-	input: unknown,
-	keys: string[] = DEFAULT_REDACT_KEYS
-): unknown {
+export function redactObject(input: unknown, keys: string[] = DEFAULT_REDACT_KEYS): unknown {
 	if (!input) return input
 	if (Array.isArray(input)) {
-		return input.map(item => redactObject(item, keys))
+		return input.map((item) => redactObject(item, keys))
 	}
 	if (!isPlainObject(input)) return input
 
-	const lowerKeys = new Set(keys.map(k => k.toLowerCase()))
+	const lowerKeys = new Set(keys.map((k) => k.toLowerCase()))
 	const output: Record<string, unknown> = {}
-	for (const [ key, value ] of Object.entries(input)) {
+	for (const [key, value] of Object.entries(input)) {
 		if (lowerKeys.has(key.toLowerCase())) {
 			output[key] = '[redacted]'
 		} else if (isPlainObject(value) || Array.isArray(value)) {

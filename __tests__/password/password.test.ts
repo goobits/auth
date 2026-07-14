@@ -4,18 +4,18 @@ import { argon2id } from 'hash-wasm'
 import { hashPassword, validatePasswordStrength, verifyPassword } from '../../src/password/index.ts'
 
 const callHashPasswordUnsafe = (password: unknown) =>
-	Reflect.apply(hashPassword, undefined, [ password ]) as Promise<string>
+	Reflect.apply(hashPassword, undefined, [password]) as Promise<string>
 const callVerifyPasswordUnsafe = (hash: unknown, password: unknown) =>
-	Reflect.apply(verifyPassword, undefined, [ hash, password ]) as Promise<boolean>
+	Reflect.apply(verifyPassword, undefined, [hash, password]) as Promise<boolean>
 const callValidatePasswordStrengthUnsafe = (password: unknown) =>
-	Reflect.apply(validatePasswordStrength, undefined, [ password ]) as {
-		valid: boolean;
-		errors: string[];
+	Reflect.apply(validatePasswordStrength, undefined, [password]) as {
+		valid: boolean
+		errors: string[]
 	}
 
 describe('Password Utilities', () => {
 	describe('hashPassword', () => {
-		it('should hash a password with Argon2id', async() => {
+		it('should hash a password with Argon2id', async () => {
 			const password = 'TestPassword123!'
 			const hash = await hashPassword(password)
 
@@ -25,7 +25,7 @@ describe('Password Utilities', () => {
 			expect(hash).toContain('m=12288,t=3,p=1')
 		})
 
-		it('should produce different hashes for the same password', async() => {
+		it('should produce different hashes for the same password', async () => {
 			const password = 'SamePassword123!'
 			const hash1 = await hashPassword(password)
 			const hash2 = await hashPassword(password)
@@ -33,23 +33,29 @@ describe('Password Utilities', () => {
 			expect(hash1).not.toBe(hash2) // Different salts
 		})
 
-		it('should throw error for empty password', async() => {
+		it('should throw error for empty password', async () => {
 			await expect(hashPassword('')).rejects.toThrow('Password must be a non-empty string')
 		})
 
-		it('should throw error for null password', async() => {
-			await expect(callHashPasswordUnsafe(null)).rejects.toThrow('Password must be a non-empty string')
+		it('should throw error for null password', async () => {
+			await expect(callHashPasswordUnsafe(null)).rejects.toThrow(
+				'Password must be a non-empty string'
+			)
 		})
 
-		it('should throw error for undefined password', async() => {
-			await expect(callHashPasswordUnsafe(undefined)).rejects.toThrow('Password must be a non-empty string')
+		it('should throw error for undefined password', async () => {
+			await expect(callHashPasswordUnsafe(undefined)).rejects.toThrow(
+				'Password must be a non-empty string'
+			)
 		})
 
-		it('should throw error for non-string password', async() => {
-			await expect(callHashPasswordUnsafe(12345)).rejects.toThrow('Password must be a non-empty string')
+		it('should throw error for non-string password', async () => {
+			await expect(callHashPasswordUnsafe(12345)).rejects.toThrow(
+				'Password must be a non-empty string'
+			)
 		})
 
-		it('should handle very long passwords', async() => {
+		it('should handle very long passwords', async () => {
 			const longPassword = 'a'.repeat(1000)
 			const hash = await hashPassword(longPassword)
 
@@ -57,7 +63,7 @@ describe('Password Utilities', () => {
 			expect(hash.startsWith('$argon2id$')).toBe(true)
 		})
 
-		it('should handle special characters in password', async() => {
+		it('should handle special characters in password', async () => {
 			const password = '!@#$%^&*()_+-=[]{}|;:",.<>?/~`'
 			const hash = await hashPassword(password)
 
@@ -65,7 +71,7 @@ describe('Password Utilities', () => {
 			expect(hash.startsWith('$argon2id$')).toBe(true)
 		})
 
-		it('should handle unicode characters in password', async() => {
+		it('should handle unicode characters in password', async () => {
 			const password = 'Пароль123!你好'
 			const hash = await hashPassword(password)
 
@@ -75,7 +81,7 @@ describe('Password Utilities', () => {
 	})
 
 	describe('verifyPassword', () => {
-		it('continues to verify hashes created with the previous cost', async() => {
+		it('continues to verify hashes created with the previous cost', async () => {
 			const password = 'ExistingPassword123!'
 			const legacyHash = await argon2id({
 				password,
@@ -90,7 +96,7 @@ describe('Password Utilities', () => {
 			await expect(verifyPassword(legacyHash, password)).resolves.toBe(true)
 		})
 
-		it('should verify correct password', async() => {
+		it('should verify correct password', async () => {
 			const password = 'CorrectPassword123!'
 			const hash = await hashPassword(password)
 
@@ -98,7 +104,7 @@ describe('Password Utilities', () => {
 			expect(isValid).toBe(true)
 		})
 
-		it('should reject incorrect password', async() => {
+		it('should reject incorrect password', async () => {
 			const password = 'CorrectPassword123!'
 			const hash = await hashPassword(password)
 
@@ -106,34 +112,34 @@ describe('Password Utilities', () => {
 			expect(isValid).toBe(false)
 		})
 
-		it('should return false for invalid hash format', async() => {
+		it('should return false for invalid hash format', async () => {
 			const isValid = await verifyPassword('invalid-hash', 'password')
 			expect(isValid).toBe(false)
 		})
 
-		it('should return false for empty hash', async() => {
+		it('should return false for empty hash', async () => {
 			const isValid = await verifyPassword('', 'password')
 			expect(isValid).toBe(false)
 		})
 
-		it('should return false for null hash', async() => {
+		it('should return false for null hash', async () => {
 			const isValid = await callVerifyPasswordUnsafe(null, 'password')
 			expect(isValid).toBe(false)
 		})
 
-		it('should return false for empty password', async() => {
+		it('should return false for empty password', async () => {
 			const hash = await hashPassword('ValidPassword123!')
 			const isValid = await verifyPassword(hash, '')
 			expect(isValid).toBe(false)
 		})
 
-		it('should return false for null password', async() => {
+		it('should return false for null password', async () => {
 			const hash = await hashPassword('ValidPassword123!')
 			const isValid = await callVerifyPasswordUnsafe(hash, null)
 			expect(isValid).toBe(false)
 		})
 
-		it('should handle case-sensitive passwords correctly', async() => {
+		it('should handle case-sensitive passwords correctly', async () => {
 			const password = 'CaseSensitive123!'
 			const hash = await hashPassword(password)
 
@@ -144,7 +150,7 @@ describe('Password Utilities', () => {
 			expect(isValidWrongCase).toBe(false)
 		})
 
-		it('should handle special characters correctly', async() => {
+		it('should handle special characters correctly', async () => {
 			const password = '!@#$%^&*()_+-='
 			const hash = await hashPassword(password)
 
@@ -152,7 +158,7 @@ describe('Password Utilities', () => {
 			expect(isValid).toBe(true)
 		})
 
-		it('should handle unicode characters correctly', async() => {
+		it('should handle unicode characters correctly', async () => {
 			const password = 'Пароль123!你好'
 			const hash = await hashPassword(password)
 
@@ -294,7 +300,7 @@ describe('Password Utilities', () => {
 	})
 
 	describe('integration - hash and verify workflow', () => {
-		it('should successfully hash and verify in sequence', async() => {
+		it('should successfully hash and verify in sequence', async () => {
 			const password = 'IntegrationTest123!'
 
 			// Hash the password
@@ -310,7 +316,7 @@ describe('Password Utilities', () => {
 			expect(isValidIncorrect).toBe(false)
 		})
 
-		it('should validate then hash then verify', async() => {
+		it('should validate then hash then verify', async () => {
 			const password = 'CompleteFlow123!'
 
 			// Validate
@@ -326,7 +332,7 @@ describe('Password Utilities', () => {
 			expect(isValid).toBe(true)
 		})
 
-		it('should reject weak password in complete workflow', async() => {
+		it('should reject weak password in complete workflow', async () => {
 			const weakPassword = 'weak'
 
 			// Validate (should fail)

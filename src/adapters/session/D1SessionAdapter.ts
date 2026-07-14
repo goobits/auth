@@ -10,42 +10,42 @@ type D1Row = Record<string, D1Value>
 type D1DatabaseLike = {
 	prepare: (sql: string) => {
 		bind: (...args: D1Value[]) => {
-			run: () => Promise<unknown>;
-			first: () => Promise<D1Row | null>;
-			all: () => Promise<{ results?: D1Row[] }>;
-		};
-	};
+			run: () => Promise<unknown>
+			first: () => Promise<D1Row | null>
+			all: () => Promise<{ results?: D1Row[] }>
+		}
+	}
 }
 
 type D1SessionOptions = {
-	sessionsTable?: string;
-	usersTable?: string;
-	sessionLifetime?: number;
-	sessionRefreshThreshold?: number;
-	cookieName?: string;
-	secureCookies?: boolean;
-	sanitizeUser?: (user: User | null) => User | null;
+	sessionsTable?: string
+	usersTable?: string
+	sessionLifetime?: number
+	sessionRefreshThreshold?: number
+	cookieName?: string
+	secureCookies?: boolean
+	sanitizeUser?: (user: User | null) => User | null
 	columns?: Partial<{
-		sessionId: string;
-		userId: string;
-		expiresAt: string;
-		createdAt: string | null;
-		lastActiveAt: string | null;
-		ip: string | null;
-		userAgent: string | null;
-	}>;
+		sessionId: string
+		userId: string
+		expiresAt: string
+		createdAt: string | null
+		lastActiveAt: string | null
+		ip: string | null
+		userAgent: string | null
+	}>
 	userColumns?: Partial<{
-		id: string;
-		email: string;
-		name: string;
-		avatar: string;
-		password: string;
-		emailVerified: string;
-		role: string;
-		settings: string;
-		createdAt: string;
-		updatedAt: string;
-	}>;
+		id: string
+		email: string
+		name: string
+		avatar: string
+		password: string
+		emailVerified: string
+		role: string
+		settings: string
+		createdAt: string
+		updatedAt: string
+	}>
 }
 
 /** Cloudflare D1 session adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
@@ -61,25 +61,25 @@ export class D1SessionAdapter extends SessionAdapter {
 	private secureCookies: boolean
 	private sanitizeUser: (user: User | null) => User | null
 	private columns: {
-		sessionId: string;
-		userId: string;
-		expiresAt: string;
-		createdAt: string | null;
-		lastActiveAt: string | null;
-		ip: string | null;
-		userAgent: string | null;
+		sessionId: string
+		userId: string
+		expiresAt: string
+		createdAt: string | null
+		lastActiveAt: string | null
+		ip: string | null
+		userAgent: string | null
 	}
 	private userColumns: {
-		id: string;
-		email: string;
-		name: string;
-		avatar: string;
-		password: string;
-		emailVerified: string;
-		role: string;
-		settings: string;
-		createdAt: string;
-		updatedAt: string;
+		id: string
+		email: string
+		name: string
+		avatar: string
+		password: string
+		emailVerified: string
+		role: string
+		settings: string
+		createdAt: string
+		updatedAt: string
 	}
 
 	constructor(db: D1DatabaseLike, options: D1SessionOptions = {}) {
@@ -88,8 +88,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		this.sessionsTable = options.sessionsTable || 'sessions'
 		this.usersTable = options.usersTable || 'users'
 		this.sessionLifetime = options.sessionLifetime || 30 * 24 * 60 * 60 * 1000
-		this.sessionRefreshThreshold =
-			options.sessionRefreshThreshold || this.sessionLifetime / 2
+		this.sessionRefreshThreshold = options.sessionRefreshThreshold || this.sessionLifetime / 2
 		this.cookieName = options.cookieName || 'session'
 		this.secureCookies = options.secureCookies !== false
 		this.sanitizeUser = options.sanitizeUser || this._defaultSanitizeUser
@@ -136,7 +135,7 @@ export class D1SessionAdapter extends SessionAdapter {
 	async createSession(userId: string, metadata: Record<string, unknown> = {}) {
 		const sessionId = this._generateSessionId()
 		const expiresAt = new Date(Date.now() + this.sessionLifetime)
-		const sql = `INSERT INTO ${ this.sessionsTable } (${ this.columns.sessionId }, ${ this.columns.userId }, ${ this.columns.expiresAt }) VALUES (?, ?, ?)`
+		const sql = `INSERT INTO ${this.sessionsTable} (${this.columns.sessionId}, ${this.columns.userId}, ${this.columns.expiresAt}) VALUES (?, ?, ?)`
 		await this.db
 			.prepare(sql)
 			.bind(sessionId, this._coerceDbId(userId), expiresAt.toISOString())
@@ -145,10 +144,10 @@ export class D1SessionAdapter extends SessionAdapter {
 	}
 
 	async validateSession(sessionId: string) {
-		const sql = `SELECT s.${ this.columns.sessionId } as session_id, s.${ this.columns.userId } as user_id, s.${ this.columns.expiresAt } as expires_at, u.*
-		FROM ${ this.sessionsTable } s
-		JOIN ${ this.usersTable } u ON s.${ this.columns.userId } = u.${ this.userColumns.id }
-		WHERE s.${ this.columns.sessionId } = ? LIMIT 1`
+		const sql = `SELECT s.${this.columns.sessionId} as session_id, s.${this.columns.userId} as user_id, s.${this.columns.expiresAt} as expires_at, u.*
+		FROM ${this.sessionsTable} s
+		JOIN ${this.usersTable} u ON s.${this.columns.userId} = u.${this.userColumns.id}
+		WHERE s.${this.columns.sessionId} = ? LIMIT 1`
 		const row = await this.db.prepare(sql).bind(sessionId).first()
 		if (!row) return { session: null, user: null }
 
@@ -158,14 +157,13 @@ export class D1SessionAdapter extends SessionAdapter {
 		if (Number.isNaN(expiresAt.getTime())) return { session: null, user: null }
 		if (Date.now() >= expiresAt.getTime()) {
 			await this.db
-				.prepare(`DELETE FROM ${ this.sessionsTable } WHERE ${ this.columns.sessionId } = ?`)
+				.prepare(`DELETE FROM ${this.sessionsTable} WHERE ${this.columns.sessionId} = ?`)
 				.bind(sessionId)
 				.run()
 			return { session: null, user: null }
 		}
 
-		const shouldRefresh =
-			Date.now() >= expiresAt.getTime() - this.sessionRefreshThreshold
+		const shouldRefresh = Date.now() >= expiresAt.getTime() - this.sessionRefreshThreshold
 		let fresh = false
 		let newExpiresAt = expiresAt
 
@@ -173,7 +171,7 @@ export class D1SessionAdapter extends SessionAdapter {
 			newExpiresAt = new Date(Date.now() + this.sessionLifetime)
 			await this.db
 				.prepare(
-					`UPDATE ${ this.sessionsTable } SET ${ this.columns.expiresAt } = ? WHERE ${ this.columns.sessionId } = ?`
+					`UPDATE ${this.sessionsTable} SET ${this.columns.expiresAt} = ? WHERE ${this.columns.sessionId} = ?`
 				)
 				.bind(newExpiresAt.toISOString(), sessionId)
 				.run()
@@ -206,8 +204,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		const avatar = Object.prototype.hasOwnProperty.call(row, this.userColumns['avatar'])
 			? row[this.userColumns['avatar']]
 			: row['avatar']
-		const emailVerified =
-			row[this.userColumns.emailVerified] ?? row['email_verified']
+		const emailVerified = row[this.userColumns.emailVerified] ?? row['email_verified']
 		const role = row[this.userColumns.role] ?? row['role']
 		const settings = row[this.userColumns.settings] ?? row['settings']
 		const createdAt = row[this.userColumns.createdAt] ?? row['created_at']
@@ -216,28 +213,24 @@ export class D1SessionAdapter extends SessionAdapter {
 		if (typeof email !== 'string') return null
 		if (typeof name !== 'string') return null
 		if (avatar !== null && typeof avatar !== 'string') return null
-		if (
-			typeof emailVerified !== 'boolean' &&
-			emailVerified !== 0 &&
-			emailVerified !== 1
-		) {
+		if (typeof emailVerified !== 'boolean' && emailVerified !== 0 && emailVerified !== 1) {
 			return null
 		}
 		if (role !== null && role !== undefined && typeof role !== 'string') return null
 		if (settings !== null && settings !== undefined && typeof settings !== 'string') return null
 		if (
 			createdAt !== null &&
-				createdAt !== undefined &&
-				typeof createdAt !== 'string' &&
-				typeof createdAt !== 'number'
+			createdAt !== undefined &&
+			typeof createdAt !== 'string' &&
+			typeof createdAt !== 'number'
 		) {
 			return null
 		}
 		if (
 			updatedAt !== null &&
-				updatedAt !== undefined &&
-				typeof updatedAt !== 'string' &&
-				typeof updatedAt !== 'number'
+			updatedAt !== undefined &&
+			typeof updatedAt !== 'string' &&
+			typeof updatedAt !== 'number'
 		) {
 			return null
 		}
@@ -293,14 +286,14 @@ export class D1SessionAdapter extends SessionAdapter {
 
 	async invalidateSession(sessionId: string) {
 		await this.db
-			.prepare(`DELETE FROM ${ this.sessionsTable } WHERE ${ this.columns.sessionId } = ?`)
+			.prepare(`DELETE FROM ${this.sessionsTable} WHERE ${this.columns.sessionId} = ?`)
 			.bind(sessionId)
 			.run()
 	}
 
 	async invalidateUserSessions(userId: string) {
 		await this.db
-			.prepare(`DELETE FROM ${ this.sessionsTable } WHERE ${ this.columns.userId } = ?`)
+			.prepare(`DELETE FROM ${this.sessionsTable} WHERE ${this.columns.userId} = ?`)
 			.bind(this._coerceDbId(userId))
 			.run()
 	}
@@ -315,15 +308,14 @@ export class D1SessionAdapter extends SessionAdapter {
 			this.columns.ip,
 			this.columns.userAgent
 		]
-		const unique = [ ...new Set(columns.filter(Boolean)) ]
-		const sql = `SELECT ${ unique.join(', ') } FROM ${ this.sessionsTable } WHERE ${ this.columns.userId } = ?`
+		const unique = [...new Set(columns.filter(Boolean))]
+		const sql = `SELECT ${unique.join(', ')} FROM ${this.sessionsTable} WHERE ${this.columns.userId} = ?`
 		const result = await this.db.prepare(sql).bind(this._coerceDbId(userId)).all()
 		const sessions: Session[] = []
 		for (const row of result?.results ?? []) {
 			const id = row[this.columns.sessionId] ?? row['id']
 			const uid = row[this.columns.userId] ?? row['user_id']
-			const expiresRaw =
-				row[this.columns['expiresAt']] ?? row['expires_at'] ?? row['expiresAt']
+			const expiresRaw = row[this.columns['expiresAt']] ?? row['expires_at'] ?? row['expiresAt']
 			if (
 				(typeof id !== 'string' && typeof id !== 'number') ||
 				(typeof uid !== 'string' && typeof uid !== 'number') ||

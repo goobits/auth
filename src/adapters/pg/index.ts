@@ -2,7 +2,14 @@ import { randomBytes, randomUUID } from 'node:crypto'
 
 import type { Cookies } from '@sveltejs/kit'
 
-import type { MagicLinkToken, MfaStatus, OAuthProfile, Session, User, WebAuthnCredential } from '../../types/index.ts'
+import type {
+	MagicLinkToken,
+	MfaStatus,
+	OAuthProfile,
+	Session,
+	User,
+	WebAuthnCredential
+} from '../../types/index.ts'
 import { UserAdapter } from '../database/UserAdapter.ts'
 import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
 import { MfaAdapter } from '../mfa/MfaAdapter.ts'
@@ -13,73 +20,73 @@ import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.ts'
 export type PgPoolLike = {
 	query<T extends Record<string, unknown> = Record<string, unknown>>(
 		text: string,
-		values?: readonly unknown[],
-	): Promise<{ rows: T[] }>;
+		values?: readonly unknown[]
+	): Promise<{ rows: T[] }>
 }
 
 type UserRow = {
-	avatar: string | null;
-	created_at: Date;
-	email: string;
-	email_verified: boolean;
-	id: string;
-	name: string;
-	password: string | null;
-	role: string | null;
-	settings: Record<string, unknown>;
-	updated_at: Date;
+	avatar: string | null
+	created_at: Date
+	email: string
+	email_verified: boolean
+	id: string
+	name: string
+	password: string | null
+	role: string | null
+	settings: Record<string, unknown>
+	updated_at: Date
 }
 
 type SessionRow = {
-	created_at: Date;
-	expires_at: Date;
-	fingerprint: string | null;
-	id: string;
-	ip: string | null;
-	last_active_at: Date | null;
-	user_agent: string | null;
-	user_id: string;
+	created_at: Date
+	expires_at: Date
+	fingerprint: string | null
+	id: string
+	ip: string | null
+	last_active_at: Date | null
+	user_agent: string | null
+	user_id: string
 }
 
 type WebAuthnChallengeRow = {
-	challenge: string;
-	expires_at: Date;
-	id: string;
-	type: string;
-	user_id: string | null;
+	challenge: string
+	expires_at: Date
+	id: string
+	type: string
+	user_id: string | null
 }
 
 type WebAuthnCredentialRow = {
-	counter: number;
-	created_at: Date;
-	credential_id: string;
-	name: string | null;
-	public_key: string;
-	transports: string[] | null;
-	updated_at: Date;
-	user_id: string;
+	counter: number
+	created_at: Date
+	credential_id: string
+	name: string | null
+	public_key: string
+	transports: string[] | null
+	updated_at: Date
+	user_id: string
 }
 
 type MfaFactorRow = {
-	enabled_at: Date | null;
-	secret: string;
-	user_id: string;
+	enabled_at: Date | null
+	secret: string
+	user_id: string
 }
 
 type MfaStatusRow = {
-	backup_code_count: string | number;
-	enabled_at: Date | null;
+	backup_code_count: string | number
+	enabled_at: Date | null
 }
 
 type MagicLinkTokenRow = {
-	created_at: Date;
-	email: string;
-	expires_at: Date;
-	id: string;
-	metadata: Record<string, unknown> | null;
-	otp_hash: string | null;
-	token_hash: string;
-	user_id: string | null;
+	created_at: Date
+	email: string
+	expires_at: Date
+	id: string
+	metadata: Record<string, unknown> | null
+	otp_hash: string | null
+	token_hash: string
+	user_id: string | null
 }
 
 /** Postgres user adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
@@ -124,12 +131,17 @@ export class PgUserAdapter extends UserAdapter {
 	}
 
 	async getUserById(id: string): Promise<User | null> {
-		const row = (await this.#db.query<UserRow>('SELECT * FROM auth_users WHERE id = $1', [ id ])).rows[0]
+		const row = (await this.#db.query<UserRow>('SELECT * FROM auth_users WHERE id = $1', [id]))
+			.rows[0]
 		return row ? toUser(row) : null
 	}
 
 	async getUserByEmail(email: string): Promise<User | null> {
-		const row = (await this.#db.query<UserRow>('SELECT * FROM auth_users WHERE email = $1', [ normalizeEmail(email) ])).rows[0]
+		const row = (
+			await this.#db.query<UserRow>('SELECT * FROM auth_users WHERE email = $1', [
+				normalizeEmail(email)
+			])
+		).rows[0]
 		return row ? toUser(row) : null
 	}
 
@@ -142,7 +154,7 @@ export class PgUserAdapter extends UserAdapter {
 			JOIN auth_oauth_accounts a ON a.user_id = u.id
 			WHERE a.provider = $1 AND a.provider_account_id = $2
 		`,
-				[ provider, providerId ]
+				[provider, providerId]
 			)
 		).rows[0]
 		return row ? toUser(row) : null
@@ -182,22 +194,32 @@ export class PgUserAdapter extends UserAdapter {
 	}
 
 	async deleteUser(id: string): Promise<void> {
-		await this.#db.query('DELETE FROM auth_users WHERE id = $1', [ id ])
+		await this.#db.query('DELETE FROM auth_users WHERE id = $1', [id])
 	}
 
-	async linkOAuthAccount(userId: string, provider: string, providerAccountId: string): Promise<void> {
+	async linkOAuthAccount(
+		userId: string,
+		provider: string,
+		providerAccountId: string
+	): Promise<void> {
 		await this.#db.query(
 			`
 			INSERT INTO auth_oauth_accounts (provider, provider_account_id, user_id)
 			VALUES ($1, $2, $3)
 			ON CONFLICT (provider, provider_account_id) DO UPDATE SET user_id = EXCLUDED.user_id
 		`,
-			[ provider, providerAccountId, userId ]
+			[provider, providerAccountId, userId]
 		)
 	}
 
-	async getUserWithPasswordHash(email: string): Promise<(User & { password?: string | null }) | null> {
-		const row = (await this.#db.query<UserRow>('SELECT * FROM auth_users WHERE email = $1', [ normalizeEmail(email) ])).rows[0]
+	async getUserWithPasswordHash(
+		email: string
+	): Promise<(User & { password?: string | null }) | null> {
+		const row = (
+			await this.#db.query<UserRow>('SELECT * FROM auth_users WHERE email = $1', [
+				normalizeEmail(email)
+			])
+		).rows[0]
 		return row ? { ...toUser(row), password: row.password } : null
 	}
 }
@@ -217,11 +239,11 @@ export class PgSessionAdapter extends SessionAdapter {
 		secureCookies,
 		sessionLifetimeMs = 30 * 24 * 60 * 60 * 1000
 	}: {
-		cookieDomain?: string;
-		cookieName: string;
-		db: PgPoolLike;
-		secureCookies: boolean;
-		sessionLifetimeMs?: number;
+		cookieDomain?: string
+		cookieName: string
+		db: PgPoolLike
+		secureCookies: boolean
+		sessionLifetimeMs?: number
 	}) {
 		super()
 		this.#cookieDomain = cookieDomain
@@ -258,9 +280,13 @@ export class PgSessionAdapter extends SessionAdapter {
 		return toSession(requireRow(row))
 	}
 
-	async validateSession(sessionId: string): Promise<{ session: Session | null; user: User | null }> {
+	async validateSession(
+		sessionId: string
+	): Promise<{ session: Session | null; user: User | null }> {
 		const row = (
-			await this.#db.query<SessionRow & UserRow & { user_created_at: Date; user_id_for_user: string }>(
+			await this.#db.query<
+				SessionRow & UserRow & { user_created_at: Date; user_id_for_user: string }
+			>(
 				`
 			SELECT
 				s.id AS id,
@@ -285,7 +311,7 @@ export class PgSessionAdapter extends SessionAdapter {
 			JOIN auth_users u ON u.id = s.user_id
 			WHERE s.id = $1
 		`,
-				[ sessionId ]
+				[sessionId]
 			)
 		).rows[0]
 		if (!row) {
@@ -295,7 +321,9 @@ export class PgSessionAdapter extends SessionAdapter {
 			await this.invalidateSession(sessionId)
 			return { session: null, user: null }
 		}
-		await this.#db.query('UPDATE auth_sessions SET last_active_at = now() WHERE id = $1', [ sessionId ])
+		await this.#db.query('UPDATE auth_sessions SET last_active_at = now() WHERE id = $1', [
+			sessionId
+		])
 		return {
 			session: toSession(row),
 			user: toUser({
@@ -307,18 +335,18 @@ export class PgSessionAdapter extends SessionAdapter {
 	}
 
 	async invalidateSession(sessionId: string): Promise<void> {
-		await this.#db.query('DELETE FROM auth_sessions WHERE id = $1', [ sessionId ])
+		await this.#db.query('DELETE FROM auth_sessions WHERE id = $1', [sessionId])
 	}
 
 	async invalidateUserSessions(userId: string): Promise<void> {
-		await this.#db.query('DELETE FROM auth_sessions WHERE user_id = $1', [ userId ])
+		await this.#db.query('DELETE FROM auth_sessions WHERE user_id = $1', [userId])
 	}
 
 	async listSessions(userId: string): Promise<Session[]> {
 		const rows = (
 			await this.#db.query<SessionRow>(
 				'SELECT * FROM auth_sessions WHERE user_id = $1 ORDER BY created_at DESC',
-				[ userId ]
+				[userId]
 			)
 		).rows
 		return rows.map(toSession)
@@ -359,11 +387,11 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		type,
 		expiresAt
 	}: {
-		challengeId: string;
-		userId?: string | null;
-		challenge: string;
-		type: string;
-		expiresAt: Date;
+		challengeId: string
+		userId?: string | null
+		challenge: string
+		type: string
+		expiresAt: Date
 	}): Promise<void> {
 		await this.#db.query(
 			`
@@ -375,7 +403,7 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 				type = EXCLUDED.type,
 				expires_at = EXCLUDED.expires_at
 		`,
-			[ challengeId, userId ?? null, challenge, type, expiresAt ]
+			[challengeId, userId ?? null, challenge, type, expiresAt]
 		)
 	}
 
@@ -383,16 +411,14 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		const row = (
 			await this.#db.query<WebAuthnChallengeRow>(
 				'SELECT * FROM auth_webauthn_challenges WHERE id = $1',
-				[ challengeId ]
+				[challengeId]
 			)
 		).rows[0]
 		return row ? toWebAuthnChallenge(row) : null
 	}
 
 	async deleteChallenge(challengeId: string): Promise<void> {
-		await this.#db.query('DELETE FROM auth_webauthn_challenges WHERE id = $1', [
-			challengeId
-		])
+		await this.#db.query('DELETE FROM auth_webauthn_challenges WHERE id = $1', [challengeId])
 	}
 
 	async createCredential({
@@ -403,12 +429,12 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		transports,
 		name
 	}: {
-		userId: string;
-		credentialId: string;
-		publicKey: string;
-		counter: number;
-		transports?: string[] | null;
-		name?: string | null;
+		userId: string
+		credentialId: string
+		publicKey: string
+		counter: number
+		transports?: string[] | null
+		name?: string | null
 	}): Promise<void> {
 		await this.#db.query(
 			`
@@ -423,14 +449,7 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 				name = EXCLUDED.name,
 				updated_at = now()
 		`,
-			[
-				userId,
-				credentialId,
-				publicKey,
-				counter,
-				JSON.stringify(transports ?? null),
-				name ?? null
-			]
+			[userId, credentialId, publicKey, counter, JSON.stringify(transports ?? null), name ?? null]
 		)
 	}
 
@@ -438,7 +457,7 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		const row = (
 			await this.#db.query<WebAuthnCredentialRow>(
 				'SELECT * FROM auth_webauthn_credentials WHERE credential_id = $1',
-				[ credentialId ]
+				[credentialId]
 			)
 		).rows[0]
 		return row ? toWebAuthnCredential(row) : null
@@ -448,36 +467,36 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		const rows = (
 			await this.#db.query<WebAuthnCredentialRow>(
 				'SELECT * FROM auth_webauthn_credentials WHERE user_id = $1 ORDER BY created_at DESC',
-				[ userId ]
+				[userId]
 			)
 		).rows
 		return rows.map(toWebAuthnCredential)
 	}
 
-	async updateCredential(
-		credentialId: string,
-		updates: Record<string, unknown>
-	): Promise<void> {
+	async updateCredential(credentialId: string, updates: Record<string, unknown>): Promise<void> {
 		const allowed = new Map([
-			[ 'counter', updates['counter'] ],
-			[ 'name', updates['name'] ],
-			[ 'transports', updates['transports'] ]
+			['counter', updates['counter']],
+			['name', updates['name']],
+			['transports', updates['transports']]
 		])
 		const fields: string[] = []
 		const values: unknown[] = []
-		for (const [ key, value ] of allowed.entries()) {
+		for (const [key, value] of allowed.entries()) {
 			if (value === undefined) continue
 			if (key === 'counter' && typeof value !== 'number') continue
 			if (key === 'name' && value !== null && typeof value !== 'string') continue
 			if (key === 'transports') {
-				if (value !== null && (!Array.isArray(value) || value.some(entry => typeof entry !== 'string'))) {
+				if (
+					value !== null &&
+					(!Array.isArray(value) || value.some((entry) => typeof entry !== 'string'))
+				) {
 					continue
 				}
-				fields.push(`transports = $${ fields.length + 1 }::jsonb`)
+				fields.push(`transports = $${fields.length + 1}::jsonb`)
 				values.push(JSON.stringify(value))
 				continue
 			}
-			fields.push(`${ key } = $${ fields.length + 1 }`)
+			fields.push(`${key} = $${fields.length + 1}`)
 			values.push(value)
 		}
 		if (fields.length === 0) {
@@ -487,8 +506,8 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		await this.#db.query(
 			`
 			UPDATE auth_webauthn_credentials
-			SET ${ fields.join(', ') }, updated_at = now()
-			WHERE credential_id = $${ values.length }
+			SET ${fields.join(', ')}, updated_at = now()
+			WHERE credential_id = $${values.length}
 		`,
 			values
 		)
@@ -501,9 +520,7 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 	}
 
 	async deleteUserCredentials(userId: string): Promise<void> {
-		await this.#db.query('DELETE FROM auth_webauthn_credentials WHERE user_id = $1', [
-			userId
-		])
+		await this.#db.query('DELETE FROM auth_webauthn_credentials WHERE user_id = $1', [userId])
 	}
 }
 
@@ -525,7 +542,7 @@ export class PgMfaAdapter extends MfaAdapter {
 				secret = EXCLUDED.secret,
 				updated_at = now()
 		`,
-			[ userId, secret ]
+			[userId, secret]
 		)
 	}
 
@@ -533,7 +550,7 @@ export class PgMfaAdapter extends MfaAdapter {
 		const row = (
 			await this.#db.query<MfaFactorRow>(
 				'SELECT user_id, secret, enabled_at FROM auth_mfa_factors WHERE user_id = $1',
-				[ userId ]
+				[userId]
 			)
 		).rows[0]
 		return row?.secret ?? null
@@ -542,21 +559,21 @@ export class PgMfaAdapter extends MfaAdapter {
 	async enableMfa(userId: string): Promise<void> {
 		await this.#db.query(
 			'UPDATE auth_mfa_factors SET enabled_at = COALESCE(enabled_at, now()), updated_at = now() WHERE user_id = $1',
-			[ userId ]
+			[userId]
 		)
 	}
 
 	async disableMfa(userId: string): Promise<void> {
-		await this.#db.query('DELETE FROM auth_mfa_backup_codes WHERE user_id = $1', [ userId ])
-		await this.#db.query('DELETE FROM auth_mfa_factors WHERE user_id = $1', [ userId ])
+		await this.#db.query('DELETE FROM auth_mfa_backup_codes WHERE user_id = $1', [userId])
+		await this.#db.query('DELETE FROM auth_mfa_factors WHERE user_id = $1', [userId])
 	}
 
 	async setBackupCodes(userId: string, codes: string[]): Promise<void> {
-		await this.#db.query('DELETE FROM auth_mfa_backup_codes WHERE user_id = $1', [ userId ])
+		await this.#db.query('DELETE FROM auth_mfa_backup_codes WHERE user_id = $1', [userId])
 		for (const hash of codes) {
 			await this.#db.query(
 				'INSERT INTO auth_mfa_backup_codes (user_id, code_hash) VALUES ($1, $2)',
-				[ userId, hash ]
+				[userId, hash]
 			)
 		}
 	}
@@ -565,16 +582,16 @@ export class PgMfaAdapter extends MfaAdapter {
 		const rows = (
 			await this.#db.query<{ code_hash: string }>(
 				'SELECT code_hash FROM auth_mfa_backup_codes WHERE user_id = $1 ORDER BY created_at ASC',
-				[ userId ]
+				[userId]
 			)
 		).rows
-		return rows.map(row => row.code_hash)
+		return rows.map((row) => row.code_hash)
 	}
 
 	async consumeBackupCode(userId: string, hash: string): Promise<void> {
 		await this.#db.query(
 			'DELETE FROM auth_mfa_backup_codes WHERE user_id = $1 AND code_hash = $2',
-			[ userId, hash ]
+			[userId, hash]
 		)
 	}
 
@@ -590,7 +607,7 @@ export class PgMfaAdapter extends MfaAdapter {
 				WHERE f.user_id = $1
 				GROUP BY f.enabled_at
 			`,
-				[ userId ]
+				[userId]
 			)
 		).rows[0]
 		return {
@@ -618,12 +635,12 @@ export class PgMagicLinkAdapter extends MagicLinkAdapter {
 		expiresAt,
 		metadata
 	}: {
-		userId: string | null;
-		email: string;
-		tokenHash: string;
-		otpHash?: string | null;
-		expiresAt: Date;
-		metadata?: Record<string, unknown>;
+		userId: string | null
+		email: string
+		tokenHash: string
+		otpHash?: string | null
+		expiresAt: Date
+		metadata?: Record<string, unknown>
 	}): Promise<MagicLinkToken> {
 		const row = (
 			await this.#db.query<MagicLinkTokenRow>(
@@ -651,7 +668,7 @@ export class PgMagicLinkAdapter extends MagicLinkAdapter {
 		const row = (
 			await this.#db.query<MagicLinkTokenRow>(
 				'SELECT * FROM auth_magic_link_tokens WHERE token_hash = $1 LIMIT 1',
-				[ tokenHash ]
+				[tokenHash]
 			)
 		).rows[0]
 		return row ? toMagicLinkToken(row) : null
@@ -661,24 +678,24 @@ export class PgMagicLinkAdapter extends MagicLinkAdapter {
 		email,
 		otpHash
 	}: {
-		email: string;
-		otpHash: string;
+		email: string
+		otpHash: string
 	}): Promise<MagicLinkToken | null> {
 		const row = (
 			await this.#db.query<MagicLinkTokenRow>(
 				'SELECT * FROM auth_magic_link_tokens WHERE email = $1 AND otp_hash = $2 LIMIT 1',
-				[ normalizeEmail(email), otpHash ]
+				[normalizeEmail(email), otpHash]
 			)
 		).rows[0]
 		return row ? toMagicLinkToken(row) : null
 	}
 
 	async deleteById(tokenId: string): Promise<void> {
-		await this.#db.query('DELETE FROM auth_magic_link_tokens WHERE id = $1', [ tokenId ])
+		await this.#db.query('DELETE FROM auth_magic_link_tokens WHERE id = $1', [tokenId])
 	}
 
 	async deleteByUserId(userId: string): Promise<void> {
-		await this.#db.query('DELETE FROM auth_magic_link_tokens WHERE user_id = $1', [ userId ])
+		await this.#db.query('DELETE FROM auth_magic_link_tokens WHERE user_id = $1', [userId])
 	}
 
 	async deleteByEmail(email: string): Promise<void> {
@@ -691,7 +708,7 @@ export class PgMagicLinkAdapter extends MagicLinkAdapter {
 		const row = (
 			await this.#db.query<MagicLinkTokenRow>(
 				'DELETE FROM auth_magic_link_tokens WHERE token_hash = $1 RETURNING *',
-				[ tokenHash ]
+				[tokenHash]
 			)
 		).rows[0]
 		return row ? toMagicLinkToken(row) : null
@@ -701,13 +718,13 @@ export class PgMagicLinkAdapter extends MagicLinkAdapter {
 		email,
 		otpHash
 	}: {
-		email: string;
-		otpHash: string;
+		email: string
+		otpHash: string
 	}): Promise<MagicLinkToken | null> {
 		const row = (
 			await this.#db.query<MagicLinkTokenRow>(
 				'DELETE FROM auth_magic_link_tokens WHERE email = $1 AND otp_hash = $2 RETURNING *',
-				[ normalizeEmail(email), otpHash ]
+				[normalizeEmail(email), otpHash]
 			)
 		).rows[0]
 		return row ? toMagicLinkToken(row) : null
@@ -716,10 +733,10 @@ export class PgMagicLinkAdapter extends MagicLinkAdapter {
 
 /** Creates pg auth adapters for auth storage. */
 export function createPgAuthAdapters(input: {
-	cookieDomain?: string;
-	cookieName: string;
-	db: PgPoolLike;
-	secureCookies: boolean;
+	cookieDomain?: string
+	cookieName: string
+	db: PgPoolLike
+	secureCookies: boolean
 }) {
 	return {
 		magicLink: new PgMagicLinkAdapter({ db: input.db }),

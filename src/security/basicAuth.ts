@@ -1,25 +1,24 @@
 /** Basic Auth Credentials typed model for runtime integration. */
 export type BasicAuthCredentials = {
-	username: string;
-	password: string;
+	username: string
+	password: string
 }
 
 /** Basic Auth Password Verifier typed model for runtime integration. */
-export type BasicAuthPasswordVerifier = (
-	storedHash: string,
-	password: string
-) => Promise<boolean>
+export type BasicAuthPasswordVerifier = (storedHash: string, password: string) => Promise<boolean>
 
 /** Verify Basic Auth Options typed model for runtime integration. */
 export type VerifyBasicAuthOptions = {
-	authHeader: string | null;
-	getPasswordHash: (username: string) => string | null | undefined | Promise<string | null | undefined>;
-	verifyPassword: BasicAuthPasswordVerifier;
+	authHeader: string | null
+	getPasswordHash: (
+		username: string
+	) => string | null | undefined | Promise<string | null | undefined>
+	verifyPassword: BasicAuthPasswordVerifier
 }
 
 function decodeBase64(value: string): string {
 	const globalWithBuffer = globalThis as typeof globalThis & {
-		Buffer?: { from(value: string, encoding: 'base64'): { toString(encoding: 'utf-8'): string } };
+		Buffer?: { from(value: string, encoding: 'base64'): { toString(encoding: 'utf-8'): string } }
 	}
 
 	if (globalWithBuffer.Buffer) {
@@ -27,7 +26,7 @@ function decodeBase64(value: string): string {
 	}
 
 	const binary = atob(value)
-	const bytes = Uint8Array.from(binary, char => char.charCodeAt(0))
+	const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
 	return new TextDecoder().decode(bytes)
 }
 
@@ -88,7 +87,10 @@ export async function verifyBasicAuthHeader({
 }
 
 function sanitizeBasicAuthRealm(realm: string): string {
-	return realm.replace(/[\u0000-\u001f\u007f]/g, '').replaceAll('\\', '\\\\').replaceAll('"', '\\"')
+	return realm
+		.replace(/[\u0000-\u001f\u007f]/g, '')
+		.replaceAll('\\', '\\\\')
+		.replaceAll('"', '\\"')
 }
 
 /**
@@ -105,7 +107,7 @@ export function createBasicAuthResponse({
 	return new Response(body, {
 		status: 401,
 		headers: {
-			'WWW-Authenticate': `Basic realm="${ sanitizeBasicAuthRealm(realm) }"`
+			'WWW-Authenticate': `Basic realm="${sanitizeBasicAuthRealm(realm)}"`
 		}
 	})
 }

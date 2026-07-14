@@ -34,10 +34,7 @@ export function renderQrCodeSvg({
 		blackColor: 'black'
 	}
 
-	return renderSVG(value, options).replace(
-		'<svg ',
-		'<svg aria-hidden="true" focusable="false" '
-	)
+	return renderSVG(value, options).replace('<svg ', '<svg aria-hidden="true" focusable="false" ')
 }
 
 function integerOption(value: number, label: string, min: number, max: number): number {

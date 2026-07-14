@@ -16,8 +16,8 @@ export function isSafeRedirectPath(value: string): boolean {
 
 /** Options for normalizing and constraining redirect paths. */
 type SafeRedirectOptions = {
-	allowedPrefixes?: readonly string[];
-	baseUrl?: string;
+	allowedPrefixes?: readonly string[]
+	baseUrl?: string
 }
 
 const SAFE_REDIRECT_PARSE_BASE_URL = 'http://localhost'
@@ -41,10 +41,10 @@ export function normalizeSafeRedirectPath(
 	const allowedPrefixes = options.allowedPrefixes ?? []
 	if (allowedPrefixes.length > 0) {
 		const isAllowed = allowedPrefixes.some(
-			prefix => pathname === prefix || pathname.startsWith(`${ prefix }/`)
+			(prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
 		)
 		if (!isAllowed) return null
 	}
 
-	return `${ pathname }${ parsed.search }${ parsed.hash }`
+	return `${pathname}${parsed.search}${parsed.hash}`
 }

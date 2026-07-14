@@ -43,28 +43,28 @@ source is not part of the public runtime contract.
 
 ```ts
 // src/lib/auth.ts
-import { GoobitsAuth } from "@goobits/auth";
-import { drizzleAdapter } from "@goobits/auth/adapters/drizzle";
-import { GoogleProvider } from "@goobits/auth/providers";
-import { db, schema } from "$lib/server/db";
-import { env } from "$env/dynamic/private";
+import { GoobitsAuth } from '@goobits/auth'
+import { drizzleAdapter } from '@goobits/auth/adapters/drizzle'
+import { GoogleProvider } from '@goobits/auth/providers'
+import { db, schema } from '$lib/server/db'
+import { env } from '$env/dynamic/private'
 
 export const auth = new GoobitsAuth({
-  profile: "secure",
-  adapter: drizzleAdapter(db, {
-    schema,
-    oauthTokenEncryptionKey: env.TOKEN_ENCRYPTION_KEY,
-  }),
-  providers: {
-    google: {
-      provider: new GoogleProvider({
-        clientId: env.GOOGLE_CLIENT_ID,
-        clientSecret: env.GOOGLE_CLIENT_SECRET,
-        callbackUrl: `${env.APP_URL}/auth/callback/google`,
-      }),
-    },
-  },
-});
+	profile: 'secure',
+	adapter: drizzleAdapter(db, {
+		schema,
+		oauthTokenEncryptionKey: env.TOKEN_ENCRYPTION_KEY
+	}),
+	providers: {
+		google: {
+			provider: new GoogleProvider({
+				clientId: env.GOOGLE_CLIENT_ID,
+				clientSecret: env.GOOGLE_CLIENT_SECRET,
+				callbackUrl: `${env.APP_URL}/auth/callback/google`
+			})
+		}
+	}
+})
 ```
 
 ## Runtime Targets
@@ -78,16 +78,16 @@ export const auth = new GoobitsAuth({
 
 ```ts
 // src/hooks.server.ts
-import { auth } from "$lib/auth";
+import { auth } from '$lib/auth'
 
-export const handle = auth.handle();
+export const handle = auth.handle()
 ```
 
 ```ts
 // src/routes/auth/[...auth]/+server.ts
-import { auth } from "$lib/auth";
+import { auth } from '$lib/auth'
 
-export const { GET, POST } = auth.handlers;
+export const { GET, POST } = auth.handlers
 ```
 
 ## Guard Helpers
@@ -107,14 +107,14 @@ their own route policy or session store:
 
 ```ts
 import {
-  createAuthApiKey,
-  createBasicAuthResponse,
-  createSignedSessionToken,
-  hashAuthApiKey,
-  verifyBasicAuthHeader,
-  verifyAuthApiKey,
-  verifySignedSessionToken,
-} from "@goobits/auth/security";
+	createAuthApiKey,
+	createBasicAuthResponse,
+	createSignedSessionToken,
+	hashAuthApiKey,
+	verifyBasicAuthHeader,
+	verifyAuthApiKey,
+	verifySignedSessionToken
+} from '@goobits/auth/security'
 ```
 
 - Basic auth parsing and verification with caller-owned password hash checks.
@@ -125,13 +125,13 @@ import {
 ## Credentials Provider
 
 ```ts
-import { CredentialsProvider } from "@goobits/auth/providers";
+import { CredentialsProvider } from '@goobits/auth/providers'
 
 const credentials = new CredentialsProvider({
-  identifierField: "nickname",
-  allowBoth: true,
-  normalizeIdentifier: (value) => value.trim().toLowerCase(),
-});
+	identifierField: 'nickname',
+	allowBoth: true,
+	normalizeIdentifier: (value) => value.trim().toLowerCase()
+})
 ```
 
 ## One-Stop Drizzle Adapter
@@ -153,16 +153,16 @@ Security threshold alerts can be delivered through an explicit webhook config:
 
 ```ts
 export const auth = new GoobitsAuth({
-  adapter,
-  security: {
-    alerts: {
-      enabled: true,
-      webhook: {
-        url: env.SECURITY_WEBHOOK_URL,
-      },
-    },
-  },
-});
+	adapter,
+	security: {
+		alerts: {
+			enabled: true,
+			webhook: {
+				url: env.SECURITY_WEBHOOK_URL
+			}
+		}
+	}
+})
 ```
 
 `SECURITY_WEBHOOK_URL` is also read from `process.env` when no explicit

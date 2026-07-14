@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../../src/mfa/backupCodes.ts'
+import {
+	generateBackupCodes,
+	hashBackupCodes,
+	verifyBackupCode
+} from '../../src/mfa/backupCodes.ts'
 
 describe('backup codes', () => {
-	it('hashes and verifies codes', async() => {
+	it('hashes and verifies codes', async () => {
 		const codes = generateBackupCodes({ count: 3, length: 8 })
 		const hashes = await hashBackupCodes(codes)
 		const result = await verifyBackupCode({ code: codes[1]!, hashedCodes: hashes })
@@ -18,7 +22,7 @@ describe('backup codes', () => {
 		expect(codes.every((code) => /^[A-HJ-NP-Z2-9]{12}$/.test(code))).toBe(true)
 	})
 
-	it('rejects invalid or missing codes', async() => {
+	it('rejects invalid or missing codes', async () => {
 		const codes = generateBackupCodes({ count: 2, length: 8 })
 		const hashes = await hashBackupCodes(codes)
 

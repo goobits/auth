@@ -7,11 +7,11 @@ const SUPPRESSED_SNIPPETS = [
 ]
 
 export const shouldSuppressConsoleMessage = (message: unknown): boolean =>
-	SUPPRESSED_SNIPPETS.some(snippet => String(message).includes(snippet))
+	SUPPRESSED_SNIPPETS.some((snippet) => String(message).includes(snippet))
 
 export const shouldSuppressConsoleArgs = (args: unknown[]): boolean => {
 	const message = args
-		.map(arg => {
+		.map((arg) => {
 			if (typeof arg === 'string') return arg
 			if (arg && typeof arg === 'object' && 'message' in arg && typeof arg.message === 'string')
 				return arg.message

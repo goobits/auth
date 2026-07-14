@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { createOAuthCookies, getOAuthCallbackParams, validateOAuthCallback } from '../../src/utils/oauth.ts'
+import {
+	createOAuthCookies,
+	getOAuthCallbackParams,
+	validateOAuthCallback
+} from '../../src/utils/oauth.ts'
 
 class MockCookies {
 	store: Map<string, { value: string; options?: Record<string, unknown> }>

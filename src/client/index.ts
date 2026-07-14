@@ -1,30 +1,24 @@
-type Base64Input =
-	| ArrayBuffer
-	| ArrayBufferView
-	| Uint8Array
-	| string
-	| null
-	| undefined
+type Base64Input = ArrayBuffer | ArrayBufferView | Uint8Array | string | null | undefined
 
 type PasskeyEndpoints = {
-	magicLinkRequest?: string;
-	magicLinkVerify?: string;
-	passkeyRegisterOptions?: string;
-	passkeyRegisterVerify?: string;
-	passkeyLoginOptions?: string;
-	passkeyLoginVerify?: string;
-	mfaStatus?: string;
-	mfaEnroll?: string;
-	mfaVerify?: string;
-	mfaDisable?: string;
-	mfaBackupCode?: string;
-	sessions?: string;
+	magicLinkRequest?: string
+	magicLinkVerify?: string
+	passkeyRegisterOptions?: string
+	passkeyRegisterVerify?: string
+	passkeyLoginOptions?: string
+	passkeyLoginVerify?: string
+	mfaStatus?: string
+	mfaEnroll?: string
+	mfaVerify?: string
+	mfaDisable?: string
+	mfaBackupCode?: string
+	sessions?: string
 }
 
 type CreateAuthClientOptions = {
-	baseUrl?: string;
-	endpoints?: PasskeyEndpoints;
-	fetcher?: typeof fetch;
+	baseUrl?: string
+	endpoints?: PasskeyEndpoints
+	fetcher?: typeof fetch
 }
 
 function decodeBase64url(value: string): Uint8Array {
@@ -43,11 +37,7 @@ function encodeBase64url(value: Uint8Array): string {
 	for (const byte of value) {
 		binary += String.fromCharCode(byte)
 	}
-	return globalThis
-		.btoa(binary)
-		.replace(/\+/g, '-')
-		.replace(/\//g, '_')
-		.replace(/=+$/g, '')
+	return globalThis.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
 }
 
 function toUint8Array(value: Base64Input): Uint8Array {
@@ -65,7 +55,9 @@ function toBase64url(value: Base64Input): string {
 	return encodeBase64url(toUint8Array(value))
 }
 
-function parseCreationOptions(options: Record<string, unknown>): PublicKeyCredentialCreationOptions {
+function parseCreationOptions(
+	options: Record<string, unknown>
+): PublicKeyCredentialCreationOptions {
 	const parsed = { ...options } as Record<string, unknown>
 	parsed['challenge'] = toUint8Array((options as { challenge?: Base64Input })['challenge'])
 	const user = (options as { user?: { id?: Base64Input } }).user
@@ -75,7 +67,7 @@ function parseCreationOptions(options: Record<string, unknown>): PublicKeyCreden
 	const exclude = (options as { excludeCredentials?: Array<{ id?: Base64Input }> })
 		.excludeCredentials
 	if (Array.isArray(exclude)) {
-		parsed['excludeCredentials'] = exclude.map(cred => ({
+		parsed['excludeCredentials'] = exclude.map((cred) => ({
 			...cred,
 			id: toUint8Array(cred.id)
 		}))
@@ -86,10 +78,9 @@ function parseCreationOptions(options: Record<string, unknown>): PublicKeyCreden
 function parseRequestOptions(options: Record<string, unknown>): PublicKeyCredentialRequestOptions {
 	const parsed = { ...options } as Record<string, unknown>
 	parsed['challenge'] = toUint8Array((options as { challenge?: Base64Input })['challenge'])
-	const allow = (options as { allowCredentials?: Array<{ id?: Base64Input }> })
-		.allowCredentials
+	const allow = (options as { allowCredentials?: Array<{ id?: Base64Input }> }).allowCredentials
 	if (Array.isArray(allow)) {
-		parsed['allowCredentials'] = allow.map(cred => ({
+		parsed['allowCredentials'] = allow.map((cred) => ({
 			...cred,
 			id: toUint8Array(cred.id)
 		}))
@@ -136,14 +127,10 @@ export function createAuthClient({
 	const resolved = {
 		magicLinkRequest: endpoints.magicLinkRequest || '/auth/magic',
 		magicLinkVerify: endpoints.magicLinkVerify || '/auth/magic/verify',
-		passkeyRegisterOptions:
-			endpoints.passkeyRegisterOptions || '/auth/passkey/register/options',
-		passkeyRegisterVerify:
-			endpoints.passkeyRegisterVerify || '/auth/passkey/register/verify',
-		passkeyLoginOptions:
-			endpoints.passkeyLoginOptions || '/auth/passkey/login/options',
-		passkeyLoginVerify:
-			endpoints.passkeyLoginVerify || '/auth/passkey/login/verify',
+		passkeyRegisterOptions: endpoints.passkeyRegisterOptions || '/auth/passkey/register/options',
+		passkeyRegisterVerify: endpoints.passkeyRegisterVerify || '/auth/passkey/register/verify',
+		passkeyLoginOptions: endpoints.passkeyLoginOptions || '/auth/passkey/login/options',
+		passkeyLoginVerify: endpoints.passkeyLoginVerify || '/auth/passkey/login/verify',
 		mfaStatus: endpoints.mfaStatus || '/auth/mfa/status',
 		mfaEnroll: endpoints.mfaEnroll || '/auth/mfa/enroll',
 		mfaVerify: endpoints.mfaVerify || '/auth/mfa/verify',
@@ -153,22 +140,19 @@ export function createAuthClient({
 	}
 
 	const jsonHeaders = { 'content-type': 'application/json' }
-	const withBase = (path: string) => `${ baseUrl }${ path }`
+	const withBase = (path: string) => `${baseUrl}${path}`
 
 	return {
 		loginWithOAuth(provider: string) {
 			if (!provider) throw new Error('Provider is required')
-			const url = `${ baseUrl }/auth/${ provider }`
+			const url = `${baseUrl}/auth/${provider}`
 			if (typeof window !== 'undefined') {
 				window.location.assign(url)
 			}
 			return url
 		},
 
-		async sendMagicLink({
-			email,
-			redirectTo
-		}: { email?: string; redirectTo?: string } = {}) {
+		async sendMagicLink({ email, redirectTo }: { email?: string; redirectTo?: string } = {}) {
 			const response = await fetcher(withBase(resolved.magicLinkRequest), {
 				method: 'POST',
 				headers: jsonHeaders,
@@ -194,26 +178,22 @@ export function createAuthClient({
 			if (!globalThis?.navigator?.credentials) {
 				throw new Error('WebAuthn not supported in this environment')
 			}
-			const optionsRes = await fetcher(
-				withBase(resolved.passkeyRegisterOptions),
-				{ method: 'POST' }
-			)
+			const optionsRes = await fetcher(withBase(resolved.passkeyRegisterOptions), {
+				method: 'POST'
+			})
 			const { options, challengeId } = await optionsRes.json()
 			const credential = await navigator.credentials.create({
 				publicKey: parseCreationOptions(options)
 			})
-			const verifyRes = await fetcher(
-				withBase(resolved.passkeyRegisterVerify),
-				{
-					method: 'POST',
-					headers: jsonHeaders,
-					body: JSON.stringify({
-						challengeId,
-						credential: serializeCredential(credential),
-						name
-					})
-				}
-			)
+			const verifyRes = await fetcher(withBase(resolved.passkeyRegisterVerify), {
+				method: 'POST',
+				headers: jsonHeaders,
+				body: JSON.stringify({
+					challengeId,
+					credential: serializeCredential(credential),
+					name
+				})
+			})
 			return verifyRes.json()
 		},
 
@@ -221,29 +201,23 @@ export function createAuthClient({
 			if (!globalThis?.navigator?.credentials) {
 				throw new Error('WebAuthn not supported in this environment')
 			}
-			const optionsRes = await fetcher(
-				withBase(resolved.passkeyLoginOptions),
-				{
-					method: 'POST',
-					headers: jsonHeaders,
-					body: JSON.stringify({ email })
-				}
-			)
+			const optionsRes = await fetcher(withBase(resolved.passkeyLoginOptions), {
+				method: 'POST',
+				headers: jsonHeaders,
+				body: JSON.stringify({ email })
+			})
 			const { options, challengeId } = await optionsRes.json()
 			const credential = await navigator.credentials.get({
 				publicKey: parseRequestOptions(options)
 			})
-			const verifyRes = await fetcher(
-				withBase(resolved.passkeyLoginVerify),
-				{
-					method: 'POST',
-					headers: jsonHeaders,
-					body: JSON.stringify({
-						challengeId,
-						credential: serializeCredential(credential)
-					})
-				}
-			)
+			const verifyRes = await fetcher(withBase(resolved.passkeyLoginVerify), {
+				method: 'POST',
+				headers: jsonHeaders,
+				body: JSON.stringify({
+					challengeId,
+					credential: serializeCredential(credential)
+				})
+			})
 			return verifyRes.json()
 		},
 

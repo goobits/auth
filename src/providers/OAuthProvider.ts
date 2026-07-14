@@ -19,11 +19,7 @@ export abstract class OAuthProvider {
 	 * @param codeVerifier - PKCE code verifier
 	 * @param scopes - OAuth scopes to request
 	 */
-	abstract createAuthorizationURL(
-		state: string,
-		codeVerifier: string,
-		scopes: string[],
-	): URL
+	abstract createAuthorizationURL(state: string, codeVerifier: string, scopes: string[]): URL
 
 	/**
 	 * Exchange the authorization code for tokens and resolve the user profile.
@@ -34,7 +30,7 @@ export abstract class OAuthProvider {
 	abstract getUserProfile(
 		code: string,
 		codeVerifier: string,
-		userData?: string | null,
+		userData?: string | null
 	): Promise<{ profile: OAuthProfile; tokens: OAuthTokens }>
 
 	/**

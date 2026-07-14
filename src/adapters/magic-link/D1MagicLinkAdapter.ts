@@ -7,10 +7,10 @@ type D1Row = Record<string, D1Value>
 type D1DatabaseLike = {
 	prepare: (sql: string) => {
 		bind: (...args: D1Value[]) => {
-			run: () => Promise<void>;
-			first: () => Promise<D1Row | null>;
-		};
-	};
+			run: () => Promise<void>
+			first: () => Promise<D1Row | null>
+		}
+	}
 }
 
 /** Cloudflare D1 magic link adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
@@ -18,20 +18,20 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 	private db: D1DatabaseLike
 	private tokensTable: string
 	private columns: {
-		id: string;
-		userId: string;
-		email: string;
-		tokenHash: string;
-		otpHash: string;
-		expiresAt: string;
-		createdAt: string;
+		id: string
+		userId: string
+		email: string
+		tokenHash: string
+		otpHash: string
+		expiresAt: string
+		createdAt: string
 	}
 
 	constructor(
 		db: D1DatabaseLike,
 		options: {
-			tokensTable?: string;
-			columns?: Partial<Record<string, string>>;
+			tokensTable?: string
+			columns?: Partial<Record<string, string>>
 		} = {}
 	) {
 		super()
@@ -56,15 +56,15 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 		expiresAt,
 		metadata
 	}: {
-		userId: string | null;
-		email: string;
-		tokenHash: string;
-		otpHash?: string | null;
-		expiresAt: Date;
-		metadata?: Record<string, unknown>;
+		userId: string | null
+		email: string
+		tokenHash: string
+		otpHash?: string | null
+		expiresAt: Date
+		metadata?: Record<string, unknown>
 	}) {
 		const id = crypto.randomUUID()
-		const sql = `INSERT INTO ${ this.tokensTable } (${ this.columns.id }, ${ this.columns.userId }, ${ this.columns.email }, ${ this.columns.tokenHash }, ${ this.columns.otpHash }, ${ this.columns.expiresAt }) VALUES (?, ?, ?, ?, ?, ?)`
+		const sql = `INSERT INTO ${this.tokensTable} (${this.columns.id}, ${this.columns.userId}, ${this.columns.email}, ${this.columns.tokenHash}, ${this.columns.otpHash}, ${this.columns.expiresAt}) VALUES (?, ?, ?, ?, ?, ?)`
 		await this.db
 			.prepare(sql)
 			.bind(id, userId, email, tokenHash, otpHash ?? null, expiresAt.toISOString())
@@ -82,7 +82,7 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 	}
 
 	async findByTokenHash(tokenHash: string): Promise<MagicLinkToken | null> {
-		const sql = `SELECT * FROM ${ this.tokensTable } WHERE ${ this.columns.tokenHash } = ? LIMIT 1`
+		const sql = `SELECT * FROM ${this.tokensTable} WHERE ${this.columns.tokenHash} = ? LIMIT 1`
 		const row = await this.db.prepare(sql).bind(tokenHash).first()
 		return this.mapRow(row)
 	}
@@ -91,39 +91,37 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 		email,
 		otpHash
 	}: {
-		email: string;
-		otpHash: string;
+		email: string
+		otpHash: string
 	}): Promise<MagicLinkToken | null> {
-		const sql = `SELECT * FROM ${ this.tokensTable } WHERE ${ this.columns.email } = ? AND ${ this.columns.otpHash } = ? LIMIT 1`
+		const sql = `SELECT * FROM ${this.tokensTable} WHERE ${this.columns.email} = ? AND ${this.columns.otpHash} = ? LIMIT 1`
 		const row = await this.db.prepare(sql).bind(email, otpHash).first()
 		return this.mapRow(row)
 	}
 
 	async deleteById(tokenId: string) {
 		await this.db
-			.prepare(`DELETE FROM ${ this.tokensTable } WHERE ${ this.columns.id } = ?`)
+			.prepare(`DELETE FROM ${this.tokensTable} WHERE ${this.columns.id} = ?`)
 			.bind(tokenId)
 			.run()
 	}
 
 	async deleteByUserId(userId: string) {
 		await this.db
-			.prepare(`DELETE FROM ${ this.tokensTable } WHERE ${ this.columns.userId } = ?`)
+			.prepare(`DELETE FROM ${this.tokensTable} WHERE ${this.columns.userId} = ?`)
 			.bind(userId)
 			.run()
 	}
 
 	async deleteByEmail(email: string) {
 		await this.db
-			.prepare(`DELETE FROM ${ this.tokensTable } WHERE ${ this.columns.email } = ?`)
+			.prepare(`DELETE FROM ${this.tokensTable} WHERE ${this.columns.email} = ?`)
 			.bind(email)
 			.run()
 	}
 
-	override async consumeByTokenHash(
-		tokenHash: string
-	): Promise<MagicLinkToken | null> {
-		const sql = `DELETE FROM ${ this.tokensTable } WHERE ${ this.columns.tokenHash } = ? RETURNING *`
+	override async consumeByTokenHash(tokenHash: string): Promise<MagicLinkToken | null> {
+		const sql = `DELETE FROM ${this.tokensTable} WHERE ${this.columns.tokenHash} = ? RETURNING *`
 		const row = await this.db.prepare(sql).bind(tokenHash).first()
 		return this.mapRow(row)
 	}
@@ -132,10 +130,10 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 		email,
 		otpHash
 	}: {
-		email: string;
-		otpHash: string;
+		email: string
+		otpHash: string
 	}): Promise<MagicLinkToken | null> {
-		const sql = `DELETE FROM ${ this.tokensTable } WHERE ${ this.columns.email } = ? AND ${ this.columns.otpHash } = ? RETURNING *`
+		const sql = `DELETE FROM ${this.tokensTable} WHERE ${this.columns.email} = ? AND ${this.columns.otpHash} = ? RETURNING *`
 		const row = await this.db.prepare(sql).bind(email, otpHash).first()
 		return this.mapRow(row)
 	}

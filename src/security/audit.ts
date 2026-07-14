@@ -1,8 +1,4 @@
-import {
-	createAuditLogger,
-	type AuditLogger,
-	type AuditOutcome
-} from '@goobits/security/audit'
+import { createAuditLogger, type AuditLogger, type AuditOutcome } from '@goobits/security/audit'
 
 import { DEFAULT_REDACT_KEYS, redactObject } from '../utils/redact.ts'
 
@@ -20,11 +16,11 @@ export type AuthAuditEvent =
 	| 'session.revoked'
 
 type AuthAuditOptions = {
-	auditor?: AuditLogger;
-	redactKeys?: string[];
-	outcome?: AuditOutcome;
-	actorId?: string;
-	targetId?: string;
+	auditor?: AuditLogger
+	redactKeys?: string[]
+	outcome?: AuditOutcome
+	actorId?: string
+	targetId?: string
 }
 
 const defaultAuditor = createAuditLogger()

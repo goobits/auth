@@ -7,21 +7,23 @@ import { getLogger } from '../../utils/logger.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
 
 type KVNamespaceLike = {
-	put: (key: string, value: string, options?: { expirationTtl?: number }) => Promise<void>;
+	put: (key: string, value: string, options?: { expirationTtl?: number }) => Promise<void>
 	get: (
 		key: string,
 		options?: { type?: 'json' | 'text' }
-	) => Promise<Record<string, unknown> | string | null>;
-	delete: (key: string) => Promise<void>;
-	list?: (options?: { prefix?: string }) => Promise<{ keys?: Array<{ name: string }> }>;
+	) => Promise<Record<string, unknown> | string | null>
+	delete: (key: string) => Promise<void>
+	list?: (options?: { prefix?: string }) => Promise<{ keys?: Array<{ name: string }> }>
 }
 
 type KVSessionRecord = {
-	userId: string;
-	expiresAt: string;
+	userId: string
+	expiresAt: string
 }
 
-function isKVSessionRecord(value: Record<string, unknown> | string | null): value is KVSessionRecord {
+function isKVSessionRecord(
+	value: Record<string, unknown> | string | null
+): value is KVSessionRecord {
 	if (!value || typeof value !== 'object') return false
 	return (
 		'userId' in value &&
@@ -47,20 +49,19 @@ export class KVSessionAdapter extends SessionAdapter {
 	constructor(
 		namespace: KVNamespaceLike,
 		options: {
-			sessionLifetime?: number;
-			sessionRefreshThreshold?: number;
-			cookieName?: string;
-			secureCookies?: boolean;
-			getUserById?: (id: string) => Promise<User | null>;
-			sanitizeUser?: (user: User | null) => User | null;
-			keyPrefix?: string;
+			sessionLifetime?: number
+			sessionRefreshThreshold?: number
+			cookieName?: string
+			secureCookies?: boolean
+			getUserById?: (id: string) => Promise<User | null>
+			sanitizeUser?: (user: User | null) => User | null
+			keyPrefix?: string
 		} = {}
 	) {
 		super()
 		this.namespace = namespace
 		this.sessionLifetime = options.sessionLifetime || 30 * 24 * 60 * 60 * 1000
-		this.sessionRefreshThreshold =
-			options.sessionRefreshThreshold || this.sessionLifetime / 2
+		this.sessionRefreshThreshold = options.sessionRefreshThreshold || this.sessionLifetime / 2
 		this.cookieName = options.cookieName || 'session'
 		this.secureCookies = options.secureCookies !== false
 		this.getUserById = options.getUserById || null
@@ -73,7 +74,7 @@ export class KVSessionAdapter extends SessionAdapter {
 	}
 
 	_key(sessionId: string) {
-		return `${ this.keyPrefix }:${ sessionId }`
+		return `${this.keyPrefix}:${sessionId}`
 	}
 
 	async createSession(userId: string, metadata: Record<string, unknown> = {}) {
@@ -83,17 +84,15 @@ export class KVSessionAdapter extends SessionAdapter {
 			userId,
 			expiresAt: expiresAt.toISOString()
 		}
-		await this.namespace.put(
-			this._key(sessionId),
-			JSON.stringify(payload),
-			{ expirationTtl: Math.ceil(this.sessionLifetime / 1000) }
-		)
+		await this.namespace.put(this._key(sessionId), JSON.stringify(payload), {
+			expirationTtl: Math.ceil(this.sessionLifetime / 1000)
+		})
 		return { id: sessionId, userId, expiresAt, ...metadata }
 	}
 
 	async validateSession(sessionId: string): Promise<{
-		session: Session | null;
-		user: User | null;
+		session: Session | null
+		user: User | null
 	}> {
 		// SessionAdapter contract requires validateSession to never throw.
 		// Any storage-level failure (network, permission) returns the empty
@@ -101,7 +100,7 @@ export class KVSessionAdapter extends SessionAdapter {
 		let rawValue: Record<string, unknown> | string | null
 		try {
 			rawValue = await this.namespace.get(this._key(sessionId), { type: 'json' })
-		} catch(error) {
+		} catch (error) {
 			getLogger().warn?.('[KVSessionAdapter] validateSession KV.get failed:', error)
 			return { session: null, user: null }
 		}
@@ -112,17 +111,13 @@ export class KVSessionAdapter extends SessionAdapter {
 		if (Date.now() >= expiresAt.getTime()) {
 			try {
 				await this.namespace.delete(this._key(sessionId))
-			} catch(error) {
-				getLogger().warn?.(
-					'[KVSessionAdapter] failed to delete expired session:',
-					error
-				)
+			} catch (error) {
+				getLogger().warn?.('[KVSessionAdapter] failed to delete expired session:', error)
 			}
 			return { session: null, user: null }
 		}
 
-		const shouldRefresh =
-			Date.now() >= expiresAt.getTime() - this.sessionRefreshThreshold
+		const shouldRefresh = Date.now() >= expiresAt.getTime() - this.sessionRefreshThreshold
 		let fresh = false
 		let newExpiresAt = expiresAt
 
@@ -135,7 +130,7 @@ export class KVSessionAdapter extends SessionAdapter {
 					{ expirationTtl: Math.ceil(this.sessionLifetime / 1000) }
 				)
 				fresh = true
-			} catch(error) {
+			} catch (error) {
 				// Refresh is best-effort; the session is still valid until it expires.
 				getLogger().warn?.('[KVSessionAdapter] session refresh failed:', error)
 				newExpiresAt = expiresAt
@@ -146,7 +141,7 @@ export class KVSessionAdapter extends SessionAdapter {
 		if (this.getUserById) {
 			try {
 				user = this.sanitizeUser(await this.getUserById(String(raw.userId ?? '')))
-			} catch(error) {
+			} catch (error) {
 				getLogger().warn?.(
 					'[KVSessionAdapter] getUserById hook threw during validateSession:',
 					error
@@ -172,8 +167,8 @@ export class KVSessionAdapter extends SessionAdapter {
 		}
 		const matching = await this.listSessions(userId)
 		await Promise.all(
-			matching.map(session =>
-				this.namespace.delete(this._key(session.id)).catch(error => {
+			matching.map((session) =>
+				this.namespace.delete(this._key(session.id)).catch((error) => {
 					getLogger().warn?.(
 						'[KVSessionAdapter] failed to delete session during bulk invalidate:',
 						error
@@ -189,7 +184,7 @@ export class KVSessionAdapter extends SessionAdapter {
 				'KVSessionAdapter requires a KV namespace with list() support for listSessions'
 			)
 		}
-		const keys = await this.namespace.list({ prefix: `${ this.keyPrefix }:` })
+		const keys = await this.namespace.list({ prefix: `${this.keyPrefix}:` })
 		const sessions: Session[] = []
 		for (const key of keys.keys ?? []) {
 			const rawValue = await this.namespace.get(key.name, { type: 'json' })
@@ -197,7 +192,7 @@ export class KVSessionAdapter extends SessionAdapter {
 			if (!raw) continue
 			if (raw.userId !== userId) continue
 			sessions.push({
-				id: key.name.replace(`${ this.keyPrefix }:`, ''),
+				id: key.name.replace(`${this.keyPrefix}:`, ''),
 				userId: raw.userId,
 				expiresAt: new Date(raw.expiresAt)
 			})

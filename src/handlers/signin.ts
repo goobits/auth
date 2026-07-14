@@ -11,9 +11,9 @@ import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 import { beginMfaLoginChallenge, type MfaLoginConfig } from './mfa.ts'
 
 type RateLimitConfig = {
-	check?: (key: string) => Promise<{ allowed: boolean }>;
-	key?: (event: RequestEventLike) => string;
-	trustProxyHeader?: boolean;
+	check?: (key: string) => Promise<{ allowed: boolean }>
+	key?: (event: RequestEventLike) => string
+	trustProxyHeader?: boolean
 }
 
 function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
@@ -47,23 +47,23 @@ function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
  * @returns {Function} SvelteKit request handler
  */
 export function createSigninHandler(config: {
-	credentialsProvider: Pick<CredentialsProvider, 'authenticate'>;
-	userAdapter: UserAdapter;
-	sessionAdapter: SessionAdapter;
-	onSignin?: (user: User | null) => Promise<void> | void;
-	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string };
-	rateLimit?: RateLimitConfig;
-	redirectTo?: string;
-	sanitizeUser?: (user: User | null) => User | null;
-	fields?: { identifier?: string; email?: string; password?: string; remember?: string };
-	identifierField?: string;
-	allowBoth?: boolean;
-	mfa?: MfaLoginConfig;
+	credentialsProvider: Pick<CredentialsProvider, 'authenticate'>
+	userAdapter: UserAdapter
+	sessionAdapter: SessionAdapter
+	onSignin?: (user: User | null) => Promise<void> | void
+	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
+	rateLimit?: RateLimitConfig
+	redirectTo?: string
+	sanitizeUser?: (user: User | null) => User | null
+	fields?: { identifier?: string; email?: string; password?: string; remember?: string }
+	identifierField?: string
+	allowBoth?: boolean
+	mfa?: MfaLoginConfig
 	getSessionMetadata?: (
 		event: RequestEventLike,
 		user: User,
 		rememberMe: boolean
-	) => SessionMetadata | Promise<SessionMetadata>;
+	) => SessionMetadata | Promise<SessionMetadata>
 }) {
 	const {
 		credentialsProvider,
@@ -83,7 +83,7 @@ export function createSigninHandler(config: {
 
 	const log = getLogger()
 
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		if (csrf?.validate) {
 			const valid = await csrf.validate(event)
 			if (!valid) {
@@ -106,8 +106,7 @@ export function createSigninHandler(config: {
 		}
 
 		const formData = await event.request.formData()
-		const identifierFieldName =
-			fields?.identifier ?? identifierField ?? fields?.email ?? 'email'
+		const identifierFieldName = fields?.identifier ?? identifierField ?? fields?.email ?? 'email'
 		const emailFieldName = fields?.email ?? 'email'
 		const passwordFieldName = fields?.password ?? 'password'
 		const rememberFieldName = fields?.remember ?? 'remember'
@@ -129,12 +128,12 @@ export function createSigninHandler(config: {
 		try {
 			// Authenticate user
 			const authInput: {
-				email?: string;
-				identifier?: string;
-				identifierField?: string;
-				allowBoth?: boolean;
-				password: string;
-				userAdapter: UserAdapter;
+				email?: string
+				identifier?: string
+				identifierField?: string
+				allowBoth?: boolean
+				password: string
+				userAdapter: UserAdapter
 			} = {
 				password,
 				userAdapter
@@ -190,7 +189,7 @@ export function createSigninHandler(config: {
 				success: true,
 				user: safeUser
 			}
-		} catch(error) {
+		} catch (error) {
 			log.error?.('[Signin] Error:', error instanceof Error ? error.message : String(error))
 
 			// Check if this is a redirect (don't treat as error)

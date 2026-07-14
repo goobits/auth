@@ -4,27 +4,27 @@ type AuthUser = Record<string, unknown> | null
 type AuthSession = Record<string, unknown> | null
 
 type AuthState = {
-	user: AuthUser;
-	session: AuthSession;
-	isAuthenticated: boolean;
-	loading: boolean;
-	error: string | null;
+	user: AuthUser
+	session: AuthSession
+	isAuthenticated: boolean
+	loading: boolean
+	error: string | null
 }
 
 type AuthEndpoints = {
-	login: string;
-	register: string;
-	logout: string;
-	session: string;
-	updateProfile: string;
+	login: string
+	register: string
+	logout: string
+	session: string
+	updateProfile: string
 }
 
 type AuthStoreOptions = {
-	baseUrl?: string;
-	endpoints?: Partial<AuthEndpoints>;
-	publishableApiKey?: string | null;
-	fetcher?: typeof fetch;
-	autoCheck?: boolean;
+	baseUrl?: string
+	endpoints?: Partial<AuthEndpoints>
+	publishableApiKey?: string | null
+	fetcher?: typeof fetch
+	autoCheck?: boolean
 }
 
 const DEFAULT_ENDPOINTS = {
@@ -37,10 +37,7 @@ const DEFAULT_ENDPOINTS = {
 
 const isBrowser = typeof window !== 'undefined'
 
-const mergeHeaders = (
-	base: Record<string, string>,
-	extra?: Record<string, string>
-) => ({
+const mergeHeaders = (base: Record<string, string>, extra?: Record<string, string>) => ({
 	...base,
 	...(extra || {})
 })
@@ -74,7 +71,7 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 
 	const applyAuthSuccess = (result: Record<string, unknown>) => {
 		const user = (result['customer'] || result['user'] || null) as AuthUser
-		update(state => ({
+		update((state) => ({
 			...state,
 			user,
 			session: (result['session'] || null) as AuthSession,
@@ -87,12 +84,12 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 	const applyAuthFailure = (error: unknown) => {
 		const message =
 			typeof error === 'string' ? error : (error as Error)?.message || 'Request failed'
-		update(state => ({ ...state, loading: false, error: message }))
+		update((state) => ({ ...state, loading: false, error: message }))
 		return { success: false, error: message }
 	}
 
-	const postAuth = async(path: string, payload?: unknown) => {
-		const response = await fetcher(`${ baseUrl }${ path }`, {
+	const postAuth = async (path: string, payload?: unknown) => {
+		const response = await fetcher(`${baseUrl}${path}`, {
 			method: 'POST',
 			headers: buildHeaders({ 'Content-Type': 'application/json' }),
 			credentials: 'include',
@@ -110,12 +107,12 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 		subscribe,
 
 		async login(email: string, password: string) {
-			update(state => ({ ...state, loading: true, error: null }))
+			update((state) => ({ ...state, loading: true, error: null }))
 			try {
 				const result = await postAuth(resolvedEndpoints.login, { email, password })
 
 				if (result.twoFactorRequired) {
-					update(state => ({ ...state, loading: false }))
+					update((state) => ({ ...state, loading: false }))
 					return { success: true, mfaRequired: true }
 				}
 
@@ -124,13 +121,13 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 				}
 
 				return applyAuthSuccess(result)
-			} catch(error) {
+			} catch (error) {
 				return applyAuthFailure((error as Error)?.message || 'Login failed')
 			}
 		},
 
 		async register(data: Record<string, unknown> | string) {
-			update(state => ({ ...state, loading: true, error: null }))
+			update((state) => ({ ...state, loading: true, error: null }))
 
 			try {
 				let registrationData: Record<string, unknown>
@@ -153,13 +150,13 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 				}
 
 				return applyAuthSuccess(result)
-			} catch(error) {
+			} catch (error) {
 				return applyAuthFailure((error as Error)?.message || 'Registration failed')
 			}
 		},
 
 		async logout() {
-			update(state => ({ ...state, loading: true, error: null }))
+			update((state) => ({ ...state, loading: true, error: null }))
 
 			try {
 				const result = await postAuth(resolvedEndpoints.logout)
@@ -186,24 +183,24 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 		async checkSession() {
 			if (!isBrowser) return
 
-			update(state => ({ ...state, loading: true }))
+			update((state) => ({ ...state, loading: true }))
 
 			try {
-				const response = await fetcher(`${ baseUrl }${ resolvedEndpoints.session }`, {
+				const response = await fetcher(`${baseUrl}${resolvedEndpoints.session}`, {
 					method: 'GET',
 					headers: buildHeaders(),
 					credentials: 'include'
 				})
 
 				if (response.status === 204 || !response.ok) {
-					update(state => ({ ...state, loading: false }))
+					update((state) => ({ ...state, loading: false }))
 					return
 				}
 
 				const result = (await response.json()) as Record<string, unknown>
 
 				if (result['success'] && result['user']) {
-					update(state => ({
+					update((state) => ({
 						...state,
 						user: result['user'] as AuthUser,
 						session: (result['session'] || null) as AuthSession,
@@ -211,18 +208,18 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 						loading: false
 					}))
 				} else {
-					update(state => ({ ...state, loading: false }))
+					update((state) => ({ ...state, loading: false }))
 				}
 			} catch {
-				update(state => ({ ...state, loading: false }))
+				update((state) => ({ ...state, loading: false }))
 			}
 		},
 
 		async updateProfile(data: Record<string, unknown>) {
-			update(state => ({ ...state, loading: true, error: null }))
+			update((state) => ({ ...state, loading: true, error: null }))
 
 			try {
-				const response = await fetcher(`${ baseUrl }${ resolvedEndpoints.updateProfile }`, {
+				const response = await fetcher(`${baseUrl}${resolvedEndpoints.updateProfile}`, {
 					method: 'POST',
 					headers: buildHeaders({ 'Content-Type': 'application/json' }),
 					credentials: 'include',
@@ -232,7 +229,7 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 				const result = (await response.json()) as Record<string, unknown>
 
 				if (!result['success']) {
-					update(state => ({
+					update((state) => ({
 						...state,
 						loading: false,
 						error: (result['error'] as string) || 'Profile update failed'
@@ -240,16 +237,16 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 					return { success: false, error: (result['error'] as string) || 'Profile update failed' }
 				}
 
-				update(state => ({
+				update((state) => ({
 					...state,
 					user: { ...(state['user'] ?? {}), ...(result['user'] as Record<string, unknown>) },
 					loading: false
 				}))
 
 				return { success: true, user: result['user'] }
-			} catch(error) {
+			} catch (error) {
 				const message = (error as Error)?.message || 'Profile update failed'
-				update(state => ({ ...state, loading: false, error: message }))
+				update((state) => ({ ...state, loading: false, error: message }))
 				return { success: false, error: message }
 			}
 		},
@@ -269,6 +266,6 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 /** Auth registry entry for runtime integration. */
 export const auth = createAuthStore()
 /** Is Authenticated registry entry for runtime integration. */
-export const isAuthenticated = derived(auth, $auth => $auth.isAuthenticated)
+export const isAuthenticated = derived(auth, ($auth) => $auth.isAuthenticated)
 /** User registry entry for runtime integration. */
-export const user = derived(auth, $auth => $auth.user)
+export const user = derived(auth, ($auth) => $auth.user)

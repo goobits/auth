@@ -38,17 +38,20 @@ export async function verifyPassword(storedHash: string, password: string): Prom
 			password,
 			hash: storedHash
 		})
-	} catch(error) {
+	} catch (error) {
 		const { getLogger } = await import('../utils/logger.ts')
-		getLogger().error?.('Password verification error:', error instanceof Error ? error.message : String(error))
+		getLogger().error?.(
+			'Password verification error:',
+			error instanceof Error ? error.message : String(error)
+		)
 		return false
 	}
 }
 
 /** Validates password strength for auth runtime. */
 export function validatePasswordStrength(password: string): {
-	valid: boolean;
-	errors: string[];
+	valid: boolean
+	errors: string[]
 } {
 	// Same policy as Node build.
 	const errors: string[] = []

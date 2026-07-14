@@ -49,22 +49,18 @@ const commonEntries = [
 	'src/errors/index.ts'
 ]
 
-const nodeEntries = [
-	...commonEntries,
-	'src/adapters/pg/index.ts',
-	'src/node/index.ts'
-]
+const nodeEntries = [...commonEntries, 'src/adapters/pg/index.ts', 'src/node/index.ts']
 
 const common: Options = {
 	entry: commonEntries,
-	format: [ 'esm' ],
+	format: ['esm'],
 	target: 'es2022',
 	splitting: false,
 	sourcemap: false,
 	treeshake: true,
 	clean: false,
 	skipNodeModulesBundle: true,
-	noExternal: [ '@goobits/security' ]
+	noExternal: ['@goobits/security']
 }
 
 export default defineConfig([
@@ -76,7 +72,7 @@ export default defineConfig([
 			rewritePlugin([
 				{
 					from: /(^|\/)password\/index\.ts$/,
-					to: p => p.replace(/index\.ts$/, 'index.node.ts')
+					to: (p) => p.replace(/index\.ts$/, 'index.node.ts')
 				}
 			])
 		]
@@ -88,7 +84,7 @@ export default defineConfig([
 			rewritePlugin([
 				{
 					from: /(^|\/)webauthn\.ts$/,
-					to: p => p.replace(/webauthn\.ts$/, 'webauthn.worker.ts')
+					to: (p) => p.replace(/webauthn\.ts$/, 'webauthn.worker.ts')
 				}
 			])
 		]

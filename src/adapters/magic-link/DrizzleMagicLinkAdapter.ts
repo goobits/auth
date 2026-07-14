@@ -13,15 +13,18 @@ import { MagicLinkAdapter } from './MagicLinkAdapter.ts'
 
 type TokensTable = DrizzleTable
 
-function mapTokenRow(row: DrizzleRow | null, columns: {
-	id: string;
-	userId: string;
-	email: string;
-	tokenHash: string;
-	otpHash: string;
-	expiresAt: string;
-	createdAt: string;
-}): MagicLinkToken | null {
+function mapTokenRow(
+	row: DrizzleRow | null,
+	columns: {
+		id: string
+		userId: string
+		email: string
+		tokenHash: string
+		otpHash: string
+		expiresAt: string
+		createdAt: string
+	}
+): MagicLinkToken | null {
 	if (!row) return null
 	const id = row[columns.id]
 	const userId = row[columns.userId] ?? null
@@ -60,20 +63,20 @@ export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
 	private db: DrizzleDbLike
 	private tokensTable: TokensTable
 	private columns: {
-		id: string;
-		userId: string;
-		email: string;
-		tokenHash: string;
-		otpHash: string;
-		expiresAt: string;
-		createdAt: string;
+		id: string
+		userId: string
+		email: string
+		tokenHash: string
+		otpHash: string
+		expiresAt: string
+		createdAt: string
 	}
 
 	constructor(
 		db: DrizzleDbLike,
 		options: {
-			tokensTable?: TokensTable;
-			columns?: Partial<Record<string, string>>;
+			tokensTable?: TokensTable
+			columns?: Partial<Record<string, string>>
 		} = {}
 	) {
 		super()
@@ -101,12 +104,12 @@ export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
 		expiresAt,
 		metadata
 	}: {
-		userId: string | null;
-		email: string;
-		tokenHash: string;
-		otpHash?: string | null;
-		expiresAt: Date;
-		metadata?: Record<string, DrizzleJson>;
+		userId: string | null
+		email: string
+		tokenHash: string
+		otpHash?: string | null
+		expiresAt: Date
+		metadata?: Record<string, DrizzleJson>
 	}): Promise<MagicLinkToken> {
 		const values: DrizzleRow = {
 			[this.columns.userId]: userId,
@@ -131,7 +134,7 @@ export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
 	}
 
 	async findByTokenHash(tokenHash: string): Promise<MagicLinkToken | null> {
-		const [ row ] = await this.db
+		const [row] = await this.db
 			.select()
 			.from(this.tokensTable)
 			.where(eq(requireColumn(this.tokensTable, this.columns.tokenHash), tokenHash))
@@ -142,17 +145,19 @@ export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
 		email,
 		otpHash
 	}: {
-		email: string;
-		otpHash: string;
+		email: string
+		otpHash: string
 	}): Promise<MagicLinkToken | null> {
-		const [ row ] = await this.db
+		const [row] = await this.db
 			.select()
 			.from(this.tokensTable)
 			.where(
-				requireCondition(and(
-					eq(requireColumn(this.tokensTable, this.columns.email), email),
-					eq(requireColumn(this.tokensTable, this.columns.otpHash), otpHash)
-				))
+				requireCondition(
+					and(
+						eq(requireColumn(this.tokensTable, this.columns.email), email),
+						eq(requireColumn(this.tokensTable, this.columns.otpHash), otpHash)
+					)
+				)
 			)
 		return mapTokenRow(row ?? null, this.columns)
 	}
@@ -175,9 +180,7 @@ export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
 			.where(eq(requireColumn(this.tokensTable, this.columns.email), email))
 	}
 
-	override async consumeByTokenHash(
-		tokenHash: string
-	): Promise<MagicLinkToken | null> {
+	override async consumeByTokenHash(tokenHash: string): Promise<MagicLinkToken | null> {
 		const rows = await this.db
 			.delete(this.tokensTable)
 			.where(eq(requireColumn(this.tokensTable, this.columns.tokenHash), tokenHash))
@@ -189,16 +192,18 @@ export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
 		email,
 		otpHash
 	}: {
-		email: string;
-		otpHash: string;
+		email: string
+		otpHash: string
 	}): Promise<MagicLinkToken | null> {
 		const rows = await this.db
 			.delete(this.tokensTable)
 			.where(
-				requireCondition(and(
-					eq(requireColumn(this.tokensTable, this.columns.email), email),
-					eq(requireColumn(this.tokensTable, this.columns.otpHash), otpHash)
-				))
+				requireCondition(
+					and(
+						eq(requireColumn(this.tokensTable, this.columns.email), email),
+						eq(requireColumn(this.tokensTable, this.columns.otpHash), otpHash)
+					)
+				)
 			)
 			.returning()
 		return mapTokenRow(rows[0] ?? null, this.columns)

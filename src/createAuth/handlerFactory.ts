@@ -13,10 +13,7 @@ import {
 	createMfaVerifyHandler
 } from '../handlers/mfa.ts'
 import { ensureSessionAfterLogin } from '../handlers/sessionLifecycle.ts'
-import {
-	createSessionListHandler,
-	createSessionRevokeHandler
-} from '../handlers/sessions.ts'
+import { createSessionListHandler, createSessionRevokeHandler } from '../handlers/sessions.ts'
 import {
 	createWebAuthnLoginOptionsHandler,
 	createWebAuthnLoginVerifyHandler,
@@ -97,7 +94,7 @@ function normalizeMagicLinkConfig(
 function asJsonHandler(
 	handler: (event: RequestEventLike) => Promise<unknown>
 ): NonNullable<AuthHandlers['mfa']>['status'] {
-	return async event => jsonResponse(await handler(event as RequestEventLike))
+	return async (event) => jsonResponse(await handler(event as RequestEventLike))
 }
 
 export function createHandlers(
@@ -138,12 +135,12 @@ export function createHandlers(
 		const callbackConfig: Parameters<typeof createCallbackHandler>[0] = {
 			providers: Object.fromEntries(
 				Object.entries(providers as Record<string, OAuthProviderConfig>).map(
-					([ name, providerConfig ]) => [ name, providerConfig.provider ]
+					([name, providerConfig]) => [name, providerConfig.provider]
 				)
 			),
 			redirectAfterLogin: urlConfig.afterLogin,
 			isAuthenticated,
-			onAuthenticated: async(event, profile, tokens) => {
+			onAuthenticated: async (event, profile, tokens) => {
 				const providerName = String(event.params['provider'] ?? '')
 				let user = null
 
@@ -166,9 +163,7 @@ export function createHandlers(
 							requireVerifiedEmailForLinking &&
 							existingByEmail.emailVerified !== true
 						) {
-							throw new Error(
-								'Existing account email must be verified before OAuth linking'
-							)
+							throw new Error('Existing account email must be verified before OAuth linking')
 						}
 						user = existingByEmail
 					}
@@ -203,10 +198,10 @@ export function createHandlers(
 			},
 			...(hooks.onError
 				? {
-					onError: async(event: RequestEventLike, error: unknown) => {
-						await hooks.onError?.(event, error)
+						onError: async (event: RequestEventLike, error: unknown) => {
+							await hooks.onError?.(event, error)
+						}
 					}
-				}
 				: {})
 		}
 		callbackHandler = createCallbackHandler(callbackConfig)
@@ -218,14 +213,14 @@ export function createHandlers(
 		getSession: (locals: AuthLocals) => locals.session ?? null,
 		...(hooks.onLogout
 			? {
-				onLogout: async(event: RequestEventLike) => {
-					await hooks.onLogout?.(event)
+					onLogout: async (event: RequestEventLike) => {
+						await hooks.onLogout?.(event)
+					}
 				}
-			}
 			: {})
 	})
 
-	const handleHooks: AuthHandlers['hooks'] = async({ event, resolve }) => {
+	const handleHooks: AuthHandlers['hooks'] = async ({ event, resolve }) => {
 		const method = event.request.method.toUpperCase()
 		const safeMethod = method === 'GET' || method === 'HEAD' || method === 'OPTIONS'
 		if (safeMethod && security.csrf.mode !== 'off') {
@@ -235,9 +230,7 @@ export function createHandlers(
 					cookies: event.cookies,
 					cookieName: security.csrf.cookieName,
 					secure: defaults.cookieConfig.secure,
-					...(security.csrf.httpOnly !== undefined
-						? { httpOnly: security.csrf.httpOnly }
-						: {}),
+					...(security.csrf.httpOnly !== undefined ? { httpOnly: security.csrf.httpOnly } : {}),
 					...(security.csrf.store ? { store: security.csrf.store } : {})
 				})
 			}
@@ -274,11 +267,7 @@ export function createHandlers(
 	if (callbackHandler) handlers.callback = callbackHandler
 
 	if (magicLink) {
-		const normalizedMagicLink = normalizeMagicLinkConfig(
-			magicLink,
-			hooks,
-			cookieConfig.secure
-		)
+		const normalizedMagicLink = normalizeMagicLinkConfig(magicLink, hooks, cookieConfig.secure)
 		const requestConfig: Parameters<typeof createMagicLinkRequestHandler>[0] = {
 			...normalizedMagicLink,
 			magicLinkAdapter: adapters.magicLink!,
@@ -292,9 +281,7 @@ export function createHandlers(
 			onLoginMode,
 			redirectAfterLogin: urlConfig.afterLogin,
 			isAuthenticated,
-			...(normalizedMagicLink['sanitizeUser'] === undefined
-				? { sanitizeUser }
-				: {}),
+			...(normalizedMagicLink['sanitizeUser'] === undefined ? { sanitizeUser } : {}),
 			...(adapters.user ? { userAdapter: adapters.user } : {})
 		}
 		handlers.magicLink = {
@@ -304,8 +291,7 @@ export function createHandlers(
 	}
 
 	if (webauthn) {
-		const attestationType =
-			webauthn.attestation === 'indirect' ? 'none' : webauthn.attestation
+		const attestationType = webauthn.attestation === 'indirect' ? 'none' : webauthn.attestation
 		const registerOptionsConfig: WebAuthnRegisterOptionsHandlerConfig = {
 			webauthnAdapter: adapters.webauthn!,
 			rpID: webauthn.rpID ?? '',

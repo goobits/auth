@@ -22,12 +22,12 @@ export abstract class MagicLinkAdapter {
 		expiresAt,
 		metadata
 	}: {
-		userId: string | null;
-		email: string;
-		tokenHash: string;
-		otpHash?: string | null;
-		expiresAt: Date;
-		metadata?: Record<string, unknown>;
+		userId: string | null
+		email: string
+		tokenHash: string
+		otpHash?: string | null
+		expiresAt: Date
+		metadata?: Record<string, unknown>
 	}): Promise<Record<string, unknown> | void>
 
 	/**
@@ -36,9 +36,7 @@ export abstract class MagicLinkAdapter {
 	 * @param {string} tokenHash - token hash value.
 	 * @returns {Promise<Object|null>}
 	 */
-	abstract findByTokenHash(
-		tokenHash: string,
-	): Promise<Record<string, unknown> | null>
+	abstract findByTokenHash(tokenHash: string): Promise<Record<string, unknown> | null>
 
 	/**
 	 * Find a token by email + OTP hash
@@ -51,8 +49,8 @@ export abstract class MagicLinkAdapter {
 		email,
 		otpHash
 	}: {
-		email: string;
-		otpHash: string;
+		email: string
+		otpHash: string
 	}): Promise<Record<string, unknown> | null>
 
 	/**
@@ -88,9 +86,7 @@ export abstract class MagicLinkAdapter {
 	 *
 	 * @param tokenHash - token hash value.
 	 */
-	async consumeByTokenHash(
-		tokenHash: string
-	): Promise<Record<string, unknown> | null> {
+	async consumeByTokenHash(tokenHash: string): Promise<Record<string, unknown> | null> {
 		const record = await this.findByTokenHash(tokenHash)
 		if (!record) return null
 		const id = (record as Record<string, unknown>)['id']
@@ -107,8 +103,8 @@ export abstract class MagicLinkAdapter {
 	 * @param params - params value.
 	 */
 	async consumeByEmailAndOtpHash(params: {
-		email: string;
-		otpHash: string;
+		email: string
+		otpHash: string
 	}): Promise<Record<string, unknown> | null> {
 		const record = await this.findByEmailAndOtpHash(params)
 		if (!record) return null

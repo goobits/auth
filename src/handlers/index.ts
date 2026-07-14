@@ -26,10 +26,7 @@ export {
 } from './mfa.ts'
 
 // Magic link handlers
-export {
-	createMagicLinkRequestHandler,
-	createMagicLinkVerifyHandler
-} from './magicLink.ts'
+export { createMagicLinkRequestHandler, createMagicLinkVerifyHandler } from './magicLink.ts'
 
 // WebAuthn handlers
 export {

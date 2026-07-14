@@ -9,7 +9,7 @@ export async function sendFetchResponse(
 	response: Response,
 	cookies?: NodeCookies
 ): Promise<void> {
-	for (const [ name, value ] of response.headers) {
+	for (const [name, value] of response.headers) {
 		if (name.toLowerCase() !== 'set-cookie') {
 			res.setHeader(name, value)
 		}

@@ -13,10 +13,10 @@ vi.mock('../src/handlers/callback.ts', () => ({
 			event: RequestEventLike,
 			profile: OAuthProfile,
 			tokens: OAuthTokens
-		) => Promise<void>;
+		) => Promise<void>
 	}) => {
 		capturedOnAuthenticated = config.onAuthenticated
-		return vi.fn(async() => new Response('ok'))
+		return vi.fn(async () => new Response('ok'))
 	}
 }))
 
@@ -25,7 +25,7 @@ import { createAuth } from '../src/createAuth.ts'
 function createProvider() {
 	return {
 		createAuthorizationURL: () => new URL('https://example.com/auth'),
-		getUserProfile: vi.fn(async() => ({
+		getUserProfile: vi.fn(async () => ({
 			profile: { id: 'p1', email: 'p1@example.com' },
 			tokens: { accessToken: 'token' }
 		}))
@@ -53,15 +53,15 @@ describe('createAuth OAuth lifecycle', () => {
 		capturedOnAuthenticated = undefined
 	})
 
-	it('creates a session when onLogin resolves a userId', async() => {
+	it('creates a session when onLogin resolves a userId', async () => {
 		const sessionAdapter = {
-			createSession: vi.fn(async(userId: string) => ({ id: `s:${ userId }`, userId })),
+			createSession: vi.fn(async (userId: string) => ({ id: `s:${userId}`, userId })),
 			setSessionCookie: vi.fn(),
 			deleteSessionCookie: vi.fn(),
-			validateSession: vi.fn(async() => ({ session: null, user: null })),
-			invalidateSession: vi.fn(async() => {}),
-			invalidateUserSessions: vi.fn(async() => {}),
-			listSessions: vi.fn(async() => [])
+			validateSession: vi.fn(async () => ({ session: null, user: null })),
+			invalidateSession: vi.fn(async () => {}),
+			invalidateUserSessions: vi.fn(async () => {}),
+			listSessions: vi.fn(async () => [])
 		}
 
 		createAuth({
@@ -70,7 +70,7 @@ describe('createAuth OAuth lifecycle', () => {
 			},
 			providers: { google: { provider: createProvider() } },
 			hooks: {
-				onLogin: async() => ({ userId: 'hook-user' })
+				onLogin: async () => ({ userId: 'hook-user' })
 			}
 		})
 
@@ -85,15 +85,15 @@ describe('createAuth OAuth lifecycle', () => {
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
 
-	it('fails when no principal can be resolved', async() => {
+	it('fails when no principal can be resolved', async () => {
 		const sessionAdapter = {
-			createSession: vi.fn(async(userId: string) => ({ id: `s:${ userId }`, userId })),
+			createSession: vi.fn(async (userId: string) => ({ id: `s:${userId}`, userId })),
 			setSessionCookie: vi.fn(),
 			deleteSessionCookie: vi.fn(),
-			validateSession: vi.fn(async() => ({ session: null, user: null })),
-			invalidateSession: vi.fn(async() => {}),
-			invalidateUserSessions: vi.fn(async() => {}),
-			listSessions: vi.fn(async() => [])
+			validateSession: vi.fn(async () => ({ session: null, user: null })),
+			invalidateSession: vi.fn(async () => {}),
+			invalidateUserSessions: vi.fn(async () => {}),
+			listSessions: vi.fn(async () => [])
 		}
 
 		createAuth({
@@ -102,7 +102,7 @@ describe('createAuth OAuth lifecycle', () => {
 			},
 			providers: { google: { provider: createProvider() } },
 			hooks: {
-				onLogin: async() => undefined
+				onLogin: async () => undefined
 			}
 		})
 

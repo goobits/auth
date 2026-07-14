@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import { sanitizeUser } from '../../src/utils/sanitize.ts'
 
-
 describe('sanitizeUser', () => {
 	it('removes password and token fields', () => {
 		const user = { id: 'u1', password: 'secret', token: 'tok', email: 'a@b.com' }

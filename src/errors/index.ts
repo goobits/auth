@@ -1,1 +1,4 @@
-export { AuthAdapterCapabilityError, AuthPrincipalResolutionError } from './AuthPrincipalResolutionError.ts'
+export {
+	AuthAdapterCapabilityError,
+	AuthPrincipalResolutionError
+} from './AuthPrincipalResolutionError.ts'

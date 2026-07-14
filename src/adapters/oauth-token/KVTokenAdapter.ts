@@ -2,9 +2,9 @@ import { decryptTokens, encryptTokens } from '../../utils/crypto.ts'
 import { TokenAdapter } from './TokenAdapter.ts'
 
 type KVNamespaceLike = {
-	put: (key: string, value: string) => Promise<void>;
-	get: (key: string) => Promise<string | null>;
-	delete: (key: string) => Promise<void>;
+	put: (key: string, value: string) => Promise<void>
+	get: (key: string) => Promise<string | null>
+	delete: (key: string) => Promise<void>
 }
 
 /** KV token adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
@@ -17,9 +17,9 @@ export class KVTokenAdapter extends TokenAdapter {
 	constructor(
 		namespace: KVNamespaceLike,
 		options: {
-			encrypt?: boolean;
-			encryptionKey?: string | null;
-			keyPrefix?: string;
+			encrypt?: boolean
+			encryptionKey?: string | null
+			keyPrefix?: string
 		} = {}
 	) {
 		super()
@@ -34,14 +34,12 @@ export class KVTokenAdapter extends TokenAdapter {
 	}
 
 	_key(userId: string, provider: string) {
-		return `${ this.keyPrefix }:${ userId }:${ provider }`
+		return `${this.keyPrefix}:${userId}:${provider}`
 	}
 
 	async storeTokens(userId: string, provider: string, tokens: Record<string, unknown>) {
 		const key = this.encryptionKey as string
-		const tokenData = this.encrypt
-			? await encryptTokens(tokens, key)
-			: JSON.stringify(tokens)
+		const tokenData = this.encrypt ? await encryptTokens(tokens, key) : JSON.stringify(tokens)
 		await this.namespace.put(this._key(userId, provider), tokenData)
 	}
 
@@ -49,18 +47,14 @@ export class KVTokenAdapter extends TokenAdapter {
 		const raw = await this.namespace.get(this._key(userId, provider))
 		if (!raw) return null
 		const key = this.encryptionKey as string
-		return this.encrypt
-			? await decryptTokens(raw, key)
-			: JSON.parse(raw)
+		return this.encrypt ? await decryptTokens(raw, key) : JSON.parse(raw)
 	}
 
 	async refreshTokens(
 		_userId: string,
 		_provider: string
 	): Promise<import('../../types/index.ts').OAuthTokens | null> {
-		throw new Error(
-			'refreshTokens not implemented - use provider-specific refresh logic'
-		)
+		throw new Error('refreshTokens not implemented - use provider-specific refresh logic')
 	}
 
 	async deleteTokens(userId: string, provider: string) {

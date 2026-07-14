@@ -11,17 +11,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { DrizzleMagicLinkAdapter } from '../../src/adapters/magic-link/DrizzleMagicLinkAdapter.ts'
 import type { DrizzleDbLike } from '../../src/adapters/drizzleTypes.ts'
-import {
-	createIntegrationDrizzleFixture,
-	drizzleMagicLinkTokensTable
-} from '../drizzleTestKit.ts'
+import { createIntegrationDrizzleFixture, drizzleMagicLinkTokensTable } from '../drizzleTestKit.ts'
 
 describe('Atomic consume — DrizzleMagicLinkAdapter', () => {
 	let db: DrizzleDbLike
 	let dispose: () => Promise<void>
 	let adapter: DrizzleMagicLinkAdapter
 
-	beforeAll(async() => {
+	beforeAll(async () => {
 		const fixture = await createIntegrationDrizzleFixture()
 		db = fixture.db
 		dispose = fixture.dispose
@@ -30,11 +27,11 @@ describe('Atomic consume — DrizzleMagicLinkAdapter', () => {
 		})
 	})
 
-	afterAll(async() => {
+	afterAll(async () => {
 		await dispose()
 	})
 
-	it('returns the row and deletes it in one statement', async() => {
+	it('returns the row and deletes it in one statement', async () => {
 		await adapter.createToken({
 			userId: null,
 			email: 'alice@example.com',
@@ -55,12 +52,12 @@ describe('Atomic consume — DrizzleMagicLinkAdapter', () => {
 		expect(lookup).toBeNull()
 	})
 
-	it('returns null when no row matches', async() => {
+	it('returns null when no row matches', async () => {
 		const consumed = await adapter.consumeByTokenHash('does-not-exist')
 		expect(consumed).toBeNull()
 	})
 
-	it('exactly one of N concurrent consumes wins for the same key', async() => {
+	it('exactly one of N concurrent consumes wins for the same key', async () => {
 		await adapter.createToken({
 			userId: null,
 			email: 'bob@example.com',
@@ -75,12 +72,12 @@ describe('Atomic consume — DrizzleMagicLinkAdapter', () => {
 			adapter.consumeByTokenHash('hash-concurrent')
 		])
 
-		const winners = results.filter(r => r !== null)
+		const winners = results.filter((r) => r !== null)
 		expect(winners.length).toBe(1)
 		expect(winners[0]?.email).toBe('bob@example.com')
 	})
 
-	it('consumeByEmailAndOtpHash atomically removes the matching row', async() => {
+	it('consumeByEmailAndOtpHash atomically removes the matching row', async () => {
 		await adapter.createToken({
 			userId: null,
 			email: 'carol@example.com',

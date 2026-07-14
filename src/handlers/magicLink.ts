@@ -6,22 +6,13 @@ import type { MagicLinkAdapter } from '../adapters/magic-link/MagicLinkAdapter.t
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
 import { auditAuthEvent } from '../security/audit.ts'
-import type {
-	AuthHooks,
-	AuthLocals,
-	OnLoginMode,
-	RequestEventLike
-} from '../types/auth.ts'
+import type { AuthHooks, AuthLocals, OnLoginMode, RequestEventLike } from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { jsonResponse, parseRequestData } from '../utils/http.ts'
 import { getLogger } from '../utils/logger.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
-import {
-	generateMagicLinkToken,
-	generateOtp,
-	hashToken
-} from './magicLinkUtils.ts'
+import { generateMagicLinkToken, generateOtp, hashToken } from './magicLinkUtils.ts'
 import { ensureSessionAfterLogin } from './sessionLifecycle.ts'
 
 type MagicLinkTokenAdapter = Pick<
@@ -44,66 +35,66 @@ type MagicLinkSessionAdapterLike = Pick<SessionAdapter, 'createSession'> &
 	Partial<Pick<SessionAdapter, 'setSessionCookie'>>
 
 type MagicLinkRequestConfig = {
-	magicLinkAdapter: MagicLinkTokenAdapter;
-	userAdapter?: Pick<MagicLinkUserAdapter, 'getUserByEmail'>;
+	magicLinkAdapter: MagicLinkTokenAdapter
+	userAdapter?: Pick<MagicLinkUserAdapter, 'getUserByEmail'>
 	sendEmail: (payload: {
-		email: string;
-		link: string;
-		otp: string | null;
-		token: string;
-		expiresAt: Date;
-		user: User | null;
-		redirectTo: string;
-		secureCookies: boolean;
-	}) => Promise<void> | void;
-	allowSignup?: boolean;
-	expiresInMs?: number;
-	magicLinkPath?: string;
-	includeOtp?: boolean;
-	otpDigits?: number;
-	singleUsePerEmail?: boolean;
-	secureCookies?: boolean;
-	normalizeEmail?: (email: string) => string;
-	exposeToken?: boolean;
-	baseUrl?: string;
-	rateLimit?: (event: RequestEventLike) => Promise<void> | void;
-	getMetadata?: (event: RequestEventLike) => Promise<Record<string, unknown>>;
-	trustProxyHeader?: boolean;
-	key?: (event: RequestEventLike) => string;
+		email: string
+		link: string
+		otp: string | null
+		token: string
+		expiresAt: Date
+		user: User | null
+		redirectTo: string
+		secureCookies: boolean
+	}) => Promise<void> | void
+	allowSignup?: boolean
+	expiresInMs?: number
+	magicLinkPath?: string
+	includeOtp?: boolean
+	otpDigits?: number
+	singleUsePerEmail?: boolean
+	secureCookies?: boolean
+	normalizeEmail?: (email: string) => string
+	exposeToken?: boolean
+	baseUrl?: string
+	rateLimit?: (event: RequestEventLike) => Promise<void> | void
+	getMetadata?: (event: RequestEventLike) => Promise<Record<string, unknown>>
+	trustProxyHeader?: boolean
+	key?: (event: RequestEventLike) => string
 }
 
 type MagicLinkVerifyConfig = {
-	magicLinkAdapter: MagicLinkTokenAdapter;
-	userAdapter?: MagicLinkUserAdapter;
-	sessionAdapter: MagicLinkSessionAdapterLike;
-	allowSignup?: boolean;
-	createUser?: (email: string, event: RequestEventLike) => Promise<User>;
-	onLogin?: AuthHooks['onLogin'];
-	redirectAfterLogin?: string;
-	isAuthenticated?: (locals: AuthLocals) => boolean;
-	secureCookies?: boolean;
-	normalizeEmail?: (email: string) => string;
-	verifyRateLimit?: (key: string) => Promise<{ allowed: boolean }>;
-	verifyRateLimitMax?: number;
-	verifyRateLimitWindowMs?: number;
-	sanitizeUser?: (user: User | null) => User | null;
-	autoCreateSession?: boolean;
-	onLoginMode?: OnLoginMode;
-	trustProxyHeader?: boolean;
-	key?: (event: RequestEventLike) => string;
+	magicLinkAdapter: MagicLinkTokenAdapter
+	userAdapter?: MagicLinkUserAdapter
+	sessionAdapter: MagicLinkSessionAdapterLike
+	allowSignup?: boolean
+	createUser?: (email: string, event: RequestEventLike) => Promise<User>
+	onLogin?: AuthHooks['onLogin']
+	redirectAfterLogin?: string
+	isAuthenticated?: (locals: AuthLocals) => boolean
+	secureCookies?: boolean
+	normalizeEmail?: (email: string) => string
+	verifyRateLimit?: (key: string) => Promise<{ allowed: boolean }>
+	verifyRateLimitMax?: number
+	verifyRateLimitWindowMs?: number
+	sanitizeUser?: (user: User | null) => User | null
+	autoCreateSession?: boolean
+	onLoginMode?: OnLoginMode
+	trustProxyHeader?: boolean
+	key?: (event: RequestEventLike) => string
 }
 
 type MagicLinkTokenRecord = {
-	id?: string;
-	userId?: string;
-	email?: string;
-	expiresAt?: string | Date;
-	[key: string]: unknown;
+	id?: string
+	userId?: string
+	email?: string
+	expiresAt?: string | Date
+	[key: string]: unknown
 }
 
 type RateLimitKeyConfig = {
-	key?: (event: RequestEventLike) => string;
-	trustProxyHeader?: boolean;
+	key?: (event: RequestEventLike) => string
+	trustProxyHeader?: boolean
 }
 
 function getRateLimitKey(event: RequestEventLike, config: RateLimitKeyConfig): string {
@@ -118,9 +109,7 @@ function getRateLimitKey(event: RequestEventLike, config: RateLimitKeyConfig): s
 }
 
 /** Creates magic link request handler for auth HTTP handlers. */
-export function createMagicLinkRequestHandler(
-	config: MagicLinkRequestConfig
-): RequestHandler {
+export function createMagicLinkRequestHandler(config: MagicLinkRequestConfig): RequestHandler {
 	const {
 		magicLinkAdapter,
 		userAdapter,
@@ -146,7 +135,7 @@ export function createMagicLinkRequestHandler(
 		throw new Error('createMagicLinkRequestHandler requires sendEmail')
 	}
 
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		if (rateLimit) {
 			await rateLimit(event)
 		}
@@ -162,9 +151,7 @@ export function createMagicLinkRequestHandler(
 			return jsonResponse({ ok: false, error: 'Email required' }, 400)
 		}
 
-		const user = userAdapter
-			? await userAdapter.getUserByEmail(email)
-			: null
+		const user = userAdapter ? await userAdapter.getUserByEmail(email) : null
 
 		if (!user && !allowSignup) {
 			return jsonResponse({ ok: true }, 200)
@@ -179,8 +166,7 @@ export function createMagicLinkRequestHandler(
 		const otp = includeOtp ? await generateOtp(otpDigits) : null
 		const otpHash = otp ? await hashToken(otp) : null
 		const expiresAt = new Date(Date.now() + expiresInMs)
-		const metadata =
-			typeof getMetadata === 'function' ? await getMetadata(event) : {}
+		const metadata = typeof getMetadata === 'function' ? await getMetadata(event) : {}
 
 		await magicLinkAdapter.createToken({
 			userId: user?.id ?? null,
@@ -220,9 +206,7 @@ export function createMagicLinkRequestHandler(
 }
 
 /** Creates magic link verify handler for auth HTTP handlers. */
-export function createMagicLinkVerifyHandler(
-	config: MagicLinkVerifyConfig
-) {
+export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 	const {
 		magicLinkAdapter,
 		userAdapter,
@@ -252,31 +236,32 @@ export function createMagicLinkVerifyHandler(
 		typeof verifyRateLimit === 'function'
 			? verifyRateLimit
 			: createRateLimiter({
-				windows: [
-					{
-						name: 'magic.verify',
-						windowMs: verifyRateLimitWindowMs,
-						maxEvents: verifyRateLimitMax
-					}
-				],
-				keyPrefix: 'mlv'
-			}).check
+					windows: [
+						{
+							name: 'magic.verify',
+							windowMs: verifyRateLimitWindowMs,
+							maxEvents: verifyRateLimitMax
+						}
+					],
+					keyPrefix: 'mlv'
+				}).check
 
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		if (isAuthenticated(event.locals)) {
 			throw redirect(302, redirectAfterLogin)
 		}
 
 		const data = await parseRequestData(event.request)
 		const token =
-			(typeof data['token'] === 'string' && data['token']) ||
-			event.url.searchParams.get('token')
+			(typeof data['token'] === 'string' && data['token']) || event.url.searchParams.get('token')
 		const redirectToRaw =
 			(typeof data['redirectTo'] === 'string' && data['redirectTo']) ||
 			event.url.searchParams.get('redirectTo') ||
 			''
 		const redirectTo = isSafeRedirectPath(redirectToRaw) ? redirectToRaw : ''
-		const otp = (typeof data['otp'] === 'string' && data['otp']) || (typeof data['code'] === 'string' && data['code'])
+		const otp =
+			(typeof data['otp'] === 'string' && data['otp']) ||
+			(typeof data['code'] === 'string' && data['code'])
 		const emailInput =
 			(typeof data['email'] === 'string' && data['email']) ||
 			event.url.searchParams.get('email') ||
@@ -289,13 +274,10 @@ export function createMagicLinkVerifyHandler(
 
 		const ipKey = getRateLimitKey(event, config)
 		const identifier = email || (token ? await hashToken(token) : 'unknown')
-		const rateKey = `${ identifier }:${ ipKey }`
+		const rateKey = `${identifier}:${ipKey}`
 		const rateResult = await checkMagicLinkRateLimit(rateKey)
 		if (!rateResult?.allowed) {
-			return jsonResponse(
-				{ ok: false, error: 'Too many attempts. Try again later.' },
-				429
-			)
+			return jsonResponse({ ok: false, error: 'Too many attempts. Try again later.' }, 429)
 		}
 
 		// Atomic find-and-delete: in-tree adapters (Drizzle/D1) override
@@ -305,9 +287,7 @@ export function createMagicLinkVerifyHandler(
 
 		if (token) {
 			const tokenHash = await hashToken(token)
-			record = (await magicLinkAdapter.consumeByTokenHash(
-				tokenHash
-			)) as MagicLinkTokenRecord | null
+			record = (await magicLinkAdapter.consumeByTokenHash(tokenHash)) as MagicLinkTokenRecord | null
 		} else if (otp && email) {
 			const otpHash = await hashToken(otp)
 			record = (await magicLinkAdapter.consumeByEmailAndOtpHash({
@@ -335,10 +315,8 @@ export function createMagicLinkVerifyHandler(
 		}
 
 		let user: User | null = null
-		const recordUserId =
-			typeof record['userId'] === 'string' ? record['userId'] : null
-		const recordEmail =
-			typeof record['email'] === 'string' ? record['email'] : null
+		const recordUserId = typeof record['userId'] === 'string' ? record['userId'] : null
+		const recordEmail = typeof record['email'] === 'string' ? record['email'] : null
 		if (userAdapter) {
 			if (recordUserId) {
 				user = await userAdapter.getUserById(recordUserId)
@@ -366,7 +344,7 @@ export function createMagicLinkVerifyHandler(
 		if (user && userAdapter && user.emailVerified === false) {
 			try {
 				await userAdapter.updateUser(user.id, { emailVerified: true })
-			} catch(error) {
+			} catch (error) {
 				getLogger().warn?.(
 					'[MagicLink] Failed to mark email as verified after successful login:',
 					error
@@ -395,7 +373,7 @@ export function createMagicLinkVerifyHandler(
 				autoCreateSession,
 				onLoginMode
 			})
-		} catch(error) {
+		} catch (error) {
 			if (error instanceof AuthPrincipalResolutionError) {
 				return jsonResponse({ ok: false, error: error.message }, error.status)
 			}

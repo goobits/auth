@@ -13,7 +13,10 @@ export class CookieSessionAdapter extends SessionAdapter {
 	cookieName: string
 	private secureCookies: boolean
 	private sessionLifetime: number
-	private _sessions: Map<string, { id: string; userId: string; expiresAt: Date; [key: string]: unknown }>
+	private _sessions: Map<
+		string,
+		{ id: string; userId: string; expiresAt: Date; [key: string]: unknown }
+	>
 
 	/**
 	 * @param {Object} options - Configuration options
@@ -23,9 +26,9 @@ export class CookieSessionAdapter extends SessionAdapter {
 	 */
 	constructor(
 		options: {
-			cookieName?: string;
-			secureCookies?: boolean;
-			sessionLifetime?: number;
+			cookieName?: string
+			secureCookies?: boolean
+			sessionLifetime?: number
 		} = {}
 	) {
 		super()
@@ -93,7 +96,7 @@ export class CookieSessionAdapter extends SessionAdapter {
 
 	async invalidateUserSessions(userId: string) {
 		// Find and delete all sessions for this user
-		for (const [ sessionId, session ] of this._sessions.entries()) {
+		for (const [sessionId, session] of this._sessions.entries()) {
 			if (session.userId === userId) {
 				this._sessions.delete(sessionId)
 			}

@@ -6,19 +6,13 @@ type SessionLoginAdapter = Pick<SessionAdapter, 'createSession'> &
 	Partial<Pick<SessionAdapter, 'setSessionCookie'>>
 
 export async function ensureSessionAfterLogin(input: {
-	event: RequestEventLike;
-	sessionAdapter: SessionLoginAdapter;
-	userId: string | null;
-	autoCreateSession?: boolean;
-	onLoginMode?: OnLoginMode;
+	event: RequestEventLike
+	sessionAdapter: SessionLoginAdapter
+	userId: string | null
+	autoCreateSession?: boolean
+	onLoginMode?: OnLoginMode
 }): Promise<string> {
-	const {
-		event,
-		sessionAdapter,
-		userId,
-		autoCreateSession = true,
-		onLoginMode = 'augment'
-	} = input
+	const { event, sessionAdapter, userId, autoCreateSession = true, onLoginMode = 'augment' } = input
 
 	if (!userId) {
 		throw new AuthPrincipalResolutionError()

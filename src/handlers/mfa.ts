@@ -16,51 +16,45 @@ const DEFAULT_LOGIN_CHALLENGE_TTL_MS = 5 * 60 * 1000
 
 /** Mfa Store typed model for runtime integration. */
 export type MfaStore = {
-	setSecret: (userId: string, secret: string) => Promise<void>;
-	setBackupCodes: (userId: string, codes: string[]) => Promise<void>;
-	enableMfa: (userId: string) => Promise<void>;
-	getSecret: (userId: string) => Promise<string | null>;
-	disableMfa: (userId: string) => Promise<void>;
-	getBackupCodes: (userId: string) => Promise<string[]>;
-	consumeBackupCode: (userId: string, hash: string) => Promise<void>;
+	setSecret: (userId: string, secret: string) => Promise<void>
+	setBackupCodes: (userId: string, codes: string[]) => Promise<void>
+	enableMfa: (userId: string) => Promise<void>
+	getSecret: (userId: string) => Promise<string | null>
+	disableMfa: (userId: string) => Promise<void>
+	getBackupCodes: (userId: string) => Promise<string[]>
+	consumeBackupCode: (userId: string, hash: string) => Promise<void>
 	getStatus?: (userId: string) => Promise<{
-		enabled: boolean;
-		enabledAt: Date | null;
-		backupCodeCount: number;
-	}>;
+		enabled: boolean
+		enabledAt: Date | null
+		backupCodeCount: number
+	}>
 }
 
 /** Mfa Config typed model for runtime integration. */
 export type MfaConfig = {
-	getUserId: (locals: RequestEventLike['locals']) => string | null;
-	store: MfaStore;
-	issuer?: string;
-	label?: (userId: string, locals: RequestEventLike['locals']) => string;
+	getUserId: (locals: RequestEventLike['locals']) => string | null
+	store: MfaStore
+	issuer?: string
+	label?: (userId: string, locals: RequestEventLike['locals']) => string
 }
 
 type MfaLoginStore = MfaStore & {
-	getStatus: NonNullable<MfaStore['getStatus']>;
+	getStatus: NonNullable<MfaStore['getStatus']>
 }
 
 /** Configuration shared by credential signin and MFA challenge verification. */
 export type MfaLoginConfig = {
-	store: MfaLoginStore;
-	verificationTokenAdapter: VerificationTokenAdapter;
-	isRequired?: (user: User) => boolean | Promise<boolean>;
-	challengeCookieName?: string;
-	challengeExpiresInMs?: number;
-	secureCookies?: boolean;
+	store: MfaLoginStore
+	verificationTokenAdapter: VerificationTokenAdapter
+	isRequired?: (user: User) => boolean | Promise<boolean>
+	challengeCookieName?: string
+	challengeExpiresInMs?: number
+	secureCookies?: boolean
 }
 
 type MfaLoginSessionAdapter = {
-	createSession: (
-		userId: string,
-		metadata?: SessionMetadata
-	) => Promise<Session>;
-	setSessionCookie: (
-		cookies: RequestEventLike['cookies'],
-		session: Session
-	) => void;
+	createSession: (userId: string, metadata?: SessionMetadata) => Promise<Session>
+	setSessionCookie: (cookies: RequestEventLike['cookies'], session: Session) => void
 }
 
 function userIdFromRecord(user: unknown): string | null {
@@ -90,20 +84,20 @@ export async function beginMfaLoginChallenge({
 	sessionMetadata,
 	config
 }: {
-	event: RequestEventLike;
-	user: User;
-	sessionMetadata: SessionMetadata;
-	config: MfaLoginConfig;
+	event: RequestEventLike
+	user: User
+	sessionMetadata: SessionMetadata
+	config: MfaLoginConfig
 }): Promise<
 	| { handled: false }
 	| {
-			handled: true;
+			handled: true
 			response: {
-				success: boolean;
-				twoFactorRequired?: boolean;
-				mfaEnrollmentRequired?: boolean;
-				error?: string;
-			};
+				success: boolean
+				twoFactorRequired?: boolean
+				mfaEnrollmentRequired?: boolean
+				error?: string
+			}
 	  }
 > {
 	const userId = userIdFromRecord(user)
@@ -146,11 +140,13 @@ export async function beginMfaLoginChallenge({
 }
 
 /** Completes a credential-login MFA challenge and only then creates the session. */
-export function createMfaLoginVerifyHandler(config: MfaLoginConfig & {
-	sessionAdapter: MfaLoginSessionAdapter;
-	sanitizeUser?: (user: Record<string, unknown>) => unknown;
-}) {
-	return async(event: RequestEventLike) => {
+export function createMfaLoginVerifyHandler(
+	config: MfaLoginConfig & {
+		sessionAdapter: MfaLoginSessionAdapter
+		sanitizeUser?: (user: Record<string, unknown>) => unknown
+	}
+) {
+	return async (event: RequestEventLike) => {
 		const cookieName = challengeCookieName(config)
 		const challenge = event.cookies.get(cookieName)
 		if (!challenge) return { success: false, error: 'Invalid or expired login challenge' }
@@ -213,16 +209,16 @@ export function createMfaLoginVerifyHandler(config: MfaLoginConfig & {
 /** Creates mfa status handler for auth HTTP handlers. */
 export function createMfaStatusHandler(config: MfaConfig) {
 	const { getUserId, store } = config
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
 		if (!userId) return { success: false, error: 'Unauthorized' }
 		const status = store.getStatus
 			? await store.getStatus(userId)
 			: {
-				backupCodeCount: (await store.getBackupCodes(userId)).length,
-				enabled: Boolean(await store.getSecret(userId)),
-				enabledAt: null
-			}
+					backupCodeCount: (await store.getBackupCodes(userId)).length,
+					enabled: Boolean(await store.getSecret(userId)),
+					enabledAt: null
+				}
 		return { success: true, status }
 	}
 }
@@ -234,7 +230,7 @@ export function createMfaStatusHandler(config: MfaConfig) {
  */
 export function createMfaEnrollHandler(config: MfaConfig) {
 	const { getUserId, store, issuer, label } = config
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
 		if (!userId) return { success: false, error: 'Unauthorized' }
 
@@ -263,7 +259,7 @@ export function createMfaEnrollHandler(config: MfaConfig) {
  */
 export function createMfaVerifyHandler(config: MfaConfig) {
 	const { getUserId, store } = config
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
 		if (!userId) return { success: false, error: 'Unauthorized' }
 		const formData = await event.request.formData()
@@ -282,7 +278,7 @@ export function createMfaVerifyHandler(config: MfaConfig) {
 /** Creates mfa disable handler for auth HTTP handlers. */
 export function createMfaDisableHandler(config: MfaConfig) {
 	const { getUserId, store } = config
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
 		if (!userId) return { success: false, error: 'Unauthorized' }
 		await store.disableMfa(userId)
@@ -293,7 +289,7 @@ export function createMfaDisableHandler(config: MfaConfig) {
 /** Creates mfa backup code handler for auth HTTP handlers. */
 export function createMfaBackupCodeHandler(config: MfaConfig) {
 	const { getUserId, store } = config
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
 		if (!userId) return { success: false, error: 'Unauthorized' }
 		const formData = await event.request.formData()

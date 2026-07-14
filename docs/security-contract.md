@@ -14,20 +14,20 @@ This package enforces authentication primitives and secure defaults, while autho
 ## Setup
 
 ```ts
-import { GoobitsAuth } from "@goobits/auth";
+import { GoobitsAuth } from '@goobits/auth'
 
 const auth = new GoobitsAuth({
-  profile: "secure",
-  adapter,
-  security: {
-    alerts: {
-      enabled: true,
-      webhook: {
-        url: env.SECURITY_WEBHOOK_URL,
-      },
-    },
-  },
-});
+	profile: 'secure',
+	adapter,
+	security: {
+		alerts: {
+			enabled: true,
+			webhook: {
+				url: env.SECURITY_WEBHOOK_URL
+			}
+		}
+	}
+})
 ```
 
 ## Responsibilities
@@ -53,19 +53,19 @@ const auth = new GoobitsAuth({
 These are the built-in defaults the library applies when you don't override
 them. Every value here is configurable on the matching config block.
 
-| Concern | Default | Override |
-|---|---|---|
-| Rate limit (general auth routes) | 20 requests / 60 s | `security.rateLimit.{max,windowMs}` |
-| Rate limit (`strict` profile) | 10 requests / 60 s | `security.rateLimit.{max,windowMs}` |
-| Magic link expiry | 15 minutes | `magicLink.settings.expiresInMs` |
-| Magic link OTP length | 6 digits | `magicLink.settings.otpDigits` |
-| Magic link verify rate limit | 5 attempts / 10 minutes | `magicLink.limits.{verifyMax,verifyWindowMs}` |
-| WebAuthn challenge timeout | 60 seconds | `webauthn.timeoutMs` |
-| Session lifetime (KV adapter) | 30 days | `KVSessionAdapter` constructor `sessionLifetime` |
-| Session ID entropy | 160 bits (20 bytes, base64url) | n/a |
-| OAuth state / PKCE | issued by `arctic`, single-use, cookie-bound | n/a |
-| Argon2 (Cloudflare Workers, WASM) | 12 MiB memory, 2 iterations, 16-byte salt | not configurable — tune via fork if your edge runtime allows more |
-| Argon2 (Node, `@node-rs/argon2`) | library defaults (≈ 19 MiB, 2 iterations) | not configurable in this release |
+| Concern                           | Default                                      | Override                                                          |
+| --------------------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
+| Rate limit (general auth routes)  | 20 requests / 60 s                           | `security.rateLimit.{max,windowMs}`                               |
+| Rate limit (`strict` profile)     | 10 requests / 60 s                           | `security.rateLimit.{max,windowMs}`                               |
+| Magic link expiry                 | 15 minutes                                   | `magicLink.settings.expiresInMs`                                  |
+| Magic link OTP length             | 6 digits                                     | `magicLink.settings.otpDigits`                                    |
+| Magic link verify rate limit      | 5 attempts / 10 minutes                      | `magicLink.limits.{verifyMax,verifyWindowMs}`                     |
+| WebAuthn challenge timeout        | 60 seconds                                   | `webauthn.timeoutMs`                                              |
+| Session lifetime (KV adapter)     | 30 days                                      | `KVSessionAdapter` constructor `sessionLifetime`                  |
+| Session ID entropy                | 160 bits (20 bytes, base64url)               | n/a                                                               |
+| OAuth state / PKCE                | issued by `arctic`, single-use, cookie-bound | n/a                                                               |
+| Argon2 (Cloudflare Workers, WASM) | 12 MiB memory, 2 iterations, 16-byte salt    | not configurable — tune via fork if your edge runtime allows more |
+| Argon2 (Node, `@node-rs/argon2`)  | library defaults (≈ 19 MiB, 2 iterations)    | not configurable in this release                                  |
 
 The WASM Argon2 parameters sit at the OWASP minimum — defensible for edge
 runtimes with strict CPU budgets, but apps that can afford more should

@@ -15,11 +15,11 @@ function run(command, args, options) {
 			...options
 		})
 		child.on('error', reject)
-		child.on('exit', code => {
+		child.on('exit', (code) => {
 			if (code === 0) {
 				resolve()
 			} else {
-				reject(new Error(`${ command } ${ args.join(' ') } exited with ${ code }`))
+				reject(new Error(`${command} ${args.join(' ')} exited with ${code}`))
 			}
 		})
 	})
@@ -28,7 +28,7 @@ function run(command, args, options) {
 try {
 	await cp(join(root, 'package.json'), join(tempDir, 'package.json'))
 	await cp(join(root, 'pnpm-lock.yaml'), join(tempDir, 'pnpm-lock.yaml'))
-	await run('pnpm', [ 'audit', '--prod', '--audit-level', 'high' ], { cwd: tempDir, env: auditEnv })
+	await run('pnpm', ['audit', '--prod', '--audit-level', 'high'], { cwd: tempDir, env: auditEnv })
 } finally {
 	await rm(tempDir, { recursive: true, force: true })
 }

@@ -9,24 +9,22 @@ export type AuthEventName =
 	| 'authz.denied'
 
 export type AuthEvent = {
-	name: AuthEventName;
-	severity: AuthEventSeverity;
-	timestamp: string;
-	route: string;
-	method: string;
-	status?: number;
-	message?: string;
-	userId?: string | null;
-	ip?: string;
-	details?: Record<string, unknown>;
+	name: AuthEventName
+	severity: AuthEventSeverity
+	timestamp: string
+	route: string
+	method: string
+	status?: number
+	message?: string
+	userId?: string | null
+	ip?: string
+	details?: Record<string, unknown>
 }
 
 export type AuthEventEmitter = (event: AuthEvent) => Promise<void> | void
 
 /** Creates auth event for auth security checks. */
-export function createAuthEvent(
-	input: Omit<AuthEvent, 'timestamp'>
-): AuthEvent {
+export function createAuthEvent(input: Omit<AuthEvent, 'timestamp'>): AuthEvent {
 	return {
 		timestamp: new Date().toISOString(),
 		...input

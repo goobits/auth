@@ -8,8 +8,8 @@ type ValidatePasswordFn = (password: string) => PasswordValidationResult
 type NormalizeIdentifierFn = (value: string) => string
 type HashPasswordFn = (password: string) => Promise<string>
 export type PasswordVerificationResult = {
-	valid: boolean;
-	needsRehash?: boolean;
+	valid: boolean
+	needsRehash?: boolean
 }
 type VerifyPasswordFn = (
 	storedHash: string,
@@ -17,12 +17,12 @@ type VerifyPasswordFn = (
 ) => Promise<boolean | PasswordVerificationResult>
 
 type CredentialsProviderOptions = {
-	validatePassword?: ValidatePasswordFn;
-	identifierField?: string;
-	allowBoth?: boolean;
-	normalizeIdentifier?: NormalizeIdentifierFn;
-	hashPassword?: HashPasswordFn;
-	verifyPassword?: VerifyPasswordFn;
+	validatePassword?: ValidatePasswordFn
+	identifierField?: string
+	allowBoth?: boolean
+	normalizeIdentifier?: NormalizeIdentifierFn
+	hashPassword?: HashPasswordFn
+	verifyPassword?: VerifyPasswordFn
 }
 
 /**
@@ -63,7 +63,7 @@ export class CredentialsProvider {
 		this.identifierField = options.identifierField ?? 'email'
 		this.allowBoth = options.allowBoth ?? false
 		this.normalizeIdentifier =
-			options.normalizeIdentifier ?? (value => value.trim().toLowerCase())
+			options.normalizeIdentifier ?? ((value) => value.trim().toLowerCase())
 		this.hashPassword = options.hashPassword ?? hashPassword
 		this.verifyPassword = options.verifyPassword ?? verifyPassword
 	}
@@ -104,12 +104,12 @@ export class CredentialsProvider {
 		password,
 		userAdapter
 	}: {
-		email?: string;
-		identifier?: string;
-		identifierField?: string;
-		allowBoth?: boolean;
-		password: string;
-		userAdapter: UserAdapter;
+		email?: string
+		identifier?: string
+		identifierField?: string
+		allowBoth?: boolean
+		password: string
+		userAdapter: UserAdapter
 	}): Promise<{ user: User | null; valid: boolean }> {
 		const rawIdentifier = identifier ?? email ?? ''
 		if (!rawIdentifier || !password) {
@@ -120,23 +120,18 @@ export class CredentialsProvider {
 		const resolvedAllowBoth = allowBoth ?? this.allowBoth
 		const normalizedIdentifier = this.normalizeIdentifier(rawIdentifier)
 
-		let user:
-			| (Record<string, unknown> & { password?: string | null })
-			| null = null
+		let user: (Record<string, unknown> & { password?: string | null }) | null = null
 		let matchedField: string | null = null
 
 		const tryFields = resolvedAllowBoth
-			? Array.from(new Set([ resolvedField, 'email' ]))
-			: [ resolvedField ]
+			? Array.from(new Set([resolvedField, 'email']))
+			: [resolvedField]
 
 		for (const field of tryFields) {
 			if (field === 'email') {
 				user = await userAdapter.getUserWithPasswordHash(normalizedIdentifier)
 			} else if (userAdapter.getUserWithPasswordHashByIdentifier) {
-				user = await userAdapter.getUserWithPasswordHashByIdentifier(
-					normalizedIdentifier,
-					field
-				)
+				user = await userAdapter.getUserWithPasswordHashByIdentifier(normalizedIdentifier, field)
 			}
 
 			if (user) {
@@ -157,14 +152,13 @@ export class CredentialsProvider {
 		}
 
 		if (typeof verification !== 'boolean' && verification.needsRehash) {
-			const userId = typeof user['id'] === 'string' || typeof user['id'] === 'number'
-				? String(user['id'])
-				: null
+			const userId =
+				typeof user['id'] === 'string' || typeof user['id'] === 'number' ? String(user['id']) : null
 			if (userId) {
 				try {
 					const upgradedHash = await this.createPasswordHash(password)
 					await userAdapter.updateUser(userId, { password: upgradedHash })
-				} catch(error) {
+				} catch (error) {
 					getLogger().error?.(
 						'[CredentialsProvider] Failed to upgrade password hash:',
 						error instanceof Error ? error.message : String(error)
@@ -179,9 +173,9 @@ export class CredentialsProvider {
 				? await userAdapter.getUserByEmail(normalizedIdentifier)
 				: userAdapter.getUserByIdentifier
 					? await userAdapter.getUserByIdentifier(
-						normalizedIdentifier,
-						matchedField ?? resolvedField
-					)
+							normalizedIdentifier,
+							matchedField ?? resolvedField
+						)
 					: await userAdapter.getUserByEmail(normalizedIdentifier)
 		return { user: sanitized, valid: true }
 	}
@@ -203,11 +197,11 @@ export class CredentialsProvider {
 		metadata = {},
 		userAdapter
 	}: {
-		email: string;
-		password: string;
-		name?: string;
-		metadata?: Record<string, unknown>;
-		userAdapter: UserAdapter;
+		email: string
+		password: string
+		name?: string
+		metadata?: Record<string, unknown>
+		userAdapter: UserAdapter
 	}): Promise<Record<string, unknown>> {
 		if (!email || !password) {
 			throw new Error('Email and password are required')
@@ -217,10 +211,10 @@ export class CredentialsProvider {
 
 		// Create user profile
 		const profile: {
-			id: string;
-			email: string;
-			name?: string;
-			verified_email: boolean;
+			id: string
+			email: string
+			name?: string
+			verified_email: boolean
 		} = {
 			id: email.toLowerCase(),
 			email: email.toLowerCase(),
@@ -257,9 +251,9 @@ export class CredentialsProvider {
 		newPassword,
 		userAdapter
 	}: {
-		userId: string;
-		newPassword: string;
-		userAdapter: UserAdapter;
+		userId: string
+		newPassword: string
+		userAdapter: UserAdapter
 	}): Promise<Record<string, unknown>> {
 		if (!userId || !newPassword) {
 			throw new Error('User ID and new password are required')
@@ -290,10 +284,10 @@ export class CredentialsProvider {
 		newPassword,
 		userAdapter
 	}: {
-		email: string;
-		currentPassword: string;
-		newPassword: string;
-		userAdapter: UserAdapter;
+		email: string
+		currentPassword: string
+		newPassword: string
+		userAdapter: UserAdapter
 	}): Promise<{ user: Record<string, unknown> | null; valid: boolean }> {
 		// First verify current password
 		const { user, valid } = await this.authenticate({
@@ -307,9 +301,11 @@ export class CredentialsProvider {
 		}
 
 		// Update to new password
-		const userId = typeof (user as { id?: unknown }).id === 'string' || typeof (user as { id?: unknown }).id === 'number'
-			? String((user as { id?: string | number }).id)
-			: ''
+		const userId =
+			typeof (user as { id?: unknown }).id === 'string' ||
+			typeof (user as { id?: unknown }).id === 'number'
+				? String((user as { id?: string | number }).id)
+				: ''
 
 		if (!userId) {
 			return { user: null, valid: false }

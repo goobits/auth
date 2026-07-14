@@ -17,24 +17,24 @@ Before (pre-vNext — `createAuth` was a public root export):
 
 ```ts
 // No longer resolvable: `createAuth` is internal as of 0.2.0.
-import { createAuth } from "@goobits/auth";
+import { createAuth } from '@goobits/auth'
 
 const auth = createAuth({
-  adapters: { session, user, oauthToken },
-  providers: { google: { provider: googleProvider } },
-});
+	adapters: { session, user, oauthToken },
+	providers: { google: { provider: googleProvider } }
+})
 ```
 
 After:
 
 ```ts
-import { GoobitsAuth } from "@goobits/auth";
-import { drizzleAdapter } from "@goobits/auth/adapters/drizzle";
+import { GoobitsAuth } from '@goobits/auth'
+import { drizzleAdapter } from '@goobits/auth/adapters/drizzle'
 
 const auth = new GoobitsAuth({
-  adapter: drizzleAdapter(db, { schema }),
-  providers: { google: { provider: googleProvider } },
-});
+	adapter: drizzleAdapter(db, { schema }),
+	providers: { google: { provider: googleProvider } }
+})
 ```
 
 ### SvelteKit plumbing
@@ -49,10 +49,10 @@ After:
 
 ```ts
 // hooks.server.ts
-export const handle = auth.handle();
+export const handle = auth.handle()
 
 // routes/auth/[...auth]/+server.ts
-export const { GET, POST } = auth.handlers;
+export const { GET, POST } = auth.handlers
 ```
 
 ### Adapter naming
@@ -80,13 +80,13 @@ adapter: {
 Before:
 
 ```ts
-userAdapter._getUserWithPassword(email);
+userAdapter._getUserWithPassword(email)
 ```
 
 After:
 
 ```ts
-userAdapter.getUserWithPasswordHash(email);
+userAdapter.getUserWithPasswordHash(email)
 ```
 
 ## Testing utilities

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
 	requireAuthenticated,
 	requireAuthRole,
-	requireOwnership,
+	requireOwnership
 } from '../../src/security/authorize.ts'
 import type { RequestEventLike } from '../../src/types/auth.ts'
 import type { User } from '../../src/types/index.ts'
@@ -26,18 +26,22 @@ function createEvent(user: User | null): RequestEventLike {
 
 describe('security authorize helpers', () => {
 	it('requires authentication', () => {
-		expect(() => requireAuthenticated({ user: null, session: null })).toThrow(
-			'Unauthorized'
-		)
+		expect(() => requireAuthenticated({ user: null, session: null })).toThrow('Unauthorized')
 		expect(() =>
 			requireAuthenticated({
-				user: { id: 'u1', email: 'u1@example.com', name: 'User', avatar: null, emailVerified: true },
+				user: {
+					id: 'u1',
+					email: 'u1@example.com',
+					name: 'User',
+					avatar: null,
+					emailVerified: true
+				},
 				session: null
 			})
 		).not.toThrow()
 	})
 
-	it('enforces auth-role and ownership checks', async() => {
+	it('enforces auth-role and ownership checks', async () => {
 		const event = createEvent({
 			id: 'u1',
 			role: 'admin',
@@ -46,7 +50,7 @@ describe('security authorize helpers', () => {
 			avatar: null,
 			emailVerified: true
 		} as User & { role: string })
-		await expect(requireAuthRole({ event }, [ 'admin' ])).resolves.toBeUndefined()
+		await expect(requireAuthRole({ event }, ['admin'])).resolves.toBeUndefined()
 		await expect(requireOwnership({ event }, 'u1')).resolves.toBeUndefined()
 		await expect(requireOwnership({ event }, 'u2')).rejects.toThrow('Forbidden')
 	})

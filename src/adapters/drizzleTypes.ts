@@ -8,46 +8,46 @@ export type DrizzleTable = Record<string, SQLWrapper>
 
 export type SelectQuery<T> = {
 	from: (table: DrizzleTable) => {
-		where: (condition: SQLWrapper) => Promise<T[]>;
+		where: (condition: SQLWrapper) => Promise<T[]>
 		innerJoin: (
 			table: DrizzleTable,
 			on: SQLWrapper
 		) => {
-			where: (condition: SQLWrapper) => Promise<T[]>;
-		};
-	};
+			where: (condition: SQLWrapper) => Promise<T[]>
+		}
+	}
 }
 
 export type InsertQuery = {
-	values: (values: DrizzleRow) => Promise<void>;
+	values: (values: DrizzleRow) => Promise<void>
 }
 
 export type UpdateQuery = {
 	set: (values: DrizzleRow) => {
-		where: (condition: SQLWrapper) => Promise<void>;
-	};
+		where: (condition: SQLWrapper) => Promise<void>
+	}
 }
 
 type DeleteWhereResult = Promise<void> & {
-	returning: () => Promise<DrizzleRow[]>;
+	returning: () => Promise<DrizzleRow[]>
 }
 
 export type DeleteQuery = {
-	where: (condition: SQLWrapper) => DeleteWhereResult;
+	where: (condition: SQLWrapper) => DeleteWhereResult
 }
 
 export type DrizzleDbLike = {
-	select(): SelectQuery<DrizzleRow>;
-	select(fields: Record<string, DrizzleTable>): SelectQuery<Record<string, DrizzleRow>>;
-	insert: (table: DrizzleTable) => InsertQuery;
-	update: (table: DrizzleTable) => UpdateQuery;
-	delete: (table: DrizzleTable) => DeleteQuery;
+	select(): SelectQuery<DrizzleRow>
+	select(fields: Record<string, DrizzleTable>): SelectQuery<Record<string, DrizzleRow>>
+	insert: (table: DrizzleTable) => InsertQuery
+	update: (table: DrizzleTable) => UpdateQuery
+	delete: (table: DrizzleTable) => DeleteQuery
 }
 
 export function requireColumn(table: DrizzleTable, column: string): SQLWrapper {
 	const found = table[column]
 	if (!found) {
-		throw new Error(`Missing column '${ column }' in drizzle table configuration`)
+		throw new Error(`Missing column '${column}' in drizzle table configuration`)
 	}
 	return found
 }

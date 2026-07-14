@@ -15,7 +15,7 @@ export const auth = new GoobitsAuth({
 			provider: new GoogleProvider({
 				clientId: env.GOOGLE_CLIENT_ID,
 				clientSecret: env.GOOGLE_CLIENT_SECRET,
-				callbackUrl: `${ env.APP_URL }/auth/callback/google`
+				callbackUrl: `${env.APP_URL}/auth/callback/google`
 			})
 		}
 	},

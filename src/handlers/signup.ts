@@ -8,9 +8,9 @@ import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 
 type RateLimitConfig = {
-	check?: (key: string) => Promise<{ allowed: boolean }>;
-	key?: (event: RequestEventLike) => string;
-	trustProxyHeader?: boolean;
+	check?: (key: string) => Promise<{ allowed: boolean }>
+	key?: (event: RequestEventLike) => string
+	trustProxyHeader?: boolean
 }
 
 function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
@@ -49,32 +49,34 @@ function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
 export function createSignupHandler(config: {
 	credentialsProvider: {
 		signUp: (input: {
-			email: string;
-			password: string;
-			name?: string;
-			metadata?: Record<string, unknown>;
-			userAdapter: unknown;
-		}) => Promise<User>;
-	};
-	userAdapter: { getUserByEmail: (email: string) => Promise<User | null> };
+			email: string
+			password: string
+			name?: string
+			metadata?: Record<string, unknown>
+			userAdapter: unknown
+		}) => Promise<User>
+	}
+	userAdapter: { getUserByEmail: (email: string) => Promise<User | null> }
 	sessionAdapter?: {
-		createSession: (userId: string) => Promise<{ id: string; expiresAt: Date }>;
+		createSession: (userId: string) => Promise<{ id: string; expiresAt: Date }>
 		setSessionCookie: (
 			cookies: RequestEventLike['cookies'],
 			session: { id: string; expiresAt: Date }
-		) => void;
-	};
-	verificationTokenAdapter?: VerificationTokenAdapter;
-	onSignup?: (user: User | null) => Promise<void> | void;
-	sendVerificationEmail?: (email: string, token: string) => Promise<void> | void;
-	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string };
-	rateLimit?: RateLimitConfig;
-	redirectTo?: string;
-	autoLogin?: boolean;
-	sanitizeUser?: (user: User | null) => User | null;
-	fields?: { email?: string; password?: string; name?: string };
-	metadataFields?: string[];
-	getSignupMetadata?: (formData: FormData) => Record<string, unknown> | Promise<Record<string, unknown>>;
+		) => void
+	}
+	verificationTokenAdapter?: VerificationTokenAdapter
+	onSignup?: (user: User | null) => Promise<void> | void
+	sendVerificationEmail?: (email: string, token: string) => Promise<void> | void
+	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
+	rateLimit?: RateLimitConfig
+	redirectTo?: string
+	autoLogin?: boolean
+	sanitizeUser?: (user: User | null) => User | null
+	fields?: { email?: string; password?: string; name?: string }
+	metadataFields?: string[]
+	getSignupMetadata?: (
+		formData: FormData
+	) => Record<string, unknown> | Promise<Record<string, unknown>>
 }) {
 	const {
 		credentialsProvider,
@@ -95,7 +97,7 @@ export function createSignupHandler(config: {
 
 	const log = getLogger()
 
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		if (csrf?.validate) {
 			const valid = await csrf.validate(event)
 			if (!valid) {
@@ -145,11 +147,11 @@ export function createSignupHandler(config: {
 
 			// Create user
 			const signUpInput: {
-				email: string;
-				password: string;
-				name?: string;
-				metadata?: Record<string, unknown>;
-				userAdapter: typeof userAdapter;
+				email: string
+				password: string
+				name?: string
+				metadata?: Record<string, unknown>
+				userAdapter: typeof userAdapter
 			} = {
 				email,
 				password,
@@ -194,7 +196,7 @@ export function createSignupHandler(config: {
 					})
 
 					await sendVerificationEmail(user.email, token)
-				} catch(emailError) {
+				} catch (emailError) {
 					log.error?.(
 						'[Signup] Failed to send verification email:',
 						emailError instanceof Error ? emailError.message : String(emailError)
@@ -219,7 +221,7 @@ export function createSignupHandler(config: {
 				success: true,
 				user: safeUser
 			}
-		} catch(error) {
+		} catch (error) {
 			log.error?.('[Signup] Error:', error instanceof Error ? error.message : String(error))
 
 			// Check if this is a redirect (don't treat as error)

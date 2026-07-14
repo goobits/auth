@@ -95,7 +95,7 @@
 				<li class="auth-session-item">
 					<div>
 						<p class="auth-session-meta">
-							{session.current ? "Current session" : "Session"} ·
+							{session.current ? 'Current session' : 'Session'} ·
 							{session.ip || 'Unknown IP'}
 						</p>
 						<p class="auth-session-sub">

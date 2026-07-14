@@ -18,37 +18,37 @@ type TableKey =
 	| 'webauthnChallenges'
 
 type UserTableShape = DrizzleTable & {
-	id: DrizzleTable[string];
-	email: DrizzleTable[string];
-	name: DrizzleTable[string];
-	avatar?: DrizzleTable[string];
-	emailVerified?: DrizzleTable[string];
+	id: DrizzleTable[string]
+	email: DrizzleTable[string]
+	name: DrizzleTable[string]
+	avatar?: DrizzleTable[string]
+	emailVerified?: DrizzleTable[string]
 }
 
 type SessionTableShape = DrizzleTable & {
-	id: DrizzleTable[string];
-	userId: DrizzleTable[string];
-	expiresAt: DrizzleTable[string];
+	id: DrizzleTable[string]
+	userId: DrizzleTable[string]
+	expiresAt: DrizzleTable[string]
 }
 
 type OAuthAccountsTableShape = DrizzleTable & {
-	userId: DrizzleTable[string];
-	provider: DrizzleTable[string];
-	providerAccountId: DrizzleTable[string];
+	userId: DrizzleTable[string]
+	provider: DrizzleTable[string]
+	providerAccountId: DrizzleTable[string]
 }
 
 type OAuthTokensTableShape = DrizzleTable & {
-	userId: DrizzleTable[string];
-	provider: DrizzleTable[string];
-	tokens: DrizzleTable[string];
+	userId: DrizzleTable[string]
+	provider: DrizzleTable[string]
+	tokens: DrizzleTable[string]
 }
 
 type VerificationTokensTableShape = DrizzleTable & {
-	id: DrizzleTable[string];
-	userId: DrizzleTable[string];
-	type: DrizzleTable[string];
-	token: DrizzleTable[string];
-	expiresAt: DrizzleTable[string];
+	id: DrizzleTable[string]
+	userId: DrizzleTable[string]
+	type: DrizzleTable[string]
+	token: DrizzleTable[string]
+	expiresAt: DrizzleTable[string]
 }
 
 /** Drizzle Auth Schema typed model for runtime integration. */
@@ -56,46 +56,40 @@ export type DrizzleAuthSchema = Partial<Record<TableKey, DrizzleTable>>
 
 /** Drizzle Adapter Options typed model for runtime integration. */
 export type DrizzleAdapterOptions<TSchema extends DrizzleAuthSchema = DrizzleAuthSchema> = {
-	schema?: TSchema;
-	tables?: Partial<Record<TableKey, DrizzleTable>>;
-	oauthTokenEncryptionKey?: string | null;
-	oauthTokenEncrypt?: boolean;
+	schema?: TSchema
+	tables?: Partial<Record<TableKey, DrizzleTable>>
+	oauthTokenEncryptionKey?: string | null
+	oauthTokenEncrypt?: boolean
 	session?: {
-		sessionLifetime?: number;
-		sessionRefreshThreshold?: number;
-		cookieName?: string;
-		secureCookies?: boolean;
-	};
-	sanitizeUser?: (user: User | null) => User | null;
+		sessionLifetime?: number
+		sessionRefreshThreshold?: number
+		cookieName?: string
+		secureCookies?: boolean
+	}
+	sanitizeUser?: (user: User | null) => User | null
 }
 
 /** Drizzle Adapter Bundle typed model for runtime integration. */
 export type DrizzleAdapterBundle = {
-	session: DrizzleSessionAdapter;
-	user: DrizzleUserAdapter;
-	oauthToken?: DrizzleTokenAdapter;
-	verificationToken?: DrizzleVerificationTokenAdapter;
-	magicLink?: DrizzleMagicLinkAdapter;
-	webauthn?: DrizzleWebAuthnAdapter;
+	session: DrizzleSessionAdapter
+	user: DrizzleUserAdapter
+	oauthToken?: DrizzleTokenAdapter
+	verificationToken?: DrizzleVerificationTokenAdapter
+	magicLink?: DrizzleMagicLinkAdapter
+	webauthn?: DrizzleWebAuthnAdapter
 }
 
-function getTable(
-	key: TableKey,
-	options: DrizzleAdapterOptions
-): DrizzleTable | undefined {
+function getTable(key: TableKey, options: DrizzleAdapterOptions): DrizzleTable | undefined {
 	const explicit = options.tables?.[key]
 	if (explicit) return explicit
 	return options.schema?.[key]
 }
 
-function requireTable(
-	key: TableKey,
-	options: DrizzleAdapterOptions
-): DrizzleTable {
+function requireTable(key: TableKey, options: DrizzleAdapterOptions): DrizzleTable {
 	const found = getTable(key, options)
 	if (!found) {
 		throw new Error(
-			`drizzleAdapter requires '${ key }' table. Pass it via options.schema.${ key } or options.tables.${ key }.`
+			`drizzleAdapter requires '${key}' table. Pass it via options.schema.${key} or options.tables.${key}.`
 		)
 	}
 	return found
@@ -108,7 +102,9 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 ): DrizzleAdapterBundle {
 	const usersTable = requireTable('users', options) as UserTableShape
 	const sessionsTable = requireTable('sessions', options) as SessionTableShape
-	const oauthAccountsTable = getTable('oauthAccounts', options) as OAuthAccountsTableShape | undefined
+	const oauthAccountsTable = getTable('oauthAccounts', options) as
+		| OAuthAccountsTableShape
+		| undefined
 
 	const user = new DrizzleUserAdapter(db, {
 		usersTable,
@@ -125,7 +121,9 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 		...(options.session?.sessionRefreshThreshold !== undefined
 			? { sessionRefreshThreshold: options.session.sessionRefreshThreshold }
 			: {}),
-		...(options.session?.cookieName !== undefined ? { cookieName: options.session.cookieName } : {}),
+		...(options.session?.cookieName !== undefined
+			? { cookieName: options.session.cookieName }
+			: {}),
 		...(options.session?.secureCookies !== undefined
 			? { secureCookies: options.session.secureCookies }
 			: {}),
@@ -135,15 +133,15 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 	const oauthTokensTable = getTable('oauthTokens', options) as OAuthTokensTableShape | undefined
 	const oauthToken = oauthTokensTable
 		? new DrizzleTokenAdapter(db, {
-			tokensTable: oauthTokensTable,
-			...(options.oauthTokenEncryptionKey !== undefined
-				? { encryptionKey: options.oauthTokenEncryptionKey }
-				: {}),
-			encrypt:
+				tokensTable: oauthTokensTable,
+				...(options.oauthTokenEncryptionKey !== undefined
+					? { encryptionKey: options.oauthTokenEncryptionKey }
+					: {}),
+				encrypt:
 					options.oauthTokenEncrypt ??
 					(typeof options.oauthTokenEncryptionKey === 'string' &&
 						options.oauthTokenEncryptionKey.length > 0)
-		})
+			})
 		: undefined
 
 	const verificationTokensTable = getTable('verificationTokens', options) as
@@ -151,9 +149,9 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 		| undefined
 	const verificationToken = verificationTokensTable
 		? new DrizzleVerificationTokenAdapter(db, {
-			tokensTable: verificationTokensTable,
-			usersTable
-		})
+				tokensTable: verificationTokensTable,
+				usersTable
+			})
 		: undefined
 
 	const magicLinkTokensTable = getTable('magicLinkTokens', options)
@@ -166,9 +164,9 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 	const webauthn =
 		webauthnCredentials && webauthnChallenges
 			? new DrizzleWebAuthnAdapter(db, {
-				credentialsTable: webauthnCredentials,
-				challengesTable: webauthnChallenges
-			})
+					credentialsTable: webauthnCredentials,
+					challengesTable: webauthnChallenges
+				})
 			: undefined
 
 	return {

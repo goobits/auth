@@ -8,20 +8,20 @@ import {
 import type { RequestEventLike } from '../../src/types/auth.ts'
 
 type StoredChallenge = {
-	challengeId: string;
-	userId?: string | null;
-	challenge: string;
-	type: string;
-	expiresAt: Date;
+	challengeId: string
+	userId?: string | null
+	challenge: string
+	type: string
+	expiresAt: Date
 }
 
 type StoredCredential = {
-	userId: string;
-	credentialId: string;
-	publicKey: string;
-	counter: number;
-	transports?: string[] | null;
-	name?: string | null;
+	userId: string
+	credentialId: string
+	publicKey: string
+	counter: number
+	transports?: string[] | null
+	name?: string | null
 }
 
 vi.mock('@simplewebauthn/server', () => ({
@@ -33,8 +33,8 @@ vi.mock('@simplewebauthn/server', () => ({
 	verifyRegistrationResponse: vi.fn(() => ({
 		verified: true,
 		registrationInfo: {
-			credentialID: new Uint8Array([ 1, 2, 3 ]),
-			credentialPublicKey: new Uint8Array([ 4, 5, 6 ]),
+			credentialID: new Uint8Array([1, 2, 3]),
+			credentialPublicKey: new Uint8Array([4, 5, 6]),
 			counter: 0
 		}
 	})),
@@ -50,10 +50,7 @@ vi.mock('@simplewebauthn/server', () => ({
 	}))
 }))
 
-function createEvent({
-	method = 'POST',
-	body
-}: { method?: string; body?: unknown } = {}) {
+function createEvent({ method = 'POST', body }: { method?: string; body?: unknown } = {}) {
 	const headers = new Headers()
 	let requestBody = body
 	if (body && typeof body !== 'string') {
@@ -78,34 +75,34 @@ function createWebAuthnAdapter() {
 	const challenges = new Map<string, StoredChallenge>()
 	const credentials = new Map<string, StoredCredential>()
 	return {
-		createChallenge: async(challenge: StoredChallenge) => {
+		createChallenge: async (challenge: StoredChallenge) => {
 			challenges.set(challenge.challengeId, challenge)
 		},
-		getChallenge: async(id: string) => challenges.get(id) || null,
-		deleteChallenge: async(id: string) => challenges.delete(id),
-		consumeChallenge: async(id: string) => {
+		getChallenge: async (id: string) => challenges.get(id) || null,
+		deleteChallenge: async (id: string) => challenges.delete(id),
+		consumeChallenge: async (id: string) => {
 			const record = challenges.get(id) || null
 			if (record) challenges.delete(id)
 			return record
 		},
-		createCredential: async(credential: StoredCredential) => {
+		createCredential: async (credential: StoredCredential) => {
 			credentials.set(credential.credentialId, credential)
 		},
-		getCredential: async(id: string) => credentials.get(id) || null,
-		listCredentials: async() => Array.from(credentials.values()),
-		updateCredential: async(id: string, updates: Record<string, unknown>) => {
+		getCredential: async (id: string) => credentials.get(id) || null,
+		listCredentials: async () => Array.from(credentials.values()),
+		updateCredential: async (id: string, updates: Record<string, unknown>) => {
 			const current = credentials.get(id)
 			credentials.set(id, { ...current, ...updates })
 		},
-		deleteCredential: async(id: string) => credentials.delete(id),
-		deleteUserCredentials: async() => {},
+		deleteCredential: async (id: string) => credentials.delete(id),
+		deleteUserCredentials: async () => {},
 		_challenges: challenges,
 		_credentials: credentials
 	}
 }
 
 describe('webauthn handlers', () => {
-	it('stores registration challenge and returns options', async() => {
+	it('stores registration challenge and returns options', async () => {
 		const webauthnAdapter = createWebAuthnAdapter()
 		const handler = createWebAuthnRegisterOptionsHandler({
 			webauthnAdapter,
@@ -120,7 +117,7 @@ describe('webauthn handlers', () => {
 		expect(webauthnAdapter._challenges.size).toBe(1)
 	})
 
-	it('verifies registration and saves credential', async() => {
+	it('verifies registration and saves credential', async () => {
 		const webauthnAdapter = createWebAuthnAdapter()
 		const challengeId = 'c1'
 		await webauthnAdapter.createChallenge({
@@ -148,14 +145,14 @@ describe('webauthn handlers', () => {
 		expect(webauthnAdapter._credentials.size).toBe(1)
 	})
 
-	it('verifies authentication and creates session', async() => {
+	it('verifies authentication and creates session', async () => {
 		const webauthnAdapter = createWebAuthnAdapter()
 		const sessionAdapter = {
-			createSession: vi.fn(async() => ({ id: 's1', userId: 'u1' })),
+			createSession: vi.fn(async () => ({ id: 's1', userId: 'u1' })),
 			setSessionCookie: vi.fn()
 		}
 		const userAdapter = {
-			getUserById: vi.fn(async() => ({ id: 'u1', email: 'u1@example.com' }))
+			getUserById: vi.fn(async () => ({ id: 'u1', email: 'u1@example.com' }))
 		}
 
 		await webauthnAdapter.createChallenge({
@@ -193,10 +190,10 @@ describe('webauthn handlers', () => {
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
 
-	it('creates a session when onLogin returns a userId', async() => {
+	it('creates a session when onLogin returns a userId', async () => {
 		const webauthnAdapter = createWebAuthnAdapter()
 		const sessionAdapter = {
-			createSession: vi.fn(async() => ({ id: 's2', userId: 'hook-user' })),
+			createSession: vi.fn(async () => ({ id: 's2', userId: 'hook-user' })),
 			setSessionCookie: vi.fn()
 		}
 
@@ -219,7 +216,7 @@ describe('webauthn handlers', () => {
 			sessionAdapter,
 			rpID: 'example.com',
 			origin: 'http://localhost',
-			onLogin: async() => ({ userId: 'hook-user' })
+			onLogin: async () => ({ userId: 'hook-user' })
 		})
 
 		const response = await handler(
@@ -234,10 +231,10 @@ describe('webauthn handlers', () => {
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
 
-	it('rejects login when resolved principal is invalid', async() => {
+	it('rejects login when resolved principal is invalid', async () => {
 		const webauthnAdapter = createWebAuthnAdapter()
 		const sessionAdapter = {
-			createSession: vi.fn(async() => ({ id: 's3', userId: 'u1' })),
+			createSession: vi.fn(async () => ({ id: 's3', userId: 'u1' })),
 			setSessionCookie: vi.fn()
 		}
 

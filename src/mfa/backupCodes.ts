@@ -29,13 +29,13 @@ async function sha256Hex(value: string): Promise<string> {
 	const data = new TextEncoder().encode(value)
 	const digest = await crypto.subtle.digest('SHA-256', data)
 	return Array.from(new Uint8Array(digest))
-		.map(b => b.toString(16).padStart(2, '0'))
+		.map((b) => b.toString(16).padStart(2, '0'))
 		.join('')
 }
 
 /** Hashes MFA backup codes for storage. */
 export async function hashBackupCodes(codes: string[]): Promise<string[]> {
-	return Promise.all(codes.map(c => sha256Hex(c)))
+	return Promise.all(codes.map((c) => sha256Hex(c)))
 }
 
 /** Verifies a backup code against stored hashes. */
@@ -43,8 +43,8 @@ export async function verifyBackupCode({
 	code,
 	hashedCodes
 }: {
-	code?: string;
-	hashedCodes?: string[];
+	code?: string
+	hashedCodes?: string[]
 }): Promise<{ valid: boolean; hash?: string; index?: number }> {
 	if (!code || !hashedCodes?.length) return { valid: false }
 	const hash = await sha256Hex(code)

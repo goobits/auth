@@ -7,7 +7,7 @@ describe('crypto utils', () => {
 	afterEach(() => {
 		setLogger(null)
 	})
-	it('round-trips token encryption/decryption', async() => {
+	it('round-trips token encryption/decryption', async () => {
 		const key = 'a'.repeat(64)
 		const payload = { accessToken: 'abc', refreshToken: 'def' }
 		const encrypted = await encryptTokens(payload, key)
@@ -15,14 +15,14 @@ describe('crypto utils', () => {
 		expect(decrypted).toEqual(payload)
 	})
 
-	it('logs encryption errors via the logger', async() => {
+	it('logs encryption errors via the logger', async () => {
 		const error = vi.fn()
 		setLogger({ error })
 		await expect(encryptTokens({ a: 1 }, 'bad')).rejects.toThrow()
 		expect(error).toHaveBeenCalled()
 	})
 
-	it('logs decryption errors via the logger', async() => {
+	it('logs decryption errors via the logger', async () => {
 		const error = vi.fn()
 		setLogger({ error })
 		const result = await decryptTokens('not-json', 'bad')

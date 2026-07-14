@@ -36,7 +36,9 @@
 				{/if}
 			</div>
 
-			<button type="button" class="close-button" onclick={close} aria-label="Close notification">×</button>
+			<button type="button" class="close-button" onclick={close} aria-label="Close notification"
+				>×</button
+			>
 		</div>
 	</div>
 {/if}
@@ -49,14 +51,20 @@
 		max-width: 480px;
 		background: var(--auth-surface, #111);
 		border-radius: var(--auth-radius-lg, 16px);
-		box-shadow: var(--auth-shadow-lg, 0 12px 30px rgba(0,0,0,0.35));
-		border: 1px solid var(--auth-success-border, rgba(34,197,94,0.3));
+		box-shadow: var(--auth-shadow-lg, 0 12px 30px rgba(0, 0, 0, 0.35));
+		border: 1px solid var(--auth-success-border, rgba(34, 197, 94, 0.3));
 		z-index: var(--auth-z-toast, 1200);
 		animation: slideIn 0.3s ease-out;
 	}
 	@keyframes slideIn {
-		from { transform: translateX(100%); opacity: 0; }
-		to { transform: translateX(0); opacity: 1; }
+		from {
+			transform: translateX(100%);
+			opacity: 0;
+		}
+		to {
+			transform: translateX(0);
+			opacity: 1;
+		}
 	}
 	.notification-content {
 		display: flex;
@@ -82,7 +90,7 @@
 	}
 	.notification-body p {
 		margin: 0;
-		color: var(--auth-text-secondary, rgba(255,255,255,0.7));
+		color: var(--auth-text-secondary, rgba(255, 255, 255, 0.7));
 		line-height: 1.5;
 	}
 	.cta-button {
@@ -97,13 +105,13 @@
 	.close-button {
 		background: none;
 		border: none;
-		color: var(--auth-text-secondary, rgba(255,255,255,0.7));
+		color: var(--auth-text-secondary, rgba(255, 255, 255, 0.7));
 		cursor: pointer;
 		padding: 0.25rem 0.5rem;
 		border-radius: var(--auth-radius-sm, 10px);
 	}
 	.close-button:hover {
-		background: var(--auth-bg-secondary, rgba(255,255,255,0.06));
+		background: var(--auth-bg-secondary, rgba(255, 255, 255, 0.06));
 		color: var(--auth-text-primary, #f5f5f5);
 	}
 	@media (max-width: 640px) {

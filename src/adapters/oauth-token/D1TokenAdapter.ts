@@ -8,10 +8,10 @@ type D1Row = Record<string, D1Value>
 type D1DatabaseLike = {
 	prepare: (sql: string) => {
 		bind: (...args: D1Value[]) => {
-			run: () => Promise<void>;
-			first: () => Promise<D1Row | null>;
-		};
-	};
+			run: () => Promise<void>
+			first: () => Promise<D1Row | null>
+		}
+	}
 }
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
@@ -51,10 +51,10 @@ export class D1TokenAdapter extends TokenAdapter {
 	constructor(
 		db: D1DatabaseLike,
 		options: {
-			tokensTable?: string;
-			encrypt?: boolean;
-			encryptionKey?: string | null;
-			columns?: Partial<Record<string, string>>;
+			tokensTable?: string
+			encrypt?: boolean
+			encryptionKey?: string | null
+			columns?: Partial<Record<string, string>>
 		} = {}
 	) {
 		super()
@@ -69,28 +69,24 @@ export class D1TokenAdapter extends TokenAdapter {
 		}
 
 		if (this.encrypt && !this.encryptionKey) {
-			throw new Error(
-				'D1TokenAdapter requires encryptionKey when encryption is enabled'
-			)
+			throw new Error('D1TokenAdapter requires encryptionKey when encryption is enabled')
 		}
 	}
 
 	async storeTokens(userId: string, provider: string, tokens: Record<string, unknown>) {
 		const key = this.encryptionKey ?? ''
-		const tokenData = this.encrypt
-			? await encryptTokens(tokens, key)
-			: JSON.stringify(tokens)
+		const tokenData = this.encrypt ? await encryptTokens(tokens, key) : JSON.stringify(tokens)
 
 		await this.db
 			.prepare(
-				`DELETE FROM ${ this.tokensTable } WHERE ${ this.columns.userId } = ? AND ${ this.columns.provider } = ?`
+				`DELETE FROM ${this.tokensTable} WHERE ${this.columns.userId} = ? AND ${this.columns.provider} = ?`
 			)
 			.bind(userId, provider)
 			.run()
 
 		await this.db
 			.prepare(
-				`INSERT INTO ${ this.tokensTable } (${ this.columns.userId }, ${ this.columns.provider }, ${ this.columns.tokens }) VALUES (?, ?, ?)`
+				`INSERT INTO ${this.tokensTable} (${this.columns.userId}, ${this.columns.provider}, ${this.columns.tokens}) VALUES (?, ?, ?)`
 			)
 			.bind(userId, provider, tokenData)
 			.run()
@@ -99,7 +95,7 @@ export class D1TokenAdapter extends TokenAdapter {
 	async getTokens(userId: string, provider: string) {
 		const row = await this.db
 			.prepare(
-				`SELECT ${ this.columns.tokens } as tokens FROM ${ this.tokensTable } WHERE ${ this.columns.userId } = ? AND ${ this.columns.provider } = ? LIMIT 1`
+				`SELECT ${this.columns.tokens} as tokens FROM ${this.tokensTable} WHERE ${this.columns.userId} = ? AND ${this.columns.provider} = ? LIMIT 1`
 			)
 			.bind(userId, provider)
 			.first()
@@ -115,16 +111,14 @@ export class D1TokenAdapter extends TokenAdapter {
 
 	async refreshTokens(userId: string, provider: string) {
 		const { getLogger } = await import('../../utils/logger.ts')
-		getLogger().warn?.(
-			'refreshTokens not implemented - use provider-specific refresh logic'
-		)
+		getLogger().warn?.('refreshTokens not implemented - use provider-specific refresh logic')
 		return this.getTokens(userId, provider)
 	}
 
 	async deleteTokens(userId: string, provider: string) {
 		await this.db
 			.prepare(
-				`DELETE FROM ${ this.tokensTable } WHERE ${ this.columns.userId } = ? AND ${ this.columns.provider } = ?`
+				`DELETE FROM ${this.tokensTable} WHERE ${this.columns.userId} = ? AND ${this.columns.provider} = ?`
 			)
 			.bind(userId, provider)
 			.run()

@@ -6,13 +6,13 @@ import { createRequestEvent } from '../testKit.ts'
 
 function createSessionAdapter() {
 	return {
-		createSession: vi.fn(async(userId: string) => ({ id: 's1', userId })),
+		createSession: vi.fn(async (userId: string) => ({ id: 's1', userId })),
 		setSessionCookie: vi.fn()
 	}
 }
 
 describe('ensureSessionAfterLogin', () => {
-	it('creates a session and sets the cookie when augment mode is active', async() => {
+	it('creates a session and sets the cookie when augment mode is active', async () => {
 		const sessionAdapter = createSessionAdapter()
 		const event = createRequestEvent()
 
@@ -24,13 +24,13 @@ describe('ensureSessionAfterLogin', () => {
 
 		expect(userId).toBe('u1')
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1')
-		expect(sessionAdapter.setSessionCookie).toHaveBeenCalledWith(
-			event.cookies,
-			{ id: 's1', userId: 'u1' }
-		)
+		expect(sessionAdapter.setSessionCookie).toHaveBeenCalledWith(event.cookies, {
+			id: 's1',
+			userId: 'u1'
+		})
 	})
 
-	it('throws AuthPrincipalResolutionError when userId is null', async() => {
+	it('throws AuthPrincipalResolutionError when userId is null', async () => {
 		const sessionAdapter = createSessionAdapter()
 		const event = createRequestEvent()
 
@@ -44,7 +44,7 @@ describe('ensureSessionAfterLogin', () => {
 		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
 	})
 
-	it('skips session creation in manual mode but still returns the userId', async() => {
+	it('skips session creation in manual mode but still returns the userId', async () => {
 		const sessionAdapter = createSessionAdapter()
 		const event = createRequestEvent()
 
@@ -60,7 +60,7 @@ describe('ensureSessionAfterLogin', () => {
 		expect(sessionAdapter.setSessionCookie).not.toHaveBeenCalled()
 	})
 
-	it('skips session creation when autoCreateSession is false', async() => {
+	it('skips session creation when autoCreateSession is false', async () => {
 		const sessionAdapter = createSessionAdapter()
 		const event = createRequestEvent()
 
@@ -74,9 +74,9 @@ describe('ensureSessionAfterLogin', () => {
 		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
 	})
 
-	it('works without a setSessionCookie implementation', async() => {
+	it('works without a setSessionCookie implementation', async () => {
 		const sessionAdapter = {
-			createSession: vi.fn(async(userId: string) => ({ id: 's', userId }))
+			createSession: vi.fn(async (userId: string) => ({ id: 's', userId }))
 		}
 		const event = createRequestEvent()
 

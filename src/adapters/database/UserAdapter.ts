@@ -11,10 +11,7 @@ export abstract class UserAdapter {
 	 * @param {Object} [metadata] - Additional user metadata
 	 * @returns {Promise<import('../../types/core.ts').User>}
 	 */
-	abstract createUser(
-		profile: OAuthProfile,
-		metadata?: Record<string, unknown>,
-	): Promise<User>
+	abstract createUser(profile: OAuthProfile, metadata?: Record<string, unknown>): Promise<User>
 
 	/**
 	 * Get user by ID (returns SANITIZED user)
@@ -36,10 +33,7 @@ export abstract class UserAdapter {
 	 * @param {string} providerId - Provider-specific user ID
 	 * @returns {Promise<import('../../types/core.ts').User | null>}
 	 */
-	abstract getUserByProviderId(
-		provider: string,
-		providerId: string,
-	): Promise<User | null>
+	abstract getUserByProviderId(provider: string, providerId: string): Promise<User | null>
 
 	/**
 	 * Update user (returns SANITIZED user)
@@ -47,10 +41,7 @@ export abstract class UserAdapter {
 	 * @param {Partial<import('../../types/core.ts').User>} data - Fields to update
 	 * @returns {Promise<import('../../types/core.ts').User>}
 	 */
-	abstract updateUser(
-		id: string,
-		data: Partial<User> & Record<string, unknown>,
-	): Promise<User>
+	abstract updateUser(id: string, data: Partial<User> & Record<string, unknown>): Promise<User>
 
 	/**
 	 * Delete user
@@ -69,7 +60,7 @@ export abstract class UserAdapter {
 	abstract linkOAuthAccount(
 		userId: string,
 		provider: string,
-		providerAccountId: string,
+		providerAccountId: string
 	): Promise<void>
 
 	/**
@@ -79,7 +70,7 @@ export abstract class UserAdapter {
 	 * @private
 	 */
 	abstract getUserWithPasswordHash(
-		email: string,
+		email: string
 	): Promise<(User & { password?: string | null }) | null>
 
 	/**
@@ -88,10 +79,7 @@ export abstract class UserAdapter {
 	 * @param {string} [field] - Identifier field name
 	 * @returns {Promise<import('../../types/core.ts').User | null>}
 	 */
-	getUserByIdentifier?(
-		identifier: string,
-		field?: string,
-	): Promise<User | null>
+	getUserByIdentifier?(identifier: string, field?: string): Promise<User | null>
 
 	/**
 	 * OPTIONAL: Get user with password hash by identifier (for auth only)
@@ -101,6 +89,6 @@ export abstract class UserAdapter {
 	 */
 	getUserWithPasswordHashByIdentifier?(
 		identifier: string,
-		field?: string,
+		field?: string
 	): Promise<(User & { password?: string | null }) | null>
 }

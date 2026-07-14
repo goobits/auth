@@ -3,30 +3,30 @@ import type { AuthEvent } from './events.ts'
 export type AlertSeverity = 'warn' | 'error'
 
 export type SecurityAlert = {
-	type: 'threshold_exceeded';
-	eventName: AuthEvent['name'];
-	severity: AlertSeverity;
-	count: number;
-	windowMs: number;
-	timestamp: string;
+	type: 'threshold_exceeded'
+	eventName: AuthEvent['name']
+	severity: AlertSeverity
+	count: number
+	windowMs: number
+	timestamp: string
 }
 
 export type SecurityAlertHandler = (alert: SecurityAlert) => Promise<void> | void
 
 export type ThresholdRule = {
-	eventName: AuthEvent['name'];
-	max: number;
-	windowMs: number;
-	severity: AlertSeverity;
+	eventName: AuthEvent['name']
+	max: number
+	windowMs: number
+	severity: AlertSeverity
 }
 
 export type SecurityAlertConfig = {
-	rules?: ThresholdRule[];
-	onAlert?: SecurityAlertHandler;
+	rules?: ThresholdRule[]
+	onAlert?: SecurityAlertHandler
 }
 
 type EventWindow = {
-	timestamps: number[];
+	timestamps: number[]
 }
 
 const DEFAULT_RULES: ThresholdRule[] = [
@@ -42,14 +42,14 @@ export function createSecurityAlertObserver({
 }: SecurityAlertConfig = {}) {
 	const windows = new Map<string, EventWindow>()
 
-	return async(event: AuthEvent): Promise<void> => {
+	return async (event: AuthEvent): Promise<void> => {
 		for (const rule of rules) {
 			if (event.name !== rule.eventName) continue
-			const key = `${ rule.eventName }:${ rule.windowMs }`
+			const key = `${rule.eventName}:${rule.windowMs}`
 			const now = Date.now()
 			const window = windows.get(key) ?? { timestamps: [] }
 			const minTs = now - rule.windowMs
-			window.timestamps = window.timestamps.filter(ts => ts >= minTs)
+			window.timestamps = window.timestamps.filter((ts) => ts >= minTs)
 			window.timestamps.push(now)
 			windows.set(key, window)
 			if (window.timestamps.length >= rule.max && onAlert) {

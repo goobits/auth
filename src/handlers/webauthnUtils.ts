@@ -7,19 +7,19 @@ import {
 import { z } from 'zod'
 
 type ChallengeRecord = {
-	id: string;
-	userId: string | null;
-	challenge: string;
-	type: string;
-	expiresAt: string | number | Date;
+	id: string
+	userId: string | null
+	challenge: string
+	type: string
+	expiresAt: string | number | Date
 }
 
 type CredentialRecord = {
-	credentialId: string;
-	userId: string;
-	publicKey: string;
-	counter: number;
-	transports?: string[] | null;
+	credentialId: string
+	userId: string
+	publicKey: string
+	counter: number
+	transports?: string[] | null
 }
 
 export function toUint8Array(value: unknown): Uint8Array {
@@ -32,7 +32,7 @@ export function toUint8Array(value: unknown): Uint8Array {
 	if (typeof value === 'string') {
 		return decodeBase64url(value)
 	}
-	if (Array.isArray(value) && value.every(entry => typeof entry === 'number')) {
+	if (Array.isArray(value) && value.every((entry) => typeof entry === 'number')) {
 		return Uint8Array.from(value)
 	}
 	return new Uint8Array()
@@ -83,9 +83,7 @@ export const loginVerifyRequestSchema = z.object({
 	credential: authenticationResponseSchema
 })
 
-export function toChallengeRecord(
-	value: Record<string, unknown> | null
-): ChallengeRecord | null {
+export function toChallengeRecord(value: Record<string, unknown> | null): ChallengeRecord | null {
 	if (!value) return null
 	const id = value['id'] ?? value['challengeId']
 	const userId = value['userId']
@@ -114,9 +112,7 @@ export function toChallengeRecord(
 	}
 }
 
-export function toCredentialRecord(
-	value: Record<string, unknown> | null
-): CredentialRecord | null {
+export function toCredentialRecord(value: Record<string, unknown> | null): CredentialRecord | null {
 	if (!value) return null
 	const credentialId = value['credentialId']
 	const userId = value['userId']
@@ -130,8 +126,7 @@ export function toCredentialRecord(
 	if (
 		transports !== undefined &&
 		transports !== null &&
-		(!Array.isArray(transports) ||
-			transports.some(entry => typeof entry !== 'string'))
+		(!Array.isArray(transports) || transports.some((entry) => typeof entry !== 'string'))
 	) {
 		return null
 	}
@@ -151,10 +146,7 @@ export function credentialDescriptorFromRecord(
 	const transports = cred['transports']
 	if (typeof id !== 'string') return null
 	if (transports !== undefined && transports !== null) {
-		if (
-			!Array.isArray(transports) ||
-			transports.some(entry => typeof entry !== 'string')
-		) {
+		if (!Array.isArray(transports) || transports.some((entry) => typeof entry !== 'string')) {
 			return { id }
 		}
 		const filtered = transports.filter(

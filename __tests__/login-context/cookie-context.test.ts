@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { createCookieLoginContext, normalizeSafeRedirectPath } from '../../src/login-context/index.ts'
+import {
+	createCookieLoginContext,
+	normalizeSafeRedirectPath
+} from '../../src/login-context/index.ts'
 
 class MockCookies {
 	store = new Map<string, { value: string; options?: Record<string, unknown> }>()
@@ -56,7 +59,7 @@ describe('cookie login context', () => {
 		const cookies = new MockCookies()
 		context.set(cookies, { invite: 'abc', redirectTo: '/app/home' }, { secure: false })
 
-		expect(context.take(cookies, [ 'redirectTo' ])).toEqual({
+		expect(context.take(cookies, ['redirectTo'])).toEqual({
 			invite: 'abc',
 			redirectTo: '/app/home'
 		})
@@ -69,13 +72,17 @@ describe('cookie login context', () => {
 
 describe('safe redirect normalization', () => {
 	it('normalizes relative redirects and enforces allowed prefixes', () => {
-		expect(normalizeSafeRedirectPath('/calendar/a?x=1#top', {
-			allowedPrefixes: [ '/calendar' ]
-		})).toBe('/calendar/a?x=1#top')
+		expect(
+			normalizeSafeRedirectPath('/calendar/a?x=1#top', {
+				allowedPrefixes: ['/calendar']
+			})
+		).toBe('/calendar/a?x=1#top')
 
-		expect(normalizeSafeRedirectPath('/admin', {
-			allowedPrefixes: [ '/calendar' ]
-		})).toBeNull()
+		expect(
+			normalizeSafeRedirectPath('/admin', {
+				allowedPrefixes: ['/calendar']
+			})
+		).toBeNull()
 	})
 
 	it('rejects absolute, protocol-relative, and control-character redirects', () => {

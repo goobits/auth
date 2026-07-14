@@ -11,20 +11,20 @@ import {
 import { VerificationTokenAdapter } from './VerificationTokenAdapter.ts'
 
 type TokensTable = DrizzleTable & {
-	id: DrizzleTable[string];
-	userId: DrizzleTable[string];
-	type: DrizzleTable[string];
-	token: DrizzleTable[string];
-	expiresAt: DrizzleTable[string];
+	id: DrizzleTable[string]
+	userId: DrizzleTable[string]
+	type: DrizzleTable[string]
+	token: DrizzleTable[string]
+	expiresAt: DrizzleTable[string]
 }
 
 type UsersTable = DrizzleTable & {
-	id: DrizzleTable[string];
+	id: DrizzleTable[string]
 }
 
 type TokenUserRecord = {
-	token: VerificationToken;
-	user: User;
+	token: VerificationToken
+	user: User
 }
 
 function toToken(row: DrizzleRow | null): VerificationToken | null {
@@ -69,11 +69,7 @@ function toUser(row: DrizzleRow | null): User | null {
 	if (typeof email !== 'string') return null
 	if (typeof name !== 'string') return null
 	if (avatar !== null && typeof avatar !== 'string') return null
-	if (
-		typeof emailVerified !== 'boolean' &&
-		emailVerified !== 0 &&
-		emailVerified !== 1
-	) {
+	if (typeof emailVerified !== 'boolean' && emailVerified !== 0 && emailVerified !== 1) {
 		return null
 	}
 	return {
@@ -116,10 +112,10 @@ export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
 		token,
 		expiresAt
 	}: {
-		userId: string;
-		type: string;
-		token: string;
-		expiresAt: Date;
+		userId: string
+		type: string
+		token: string
+		expiresAt: Date
 	}): Promise<void> {
 		await this.db.insert(this.tokensTable).values({
 			userId,
@@ -129,8 +125,14 @@ export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
 		})
 	}
 
-	async findByToken({ token, type }: { token: string; type: string }): Promise<TokenUserRecord | null> {
-		const [ record ] = await this.db
+	async findByToken({
+		token,
+		type
+	}: {
+		token: string
+		type: string
+	}): Promise<TokenUserRecord | null> {
+		const [record] = await this.db
 			.select({
 				token: this.tokensTable,
 				user: this.usersTable
@@ -151,18 +153,14 @@ export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
 	}
 
 	async deleteById(tokenId: string): Promise<void> {
-		await this.db
-			.delete(this.tokensTable)
-			.where(eq(requireColumn(this.tokensTable, 'id'), tokenId))
+		await this.db.delete(this.tokensTable).where(eq(requireColumn(this.tokensTable, 'id'), tokenId))
 	}
 
 	async deleteByUserAndType({ userId, type }: { userId: string; type: string }): Promise<void> {
 		await this.db
 			.delete(this.tokensTable)
 			.where(
-				requireCondition(
-					and(eq(this.tokensTable.userId, userId), eq(this.tokensTable.type, type))
-				)
+				requireCondition(and(eq(this.tokensTable.userId, userId), eq(this.tokensTable.type, type)))
 			)
 	}
 
@@ -170,8 +168,8 @@ export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
 		token,
 		type
 	}: {
-		token: string;
-		type: string;
+		token: string
+		type: string
 	}): Promise<TokenUserRecord | null> {
 		// Atomic delete-returning closes the TOCTOU race: only one caller
 		// gets the row back, even under concurrent verifies.
@@ -186,7 +184,7 @@ export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
 
 		// User lookup is a separate read — concurrent calls would only
 		// reach this point for the winner of the delete.
-		const [ userRow ] = await this.db
+		const [userRow] = await this.db
 			.select()
 			.from(this.usersTable)
 			.where(eq(requireColumn(this.usersTable, 'id'), tokenRecord.userId))

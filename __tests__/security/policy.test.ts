@@ -12,10 +12,10 @@ function createEvent({
 	cookies = createCookies(),
 	clientAddress = '127.0.0.1'
 }: {
-	method?: string;
-	headers?: Record<string, string>;
-	cookies?: ReturnType<typeof createCookies>;
-	clientAddress?: string;
+	method?: string
+	headers?: Record<string, string>
+	cookies?: ReturnType<typeof createCookies>
+	clientAddress?: string
 } = {}): RequestEventLike {
 	return {
 		...createRequestEvent({
@@ -51,9 +51,9 @@ function createAuditSettings(emitter: ReturnType<typeof vi.fn>) {
 }
 
 describe('security policy wrapper', () => {
-	it('blocks missing csrf token when required', async() => {
+	it('blocks missing csrf token when required', async () => {
 		const handler = applySecurityPolicy({
-			handler: async() => new Response(JSON.stringify({ ok: true })),
+			handler: async () => new Response(JSON.stringify({ ok: true })),
 			routeId: 'magic.request',
 			settings: {
 				csrf: {
@@ -79,12 +79,12 @@ describe('security policy wrapper', () => {
 		expect(response.status).toBe(403)
 	})
 
-	it('rate limits repeated requests', async() => {
+	it('rate limits repeated requests', async () => {
 		const cookies = createCookies({
 			'csrf-token': 'token'
 		})
 		const handler = applySecurityPolicy({
-			handler: async() => new Response(JSON.stringify({ ok: true })),
+			handler: async () => new Response(JSON.stringify({ ok: true })),
 			routeId: 'magic.request',
 			settings: {
 				csrf: {
@@ -122,9 +122,9 @@ describe('security policy wrapper', () => {
 		expect(second.status).toBe(429)
 	})
 
-	it('uses the first forwarded ip when proxy headers are trusted', async() => {
+	it('uses the first forwarded ip when proxy headers are trusted', async () => {
 		const handler = applySecurityPolicy({
-			handler: async() => new Response(JSON.stringify({ ok: true })),
+			handler: async () => new Response(JSON.stringify({ ok: true })),
 			routeId: 'magic.request',
 			settings: {
 				csrf: {
@@ -169,9 +169,9 @@ describe('security policy wrapper', () => {
 		expect(thirdDifferentForwardedIp.status).toBe(200)
 	})
 
-	it('uses the Cloudflare connecting ip when explicitly trusted', async() => {
+	it('uses the Cloudflare connecting ip when explicitly trusted', async () => {
 		const handler = applySecurityPolicy({
-			handler: async() => new Response(JSON.stringify({ ok: true })),
+			handler: async () => new Response(JSON.stringify({ ok: true })),
 			routeId: 'magic.request',
 			settings: {
 				csrf: {
@@ -225,9 +225,9 @@ describe('security policy wrapper', () => {
 		expect(thirdDifferentCloudflareIp.status).toBe(200)
 	})
 
-	it('ignores untrusted forwarded headers', async() => {
+	it('ignores untrusted forwarded headers', async () => {
 		const handler = applySecurityPolicy({
-			handler: async() => new Response(JSON.stringify({ ok: true })),
+			handler: async () => new Response(JSON.stringify({ ok: true })),
 			routeId: 'magic.request',
 			settings: {
 				csrf: {
@@ -265,10 +265,10 @@ describe('security policy wrapper', () => {
 		expect(secondSameForwardedIp.status).toBe(200)
 	})
 
-	it('audits redirects as successful control flow', async() => {
+	it('audits redirects as successful control flow', async () => {
 		const emitter = vi.fn()
 		const handler = applySecurityPolicy({
-			handler: async() => {
+			handler: async () => {
 				throw redirect(303, '/')
 			},
 			routeId: 'auth.logout',
@@ -282,15 +282,13 @@ describe('security policy wrapper', () => {
 		expect(emitter).toHaveBeenCalledWith(
 			expect.objectContaining({ name: 'auth.success', severity: 'info', status: 303 })
 		)
-		expect(emitter).not.toHaveBeenCalledWith(
-			expect.objectContaining({ name: 'auth.failure' })
-		)
+		expect(emitter).not.toHaveBeenCalledWith(expect.objectContaining({ name: 'auth.failure' }))
 	})
 
-	it('preserves expected HTTP failure status and severity in audit events', async() => {
+	it('preserves expected HTTP failure status and severity in audit events', async () => {
 		const emitter = vi.fn()
 		const handler = applySecurityPolicy({
-			handler: async() => {
+			handler: async () => {
 				throw httpError(403, 'Forbidden')
 			},
 			routeId: 'sessions.revoke',

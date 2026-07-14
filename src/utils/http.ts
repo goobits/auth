@@ -1,8 +1,6 @@
 import { z } from 'zod'
 
-export async function parseRequestData(
-	request: Request
-): Promise<Record<string, unknown>> {
+export async function parseRequestData(request: Request): Promise<Record<string, unknown>> {
 	const contentType = request.headers.get('content-type') || ''
 	if (contentType.includes('application/json')) {
 		const data = await request.json().catch(() => ({}))
@@ -29,10 +27,7 @@ export async function parseRequestDataWithSchema<T extends z.ZodTypeAny>(
 	return parsed.data
 }
 
-export function jsonResponse(
-	payload: unknown,
-	status: number = 200
-): Response {
+export function jsonResponse(payload: unknown, status: number = 200): Response {
 	return new Response(JSON.stringify(payload), {
 		status,
 		headers: { 'content-type': 'application/json' }

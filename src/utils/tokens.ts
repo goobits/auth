@@ -10,7 +10,8 @@ const DEFAULT_TOKEN_EXPIRATION_MS = 24 * 60 * 60 * 1000 // 24 hours
 export { VERIFICATION_TOKEN_TYPES } from '../types/core.ts'
 
 type VerificationTokenType =
-	(typeof VERIFICATION_TOKEN_TYPES)[keyof typeof VERIFICATION_TOKEN_TYPES] | string
+	| (typeof VERIFICATION_TOKEN_TYPES)[keyof typeof VERIFICATION_TOKEN_TYPES]
+	| string
 
 /** Hashes an opaque verification token for adapter storage or lookup. */
 export const hashVerificationToken = (token: string): Promise<string> => sha256Hex(token)
@@ -32,11 +33,11 @@ export async function createVerificationToken({
 	expiresInMs = DEFAULT_TOKEN_EXPIRATION_MS,
 	metadata
 }: {
-	adapter: VerificationTokenAdapter;
-	userId: string;
-	type: VerificationTokenType;
-	expiresInMs?: number;
-	metadata?: Record<string, unknown>;
+	adapter: VerificationTokenAdapter
+	userId: string
+	type: VerificationTokenType
+	expiresInMs?: number
+	metadata?: Record<string, unknown>
 }): Promise<string> {
 	const tokenValue = await generateRandomUUID()
 	const tokenHash = await hashVerificationToken(tokenValue)
@@ -47,11 +48,11 @@ export async function createVerificationToken({
 
 	// Create new token
 	const createInput: {
-		userId: string;
-		type: string;
-		token: string;
-		expiresAt: Date;
-		metadata?: Record<string, unknown>;
+		userId: string
+		type: string
+		token: string
+		expiresAt: Date
+		metadata?: Record<string, unknown>
 	} = {
 		userId,
 		type,
@@ -70,9 +71,9 @@ export async function getVerificationTokenRecord({
 	token,
 	type
 }: {
-	adapter: VerificationTokenAdapter;
-	token: string;
-	type: VerificationTokenType;
+	adapter: VerificationTokenAdapter
+	token: string
+	type: VerificationTokenType
 }): Promise<VerificationTokenRecord | null> {
 	const tokenHash = await hashVerificationToken(token)
 	const record = await adapter.findByToken({ token: tokenHash, type })
@@ -86,9 +87,9 @@ export async function consumeVerificationTokenRecord({
 	token,
 	type
 }: {
-	adapter: VerificationTokenAdapter;
-	token: string;
-	type: VerificationTokenType;
+	adapter: VerificationTokenAdapter
+	token: string
+	type: VerificationTokenType
 }): Promise<VerificationTokenRecord | null> {
 	const tokenHash = await hashVerificationToken(token)
 	const record = await adapter.consumeByToken({ token: tokenHash, type })
@@ -112,10 +113,10 @@ export async function consumeVerificationToken({
 	type,
 	sanitizeUser = (user: Record<string, unknown>) => user
 }: {
-	adapter: VerificationTokenAdapter;
-	token: string;
-	type: VerificationTokenType;
-	sanitizeUser?: (user: Record<string, unknown>) => unknown;
+	adapter: VerificationTokenAdapter
+	token: string
+	type: VerificationTokenType
+	sanitizeUser?: (user: Record<string, unknown>) => unknown
 }): Promise<unknown | null> {
 	const record = await consumeVerificationTokenRecord({ adapter, token, type })
 	if (!record) return null
@@ -139,10 +140,10 @@ export async function getUserForVerificationToken({
 	type,
 	sanitizeUser = (user: Record<string, unknown>) => user
 }: {
-	adapter: VerificationTokenAdapter;
-	token: string;
-	type: VerificationTokenType;
-	sanitizeUser?: (user: Record<string, unknown>) => unknown;
+	adapter: VerificationTokenAdapter
+	token: string
+	type: VerificationTokenType
+	sanitizeUser?: (user: Record<string, unknown>) => unknown
 }): Promise<unknown | null> {
 	const record = await getVerificationTokenRecord({ adapter, token, type })
 	if (!record) return null

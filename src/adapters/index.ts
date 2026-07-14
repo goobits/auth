@@ -36,11 +36,7 @@ export {
 export { MfaAdapter } from './mfa/index.ts'
 
 // WebAuthn Adapters
-export {
-	D1WebAuthnAdapter,
-	DrizzleWebAuthnAdapter,
-	WebAuthnAdapter
-} from './webauthn/index.ts'
+export { D1WebAuthnAdapter, DrizzleWebAuthnAdapter, WebAuthnAdapter } from './webauthn/index.ts'
 
 // One-stop Drizzle adapter bundle
 export type {

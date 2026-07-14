@@ -7,21 +7,21 @@ import type { DrizzleDbLike, DrizzleJson, DrizzleRow, DrizzleTable } from '../dr
 import { SessionAdapter } from './SessionAdapter.ts'
 
 type SessionsTable = DrizzleTable & {
-	id: DrizzleTable[string];
-	userId: DrizzleTable[string];
-	expiresAt: DrizzleTable[string];
-	createdAt?: DrizzleTable[string];
-	lastActiveAt?: DrizzleTable[string];
-	ip?: DrizzleTable[string];
-	userAgent?: DrizzleTable[string];
+	id: DrizzleTable[string]
+	userId: DrizzleTable[string]
+	expiresAt: DrizzleTable[string]
+	createdAt?: DrizzleTable[string]
+	lastActiveAt?: DrizzleTable[string]
+	ip?: DrizzleTable[string]
+	userAgent?: DrizzleTable[string]
 }
 
 type UsersTable = DrizzleTable & {
-	id: DrizzleTable[string];
-	email: DrizzleTable[string];
-	name: DrizzleTable[string];
-	avatar?: DrizzleTable[string];
-	emailVerified?: DrizzleTable[string];
+	id: DrizzleTable[string]
+	email: DrizzleTable[string]
+	name: DrizzleTable[string]
+	avatar?: DrizzleTable[string]
+	emailVerified?: DrizzleTable[string]
 }
 
 function toUser(row: DrizzleRow | null): User | null {
@@ -35,11 +35,7 @@ function toUser(row: DrizzleRow | null): User | null {
 	if (typeof email !== 'string') return null
 	if (typeof name !== 'string') return null
 	if (avatar !== null && typeof avatar !== 'string') return null
-	if (
-		typeof emailVerified !== 'boolean' &&
-		emailVerified !== 0 &&
-		emailVerified !== 1
-	) {
+	if (typeof emailVerified !== 'boolean' && emailVerified !== 0 && emailVerified !== 1) {
 		return null
 	}
 	return {
@@ -70,7 +66,7 @@ function toSession(row: DrizzleRow | null): Session | null {
 
 function pickSessionMetadata(metadata: Record<string, DrizzleJson>): DrizzleRow {
 	const values: DrizzleRow = {}
-	for (const [ key, value ] of Object.entries(metadata)) {
+	for (const [key, value] of Object.entries(metadata)) {
 		values[key] = value
 	}
 	return values
@@ -92,27 +88,24 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 	constructor(
 		db: DrizzleDbLike,
 		options: {
-			sessionsTable?: SessionsTable;
-			usersTable?: UsersTable;
-			sessionLifetime?: number;
-			sessionRefreshThreshold?: number;
-			cookieName?: string;
-			secureCookies?: boolean;
-			sanitizeUser?: (user: User | null) => User | null;
+			sessionsTable?: SessionsTable
+			usersTable?: UsersTable
+			sessionLifetime?: number
+			sessionRefreshThreshold?: number
+			cookieName?: string
+			secureCookies?: boolean
+			sanitizeUser?: (user: User | null) => User | null
 		} = {}
 	) {
 		super()
 		if (!options.sessionsTable || !options.usersTable) {
-			throw new Error(
-				'DrizzleSessionAdapter requires sessionsTable and usersTable options'
-			)
+			throw new Error('DrizzleSessionAdapter requires sessionsTable and usersTable options')
 		}
 		this.db = db
 		this.sessionsTable = options.sessionsTable
 		this.usersTable = options.usersTable
 		this.sessionLifetime = options.sessionLifetime || 30 * 24 * 60 * 60 * 1000
-		this.sessionRefreshThreshold =
-			options.sessionRefreshThreshold || this.sessionLifetime / 2
+		this.sessionRefreshThreshold = options.sessionRefreshThreshold || this.sessionLifetime / 2
 		this.cookieName = options.cookieName || 'session'
 		this.secureCookies = options.secureCookies !== false
 		this.sanitizeUser = options.sanitizeUser || this._defaultSanitizeUser
@@ -146,8 +139,10 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		return { id: sessionId, userId, expiresAt }
 	}
 
-	async validateSession(sessionId: string): Promise<{ session: Session | null; user: User | null }> {
-		const [ result ] = await this.db
+	async validateSession(
+		sessionId: string
+	): Promise<{ session: Session | null; user: User | null }> {
+		const [result] = await this.db
 			.select({
 				user: this.usersTable,
 				session: this.sessionsTable
@@ -160,13 +155,10 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		const session = toSession(result['session'] ?? null)
 		if (!session) return { session: null, user: null }
 		if (Date.now() >= session.expiresAt.getTime()) {
-			await this.db
-				.delete(this.sessionsTable)
-				.where(eq(this.sessionsTable.id, sessionId))
+			await this.db.delete(this.sessionsTable).where(eq(this.sessionsTable.id, sessionId))
 			return { session: null, user: null }
 		}
-		const shouldRefresh =
-			Date.now() >= session.expiresAt.getTime() - this.sessionRefreshThreshold
+		const shouldRefresh = Date.now() >= session.expiresAt.getTime() - this.sessionRefreshThreshold
 		if (shouldRefresh) {
 			session.expiresAt = new Date(Date.now() + this.sessionLifetime)
 			session.fresh = true
@@ -182,15 +174,11 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 	}
 
 	async invalidateSession(sessionId: string): Promise<void> {
-		await this.db
-			.delete(this.sessionsTable)
-			.where(eq(this.sessionsTable.id, sessionId))
+		await this.db.delete(this.sessionsTable).where(eq(this.sessionsTable.id, sessionId))
 	}
 
 	async invalidateUserSessions(userId: string): Promise<void> {
-		await this.db
-			.delete(this.sessionsTable)
-			.where(eq(this.sessionsTable.userId, userId))
+		await this.db.delete(this.sessionsTable).where(eq(this.sessionsTable.userId, userId))
 	}
 
 	async listSessions(userId: string): Promise<Session[]> {

@@ -1,4 +1,7 @@
-export { AuthAdapterCapabilityError, AuthPrincipalResolutionError } from './errors/AuthPrincipalResolutionError.ts'
+export {
+	AuthAdapterCapabilityError,
+	AuthPrincipalResolutionError
+} from './errors/AuthPrincipalResolutionError.ts'
 export type { Auth, GoobitsAuthConfig, GoobitsAuthRoutingConfig } from './GoobitsAuth.ts'
 export { GoobitsAuth } from './GoobitsAuth.ts'
 export {

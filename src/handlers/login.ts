@@ -6,10 +6,10 @@ import { createOAuthCookies } from '../utils/oauth.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 
 type LoginHandlerConfig = {
-	providers: Record<string, { provider: OAuthProvider; scopes?: string[] }>;
-	redirectAfterLogin?: string;
-	secureCookies?: boolean;
-	isAuthenticated?: (locals: AuthLocals) => boolean;
+	providers: Record<string, { provider: OAuthProvider; scopes?: string[] }>
+	redirectAfterLogin?: string
+	secureCookies?: boolean
+	isAuthenticated?: (locals: AuthLocals) => boolean
 }
 
 /**
@@ -49,7 +49,7 @@ export function createLoginHandler(config: LoginHandlerConfig) {
 		isAuthenticated = (locals: AuthLocals) => !!locals.user
 	} = config
 
-	return async({ cookies, params, locals }: RequestEventLike) => {
+	return async ({ cookies, params, locals }: RequestEventLike) => {
 		// Check if already authenticated
 		if (isAuthenticated(locals)) {
 			throw redirect(302, isSafeRedirectPath(redirectAfterLogin) ? redirectAfterLogin : '/')
@@ -65,18 +65,13 @@ export function createLoginHandler(config: LoginHandlerConfig) {
 		const { provider, scopes } = providerConfig
 
 		// Generate state and code verifier cookies
-		const { state, codeVerifier } = createOAuthCookies(
-			cookies,
-			providerName,
-			{ secure: secureCookies, sameSite: 'lax' }
-		)
+		const { state, codeVerifier } = createOAuthCookies(cookies, providerName, {
+			secure: secureCookies,
+			sameSite: 'lax'
+		})
 
 		// Create authorization URL
-		const authUrl = provider.createAuthorizationURL(
-			state,
-			codeVerifier,
-			scopes || []
-		)
+		const authUrl = provider.createAuthorizationURL(state, codeVerifier, scopes || [])
 
 		// Special handling for Apple
 		if (providerName === 'apple') {

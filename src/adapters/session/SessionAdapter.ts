@@ -13,10 +13,7 @@ export abstract class SessionAdapter {
 	 * @param {Object} [metadata] - Additional session metadata
 	 * @returns {Promise<import('../../types/core.ts').Session>}
 	 */
-	abstract createSession(
-		userId: string,
-		metadata?: SessionMetadata,
-	): Promise<Session>
+	abstract createSession(userId: string, metadata?: SessionMetadata): Promise<Session>
 
 	/**
 	 * Validate a session and return session + sanitized user
@@ -24,7 +21,7 @@ export abstract class SessionAdapter {
 	 * @returns {Promise<{session: import('../../types/core.ts').Session | null, user: import('../../types/core.ts').User | null}>}
 	 */
 	abstract validateSession(
-		sessionId: string,
+		sessionId: string
 	): Promise<{ session: Session | null; user: User | null }>
 
 	/**

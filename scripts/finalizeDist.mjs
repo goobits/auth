@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
-const runtimeDirs = [ join(root, 'dist', 'node'), join(root, 'dist', 'worker') ]
-const assetDirs = [ ...runtimeDirs, join(root, 'dist', 'types') ]
+const runtimeDirs = [join(root, 'dist', 'node'), join(root, 'dist', 'worker')]
+const assetDirs = [...runtimeDirs, join(root, 'dist', 'types')]
 
 function rewriteRelativeTypeScriptImports(source) {
 	return source.replace(/(['"])([.][.]?\/[^'"]+)\.ts\1/g, '$1$2.js$1')
@@ -20,7 +20,7 @@ async function copyUiAssets() {
 	}
 
 	for (const entry of entries) {
-		if (!entry.isFile() || ![ '.svelte', '.css' ].includes(extname(entry.name))) {
+		if (!entry.isFile() || !['.svelte', '.css'].includes(extname(entry.name))) {
 			continue
 		}
 

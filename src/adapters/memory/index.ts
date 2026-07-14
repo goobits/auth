@@ -1,7 +1,14 @@
 import { encodeBase64url } from '@oslojs/encoding'
 import type { Cookies } from '@sveltejs/kit'
 
-import type { MfaStatus, OAuthProfile, OAuthTokens, Session, User, WebAuthnCredential } from '../../types/index.ts'
+import type {
+	MfaStatus,
+	OAuthProfile,
+	OAuthTokens,
+	Session,
+	User,
+	WebAuthnCredential
+} from '../../types/index.ts'
 import { UserAdapter } from '../database/UserAdapter.ts'
 import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
 import { MfaAdapter } from '../mfa/MfaAdapter.ts'
@@ -11,13 +18,13 @@ import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.ts'
 
 type StoredUser = User & { password?: string | null }
 type StoredMagicLinkToken = {
-	id: string;
-	userId: string | null;
-	email: string;
-	tokenHash: string;
-	otpHash?: string | null;
-	expiresAt: Date;
-	metadata?: Record<string, unknown>;
+	id: string
+	userId: string | null
+	email: string
+	tokenHash: string
+	otpHash?: string | null
+	expiresAt: Date
+	metadata?: Record<string, unknown>
 }
 
 /** In-memory user adapter for local development and tests. */
@@ -66,7 +73,7 @@ export class MemoryUserAdapter extends UserAdapter {
 	}
 
 	async getUserByProviderId(provider: string, providerId: string): Promise<User | null> {
-		const userId = this.#oauthIndex.get(`${ provider }:${ providerId }`)
+		const userId = this.#oauthIndex.get(`${provider}:${providerId}`)
 		return userId ? this.getUserById(userId) : null
 	}
 
@@ -88,11 +95,17 @@ export class MemoryUserAdapter extends UserAdapter {
 		this.#users.delete(id)
 	}
 
-	async linkOAuthAccount(userId: string, provider: string, providerAccountId: string): Promise<void> {
-		this.#oauthIndex.set(`${ provider }:${ providerAccountId }`, userId)
+	async linkOAuthAccount(
+		userId: string,
+		provider: string,
+		providerAccountId: string
+	): Promise<void> {
+		this.#oauthIndex.set(`${provider}:${providerAccountId}`, userId)
 	}
 
-	async getUserWithPasswordHash(email: string): Promise<(User & { password?: string | null }) | null> {
+	async getUserWithPasswordHash(
+		email: string
+	): Promise<(User & { password?: string | null }) | null> {
 		const normalized = email.trim().toLowerCase()
 		for (const user of this.#users.values()) {
 			if (user.email === normalized) {
@@ -116,14 +129,14 @@ export class MemoryMagicLinkAdapter extends MagicLinkAdapter {
 		expiresAt,
 		metadata
 	}: {
-		userId: string | null;
-		email: string;
-		tokenHash: string;
-		otpHash?: string | null;
-		expiresAt: Date;
-		metadata?: Record<string, unknown>;
+		userId: string | null
+		email: string
+		tokenHash: string
+		otpHash?: string | null
+		expiresAt: Date
+		metadata?: Record<string, unknown>
 	}): Promise<Record<string, unknown>> {
-		const id = `magic-${ ++this.#counter }`
+		const id = `magic-${++this.#counter}`
 		const token: StoredMagicLinkToken = {
 			id,
 			userId,
@@ -148,8 +161,8 @@ export class MemoryMagicLinkAdapter extends MagicLinkAdapter {
 		email,
 		otpHash
 	}: {
-		email: string;
-		otpHash: string;
+		email: string
+		otpHash: string
 	}): Promise<Record<string, unknown> | null> {
 		for (const token of this.#tokens.values()) {
 			if (token.email === email && token.otpHash === otpHash) return token
@@ -162,13 +175,13 @@ export class MemoryMagicLinkAdapter extends MagicLinkAdapter {
 	}
 
 	async deleteByUserId(userId: string): Promise<void> {
-		for (const [ id, token ] of this.#tokens.entries()) {
+		for (const [id, token] of this.#tokens.entries()) {
 			if (token.userId === userId) this.#tokens.delete(id)
 		}
 	}
 
 	async deleteByEmail(email: string): Promise<void> {
-		for (const [ id, token ] of this.#tokens.entries()) {
+		for (const [id, token] of this.#tokens.entries()) {
 			if (token.email === email) this.#tokens.delete(id)
 		}
 	}
@@ -181,8 +194,8 @@ export class MemoryMagicLinkAdapter extends MagicLinkAdapter {
 	}
 
 	async consumeByEmailAndOtpHash(params: {
-		email: string;
-		otpHash: string;
+		email: string
+		otpHash: string
 	}): Promise<Record<string, unknown> | null> {
 		const token = await this.findByEmailAndOtpHash(params)
 		const id = typeof token?.['id'] === 'string' ? token['id'] : null
@@ -207,11 +220,11 @@ export class MemorySessionAdapter extends SessionAdapter {
 		sessionLifetimeMs = 30 * 24 * 60 * 60 * 1000,
 		users
 	}: {
-		cookieDomain?: string;
-		cookieName: string;
-		secureCookies: boolean;
-		sessionLifetimeMs?: number;
-		users: MemoryUserAdapter;
+		cookieDomain?: string
+		cookieName: string
+		secureCookies: boolean
+		sessionLifetimeMs?: number
+		users: MemoryUserAdapter
 	}) {
 		super()
 		this.#cookieDomain = cookieDomain
@@ -238,7 +251,9 @@ export class MemorySessionAdapter extends SessionAdapter {
 		return session
 	}
 
-	async validateSession(sessionId: string): Promise<{ session: Session | null; user: User | null }> {
+	async validateSession(
+		sessionId: string
+	): Promise<{ session: Session | null; user: User | null }> {
 		const session = this.#sessions.get(sessionId)
 		if (!session) {
 			return { session: null, user: null }
@@ -258,7 +273,7 @@ export class MemorySessionAdapter extends SessionAdapter {
 	}
 
 	async invalidateUserSessions(userId: string): Promise<void> {
-		for (const [ id, session ] of this.#sessions.entries()) {
+		for (const [id, session] of this.#sessions.entries()) {
 			if (session.userId === userId) {
 				this.#sessions.delete(id)
 			}
@@ -266,7 +281,7 @@ export class MemorySessionAdapter extends SessionAdapter {
 	}
 
 	async listSessions(userId: string): Promise<Session[]> {
-		return [ ...this.#sessions.values() ].filter(session => session.userId === userId)
+		return [...this.#sessions.values()].filter((session) => session.userId === userId)
 	}
 
 	setSessionCookie(cookies: Cookies, session: Session): void {
@@ -300,11 +315,11 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 		type,
 		expiresAt
 	}: {
-		challengeId: string;
-		userId?: string | null;
-		challenge: string;
-		type: string;
-		expiresAt: Date;
+		challengeId: string
+		userId?: string | null
+		challenge: string
+		type: string
+		expiresAt: Date
 	}): Promise<void> {
 		this.#challenges.set(challengeId, {
 			challenge,
@@ -331,12 +346,12 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 		transports,
 		name
 	}: {
-		userId: string;
-		credentialId: string;
-		publicKey: string;
-		counter: number;
-		transports?: string[] | null;
-		name?: string | null;
+		userId: string
+		credentialId: string
+		publicKey: string
+		counter: number
+		transports?: string[] | null
+		name?: string | null
 	}): Promise<void> {
 		const now = new Date()
 		this.#credentials.set(credentialId, {
@@ -357,13 +372,10 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 	}
 
 	async listCredentials(userId: string): Promise<WebAuthnCredential[]> {
-		return [ ...this.#credentials.values() ].filter(credential => credential.userId === userId)
+		return [...this.#credentials.values()].filter((credential) => credential.userId === userId)
 	}
 
-	async updateCredential(
-		credentialId: string,
-		updates: Record<string, unknown>
-	): Promise<void> {
+	async updateCredential(credentialId: string, updates: Record<string, unknown>): Promise<void> {
 		const existing = this.#credentials.get(credentialId)
 		if (!existing) {
 			return
@@ -381,7 +393,7 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 		if (
 			updates['transports'] === null ||
 			(Array.isArray(updates['transports']) &&
-				updates['transports'].every(entry => typeof entry === 'string'))
+				updates['transports'].every((entry) => typeof entry === 'string'))
 		) {
 			next.transports = updates['transports']
 		}
@@ -393,7 +405,7 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 	}
 
 	async deleteUserCredentials(userId: string): Promise<void> {
-		for (const [ credentialId, credential ] of this.#credentials.entries()) {
+		for (const [credentialId, credential] of this.#credentials.entries()) {
 			if (credential.userId === userId) {
 				this.#credentials.delete(credentialId)
 			}
@@ -439,7 +451,7 @@ export class MemoryMfaAdapter extends MfaAdapter {
 	}
 
 	async getBackupCodes(userId: string): Promise<string[]> {
-		return [ ...(this.#backupCodes.get(userId) ?? []) ]
+		return [...(this.#backupCodes.get(userId) ?? [])]
 	}
 
 	async consumeBackupCode(userId: string, hash: string): Promise<void> {
@@ -458,9 +470,9 @@ export class MemoryMfaAdapter extends MfaAdapter {
 
 /** Creates the default in-memory auth adapter bundle. */
 export function createMemoryAuthAdapters(input: {
-	cookieDomain?: string;
-	cookieName: string;
-	secureCookies: boolean;
+	cookieDomain?: string
+	cookieName: string
+	secureCookies: boolean
 }) {
 	const user = new MemoryUserAdapter()
 	return {
@@ -507,11 +519,11 @@ export class MockTokenAdapter extends TokenAdapter {
 	#tokens = new Map<string, OAuthTokens>()
 
 	async storeTokens(userId: string, provider: string, tokens: OAuthTokens): Promise<void> {
-		this.#tokens.set(`${ userId }:${ provider }`, tokens)
+		this.#tokens.set(`${userId}:${provider}`, tokens)
 	}
 
 	async getTokens(userId: string, provider: string): Promise<OAuthTokens | null> {
-		return this.#tokens.get(`${ userId }:${ provider }`) ?? null
+		return this.#tokens.get(`${userId}:${provider}`) ?? null
 	}
 
 	async refreshTokens(userId: string, provider: string): Promise<OAuthTokens | null> {
@@ -519,7 +531,7 @@ export class MockTokenAdapter extends TokenAdapter {
 	}
 
 	async deleteTokens(userId: string, provider: string): Promise<void> {
-		this.#tokens.delete(`${ userId }:${ provider }`)
+		this.#tokens.delete(`${userId}:${provider}`)
 	}
 }
 

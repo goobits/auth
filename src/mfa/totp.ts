@@ -36,10 +36,7 @@ function fromBase32(input: string): Uint8Array {
 	return new Uint8Array(output)
 }
 
-async function hmacSha1(
-	keyBytes: Uint8Array,
-	messageBytes: Uint8Array
-): Promise<Uint8Array> {
+async function hmacSha1(keyBytes: Uint8Array, messageBytes: Uint8Array): Promise<Uint8Array> {
 	if (!globalThis.crypto?.subtle) {
 		throw new Error('WebCrypto is required')
 	}
@@ -48,13 +45,9 @@ async function hmacSha1(
 		keyBytes as unknown as BufferSource,
 		{ name: 'HMAC', hash: 'SHA-1' },
 		false,
-		[ 'sign' ]
+		['sign']
 	)
-	const sig = await crypto.subtle.sign(
-		'HMAC',
-		key,
-		messageBytes as unknown as BufferSource
-	)
+	const sig = await crypto.subtle.sign('HMAC', key, messageBytes as unknown as BufferSource)
 	return new Uint8Array(sig)
 }
 
@@ -82,11 +75,11 @@ export function createOtpAuthURL({
 	digits = 6,
 	period = 30
 }: {
-	secret?: string;
-	label?: string;
-	issuer?: string;
-	digits?: number;
-	period?: number;
+	secret?: string
+	label?: string
+	issuer?: string
+	digits?: number
+	period?: number
 } = {}): string {
 	const params = new URLSearchParams({
 		secret,
@@ -94,7 +87,7 @@ export function createOtpAuthURL({
 		digits: String(digits),
 		period: String(period)
 	})
-	return `otpauth://totp/${ encodeURIComponent(label) }?${ params.toString() }`
+	return `otpauth://totp/${encodeURIComponent(label)}?${params.toString()}`
 }
 
 /** Generates a TOTP token for a secret and time window. */
@@ -104,10 +97,10 @@ export async function generateTOTP({
 	digits = 6,
 	period = 30
 }: {
-	secret?: string;
-	time?: number;
-	digits?: number;
-	period?: number;
+	secret?: string
+	time?: number
+	digits?: number
+	period?: number
 } = {}): Promise<string> {
 	if (!secret) {
 		throw new Error('TOTP secret is required')
@@ -136,12 +129,12 @@ export async function verifyTOTP({
 	window = 1,
 	time = Date.now()
 }: {
-	secret?: string;
-	token?: string;
-	digits?: number;
-	period?: number;
-	window?: number;
-	time?: number;
+	secret?: string
+	token?: string
+	digits?: number
+	period?: number
+	window?: number
+	time?: number
 } = {}): Promise<boolean> {
 	if (!secret || !token) return false
 	for (let errorWindow = -window; errorWindow <= window; errorWindow += 1) {

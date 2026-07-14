@@ -3,19 +3,19 @@ import { describe, expect, it } from 'vitest'
 import { redactObject } from '../../src/utils/redact.ts'
 
 type RedactedOutput = {
-	password: string;
-	profile: { token: string; nested: Array<{ Access_Token: string }> };
-	ok: boolean;
+	password: string
+	profile: { token: string; nested: Array<{ Access_Token: string }> }
+	ok: boolean
 }
 
 type SensitiveRedactedOutput = {
-	api_key: string;
-	apiKey: string;
-	client_secret: string;
-	clientSecret: string;
-	verification_token: string;
-	totp: string;
-	passphrase: string;
+	api_key: string
+	apiKey: string
+	client_secret: string
+	clientSecret: string
+	verification_token: string
+	totp: string
+	passphrase: string
 }
 
 describe('redactObject', () => {
@@ -24,7 +24,7 @@ describe('redactObject', () => {
 			password: 'secret',
 			profile: {
 				token: 'abc',
-				nested: [ { Access_Token: 'def' } ]
+				nested: [{ Access_Token: 'def' }]
 			},
 			ok: true
 		}

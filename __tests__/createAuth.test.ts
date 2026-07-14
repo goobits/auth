@@ -11,25 +11,25 @@ function createSessionAdapter({
 	cookieName = 'session',
 	validateResult = { session: null, user: null }
 }: {
-	cookieName?: string;
-	validateResult?: { session: Session | null; user: { id: string } | null };
+	cookieName?: string
+	validateResult?: { session: Session | null; user: { id: string } | null }
 } = {}): SessionAdapter {
 	return {
 		cookieName,
-		validateSession: vi.fn(async() => validateResult),
+		validateSession: vi.fn(async () => validateResult),
 		setSessionCookie: vi.fn(),
 		deleteSessionCookie: vi.fn(),
-		createSession: vi.fn(async(userId: string) => ({ id: `s:${ userId }`, userId })),
-		invalidateSession: vi.fn(async() => {}),
-		invalidateUserSessions: vi.fn(async() => {}),
-		listSessions: vi.fn(async() => [])
+		createSession: vi.fn(async (userId: string) => ({ id: `s:${userId}`, userId })),
+		invalidateSession: vi.fn(async () => {}),
+		invalidateUserSessions: vi.fn(async () => {}),
+		listSessions: vi.fn(async () => [])
 	}
 }
 
 function createProvider(): OAuthProvider {
 	return {
 		createAuthorizationURL: () => new URL('https://example.com/auth'),
-		getUserProfile: vi.fn(async() => ({
+		getUserProfile: vi.fn(async () => ({
 			profile: { id: 'p1', email: 'p1@example.com' },
 			tokens: { accessToken: 'token' }
 		}))
@@ -38,8 +38,9 @@ function createProvider(): OAuthProvider {
 
 describe('createAuth', () => {
 	it('throws when required config is missing', () => {
-		expect(() => createAuth({ adapters: {}, providers: { google: { provider: {} } } }))
-			.toThrow('createAuth requires adapters.session')
+		expect(() => createAuth({ adapters: {}, providers: { google: { provider: {} } } })).toThrow(
+			'createAuth requires adapters.session'
+		)
 	})
 
 	it('allows auth without OAuth providers', () => {
@@ -49,7 +50,7 @@ describe('createAuth', () => {
 		expect(auth.routes.logout().POST).toBeDefined()
 	})
 
-	it('clears cookie when session is invalid', async() => {
+	it('clears cookie when session is invalid', async () => {
 		const sessionAdapter = createSessionAdapter({
 			cookieName: 'auth_session',
 			validateResult: { session: null, user: null }
@@ -71,7 +72,7 @@ describe('createAuth', () => {
 		expect(sessionAdapter.deleteSessionCookie).toHaveBeenCalledWith(event.cookies)
 	})
 
-	it('refreshes cookie when session is fresh', async() => {
+	it('refreshes cookie when session is fresh', async () => {
 		const session = { id: 's1', fresh: true }
 		const user = { id: 'u1' }
 		const sessionAdapter = createSessionAdapter({

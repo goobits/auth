@@ -7,29 +7,29 @@ import { getLogger } from '../utils/logger.ts'
 import { OAuthProvider } from './OAuthProvider.ts'
 
 type AppleProviderConfig = {
-	clientId: string;
-	teamId: string;
-	keyId: string;
-	privateKey: string;
-	callbackUrl: string;
+	clientId: string
+	teamId: string
+	keyId: string
+	privateKey: string
+	callbackUrl: string
 }
 
 type AppleIdTokenPayload = {
-	iss?: string;
-	aud?: string | string[];
-	exp?: number;
-	email?: string;
-	sub?: string;
+	iss?: string
+	aud?: string | string[]
+	exp?: number
+	email?: string
+	sub?: string
 }
 
 type AppleTokenResponse = {
-	idToken: string | (() => string) | (() => { email?: string; sub?: string });
-	accessToken?: string | (() => string);
-	refreshToken?: string | (() => string);
-	scope?: string;
-	scopes?: string;
-	expiresIn?: number;
-	expires_in?: number;
+	idToken: string | (() => string) | (() => { email?: string; sub?: string })
+	accessToken?: string | (() => string)
+	refreshToken?: string | (() => string)
+	scope?: string
+	scopes?: string
+	expiresIn?: number
+	expires_in?: number
 }
 
 const APPLE_ISSUER = 'https://appleid.apple.com'
@@ -66,9 +66,7 @@ export class AppleProvider extends OAuthProvider {
 			!config.privateKey ||
 			!config.callbackUrl
 		) {
-			throw new Error(
-				'AppleProvider requires clientId, teamId, keyId, privateKey, and callbackUrl'
-			)
+			throw new Error('AppleProvider requires clientId, teamId, keyId, privateKey, and callbackUrl')
 		}
 
 		// Decode the private key
@@ -99,8 +97,11 @@ export class AppleProvider extends OAuthProvider {
 				.trim()
 
 			return decodeBase64IgnorePadding(cleaned)
-		} catch(error) {
-			getLogger().error?.('Error decoding Apple private key:', error instanceof Error ? error.message : String(error))
+		} catch (error) {
+			getLogger().error?.(
+				'Error decoding Apple private key:',
+				error instanceof Error ? error.message : String(error)
+			)
 			throw new Error('Invalid Apple private key format')
 		}
 	}
@@ -108,21 +109,16 @@ export class AppleProvider extends OAuthProvider {
 	createAuthorizationURL(
 		state: string,
 		codeVerifier: string,
-		scopes: string[] = [ 'name', 'email' ]
+		scopes: string[] = ['name', 'email']
 	): URL {
 		// Apple uses name and email scopes
-		const requestedScopes = scopes || [ 'name', 'email' ]
+		const requestedScopes = scopes || ['name', 'email']
 		const client = this.client as unknown as {
-			createAuthorizationURL: (...args: unknown[]) => URL;
+			createAuthorizationURL: (...args: unknown[]) => URL
 		}
 		const createAuthorizationURL = client.createAuthorizationURL
 		if (createAuthorizationURL.length >= 3) {
-			return createAuthorizationURL.call(
-				this.client,
-				state,
-				codeVerifier,
-				requestedScopes
-			)
+			return createAuthorizationURL.call(this.client, state, codeVerifier, requestedScopes)
 		}
 		return createAuthorizationURL.call(this.client, state, requestedScopes)
 	}
@@ -141,17 +137,13 @@ export class AppleProvider extends OAuthProvider {
 	): Promise<{ profile: OAuthProfile; tokens: OAuthTokens }> {
 		try {
 			const client = this.client as unknown as {
-				validateAuthorizationCode: (...args: unknown[]) => Promise<AppleTokenResponse>;
+				validateAuthorizationCode: (...args: unknown[]) => Promise<AppleTokenResponse>
 			}
 
 			const validateAuthorizationCode = client.validateAuthorizationCode
 			const tokens =
 				validateAuthorizationCode.length >= 2
-					? await validateAuthorizationCode.call(
-						this.client,
-						code,
-						codeVerifier
-					)
+					? await validateAuthorizationCode.call(this.client, code, codeVerifier)
 					: await validateAuthorizationCode.call(this.client, code)
 
 			const { email, sub: appleUserId } = await this.verifyIdToken(tokens)
@@ -169,10 +161,10 @@ export class AppleProvider extends OAuthProvider {
 					if (userJson.name) {
 						const firstName = userJson.name.firstName || ''
 						const lastName = userJson.name.lastName || ''
-						const fullName = `${ firstName } ${ lastName }`.trim()
+						const fullName = `${firstName} ${lastName}`.trim()
 						if (fullName) name = fullName
 					}
-				} catch(e) {
+				} catch (e) {
 					getLogger().warn?.('Could not parse Apple user data:', e)
 				}
 			}
@@ -193,8 +185,11 @@ export class AppleProvider extends OAuthProvider {
 					).toISOString()
 				}
 			}
-		} catch(error) {
-			getLogger().error?.('Error in AppleProvider.getUserProfile:', error instanceof Error ? error.message : String(error))
+		} catch (error) {
+			getLogger().error?.(
+				'Error in AppleProvider.getUserProfile:',
+				error instanceof Error ? error.message : String(error)
+			)
 			throw error
 		}
 	}
@@ -208,7 +203,7 @@ export class AppleProvider extends OAuthProvider {
 			throw new Error('Missing Apple ID token')
 		}
 
-		const [ headerPart, payloadPart, signaturePart ] = idTokenValue.split('.')
+		const [headerPart, payloadPart, signaturePart] = idTokenValue.split('.')
 		if (!headerPart || !payloadPart || !signaturePart) {
 			throw new Error('Invalid Apple ID token format')
 		}
@@ -219,7 +214,7 @@ export class AppleProvider extends OAuthProvider {
 		}
 
 		const jwks = await getAppleJwks()
-		const jwk = jwks.keys.find(key => (key as JsonWebKey & { kid?: string }).kid === header.kid)
+		const jwk = jwks.keys.find((key) => (key as JsonWebKey & { kid?: string }).kid === header.kid)
 		if (!jwk) {
 			throw new Error('Apple ID token key not found')
 		}
@@ -229,9 +224,9 @@ export class AppleProvider extends OAuthProvider {
 			jwk,
 			{ name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
 			false,
-			[ 'verify' ]
+			['verify']
 		)
-		const signingInput = new TextEncoder().encode(`${ headerPart }.${ payloadPart }`)
+		const signingInput = new TextEncoder().encode(`${headerPart}.${payloadPart}`)
 		const signature = new Uint8Array(base64UrlToBytes(signaturePart))
 		const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, signature, signingInput)
 		if (!valid) {
@@ -239,7 +234,7 @@ export class AppleProvider extends OAuthProvider {
 		}
 
 		const payload = parseJwtPart(payloadPart) as AppleIdTokenPayload
-		const audience = Array.isArray(payload.aud) ? payload.aud : [ payload.aud ]
+		const audience = Array.isArray(payload.aud) ? payload.aud : [payload.aud]
 		const nowSeconds = Math.floor(Date.now() / 1000)
 		if (payload.iss !== APPLE_ISSUER) {
 			throw new Error('Invalid Apple ID token issuer')
@@ -255,16 +250,16 @@ export class AppleProvider extends OAuthProvider {
 
 	async refreshAccessToken(refreshToken: string): Promise<OAuthTokens> {
 		type AppleRefreshResponse = {
-			accessToken?: string | (() => string);
-			refreshToken?: string | (() => string);
-			scope?: string;
-			scopes?: string;
-			expiresIn?: number;
-			expires_in?: number;
+			accessToken?: string | (() => string)
+			refreshToken?: string | (() => string)
+			scope?: string
+			scopes?: string
+			expiresIn?: number
+			expires_in?: number
 		}
 
 		const client = this.client as unknown as {
-			refreshAccessToken: (token: string) => Promise<AppleRefreshResponse>;
+			refreshAccessToken: (token: string) => Promise<AppleRefreshResponse>
 		}
 
 		const newTokens = await client.refreshAccessToken(refreshToken)
@@ -291,7 +286,7 @@ async function getAppleJwks(): Promise<{ keys: JsonWebKey[] }> {
 	}
 	const response = await fetch(APPLE_JWKS_URL)
 	if (!response.ok) {
-		throw new Error(`Apple JWKS fetch failed (${ response.status })`)
+		throw new Error(`Apple JWKS fetch failed (${response.status})`)
 	}
 	const body = (await response.json()) as { keys?: JsonWebKey[] }
 	const keys = Array.isArray(body.keys) ? body.keys : []

@@ -41,9 +41,12 @@ export async function encryptTokens<T extends Record<string, unknown>>(
 	try {
 		validateEncryptionKey(encryptionKey)
 		return JSON.stringify(await sealJson(tokens, { key: encryptionKey }))
-	} catch(error) {
+	} catch (error) {
 		const { getLogger } = await import('./logger.ts')
-		getLogger().error?.('Token encryption error:', error instanceof Error ? error.message : String(error))
+		getLogger().error?.(
+			'Token encryption error:',
+			error instanceof Error ? error.message : String(error)
+		)
 		throw error
 	}
 }
@@ -61,9 +64,12 @@ export async function decryptTokens<T = Record<string, unknown>>(
 	try {
 		validateEncryptionKey(encryptionKey)
 		return openJson<T>({ key: encryptionKey, seal: JSON.parse(encryptedData) })
-	} catch(error) {
+	} catch (error) {
 		const { getLogger } = await import('./logger.ts')
-		getLogger().error?.('Token decryption error:', error instanceof Error ? error.message : String(error))
+		getLogger().error?.(
+			'Token decryption error:',
+			error instanceof Error ? error.message : String(error)
+		)
 		return null
 	}
 }
@@ -83,7 +89,7 @@ export async function generateRandomUUID(): Promise<string> {
 	bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40
 	bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80
 	const hex = bytesToHex(bytes)
-	return `${ hex.slice(0, 8) }-${ hex.slice(8, 12) }-${ hex.slice(12, 16) }-${ hex.slice(16, 20) }-${ hex.slice(20) }`
+	return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 
 /** Returns cryptographically secure random bytes. */

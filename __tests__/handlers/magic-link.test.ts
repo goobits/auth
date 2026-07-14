@@ -7,13 +7,13 @@ import {
 import type { RequestEventLike } from '../../src/types/auth.ts'
 
 type MagicLinkTokenRecord = {
-	id?: string;
-	userId: string | null;
-	email: string;
-	tokenHash: string;
-	otpHash?: string | null;
-	expiresAt: Date;
-	metadata?: Record<string, unknown>;
+	id?: string
+	userId: string | null
+	email: string
+	tokenHash: string
+	otpHash?: string | null
+	expiresAt: Date
+	metadata?: Record<string, unknown>
 }
 
 function createEvent({
@@ -21,9 +21,9 @@ function createEvent({
 	body,
 	url = 'http://localhost/auth'
 }: {
-	method?: string;
-	body?: unknown;
-	url?: string;
+	method?: string
+	body?: unknown
+	url?: string
 } = {}) {
 	const headers = new Headers()
 	let requestBody = body
@@ -49,50 +49,44 @@ function createEvent({
 function createMagicLinkAdapter() {
 	const tokens = new Map<string, MagicLinkTokenRecord>()
 	let counter = 0
-	const findByTokenHash = async(tokenHash: string) => {
+	const findByTokenHash = async (tokenHash: string) => {
 		for (const token of tokens.values()) {
 			if (token.tokenHash === tokenHash) return token
 		}
 		return null
 	}
-	const findByEmailAndOtpHash = async({
-		email,
-		otpHash
-	}: {
-		email: string;
-		otpHash: string;
-	}) => {
+	const findByEmailAndOtpHash = async ({ email, otpHash }: { email: string; otpHash: string }) => {
 		for (const token of tokens.values()) {
 			if (token.email === email && token.otpHash === otpHash) return token
 		}
 		return null
 	}
-	const deleteById = async(id: string) => tokens.delete(id)
+	const deleteById = async (id: string) => tokens.delete(id)
 	return {
-		createToken: async(token: Omit<MagicLinkTokenRecord, 'id'>) => {
-			const id = `t${ ++counter }`
+		createToken: async (token: Omit<MagicLinkTokenRecord, 'id'>) => {
+			const id = `t${++counter}`
 			tokens.set(id, { id, ...token })
 			return tokens.get(id)
 		},
 		findByTokenHash,
 		findByEmailAndOtpHash,
 		deleteById,
-		deleteByEmail: async(email: string) => {
-			for (const [ id, token ] of tokens.entries()) {
+		deleteByEmail: async (email: string) => {
+			for (const [id, token] of tokens.entries()) {
 				if (token.email === email) tokens.delete(id)
 			}
 		},
-		deleteByUserId: async(userId: string) => {
-			for (const [ id, token ] of tokens.entries()) {
+		deleteByUserId: async (userId: string) => {
+			for (const [id, token] of tokens.entries()) {
 				if (token.userId === userId) tokens.delete(id)
 			}
 		},
-		consumeByTokenHash: async(tokenHash: string) => {
+		consumeByTokenHash: async (tokenHash: string) => {
 			const record = await findByTokenHash(tokenHash)
 			if (record?.id) tokens.delete(record.id)
 			return record
 		},
-		consumeByEmailAndOtpHash: async(params: { email: string; otpHash: string }) => {
+		consumeByEmailAndOtpHash: async (params: { email: string; otpHash: string }) => {
 			const record = await findByEmailAndOtpHash(params)
 			if (record?.id) tokens.delete(record.id)
 			return record
@@ -102,7 +96,7 @@ function createMagicLinkAdapter() {
 }
 
 describe('magic link handlers', () => {
-	it('does not send email when user is missing and signup disabled', async() => {
+	it('does not send email when user is missing and signup disabled', async () => {
 		const magicLinkAdapter = createMagicLinkAdapter()
 		const sendEmail = vi.fn()
 		const handler = createMagicLinkRequestHandler({
@@ -120,16 +114,16 @@ describe('magic link handlers', () => {
 		expect(magicLinkAdapter._tokens.size).toBe(0)
 	})
 
-	it('verifies token and creates session', async() => {
+	it('verifies token and creates session', async () => {
 		const magicLinkAdapter = createMagicLinkAdapter()
 		const sendEmail = vi.fn()
 		const userAdapter = {
-			getUserByEmail: vi.fn(async email => ({ id: 'u1', email })),
-			getUserById: vi.fn(async id => ({ id, email: 'u1@example.com' })),
-			updateUser: vi.fn(async() => {})
+			getUserByEmail: vi.fn(async (email) => ({ id: 'u1', email })),
+			getUserById: vi.fn(async (id) => ({ id, email: 'u1@example.com' })),
+			updateUser: vi.fn(async () => {})
 		}
 		const sessionAdapter = {
-			createSession: vi.fn(async userId => ({ id: 's1', userId })),
+			createSession: vi.fn(async (userId) => ({ id: 's1', userId })),
 			setSessionCookie: vi.fn()
 		}
 
@@ -159,11 +153,11 @@ describe('magic link handlers', () => {
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
 
-	it('creates a session when onLogin returns a userId', async() => {
+	it('creates a session when onLogin returns a userId', async () => {
 		const magicLinkAdapter = createMagicLinkAdapter()
 		const sendEmail = vi.fn()
 		const sessionAdapter = {
-			createSession: vi.fn(async(userId: string) => ({ id: 's2', userId })),
+			createSession: vi.fn(async (userId: string) => ({ id: 's2', userId })),
 			setSessionCookie: vi.fn()
 		}
 
@@ -182,12 +176,10 @@ describe('magic link handlers', () => {
 		const verifyHandler = createMagicLinkVerifyHandler({
 			magicLinkAdapter,
 			sessionAdapter,
-			onLogin: async() => ({ userId: 'hook-user' })
+			onLogin: async () => ({ userId: 'hook-user' })
 		})
 
-		const verifyResponse = await verifyHandler(
-			createEvent({ body: { token } }) as RequestEventLike
-		)
+		const verifyResponse = await verifyHandler(createEvent({ body: { token } }) as RequestEventLike)
 		const payload = await verifyResponse.json()
 
 		expect(payload.ok).toBe(true)
@@ -195,11 +187,11 @@ describe('magic link handlers', () => {
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
 
-	it('rejects verification when no principal can be resolved', async() => {
+	it('rejects verification when no principal can be resolved', async () => {
 		const magicLinkAdapter = createMagicLinkAdapter()
 		const sendEmail = vi.fn()
 		const sessionAdapter = {
-			createSession: vi.fn(async(userId: string) => ({ id: 's3', userId })),
+			createSession: vi.fn(async (userId: string) => ({ id: 's3', userId })),
 			setSessionCookie: vi.fn()
 		}
 
@@ -218,12 +210,10 @@ describe('magic link handlers', () => {
 		const verifyHandler = createMagicLinkVerifyHandler({
 			magicLinkAdapter,
 			sessionAdapter,
-			onLogin: async() => undefined
+			onLogin: async () => undefined
 		})
 
-		const verifyResponse = await verifyHandler(
-			createEvent({ body: { token } }) as RequestEventLike
-		)
+		const verifyResponse = await verifyHandler(createEvent({ body: { token } }) as RequestEventLike)
 		const payload = await verifyResponse.json()
 
 		expect(verifyResponse.status).toBe(401)
@@ -232,16 +222,16 @@ describe('magic link handlers', () => {
 		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
 	})
 
-	it('redirects GET verification to redirectTo when provided', async() => {
+	it('redirects GET verification to redirectTo when provided', async () => {
 		const magicLinkAdapter = createMagicLinkAdapter()
 		const sendEmail = vi.fn()
 		const userAdapter = {
-			getUserByEmail: vi.fn(async email => ({ id: 'u1', email })),
-			getUserById: vi.fn(async id => ({ id, email: 'u1@example.com' })),
-			updateUser: vi.fn(async() => {})
+			getUserByEmail: vi.fn(async (email) => ({ id: 'u1', email })),
+			getUserById: vi.fn(async (id) => ({ id, email: 'u1@example.com' })),
+			updateUser: vi.fn(async () => {})
 		}
 		const sessionAdapter = {
-			createSession: vi.fn(async userId => ({ id: 's1', userId })),
+			createSession: vi.fn(async (userId) => ({ id: 's1', userId })),
 			setSessionCookie: vi.fn()
 		}
 
@@ -253,7 +243,9 @@ describe('magic link handlers', () => {
 		})
 
 		const requestResponse = await requestHandler(
-			createEvent({ body: { email: 'u1@example.com', redirectTo: '/dashboard' } }) as RequestEventLike
+			createEvent({
+				body: { email: 'u1@example.com', redirectTo: '/dashboard' }
+			}) as RequestEventLike
 		)
 		const { token } = await requestResponse.json()
 
@@ -268,7 +260,7 @@ describe('magic link handlers', () => {
 			verifyHandler(
 				createEvent({
 					method: 'GET',
-					url: `http://localhost/auth/magic?token=${ token }&redirectTo=%2Fdashboard`
+					url: `http://localhost/auth/magic?token=${token}&redirectTo=%2Fdashboard`
 				}) as RequestEventLike
 			)
 		).rejects.toMatchObject({

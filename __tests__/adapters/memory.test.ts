@@ -7,7 +7,7 @@ import {
 } from '../../src/adapters/memory/index.ts'
 
 describe('memory auth adapters', () => {
-	it('create users, sessions, and validate session principals', async() => {
+	it('create users, sessions, and validate session principals', async () => {
 		const adapters = createMemoryAuthAdapters({
 			cookieName: 'auth',
 			secureCookies: false
@@ -28,7 +28,7 @@ describe('memory auth adapters', () => {
 		expect(result.session?.ip).toBe('127.0.0.1')
 	})
 
-	it('stores explicit test users without password leakage', async() => {
+	it('stores explicit test users without password leakage', async () => {
 		const adapter = new MemoryUserAdapter()
 		adapter.setUser({
 			avatar: null,
@@ -45,7 +45,7 @@ describe('memory auth adapters', () => {
 		expect(await adapter.getUserByEmail('test@example.com')).not.toHaveProperty('password')
 	})
 
-	it('stores and consumes magic link tokens atomically', async() => {
+	it('stores and consumes magic link tokens atomically', async () => {
 		const adapter = new MemoryMagicLinkAdapter()
 		await adapter.createToken({
 			userId: null,

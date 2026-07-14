@@ -32,19 +32,21 @@ import {
 } from './webauthnUtils.ts'
 
 export type WebAuthnRegisterOptionsHandlerConfig = {
-	webauthnAdapter: Pick<WebAuthnAdapter, 'listCredentials' | 'createChallenge'>;
-	rpName: string;
-	rpID: string;
-	timeout?: number;
-	attestationType?: GenerateRegistrationOptionsOpts['attestationType'];
-	authenticatorSelection?: GenerateRegistrationOptionsOpts['authenticatorSelection'];
-	supportedAlgorithmIDs?: GenerateRegistrationOptionsOpts['supportedAlgorithmIDs'];
-	userVerification?: 'preferred' | 'required' | 'discouraged';
-	getUser?: (event: RequestEventLike) => User | null | Promise<User | null>;
+	webauthnAdapter: Pick<WebAuthnAdapter, 'listCredentials' | 'createChallenge'>
+	rpName: string
+	rpID: string
+	timeout?: number
+	attestationType?: GenerateRegistrationOptionsOpts['attestationType']
+	authenticatorSelection?: GenerateRegistrationOptionsOpts['authenticatorSelection']
+	supportedAlgorithmIDs?: GenerateRegistrationOptionsOpts['supportedAlgorithmIDs']
+	userVerification?: 'preferred' | 'required' | 'discouraged'
+	getUser?: (event: RequestEventLike) => User | null | Promise<User | null>
 }
 
 /** Creates web authn register options handler for auth HTTP handlers. */
-export function createWebAuthnRegisterOptionsHandler(config: WebAuthnRegisterOptionsHandlerConfig): RequestHandler {
+export function createWebAuthnRegisterOptionsHandler(
+	config: WebAuthnRegisterOptionsHandlerConfig
+): RequestHandler {
 	const {
 		webauthnAdapter,
 		rpName,
@@ -61,7 +63,7 @@ export function createWebAuthnRegisterOptionsHandler(config: WebAuthnRegisterOpt
 		throw new Error('createWebAuthnRegisterOptionsHandler requires rpID and rpName')
 	}
 
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		const user = await getUser(event)
 		if (!user || !user.id) {
 			return jsonResponse({ ok: false, error: 'Unauthorized' }, 401)
@@ -69,13 +71,13 @@ export function createWebAuthnRegisterOptionsHandler(config: WebAuthnRegisterOpt
 
 		const credentials = await webauthnAdapter.listCredentials(user.id)
 		const excludeCredentials = credentials
-			.map(cred => credentialDescriptorFromRecord(cred))
+			.map((cred) => credentialDescriptorFromRecord(cred))
 			.filter(
 				(
 					cred
 				): cred is {
-					id: string;
-					transports?: AuthenticatorTransportFuture[];
+					id: string
+					transports?: AuthenticatorTransportFuture[]
 				} => cred !== null
 			)
 
@@ -110,22 +112,34 @@ export function createWebAuthnRegisterOptionsHandler(config: WebAuthnRegisterOpt
 }
 
 export type WebAuthnRegisterVerifyHandlerConfig = {
-	webauthnAdapter: Pick<WebAuthnAdapter, 'consumeChallenge' | 'createCredential'>;
-	rpID: string;
-	origin: string;
-	requireUserVerification?: boolean;
-	onCredentialCreated?: (input: { userId: string; credentialId: string; publicKey: string }) => Promise<void> | void;
+	webauthnAdapter: Pick<WebAuthnAdapter, 'consumeChallenge' | 'createCredential'>
+	rpID: string
+	origin: string
+	requireUserVerification?: boolean
+	onCredentialCreated?: (input: {
+		userId: string
+		credentialId: string
+		publicKey: string
+	}) => Promise<void> | void
 }
 
 /** Creates web authn register verify handler for auth HTTP handlers. */
-export function createWebAuthnRegisterVerifyHandler(config: WebAuthnRegisterVerifyHandlerConfig): RequestHandler {
-	const { webauthnAdapter, rpID, origin, requireUserVerification = false, onCredentialCreated } = config
+export function createWebAuthnRegisterVerifyHandler(
+	config: WebAuthnRegisterVerifyHandlerConfig
+): RequestHandler {
+	const {
+		webauthnAdapter,
+		rpID,
+		origin,
+		requireUserVerification = false,
+		onCredentialCreated
+	} = config
 
 	if (!rpID || !origin) {
 		throw new Error('createWebAuthnRegisterVerifyHandler requires rpID and origin')
 	}
 
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		const data = await parseRequestDataWithSchema(event.request, registerVerifyRequestSchema)
 		if (!data) {
 			return jsonResponse({ ok: false, error: 'Invalid request' }, 400)
@@ -161,14 +175,17 @@ export function createWebAuthnRegisterVerifyHandler(config: WebAuthnRegisterVeri
 
 		const registrationInfoRecord = verification.registrationInfo as Record<string, unknown>
 		const regCredentialRecord = (
-			typeof registrationInfoRecord['credential'] === 'object' && registrationInfoRecord['credential'] !== null
+			typeof registrationInfoRecord['credential'] === 'object' &&
+			registrationInfoRecord['credential'] !== null
 				? registrationInfoRecord['credential']
 				: registrationInfoRecord
 		) as Record<string, unknown>
 		const credentialIdRaw = regCredentialRecord['id'] ?? regCredentialRecord['credentialID']
-		const publicKeyRaw = regCredentialRecord['publicKey'] ?? regCredentialRecord['credentialPublicKey']
+		const publicKeyRaw =
+			regCredentialRecord['publicKey'] ?? regCredentialRecord['credentialPublicKey']
 		const counterRaw = regCredentialRecord['counter']
-		const credentialId = typeof credentialIdRaw === 'string' ? credentialIdRaw : encodeCredential(credentialIdRaw)
+		const credentialId =
+			typeof credentialIdRaw === 'string' ? credentialIdRaw : encodeCredential(credentialIdRaw)
 		const publicKey = encodeCredential(publicKeyRaw)
 		const counter = typeof counterRaw === 'number' ? counterRaw : 0
 		const userId = challenge.userId
@@ -182,7 +199,9 @@ export function createWebAuthnRegisterVerifyHandler(config: WebAuthnRegisterVeri
 			publicKey,
 			counter,
 			transports:
-				credential.response && 'transports' in credential.response ? (credential.response.transports ?? null) : null,
+				credential.response && 'transports' in credential.response
+					? (credential.response.transports ?? null)
+					: null,
 			name: name ?? null
 		})
 
@@ -197,22 +216,30 @@ export function createWebAuthnRegisterVerifyHandler(config: WebAuthnRegisterVeri
 }
 
 export type WebAuthnLoginOptionsHandlerConfig = {
-	webauthnAdapter: Pick<WebAuthnAdapter, 'listCredentials' | 'createChallenge'>;
-	userAdapter?: { getUserByEmail: (email: string) => Promise<User | null> };
-	rpID: string;
-	timeout?: number;
-	userVerification?: GenerateAuthenticationOptionsOpts['userVerification'];
+	webauthnAdapter: Pick<WebAuthnAdapter, 'listCredentials' | 'createChallenge'>
+	userAdapter?: { getUserByEmail: (email: string) => Promise<User | null> }
+	rpID: string
+	timeout?: number
+	userVerification?: GenerateAuthenticationOptionsOpts['userVerification']
 }
 
 /** Creates web authn login options handler for auth HTTP handlers. */
-export function createWebAuthnLoginOptionsHandler(config: WebAuthnLoginOptionsHandlerConfig): RequestHandler {
-	const { webauthnAdapter, userAdapter, rpID, timeout = 60_000, userVerification = 'preferred' } = config
+export function createWebAuthnLoginOptionsHandler(
+	config: WebAuthnLoginOptionsHandlerConfig
+): RequestHandler {
+	const {
+		webauthnAdapter,
+		userAdapter,
+		rpID,
+		timeout = 60_000,
+		userVerification = 'preferred'
+	} = config
 
 	if (!rpID) {
 		throw new Error('createWebAuthnLoginOptionsHandler requires rpID')
 	}
 
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		const data = await parseRequestDataWithSchema(event.request, loginOptionsRequestSchema)
 		const email = data?.email ? data.email.toLowerCase() : ''
 		let user: User | null = null
@@ -225,13 +252,13 @@ export function createWebAuthnLoginOptionsHandler(config: WebAuthnLoginOptionsHa
 		if (user) {
 			const credentials = await webauthnAdapter.listCredentials(user.id)
 			allowCredentials = credentials
-				.map(cred => credentialDescriptorFromRecord(cred))
+				.map((cred) => credentialDescriptorFromRecord(cred))
 				.filter(
 					(
 						cred
 					): cred is {
-						id: string;
-						transports?: AuthenticatorTransportFuture[];
+						id: string
+						transports?: AuthenticatorTransportFuture[]
 					} => cred !== null
 				)
 		}
@@ -261,24 +288,23 @@ export function createWebAuthnLoginOptionsHandler(config: WebAuthnLoginOptionsHa
 }
 
 export type WebAuthnLoginVerifyHandlerConfig = {
-	webauthnAdapter: Pick<
-		WebAuthnAdapter,
-		'consumeChallenge' | 'getCredential' | 'updateCredential'
-	>;
-	userAdapter?: { getUserById: (id: string) => Promise<User | null> };
-	sessionAdapter: Pick<SessionAdapter, 'createSession' | 'setSessionCookie'>;
-	rpID: string;
-	origin: string;
-	redirectAfterLogin?: string;
-	requireUserVerification?: boolean;
-	onLogin?: AuthHooks['onLogin'];
-	sanitizeUser?: (user: User | null) => User | null;
-	autoCreateSession?: boolean;
-	onLoginMode?: OnLoginMode;
+	webauthnAdapter: Pick<WebAuthnAdapter, 'consumeChallenge' | 'getCredential' | 'updateCredential'>
+	userAdapter?: { getUserById: (id: string) => Promise<User | null> }
+	sessionAdapter: Pick<SessionAdapter, 'createSession' | 'setSessionCookie'>
+	rpID: string
+	origin: string
+	redirectAfterLogin?: string
+	requireUserVerification?: boolean
+	onLogin?: AuthHooks['onLogin']
+	sanitizeUser?: (user: User | null) => User | null
+	autoCreateSession?: boolean
+	onLoginMode?: OnLoginMode
 }
 
 /** Creates web authn login verify handler for auth HTTP handlers. */
-export function createWebAuthnLoginVerifyHandler(config: WebAuthnLoginVerifyHandlerConfig): RequestHandler {
+export function createWebAuthnLoginVerifyHandler(
+	config: WebAuthnLoginVerifyHandlerConfig
+): RequestHandler {
 	const {
 		webauthnAdapter,
 		userAdapter,
@@ -297,7 +323,7 @@ export function createWebAuthnLoginVerifyHandler(config: WebAuthnLoginVerifyHand
 		throw new Error('createWebAuthnLoginVerifyHandler requires rpID and origin')
 	}
 
-	return async(event: RequestEventLike) => {
+	return async (event: RequestEventLike) => {
 		const data = await parseRequestDataWithSchema(event.request, loginVerifyRequestSchema)
 		if (!data) {
 			return jsonResponse({ ok: false, error: 'Invalid request' }, 400)
@@ -386,7 +412,7 @@ export function createWebAuthnLoginVerifyHandler(config: WebAuthnLoginVerifyHand
 				autoCreateSession,
 				onLoginMode
 			})
-		} catch(error) {
+		} catch (error) {
 			if (error instanceof AuthPrincipalResolutionError) {
 				return jsonResponse({ ok: false, error: error.message }, error.status)
 			}

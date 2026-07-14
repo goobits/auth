@@ -2,16 +2,16 @@ import type { AuthConfig, AuthLocals } from '../types/auth.ts'
 
 export type ResolvedDefaults = {
 	urlConfig: {
-		login: string;
-		afterLogin: string;
-		afterLogout: string;
-	};
+		login: string
+		afterLogin: string
+		afterLogout: string
+	}
 	cookieConfig: {
-		secure: boolean;
-	};
-	autoCreateSession: boolean;
-	requireVerifiedEmailForLinking: boolean;
-	isAuthenticated: (locals: AuthLocals) => boolean;
+		secure: boolean
+	}
+	autoCreateSession: boolean
+	requireVerifiedEmailForLinking: boolean
+	isAuthenticated: (locals: AuthLocals) => boolean
 }
 
 export function validateConfig(config: AuthConfig): void {
@@ -41,7 +41,6 @@ export function resolveDefaults(config: AuthConfig): ResolvedDefaults {
 		},
 		autoCreateSession: config.autoCreateSession ?? true,
 		requireVerifiedEmailForLinking: config.requireVerifiedEmailForLinking ?? true,
-		isAuthenticated:
-			config.isAuthenticated ?? ((locals: AuthLocals) => !!locals.user)
+		isAuthenticated: config.isAuthenticated ?? ((locals: AuthLocals) => !!locals.user)
 	}
 }

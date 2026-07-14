@@ -14,21 +14,21 @@ type CredentialsTable = DrizzleTable
 type ChallengesTable = DrizzleTable
 
 type ChallengeRecord = {
-	id: string;
-	userId: string | null;
-	challenge: string;
-	type: string;
-	expiresAt: Date;
+	id: string
+	userId: string | null
+	challenge: string
+	type: string
+	expiresAt: Date
 }
 
 function mapChallengeRow(
 	row: DrizzleRow | null,
 	columns: {
-		challengeId: string;
-		challengeUserId: string;
-		challenge: string;
-		challengeType: string;
-		challengeExpiresAt: string;
+		challengeId: string
+		challengeUserId: string
+		challenge: string
+		challengeType: string
+		challengeExpiresAt: string
 	}
 ): ChallengeRecord | null {
 	if (!row) return null
@@ -56,14 +56,14 @@ function mapChallengeRow(
 function mapCredentialRow(
 	row: DrizzleRow | null,
 	columns: {
-		credentialId: string;
-		userId: string;
-		publicKey: string;
-		counter: string;
-		transports: string;
-		name: string;
-		createdAt: string;
-		updatedAt: string;
+		credentialId: string
+		userId: string
+		publicKey: string
+		counter: string
+		transports: string
+		name: string
+		createdAt: string
+		updatedAt: string
 	}
 ): WebAuthnCredential | null {
 	if (!row) return null
@@ -84,7 +84,7 @@ function mapCredentialRow(
 	let transports: string[] | null = null
 	if (typeof transportsRaw === 'string') {
 		const parsed = JSON.parse(transportsRaw)
-		if (!Array.isArray(parsed) || parsed.some(entry => typeof entry !== 'string')) {
+		if (!Array.isArray(parsed) || parsed.some((entry) => typeof entry !== 'string')) {
 			return null
 		}
 		transports = parsed
@@ -120,27 +120,27 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 	private credentialsTable: CredentialsTable
 	private challengesTable: ChallengesTable
 	private columns: {
-		credentialId: string;
-		userId: string;
-		publicKey: string;
-		counter: string;
-		transports: string;
-		name: string;
-		createdAt: string;
-		updatedAt: string;
-		challengeId: string;
-		challenge: string;
-		challengeType: string;
-		challengeUserId: string;
-		challengeExpiresAt: string;
+		credentialId: string
+		userId: string
+		publicKey: string
+		counter: string
+		transports: string
+		name: string
+		createdAt: string
+		updatedAt: string
+		challengeId: string
+		challenge: string
+		challengeType: string
+		challengeUserId: string
+		challengeExpiresAt: string
 	}
 
 	constructor(
 		db: DrizzleDbLike,
 		options: {
-			credentialsTable?: CredentialsTable;
-			challengesTable?: ChallengesTable;
-			columns?: Partial<Record<string, string>>;
+			credentialsTable?: CredentialsTable
+			challengesTable?: ChallengesTable
+			columns?: Partial<Record<string, string>>
 		} = {}
 	) {
 		super()
@@ -176,11 +176,11 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		type,
 		expiresAt
 	}: {
-		challengeId: string;
-		userId: string | null;
-		challenge: string;
-		type: string;
-		expiresAt: Date;
+		challengeId: string
+		userId: string | null
+		challenge: string
+		type: string
+		expiresAt: Date
 	}): Promise<void> {
 		await this.db.insert(this.challengesTable).values({
 			[this.columns.challengeId]: challengeId,
@@ -192,7 +192,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 	}
 
 	async getChallenge(challengeId: string): Promise<ChallengeRecord | null> {
-		const [ row ] = await this.db
+		const [row] = await this.db
 			.select()
 			.from(this.challengesTable)
 			.where(eq(requireColumn(this.challengesTable, this.columns.challengeId), challengeId))
@@ -213,12 +213,12 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		transports,
 		name
 	}: {
-		userId: string;
-		credentialId: string;
-		publicKey: string;
-		counter: number;
-		transports?: string[] | null;
-		name?: string | null;
+		userId: string
+		credentialId: string
+		publicKey: string
+		counter: number
+		transports?: string[] | null
+		name?: string | null
 	}): Promise<void> {
 		await this.db.insert(this.credentialsTable).values({
 			[this.columns.userId]: userId,
@@ -231,7 +231,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 	}
 
 	async getCredential(credentialId: string): Promise<WebAuthnCredential | null> {
-		const [ row ] = await this.db
+		const [row] = await this.db
 			.select()
 			.from(this.credentialsTable)
 			.where(eq(requireColumn(this.credentialsTable, this.columns.credentialId), credentialId))
@@ -257,10 +257,10 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 	): Promise<void> {
 		const payload: DrizzleRow = {}
 		const columnLookup: Record<string, string> = this.columns
-		for (const [ key, value ] of Object.entries(updates)) {
+		for (const [key, value] of Object.entries(updates)) {
 			const mappedColumn = columnLookup[key] || key
 			if (mappedColumn === this.columns.transports && Array.isArray(value)) {
-				if (value.every(entry => typeof entry === 'string')) {
+				if (value.every((entry) => typeof entry === 'string')) {
 					payload[mappedColumn] = JSON.stringify(value)
 				}
 				continue
@@ -286,9 +286,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 			.where(eq(requireColumn(this.credentialsTable, this.columns.userId), userId))
 	}
 
-	override async consumeChallenge(
-		challengeId: string
-	): Promise<ChallengeRecord | null> {
+	override async consumeChallenge(challengeId: string): Promise<ChallengeRecord | null> {
 		const rows = await this.db
 			.delete(this.challengesTable)
 			.where(eq(requireColumn(this.challengesTable, this.columns.challengeId), challengeId))

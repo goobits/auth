@@ -11,7 +11,7 @@ import {
 } from '../../src/node/index.ts'
 
 describe('node http bridge', () => {
-	it('creates RequestEventLike objects from IncomingMessage-shaped requests', async() => {
+	it('creates RequestEventLike objects from IncomingMessage-shaped requests', async () => {
 		const req = {
 			headers: {
 				cookie: 'session=abc',
@@ -35,8 +35,8 @@ describe('node http bridge', () => {
 		expect(event.getClientAddress?.()).toBe('10.0.0.1')
 	})
 
-	it('reads request bodies and forwards fetch responses', async() => {
-		const body = await readRequestBody([ Buffer.from('a'), 'b' ])
+	it('reads request bodies and forwards fetch responses', async () => {
+		const body = await readRequestBody([Buffer.from('a'), 'b'])
 		expect(body.toString('utf8')).toBe('ab')
 
 		const headers = new Map<string, string | string[] | number>()
@@ -66,6 +66,6 @@ describe('node http bridge', () => {
 
 		expect(status).toBe(201)
 		expect(ended.toString('utf8')).toBe('ok')
-		expect(headers.get('set-cookie')).toEqual([ 'session=next; Path=/; HttpOnly' ])
+		expect(headers.get('set-cookie')).toEqual(['session=next; Path=/; HttpOnly'])
 	})
 })

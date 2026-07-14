@@ -3,9 +3,7 @@
  * @param {Object|null} user - User object from database
  * @returns {Object|null} Sanitized user object safe for client exposure
  */
-export function sanitizeUser(
-	user: Record<string, unknown> | null
-): Record<string, unknown> | null {
+export function sanitizeUser(user: Record<string, unknown> | null): Record<string, unknown> | null {
 	if (!user) return null
 
 	// Remove sensitive fields that should never reach the client

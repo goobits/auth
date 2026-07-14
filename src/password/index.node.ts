@@ -19,19 +19,19 @@ export async function hashPassword(password: string): Promise<string> {
  * @param storedHash - stored hash value.
  * @param password - password value.
  */
-export async function verifyPassword(
-	storedHash: string,
-	password: string
-): Promise<boolean> {
+export async function verifyPassword(storedHash: string, password: string): Promise<boolean> {
 	if (!storedHash || !password) {
 		return false
 	}
 
 	try {
 		return await verify(storedHash, password)
-	} catch(error) {
+	} catch (error) {
 		const { getLogger } = await import('../utils/logger.ts')
-		getLogger().error?.('Password verification error:', error instanceof Error ? error.message : String(error))
+		getLogger().error?.(
+			'Password verification error:',
+			error instanceof Error ? error.message : String(error)
+		)
 		return false
 	}
 }
@@ -42,8 +42,8 @@ export async function verifyPassword(
  * @param password - password value.
  */
 export function validatePasswordStrength(password: string): {
-	valid: boolean;
-	errors: string[];
+	valid: boolean
+	errors: string[]
 } {
 	const errors: string[] = []
 
@@ -73,4 +73,3 @@ export function validatePasswordStrength(password: string): {
 		errors
 	}
 }
-

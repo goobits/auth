@@ -19,11 +19,11 @@ export abstract class WebAuthnAdapter {
 		type,
 		expiresAt
 	}: {
-		challengeId: string;
-		userId?: string | null;
-		challenge: string;
-		type: string;
-		expiresAt: Date;
+		challengeId: string
+		userId?: string | null
+		challenge: string
+		type: string
+		expiresAt: Date
 	}): Promise<void>
 
 	/**
@@ -32,9 +32,7 @@ export abstract class WebAuthnAdapter {
 	 * @param {string} challengeId - Identifier to use.
 	 * @returns {Promise<Object|null>}
 	 */
-	abstract getChallenge(
-		challengeId: string,
-	): Promise<Record<string, unknown> | null>
+	abstract getChallenge(challengeId: string): Promise<Record<string, unknown> | null>
 
 	/**
 	 * Delete challenge by ID
@@ -63,12 +61,12 @@ export abstract class WebAuthnAdapter {
 		transports,
 		name
 	}: {
-		userId: string;
-		credentialId: string;
-		publicKey: string;
-		counter: number;
-		transports?: string[] | null;
-		name?: string | null;
+		userId: string
+		credentialId: string
+		publicKey: string
+		counter: number
+		transports?: string[] | null
+		name?: string | null
 	}): Promise<void>
 
 	/**
@@ -77,9 +75,7 @@ export abstract class WebAuthnAdapter {
 	 * @param {string} credentialId - Identifier to use.
 	 * @returns {Promise<Object|null>}
 	 */
-	abstract getCredential(
-		credentialId: string,
-	): Promise<Record<string, unknown> | null>
+	abstract getCredential(credentialId: string): Promise<Record<string, unknown> | null>
 
 	/**
 	 * List credentials for a user
@@ -96,10 +92,7 @@ export abstract class WebAuthnAdapter {
 	 * @param {Object} updates - Updates to apply.
 	 * @returns {Promise<void>}
 	 */
-	abstract updateCredential(
-		credentialId: string,
-		updates: Record<string, unknown>,
-	): Promise<void>
+	abstract updateCredential(credentialId: string, updates: Record<string, unknown>): Promise<void>
 
 	/**
 	 * Delete a credential
@@ -126,9 +119,7 @@ export abstract class WebAuthnAdapter {
 	 *
 	 * @param challengeId - Identifier to use.
 	 */
-	async consumeChallenge(
-		challengeId: string
-	): Promise<Record<string, unknown> | null> {
+	async consumeChallenge(challengeId: string): Promise<Record<string, unknown> | null> {
 		const record = await this.getChallenge(challengeId)
 		if (record) {
 			await this.deleteChallenge(challengeId)

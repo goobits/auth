@@ -4,8 +4,10 @@ import { createSigninHandler } from '../../src/handlers/signin.ts'
 import { captureRejected, createRequestEvent, getRedirectLocation } from '../testKit.ts'
 
 describe('createSigninHandler', () => {
-	it('rejects invalid credentials without setting cookie', async() => {
-		const credentialsProvider = { authenticate: vi.fn().mockResolvedValue({ user: null, valid: false }) }
+	it('rejects invalid credentials without setting cookie', async () => {
+		const credentialsProvider = {
+			authenticate: vi.fn().mockResolvedValue({ user: null, valid: false })
+		}
 		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
 		const userAdapter = {}
 
@@ -22,10 +24,14 @@ describe('createSigninHandler', () => {
 		expect(sessionAdapter.setSessionCookie).not.toHaveBeenCalled()
 	})
 
-	it('creates session and redirects on success', async() => {
-		const credentialsProvider = { authenticate: vi.fn().mockResolvedValue({ user: { id: 'u1' }, valid: true }) }
+	it('creates session and redirects on success', async () => {
+		const credentialsProvider = {
+			authenticate: vi.fn().mockResolvedValue({ user: { id: 'u1' }, valid: true })
+		}
 		const sessionAdapter = {
-			createSession: vi.fn().mockResolvedValue({ id: 's1', expiresAt: new Date(Date.now() + 1000) }),
+			createSession: vi
+				.fn()
+				.mockResolvedValue({ id: 's1', expiresAt: new Date(Date.now() + 1000) }),
 			setSessionCookie: vi.fn()
 		}
 
@@ -56,8 +62,10 @@ describe('createSigninHandler', () => {
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
 
-	it('passes configured identifier fields to the credentials provider', async() => {
-		const credentialsProvider = { authenticate: vi.fn().mockResolvedValue({ user: null, valid: false }) }
+	it('passes configured identifier fields to the credentials provider', async () => {
+		const credentialsProvider = {
+			authenticate: vi.fn().mockResolvedValue({ user: null, valid: false })
+		}
 		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
 		const userAdapter = {}
 
@@ -88,7 +96,7 @@ describe('createSigninHandler', () => {
 		})
 	})
 
-	it('returns an MFA challenge without creating a session', async() => {
+	it('returns an MFA challenge without creating a session', async () => {
 		const credentialsProvider = {
 			authenticate: vi.fn().mockResolvedValue({
 				user: {
@@ -120,7 +128,11 @@ describe('createSigninHandler', () => {
 			redirectTo: '',
 			mfa: {
 				store: {
-					getStatus: vi.fn(async() => ({ enabled: true, enabledAt: new Date(), backupCodeCount: 8 })),
+					getStatus: vi.fn(async () => ({
+						enabled: true,
+						enabledAt: new Date(),
+						backupCodeCount: 8
+					})),
 					getSecret: vi.fn(),
 					getBackupCodes: vi.fn(),
 					consumeBackupCode: vi.fn(),

@@ -7,45 +7,45 @@ import type { Session, User } from './types/index.ts'
 type HandlerMethod = 'GET' | 'POST'
 
 type AuthPrincipal = {
-	session: Session;
-	user: User;
+	session: Session
+	user: User
 }
 
 type AuthHandlersBundle = {
-	GET: RequestHandler;
-	POST: RequestHandler;
+	GET: RequestHandler
+	POST: RequestHandler
 }
 
 type AuthRoleResolver = (user: User) => string[]
 
 /** Route paths used by the SvelteKit auth integration. */
 export type GoobitsAuthRoutingConfig = {
-	basePath?: string;
-	signInPath?: string;
-	signOutPath?: string;
+	basePath?: string
+	signInPath?: string
+	signOutPath?: string
 }
 
 /** Configuration for the high-level Goobits auth facade. */
 export type GoobitsAuthConfig = Omit<AuthConfig, 'adapters'> & {
-	adapter: AuthConfig['adapters'];
-	routing?: GoobitsAuthRoutingConfig;
+	adapter: AuthConfig['adapters']
+	routing?: GoobitsAuthRoutingConfig
 }
 
 type HandlerTarget = {
-	method: HandlerMethod;
-	handler: RequestHandler;
+	method: HandlerMethod
+	handler: RequestHandler
 }
 
 type CoreAuth = ReturnType<typeof createAuth>
 
 type LocalsWithAuth = AuthLocals & {
-	auth?: AuthPrincipal | null;
+	auth?: AuthPrincipal | null
 }
 
 function normalizeBasePath(input: string | undefined): string {
 	const raw = input ?? '/auth'
 	const trimmed = raw.endsWith('/') && raw.length > 1 ? raw.slice(0, -1) : raw
-	return trimmed.startsWith('/') ? trimmed : `/${ trimmed }`
+	return trimmed.startsWith('/') ? trimmed : `/${trimmed}`
 }
 
 function splitRoutedPath(pathname: string, basePath: string): string[] {
@@ -53,12 +53,12 @@ function splitRoutedPath(pathname: string, basePath: string): string[] {
 	const rest = pathname.slice(basePath.length)
 	const normalized = rest.startsWith('/') ? rest.slice(1) : rest
 	if (!normalized) return []
-	return normalized.split('/').filter(part => part.length > 0)
+	return normalized.split('/').filter((part) => part.length > 0)
 }
 
 function hasSessionPrincipal(locals: AuthLocals): locals is AuthLocals & {
-	session: Session;
-	user: User;
+	session: Session
+	user: User
 } {
 	return !!locals.session && !!locals.user
 }
@@ -98,8 +98,8 @@ export class GoobitsAuth {
 		const basePath = normalizeBasePath(routing?.basePath)
 		this.routing = {
 			basePath,
-			signInPath: routing?.signInPath ?? `${ basePath }/signin`,
-			signOutPath: routing?.signOutPath ?? `${ basePath }/signout`
+			signInPath: routing?.signInPath ?? `${basePath}/signin`,
+			signOutPath: routing?.signOutPath ?? `${basePath}/signout`
 		}
 		this.defaultHandlers = this.createHandlers()
 	}
@@ -120,11 +120,11 @@ export class GoobitsAuth {
 	 * Creates a SvelteKit handle hook that validates sessions and populates auth locals.
 	 */
 	handle(): Handle {
-		return async({ event, resolve }) => {
+		return async ({ event, resolve }) => {
 			const baseEvent = event as unknown as RequestEventLike
 			const response = await this.core.handlers.hooks({
 				event: baseEvent,
-				resolve: async nextEvent => {
+				resolve: async (nextEvent) => {
 					const locals = nextEvent.locals as LocalsWithAuth
 					locals.auth = hasSessionPrincipal(nextEvent.locals)
 						? { session: nextEvent.locals.session, user: nextEvent.locals.user }
@@ -144,7 +144,7 @@ export class GoobitsAuth {
 
 	createHandlers(options?: { basePath?: string }): AuthHandlersBundle {
 		const basePath = normalizeBasePath(options?.basePath ?? this.routing.basePath)
-		const dispatch: RequestHandler = async event => {
+		const dispatch: RequestHandler = async (event) => {
 			const method = event.request.method.toUpperCase()
 			if (method !== 'GET' && method !== 'POST') {
 				return new Response('Method Not Allowed', { status: 405 })
@@ -221,9 +221,11 @@ export class GoobitsAuth {
 		options?: { resolveAuthRoles?: AuthRoleResolver }
 	): Promise<User> {
 		const user = await this.requireUser(event)
-		const authRoles = options?.resolveAuthRoles ? options.resolveAuthRoles(user) : resolveUserAuthRoles(user)
-		const required = Array.isArray(authRole) ? authRole : [ authRole ]
-		const allowed = required.some(entry => authRoles.includes(entry))
+		const authRoles = options?.resolveAuthRoles
+			? options.resolveAuthRoles(user)
+			: resolveUserAuthRoles(user)
+		const required = Array.isArray(authRole) ? authRole : [authRole]
+		const allowed = required.some((entry) => authRoles.includes(entry))
 		if (!allowed) {
 			const emitter = this.core.security.audit.emitter
 			await emitter?.({
@@ -246,9 +248,9 @@ export class GoobitsAuth {
 	}
 
 	private resolveTarget(input: {
-		event: RequestEventLike;
-		segments: string[];
-		method: HandlerMethod;
+		event: RequestEventLike
+		segments: string[]
+		method: HandlerMethod
 	}): HandlerTarget | null {
 		const { event, segments, method } = input
 		const handlers = this.core.handlers
