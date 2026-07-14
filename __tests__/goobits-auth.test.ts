@@ -132,4 +132,36 @@ describe('GoobitsAuth', () => {
 		event.locals.user = user
 		await expect(auth.requireAuthRole(event, 'admin')).rejects.toMatchObject({ status: 403 })
 	})
+
+	it('emits application-owned events through the configured security pipeline', async () => {
+		const emitter = vi.fn()
+		const auth = new GoobitsAuth({
+			adapter: { session: createSessionAdapter({ session: null, user: null }) },
+			security: {
+				audit: { emitter },
+				alerts: { enabled: false }
+			}
+		})
+
+		await auth.emitSecurityEvent({
+			name: 'auth.failure',
+			severity: 'warn',
+			route: '/login',
+			method: 'POST',
+			status: 401,
+			message: 'Invalid credentials',
+			ip: '192.0.2.10'
+		})
+
+		expect(emitter).toHaveBeenCalledWith({
+			name: 'auth.failure',
+			severity: 'warn',
+			route: '/login',
+			method: 'POST',
+			status: 401,
+			message: 'Invalid credentials',
+			ip: '192.0.2.10',
+			timestamp: expect.any(String)
+		})
+	})
 })

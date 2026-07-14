@@ -1,6 +1,7 @@
 import { error, type Handle, redirect, type RequestHandler } from '@sveltejs/kit'
 
 import { createAuth } from './createAuth.ts'
+import { createAuthEvent, type AuthEvent } from './security/events.ts'
 import type { AuthConfig, AuthLocals, RequestEventLike } from './types/auth.ts'
 import type { Session, User } from './types/index.ts'
 
@@ -30,6 +31,9 @@ export type GoobitsAuthConfig = Omit<AuthConfig, 'adapters'> & {
 	adapter: AuthConfig['adapters']
 	routing?: GoobitsAuthRoutingConfig
 }
+
+/** Application-owned auth event accepted by the configured audit and alert pipeline. */
+export type AuthSecurityEventInput = Omit<AuthEvent, 'timestamp'>
 
 type HandlerTarget = {
 	method: HandlerMethod
@@ -106,6 +110,14 @@ export class GoobitsAuth {
 
 	get adapter() {
 		return this.core.adapters
+	}
+
+	/**
+	 * Sends an application-owned authentication event through the same audit,
+	 * threshold, and alert pipeline used by Goobits-managed routes.
+	 */
+	async emitSecurityEvent(event: AuthSecurityEventInput): Promise<void> {
+		await this.core.security.audit.emitter?.(createAuthEvent(event))
 	}
 
 	get providers() {

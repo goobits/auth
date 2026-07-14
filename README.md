@@ -170,6 +170,19 @@ export const auth = new GoobitsAuth({
 apps. Use `security.alerts.onAlert` for custom signing, cooldown, or fan-out
 behavior.
 
+Applications that compose public Goobits handler factories into custom routes
+should send their final outcomes through the same configured pipeline:
+
+```ts
+await auth.emitSecurityEvent({
+	name: 'auth.failure',
+	severity: 'warn',
+	route: event.url.pathname,
+	method: event.request.method,
+	status: 401
+})
+```
+
 ## Docs
 
 - `docs/quickstart.md`: 5-minute SvelteKit wire-up

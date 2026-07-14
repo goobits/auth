@@ -55,6 +55,7 @@ export const auth = new GoobitsAuth({
 - `auth.getSession(event)`
 - `auth.requireUser(event)`
 - `auth.requireAuthRole(event, authRole | authRole[])`
+- `auth.emitSecurityEvent(event)` for custom auth-route outcomes
 - `auth.adapter` (raw adapters for advanced/manual usage)
 
 `requireAuthRole()` is for website/session route gates. It is not a product
