@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { error as httpError, redirect } from '@sveltejs/kit'
+import { describe, expect, it, vi } from 'vitest'
 
 import { MemoryCsrfStore } from '../../src/security/csrf.ts'
 import { applySecurityPolicy } from '../../src/security/policy.ts'
@@ -25,6 +26,27 @@ function createEvent({
 			locals: { user: null, session: null }
 		}),
 		getClientAddress: () => clientAddress
+	}
+}
+
+function createAuditSettings(emitter: ReturnType<typeof vi.fn>) {
+	return {
+		csrf: {
+			mode: 'off' as const,
+			cookieName: 'csrf-token',
+			headerName: 'x-csrf-token',
+			checkExpiry: false
+		},
+		rateLimit: {
+			mode: 'off' as const,
+			max: 10,
+			windowMs: 60_000,
+			keyPrefix: 'test-audit',
+			trustProxyHeader: false,
+			trustedProxyHeaders: []
+		},
+		audit: { mode: 'required' as const, emitter },
+		routes: {}
 	}
 }
 
@@ -241,5 +263,45 @@ describe('security policy wrapper', () => {
 
 		expect(first.status).toBe(200)
 		expect(secondSameForwardedIp.status).toBe(200)
+	})
+
+	it('audits redirects as successful control flow', async() => {
+		const emitter = vi.fn()
+		const handler = applySecurityPolicy({
+			handler: async() => {
+				throw redirect(303, '/')
+			},
+			routeId: 'auth.logout',
+			settings: createAuditSettings(emitter)
+		})
+
+		await expect(handler(createEvent() as Parameters<typeof handler>[0])).rejects.toMatchObject({
+			status: 303,
+			location: '/'
+		})
+		expect(emitter).toHaveBeenCalledWith(
+			expect.objectContaining({ name: 'auth.success', severity: 'info', status: 303 })
+		)
+		expect(emitter).not.toHaveBeenCalledWith(
+			expect.objectContaining({ name: 'auth.failure' })
+		)
+	})
+
+	it('preserves expected HTTP failure status and severity in audit events', async() => {
+		const emitter = vi.fn()
+		const handler = applySecurityPolicy({
+			handler: async() => {
+				throw httpError(403, 'Forbidden')
+			},
+			routeId: 'sessions.revoke',
+			settings: createAuditSettings(emitter)
+		})
+
+		await expect(handler(createEvent() as Parameters<typeof handler>[0])).rejects.toMatchObject({
+			status: 403
+		})
+		expect(emitter).toHaveBeenCalledWith(
+			expect.objectContaining({ name: 'auth.failure', severity: 'warn', status: 403 })
+		)
 	})
 })

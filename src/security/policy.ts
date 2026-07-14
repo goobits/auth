@@ -1,4 +1,4 @@
-import type { RequestHandler } from '@sveltejs/kit'
+import { isHttpError, isRedirect, type RequestHandler } from '@sveltejs/kit'
 import { createRateLimiter, type RateLimitStore } from '@goobits/security/rate-limit'
 import type { RequestEventLike, TrustedProxyHeader } from '../types/auth.ts'
 import { validateCsrfRequest, type CsrfStore } from './csrf.ts'
@@ -175,8 +175,15 @@ export function applySecurityPolicy({
 			)
 			return response
 		} catch(error) {
+			if (isRedirect(error)) {
+				await emit('auth.success', 'info', error.status)
+				throw error
+			}
+
+			const status = isHttpError(error) ? error.status : 500
+			const severity = status >= 500 ? 'error' : 'warn'
 			const message = error instanceof Error ? error.message : 'Request failed'
-			await emit('auth.failure', 'error', 500, message)
+			await emit('auth.failure', severity, status, message)
 			throw error
 		}
 	}
