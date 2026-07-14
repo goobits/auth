@@ -130,6 +130,23 @@ Handler options support custom form field names and metadata:
 - `createSigninHandler({ fields: { identifier, password, remember }, identifierField })`
 - `createSignupHandler({ fields: { email, password, name }, metadataFields, getSignupMetadata })`
 
+`verifyPassword` may return either a boolean or
+`{ valid, needsRehash }`. When `needsRehash` is true, the provider replaces the
+stored hash through the configured user adapter after successful verification.
+Use this for read-only legacy hash support while all new hashes continue through
+the provider's current hasher.
+
+Credential MFA is a two-step flow:
+
+- pass `mfa` to `createSigninHandler`; enabled or policy-required users receive
+  `twoFactorRequired` and no session
+- complete the short-lived, single-use challenge with
+  `createMfaLoginVerifyHandler`; only that handler creates the session
+
+MFA login challenges reuse `VerificationTokenAdapter`. Adapters should preserve
+the optional token metadata when remember-me or session context must survive
+between the password and second-factor requests.
+
 ## Security primitives
 
 Use `@goobits/auth/security` when an app owns its route policy or persistence

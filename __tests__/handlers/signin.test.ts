@@ -33,7 +33,8 @@ describe('createSigninHandler', () => {
 			credentialsProvider,
 			userAdapter: {},
 			sessionAdapter,
-			redirectTo: '/dashboard'
+			redirectTo: '/dashboard',
+			getSessionMetadata: () => ({ fingerprint: 'fp-1' })
 		})
 
 		const error = await captureRejected<{ status?: number; headers?: Headers; location?: string }>(
@@ -50,7 +51,7 @@ describe('createSigninHandler', () => {
 
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith(
 			'u1',
-			expect.objectContaining({ rememberMe: false })
+			expect.objectContaining({ rememberMe: false, fingerprint: 'fp-1' })
 		)
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
@@ -85,5 +86,58 @@ describe('createSigninHandler', () => {
 			password: 'pw',
 			userAdapter
 		})
+	})
+
+	it('returns an MFA challenge without creating a session', async() => {
+		const credentialsProvider = {
+			authenticate: vi.fn().mockResolvedValue({
+				user: {
+					id: 'u1',
+					email: 'a@b.com',
+					name: 'User',
+					avatar: null,
+					emailVerified: true
+				},
+				valid: true
+			})
+		}
+		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
+		const verificationTokenAdapter = {
+			create: vi.fn(),
+			deleteByUserAndType: vi.fn(),
+			findByToken: vi.fn(),
+			deleteById: vi.fn()
+		}
+		const event = createRequestEvent({
+			url: 'http://localhost/signin',
+			method: 'POST',
+			form: { email: 'a@b.com', password: 'pw' }
+		})
+		const handler = createSigninHandler({
+			credentialsProvider,
+			userAdapter: {},
+			sessionAdapter,
+			redirectTo: '',
+			mfa: {
+				store: {
+					getStatus: vi.fn(async() => ({ enabled: true, enabledAt: new Date(), backupCodeCount: 8 })),
+					getSecret: vi.fn(),
+					getBackupCodes: vi.fn(),
+					consumeBackupCode: vi.fn(),
+					setSecret: vi.fn(),
+					setBackupCodes: vi.fn(),
+					enableMfa: vi.fn(),
+					disableMfa: vi.fn()
+				},
+				verificationTokenAdapter,
+				secureCookies: false
+			}
+		})
+
+		const result = await handler(event)
+
+		expect(result).toEqual({ success: true, twoFactorRequired: true })
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
+		expect(event.cookies.get('goobits_mfa_login')).toBeTruthy()
 	})
 })

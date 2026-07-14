@@ -1,5 +1,11 @@
-type VerificationTokenRecord<TUser = Record<string, unknown>> = {
-	token: { id: string; token: string; type: string; expiresAt: Date };
+export type VerificationTokenRecord<TUser = Record<string, unknown>> = {
+	token: {
+		id: string;
+		token: string;
+		type: string;
+		expiresAt: Date;
+		metadata?: Record<string, unknown>;
+	};
 	user: TUser;
 }
 
@@ -20,12 +26,14 @@ export abstract class VerificationTokenAdapter {
 		userId,
 		type,
 		token,
-		expiresAt
+		expiresAt,
+		metadata
 	}: {
 		userId: string;
 		type: string;
 		token: string;
 		expiresAt: Date;
+		metadata?: Record<string, unknown>;
 	}): Promise<void>
 
 	/**

@@ -23,6 +23,7 @@ export {
 	DrizzleVerificationTokenAdapter,
 	VerificationTokenAdapter
 } from './verification-token/index.ts'
+export type { VerificationTokenRecord } from './verification-token/index.ts'
 
 // Magic Link Adapters
 export {

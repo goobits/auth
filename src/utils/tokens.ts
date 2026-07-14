@@ -1,4 +1,7 @@
-import { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.ts'
+import {
+	VerificationTokenAdapter,
+	type VerificationTokenRecord
+} from '../adapters/verification-token/VerificationTokenAdapter.ts'
 import { generateRandomUUID, sha256Hex } from './crypto.ts'
 
 const DEFAULT_TOKEN_EXPIRATION_MS = 24 * 60 * 60 * 1000 // 24 hours
@@ -7,7 +10,8 @@ const DEFAULT_TOKEN_EXPIRATION_MS = 24 * 60 * 60 * 1000 // 24 hours
 export const VERIFICATION_TOKEN_TYPES = {
 	EMAIL_VERIFICATION: 'email_verification',
 	PASSWORD_RESET: 'password_reset',
-	EMAIL_UPDATE: 'email_update'
+	EMAIL_UPDATE: 'email_update',
+	MFA_LOGIN: 'mfa_login'
 }
 
 type VerificationTokenType =
@@ -27,12 +31,14 @@ export async function createVerificationToken({
 	adapter,
 	userId,
 	type,
-	expiresInMs = DEFAULT_TOKEN_EXPIRATION_MS
+	expiresInMs = DEFAULT_TOKEN_EXPIRATION_MS,
+	metadata
 }: {
 	adapter: VerificationTokenAdapter;
 	userId: string;
 	type: VerificationTokenType;
 	expiresInMs?: number;
+	metadata?: Record<string, unknown>;
 }): Promise<string> {
 	const tokenValue = await generateRandomUUID()
 	const tokenHash = await sha256Hex(tokenValue)
@@ -42,14 +48,54 @@ export async function createVerificationToken({
 	await adapter.deleteByUserAndType({ userId, type })
 
 	// Create new token
-	await adapter.create({
+	const createInput: {
+		userId: string;
+		type: string;
+		token: string;
+		expiresAt: Date;
+		metadata?: Record<string, unknown>;
+	} = {
 		userId,
 		type,
 		token: tokenHash,
 		expiresAt
-	})
+	}
+	if (metadata) createInput.metadata = metadata
+	await adapter.create(createInput)
 
 	return tokenValue
+}
+
+/** Returns a valid verification-token record without consuming it. */
+export async function getVerificationTokenRecord({
+	adapter,
+	token,
+	type
+}: {
+	adapter: VerificationTokenAdapter;
+	token: string;
+	type: VerificationTokenType;
+}): Promise<VerificationTokenRecord | null> {
+	const tokenHash = await sha256Hex(token)
+	const record = await adapter.findByToken({ token: tokenHash, type })
+	if (!record || record.token.expiresAt.getTime() < Date.now()) return null
+	return record
+}
+
+/** Atomically consumes a valid verification-token record. */
+export async function consumeVerificationTokenRecord({
+	adapter,
+	token,
+	type
+}: {
+	adapter: VerificationTokenAdapter;
+	token: string;
+	type: VerificationTokenType;
+}): Promise<VerificationTokenRecord | null> {
+	const tokenHash = await sha256Hex(token)
+	const record = await adapter.consumeByToken({ token: tokenHash, type })
+	if (!record || record.token.expiresAt.getTime() < Date.now()) return null
+	return record
 }
 
 /**
@@ -73,22 +119,8 @@ export async function consumeVerificationToken({
 	type: VerificationTokenType;
 	sanitizeUser?: (user: Record<string, unknown>) => unknown;
 }): Promise<unknown | null> {
-	const tokenHash = await sha256Hex(token)
-
-	// Atomic consume — in-tree adapters override `consumeByToken` with a
-	// single `DELETE ... RETURNING` so two concurrent verifies of the same
-	// token cannot both succeed.
-	const record = await adapter.consumeByToken({ token: tokenHash, type })
-
-	if (!record) {
-		return null
-	}
-
-	// Check expiration after consumption: the token is already gone, we just
-	// surface the expiry outcome to the caller.
-	if (record.token.expiresAt.getTime() < Date.now()) {
-		return null
-	}
+	const record = await consumeVerificationTokenRecord({ adapter, token, type })
+	if (!record) return null
 
 	return sanitizeUser(record.user)
 }
@@ -114,17 +146,8 @@ export async function getUserForVerificationToken({
 	type: VerificationTokenType;
 	sanitizeUser?: (user: Record<string, unknown>) => unknown;
 }): Promise<unknown | null> {
-	const tokenHash = await sha256Hex(token)
-	const record = await adapter.findByToken({ token: tokenHash, type })
-
-	if (!record) {
-		return null
-	}
-
-	// Check expiration
-	if (record.token.expiresAt.getTime() < Date.now()) {
-		return null
-	}
+	const record = await getVerificationTokenRecord({ adapter, token, type })
+	if (!record) return null
 
 	return sanitizeUser(record.user)
 }

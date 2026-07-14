@@ -16,9 +16,12 @@ export {
 	createMfaBackupCodeHandler,
 	createMfaDisableHandler,
 	createMfaEnrollHandler,
+	createMfaLoginVerifyHandler,
 	createMfaStatusHandler,
 	createMfaVerifyHandler,
+	beginMfaLoginChallenge,
 	type MfaConfig,
+	type MfaLoginConfig,
 	type MfaStore
 } from './mfa.ts'
 

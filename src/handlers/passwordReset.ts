@@ -29,6 +29,12 @@ export function createPasswordResetRequestHandler(config: {
 	userAdapter: { getUserByEmail: (email: string) => Promise<User | null> };
 	verificationTokenAdapter: VerificationTokenAdapter;
 	sendPasswordResetEmail: (email: string, token: string) => Promise<void> | void;
+	resolveUser?: (input: {
+		email: string;
+		identifier: string | null;
+		event: RequestEventLike;
+	}) => Promise<User | null>;
+	expiresInMs?: number;
 	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string };
 	rateLimit?: RateLimitConfig;
 }) {
@@ -36,6 +42,8 @@ export function createPasswordResetRequestHandler(config: {
 		userAdapter,
 		verificationTokenAdapter,
 		sendPasswordResetEmail,
+		resolveUser,
+		expiresInMs,
 		csrf,
 		rateLimit
 	} = config
@@ -72,6 +80,7 @@ export function createPasswordResetRequestHandler(config: {
 
 		const formData = await event.request.formData()
 		const email = formData.get('email')?.toString()
+		const identifier = formData.get('identifier')?.toString().trim() || null
 
 		if (!email) {
 			return {
@@ -81,8 +90,9 @@ export function createPasswordResetRequestHandler(config: {
 		}
 
 		try {
-			// Check if user exists
-			const user = await userAdapter.getUserByEmail(email)
+			const user = resolveUser
+				? await resolveUser({ email, identifier, event })
+				: await userAdapter.getUserByEmail(email)
 			if (!user) {
 				// Don't reveal that user doesn't exist (security)
 				return {
@@ -96,11 +106,13 @@ export function createPasswordResetRequestHandler(config: {
 			const { createVerificationToken, VERIFICATION_TOKEN_TYPES } =
 				await import('../utils/tokens.ts')
 
-			const token = await createVerificationToken({
+			const tokenInput: Parameters<typeof createVerificationToken>[0] = {
 				adapter: verificationTokenAdapter,
 				userId: user.id,
 				type: VERIFICATION_TOKEN_TYPES.PASSWORD_RESET
-			})
+			}
+			if (expiresInMs !== undefined) tokenInput.expiresInMs = expiresInMs
+			const token = await createVerificationToken(tokenInput)
 
 			// Send reset email
 			await sendPasswordResetEmail(user.email, token)
@@ -133,6 +145,7 @@ export function createPasswordResetRequestHandler(config: {
  */
 export function createPasswordResetConfirmHandler(config: {
 	credentialsProvider: {
+		createPasswordHash?: (password: string) => Promise<string>;
 		updatePassword: (input: {
 			userId: string;
 			newPassword: string;
@@ -142,6 +155,10 @@ export function createPasswordResetConfirmHandler(config: {
 	userAdapter: unknown;
 	verificationTokenAdapter: VerificationTokenAdapter;
 	sessionAdapter?: { invalidateUserSessions?: (userId: string) => Promise<void> };
+	completePasswordReset?: (input: {
+		token: string;
+		passwordHash: string;
+	}) => Promise<{ userId: string } | null>;
 	redirectTo?: string;
 }) {
 	const {
@@ -149,6 +166,7 @@ export function createPasswordResetConfirmHandler(config: {
 		userAdapter,
 		verificationTokenAdapter,
 		sessionAdapter,
+		completePasswordReset,
 		redirectTo = '/sign-in'
 	} = config
 
@@ -167,6 +185,23 @@ export function createPasswordResetConfirmHandler(config: {
 		}
 
 		try {
+			if (completePasswordReset) {
+				if (!credentialsProvider.createPasswordHash) {
+					throw new Error('Atomic password reset requires createPasswordHash')
+				}
+				const passwordHash = await credentialsProvider.createPasswordHash(newPassword)
+				const completed = await completePasswordReset({ token, passwordHash })
+				if (!completed) {
+					return { error: 'Invalid or expired reset token', success: false }
+				}
+				return {
+					success: true,
+					message: 'Password has been reset successfully',
+					sessionsInvalidated: true,
+					redirectTo: isSafeRedirectPath(redirectTo) ? redirectTo : '/sign-in'
+				}
+			}
+
 			// Consume token and get user
 			const { consumeVerificationToken, VERIFICATION_TOKEN_TYPES } =
 				await import('../utils/tokens.ts')

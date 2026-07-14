@@ -12,15 +12,17 @@ vi.mock('../../src/mfa/backupCodes.ts', () => ({
 }))
 
 import {
+	beginMfaLoginChallenge,
 	createMfaBackupCodeHandler,
 	createMfaDisableHandler,
 	createMfaEnrollHandler,
+	createMfaLoginVerifyHandler,
 	createMfaStatusHandler,
 	createMfaVerifyHandler
 } from '../../src/handlers/mfa.ts'
 import * as backup from '../../src/mfa/backupCodes.ts'
 import * as totp from '../../src/mfa/totp.ts'
-import { createRequestEvent } from '../testKit.ts'
+import { createCookies, createRequestEvent } from '../testKit.ts'
 
 function createEvent({ locals = {}, form = {} } = {}) {
 	return createRequestEvent({
@@ -124,5 +126,96 @@ describe('MFA handlers', () => {
 		const result = await handler(createEvent({ locals: { userId: 'u1' }, form: { code: 'code1' } }))
 		expect(result.success).toBe(true)
 		expect(store.consumeBackupCode).toHaveBeenCalledWith('u1', 'h1')
+	})
+
+	it('creates a session only after a single-use login challenge passes', async() => {
+		let tokenRecord: {
+			token: {
+				id: string;
+				token: string;
+				type: string;
+				expiresAt: Date;
+				metadata?: Record<string, unknown>;
+			};
+			user: Record<string, unknown>;
+		} | null = null
+		const verificationTokenAdapter = {
+			deleteByUserAndType: vi.fn(async() => undefined),
+			create: vi.fn(async(input: {
+				userId: string;
+				type: string;
+				token: string;
+				expiresAt: Date;
+				metadata?: Record<string, unknown>;
+			}) => {
+				tokenRecord = {
+					token: {
+						id: 'challenge-1',
+						token: input.token,
+						type: input.type,
+						expiresAt: input.expiresAt,
+						...(input.metadata ? { metadata: input.metadata } : {})
+					},
+					user: { id: input.userId, email: 'user@example.com' }
+				}
+			}),
+			findByToken: vi.fn(async({ token }: { token: string }) =>
+				tokenRecord?.token.token === token ? tokenRecord : null
+			),
+			consumeByToken: vi.fn(async({ token }: { token: string }) => {
+				if (tokenRecord?.token.token !== token) return null
+				const consumed = tokenRecord
+				tokenRecord = null
+				return consumed
+			}),
+			deleteById: vi.fn(async() => undefined)
+		}
+		const store = {
+			getStatus: vi.fn(async() => ({ enabled: true, enabledAt: new Date(), backupCodeCount: 8 })),
+			getSecret: vi.fn(async() => 'SECRET'),
+			getBackupCodes: vi.fn(async() => []),
+			consumeBackupCode: vi.fn(async() => undefined),
+			setSecret: vi.fn(),
+			setBackupCodes: vi.fn(),
+			enableMfa: vi.fn(),
+			disableMfa: vi.fn()
+		}
+		const cookies = createCookies()
+		await beginMfaLoginChallenge({
+			event: createRequestEvent({ cookies }),
+			user: {
+				id: 'u1',
+				email: 'user@example.com',
+				name: 'User',
+				avatar: null,
+				emailVerified: true
+			},
+			sessionMetadata: { rememberMe: true },
+			config: { store, verificationTokenAdapter, secureCookies: false }
+		})
+
+		vi.mocked(totp.verifyTOTP).mockResolvedValue(true)
+		const sessionAdapter = {
+			createSession: vi.fn(async() => ({ id: 'session-1', expiresAt: new Date(Date.now() + 60_000) })),
+			setSessionCookie: vi.fn()
+		}
+		const verify = createMfaLoginVerifyHandler({
+			store,
+			verificationTokenAdapter,
+			sessionAdapter,
+			secureCookies: false
+		})
+		const result = await verify(createRequestEvent({ cookies, method: 'POST', form: { token: '123456' } }))
+
+		expect(result.success).toBe(true)
+		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1', {
+			rememberMe: true
+		})
+		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
+		expect(cookies.get('goobits_mfa_login')).toBeNull()
+
+		const replay = await verify(createRequestEvent({ cookies, method: 'POST', form: { token: '123456' } }))
+		expect(replay.success).toBe(false)
+		expect(sessionAdapter.createSession).toHaveBeenCalledTimes(1)
 	})
 })

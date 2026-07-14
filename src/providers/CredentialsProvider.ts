@@ -1,11 +1,19 @@
 import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
 import { hashPassword, verifyPassword } from '../password/index.ts'
+import { getLogger } from '../utils/logger.ts'
 
 type PasswordValidationResult = { valid: boolean; errors: string[] }
 type ValidatePasswordFn = (password: string) => PasswordValidationResult
 type NormalizeIdentifierFn = (value: string) => string
 type HashPasswordFn = (password: string) => Promise<string>
-type VerifyPasswordFn = (storedHash: string, password: string) => Promise<boolean>
+export type PasswordVerificationResult = {
+	valid: boolean;
+	needsRehash?: boolean;
+}
+type VerifyPasswordFn = (
+	storedHash: string,
+	password: string
+) => Promise<boolean | PasswordVerificationResult>
 
 type CredentialsProviderOptions = {
 	validatePassword?: ValidatePasswordFn;
@@ -28,6 +36,21 @@ export class CredentialsProvider {
 	normalizeIdentifier: NormalizeIdentifierFn
 	hashPassword: HashPasswordFn
 	verifyPassword: VerifyPasswordFn
+
+	private validateNewPassword(password: string): void {
+		if (!this.validatePassword) return
+		const validation = this.validatePassword(password)
+		if (!validation.valid) {
+			throw new Error(validation.errors.join(', '))
+		}
+	}
+
+	/** Validates and hashes a password without persisting it. */
+	async createPasswordHash(password: string): Promise<string> {
+		if (!password) throw new Error('Password is required')
+		this.validateNewPassword(password)
+		return await this.hashPassword(password)
+	}
 
 	/**
 	 * @param {Object} [options] - Configuration options
@@ -125,11 +148,28 @@ export class CredentialsProvider {
 			return { user: null, valid: false }
 		}
 
-		// Verify password
-		const valid = await this.verifyPassword(user.password, password)
+		const verification = await this.verifyPassword(user.password, password)
+		const valid = typeof verification === 'boolean' ? verification : verification.valid
 
 		if (!valid) {
 			return { user: null, valid: false }
+		}
+
+		if (typeof verification !== 'boolean' && verification.needsRehash) {
+			const userId = typeof user['id'] === 'string' || typeof user['id'] === 'number'
+				? String(user['id'])
+				: null
+			if (userId) {
+				try {
+					const upgradedHash = await this.createPasswordHash(password)
+					await userAdapter.updateUser(userId, { password: upgradedHash })
+				} catch(error) {
+					getLogger().error?.(
+						'[CredentialsProvider] Failed to upgrade password hash:',
+						error instanceof Error ? error.message : String(error)
+					)
+				}
+			}
 		}
 
 		// Return sanitized user
@@ -172,16 +212,7 @@ export class CredentialsProvider {
 			throw new Error('Email and password are required')
 		}
 
-		// Validate password if custom validator provided
-		if (this.validatePassword) {
-			const validation = this.validatePassword(password)
-			if (!validation.valid) {
-				throw new Error(validation.errors.join(', '))
-			}
-		}
-
-		// Hash password
-		const passwordHash = await this.hashPassword(password)
+		const passwordHash = await this.createPasswordHash(password)
 
 		// Create user profile
 		const profile: {
@@ -233,16 +264,7 @@ export class CredentialsProvider {
 			throw new Error('User ID and new password are required')
 		}
 
-		// Validate password if custom validator provided
-		if (this.validatePassword) {
-			const validation = this.validatePassword(newPassword)
-			if (!validation.valid) {
-				throw new Error(validation.errors.join(', '))
-			}
-		}
-
-		// Hash new password
-		const passwordHash = await this.hashPassword(newPassword)
+		const passwordHash = await this.createPasswordHash(newPassword)
 
 		// Update user
 		const user = await userAdapter.updateUser(userId, {

@@ -56,6 +56,20 @@ describe('verification tokens', () => {
 		expect(adapter._tokens.has(tokenHash)).toBe(true)
 	})
 
+	it('forwards server-owned metadata to the persistence adapter', async() => {
+		const adapter = createAdapter()
+		await createVerificationToken({
+			adapter,
+			userId: 'u1',
+			type: VERIFICATION_TOKEN_TYPES.MFA_LOGIN,
+			metadata: { rememberMe: true }
+		})
+
+		expect(adapter.create).toHaveBeenCalledWith(expect.objectContaining({
+			metadata: { rememberMe: true }
+		}))
+	})
+
 	it('consumes and deletes token', async() => {
 		const adapter = createAdapter()
 		const expiresAt = new Date(Date.now() + 10000)

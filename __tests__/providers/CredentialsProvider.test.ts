@@ -282,6 +282,34 @@ describe('CredentialsProvider', () => {
 			expect(result.valid).toBe(false)
 			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled()
 		})
+
+		it('upgrades an accepted legacy password hash without blocking authentication', async() => {
+			const password = 'ValidPassword123!'
+			const upgradeProvider = new CredentialsProvider({
+				hashPassword,
+				verifyPassword: vi.fn(async() => ({ valid: true, needsRehash: true }))
+			})
+			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
+				id: 'legacy-user',
+				email: 'legacy@example.com',
+				password: 'legacy-hash'
+			})
+			mockUserAdapter.getUserByEmail.mockResolvedValue({
+				id: 'legacy-user',
+				email: 'legacy@example.com'
+			})
+
+			const result = await upgradeProvider.authenticate({
+				email: 'legacy@example.com',
+				password,
+				userAdapter: mockUserAdapter
+			})
+
+			expect(result.valid).toBe(true)
+			expect(mockUserAdapter.updateUser).toHaveBeenCalledWith('legacy-user', {
+				password: testHash(password)
+			})
+		})
 	})
 
 	describe('signUp', () => {

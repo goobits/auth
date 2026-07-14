@@ -41,6 +41,27 @@ describe('password reset handlers', () => {
 		expect(sendPasswordResetEmail).not.toHaveBeenCalled()
 	})
 
+	it('supports an application identity resolver without changing the public response', async() => {
+		const resolveUser = vi.fn().mockResolvedValue(null)
+		const handler = createPasswordResetRequestHandler({
+			userAdapter: { getUserByEmail: vi.fn() },
+			verificationTokenAdapter: {},
+			sendPasswordResetEmail: vi.fn(),
+			resolveUser
+		})
+
+		const result = await handler(createEventWithForm({
+			email: 'legacy@example.com',
+			identifier: 'legacy-user'
+		}))
+
+		expect(result.success).toBe(true)
+		expect(resolveUser).toHaveBeenCalledWith(expect.objectContaining({
+			email: 'legacy@example.com',
+			identifier: 'legacy-user'
+		}))
+	})
+
 	it('rejects invalid or expired reset token', async() => {
 		const handler = createPasswordResetConfirmHandler({
 			credentialsProvider: { updatePassword: vi.fn() },
@@ -85,5 +106,28 @@ describe('password reset handlers', () => {
 			newPassword: 'newpass',
 			userAdapter: {}
 		})
+	})
+
+	it('delegates atomic completion with a validated password hash', async() => {
+		const completePasswordReset = vi.fn().mockResolvedValue({ userId: 'u1' })
+		const credentialsProvider = {
+			createPasswordHash: vi.fn(async() => 'encoded-hash'),
+			updatePassword: vi.fn()
+		}
+		const handler = createPasswordResetConfirmHandler({
+			credentialsProvider,
+			userAdapter: {},
+			verificationTokenAdapter: {},
+			completePasswordReset
+		})
+
+		const result = await handler(createEventWithForm({ token: 'good', password: 'newpass' }))
+
+		expect(result.success).toBe(true)
+		expect(completePasswordReset).toHaveBeenCalledWith({
+			token: 'good',
+			passwordHash: 'encoded-hash'
+		})
+		expect(credentialsProvider.updatePassword).not.toHaveBeenCalled()
 	})
 })

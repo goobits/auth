@@ -5,6 +5,7 @@ import type { User } from '../types/index.ts'
 import { getLogger } from '../utils/logger.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
+import { beginMfaLoginChallenge, type MfaLoginConfig } from './mfa.ts'
 
 type RateLimitConfig = {
 	check?: (key: string) => Promise<{ allowed: boolean }>;
@@ -72,6 +73,12 @@ export function createSigninHandler(config: {
 	fields?: { identifier?: string; email?: string; password?: string; remember?: string };
 	identifierField?: string;
 	allowBoth?: boolean;
+	mfa?: MfaLoginConfig;
+	getSessionMetadata?: (
+		event: RequestEventLike,
+		user: User,
+		rememberMe: boolean
+	) => Record<string, unknown> | Promise<Record<string, unknown>>;
 }) {
 	const {
 		credentialsProvider,
@@ -84,7 +91,9 @@ export function createSigninHandler(config: {
 		sanitizeUser = defaultSanitizeUser,
 		fields,
 		identifierField,
-		allowBoth
+		allowBoth,
+		mfa,
+		getSessionMetadata
 	} = config
 
 	const log = getLogger()
@@ -160,6 +169,23 @@ export function createSigninHandler(config: {
 			}
 
 			const safeUser = sanitizeUser(user) as User | null
+			const sessionMetadata: Record<string, unknown> = { rememberMe: remember }
+			const ip = event.getClientAddress?.()
+			if (ip) sessionMetadata['ip'] = ip
+			const userAgent = event.request.headers.get('user-agent')
+			if (userAgent) sessionMetadata['userAgent'] = userAgent
+			if (getSessionMetadata) {
+				Object.assign(sessionMetadata, await getSessionMetadata(event, user, remember))
+			}
+			if (mfa) {
+				const challenge = await beginMfaLoginChallenge({
+					event,
+					user,
+					sessionMetadata,
+					config: mfa
+				})
+				if (challenge.handled) return challenge.response
+			}
 
 			// Call onSignin hook if provided
 			if (onSignin) {
@@ -167,11 +193,7 @@ export function createSigninHandler(config: {
 			}
 
 			// Create session
-			const session = await sessionAdapter.createSession(user.id, {
-				rememberMe: remember,
-				ip: event.getClientAddress?.(),
-				userAgent: event.request.headers.get('user-agent') ?? undefined
-			})
+			const session = await sessionAdapter.createSession(user.id, sessionMetadata)
 			sessionAdapter.setSessionCookie(event.cookies, session)
 
 			// Redirect if configured
