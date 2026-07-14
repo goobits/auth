@@ -1,4 +1,5 @@
 import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.ts'
+import type { Session } from '../types/core.ts'
 import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../mfa/backupCodes.ts'
 import { createOtpAuthURL, generateSecret, verifyTOTP } from '../mfa/totp.ts'
 import type { RequestEventLike } from '../types/auth.ts'
@@ -55,10 +56,10 @@ type MfaLoginSessionAdapter = {
 	createSession: (
 		userId: string,
 		metadata?: Record<string, unknown>
-	) => Promise<{ id: string; expiresAt: Date }>;
+	) => Promise<Session>;
 	setSessionCookie: (
 		cookies: RequestEventLike['cookies'],
-		session: { id: string; expiresAt: Date }
+		session: Session
 	) => void;
 }
 

@@ -1,5 +1,6 @@
 import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
 import { hashPassword, verifyPassword } from '../password/index.ts'
+import type { User } from '../types/core.ts'
 import { getLogger } from '../utils/logger.ts'
 
 type PasswordValidationResult = { valid: boolean; errors: string[] }
@@ -109,7 +110,7 @@ export class CredentialsProvider {
 		allowBoth?: boolean;
 		password: string;
 		userAdapter: UserAdapter;
-	}): Promise<{ user: Record<string, unknown> | null; valid: boolean }> {
+	}): Promise<{ user: User | null; valid: boolean }> {
 		const rawIdentifier = identifier ?? email ?? ''
 		if (!rawIdentifier || !password) {
 			return { user: null, valid: false }

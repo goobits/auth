@@ -1,5 +1,8 @@
 import { redirect } from '@sveltejs/kit'
 
+import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
+import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
+import type { CredentialsProvider } from '../providers/CredentialsProvider.ts'
 import type { RequestEventLike } from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { getLogger } from '../utils/logger.ts'
@@ -44,27 +47,9 @@ function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
  * @returns {Function} SvelteKit request handler
  */
 export function createSigninHandler(config: {
-	credentialsProvider: {
-		authenticate: (input: {
-			email?: string;
-			identifier?: string;
-			identifierField?: string;
-			allowBoth?: boolean;
-			password: string;
-			userAdapter: unknown;
-		}) => Promise<{ user: User | null; valid: boolean }>;
-	};
-	userAdapter: unknown;
-	sessionAdapter: {
-		createSession: (
-			userId: string,
-			metadata?: Record<string, unknown>
-		) => Promise<{ id: string; expiresAt: Date }>;
-		setSessionCookie: (
-			cookies: RequestEventLike['cookies'],
-			session: { id: string; expiresAt: Date }
-		) => void;
-	};
+	credentialsProvider: Pick<CredentialsProvider, 'authenticate'>;
+	userAdapter: UserAdapter;
+	sessionAdapter: SessionAdapter;
 	onSignin?: (user: User | null) => Promise<void> | void;
 	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string };
 	rateLimit?: RateLimitConfig;
@@ -149,7 +134,7 @@ export function createSigninHandler(config: {
 				identifierField?: string;
 				allowBoth?: boolean;
 				password: string;
-				userAdapter: unknown;
+				userAdapter: UserAdapter;
 			} = {
 				password,
 				userAdapter
