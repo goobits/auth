@@ -38,7 +38,7 @@ export type MfaConfig = {
 }
 
 /** Configuration for MFA operations that change a user's factors. */
-export type MfaSecurityChangeConfig = MfaConfig & {
+type MfaSecurityChangeConfig = MfaConfig & {
 	authorizeSecurityChange: AuthorizeSecurityChange
 }
 
