@@ -1,5 +1,5 @@
 import type { User } from '../../types/index.ts'
-import { assertPublicUserData } from '../../_internal/publicUserData.ts'
+import { assertPublicUserData } from './publicUserData.ts'
 import type { PasswordCredential, PasswordCredentialAdapter } from './PasswordCredentialAdapter.ts'
 import { UserAdapter } from './UserAdapter.ts'
 

@@ -1,3 +1,5 @@
+import { omitSensitiveUserData } from '../adapters/database/publicUserData.ts'
+
 /**
  * Sanitizes user object by removing sensitive fields
  * @param {Object|null} user - User object from database
@@ -8,4 +10,3 @@ export function sanitizeUser(user: Record<string, unknown> | null): Record<strin
 
 	return omitSensitiveUserData(user)
 }
-import { omitSensitiveUserData } from '../_internal/publicUserData.ts'

@@ -9,7 +9,7 @@ import type {
 	VerificationToken,
 	WebAuthnCredential
 } from '../../types/index.ts'
-import { assertPublicUserData } from '../../_internal/publicUserData.ts'
+import { assertPublicUserData } from '../database/publicUserData.ts'
 import { generateRandomUUID } from '../../utils/crypto.ts'
 import type {
 	PasswordCredential,

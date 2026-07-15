@@ -19,6 +19,9 @@ and calls into your adapters for the actual reads and writes.
 
 Every adapter is an abstract class in `@goobits/auth/adapters`. To implement
 your own, extend the relevant base class and implement its abstract methods.
+Custom user adapters should call `assertPublicUserData()` from
+`@goobits/auth/adapters/database` before general profile writes; use
+`omitSensitiveUserData()` when projecting extension metadata to clients.
 
 ```
 SessionAdapter           — required (session lifecycle + cookie I/O)

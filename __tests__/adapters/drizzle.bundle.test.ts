@@ -70,6 +70,7 @@ describe('drizzleAdapter', () => {
 
 		expect(adapters.session).toBeDefined()
 		expect(adapters.user).toBeDefined()
+		expect(adapters.passwordCredential).toBe(adapters.user)
 		expect(adapters.oauthToken).toBeDefined()
 		expect(adapters.verificationToken).toBeDefined()
 		expect(adapters.magicLink).toBeDefined()

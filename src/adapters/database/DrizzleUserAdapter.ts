@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 
 import type { OAuthProfile, User } from '../../types/index.ts'
-import { assertPublicUserData } from '../../_internal/publicUserData.ts'
+import { assertPublicUserData } from './publicUserData.ts'
 import {
 	type DrizzleDbLike,
 	type DrizzleJson,

@@ -42,6 +42,8 @@
 
 - 📦 Added `@goobits/auth/verification`, PostgreSQL verification-token storage,
   and a named `auth.routes` facade for clean application composition.
+- 🧱 Published public-user assertion and projection helpers for custom adapters
+  so consumers share the same secret-field boundary as built-in adapters.
 - 🔑 Verification-token hashing, record inspection, atomic consumption, and canonical token types now share one public utility boundary for application adapters and transactional account flows.
 - 📦 Published entrypoints now resolve compiled Node/Worker JavaScript and declarations; the source-only security runtime is bundled at this distribution boundary, and smoke checks cover every export and the packed file list.
 - 🧭 Removed the auth type cycle, stale source-entrypoint map, undeclared TypeScript script runner, unpinned API-map commands, unused `pg-server` fixture dependency, and accidental exports from private helpers.

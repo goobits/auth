@@ -7,7 +7,7 @@ import { TokenAdapter } from '../adapters/oauth-token/TokenAdapter.ts'
 import { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import { generateSessionId } from '../adapters/session/sessionId.ts'
 import type { OAuthProfile, OAuthTokens, Session, User } from '../types/index.ts'
-import { assertPublicUserData } from '../_internal/publicUserData.ts'
+import { assertPublicUserData } from '../adapters/database/publicUserData.ts'
 
 export class MockSessionAdapter extends SessionAdapter {
 	private sessions = new Map<string, Session>()

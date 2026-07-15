@@ -10,8 +10,10 @@ export {
 export {
 	type PasswordCredential,
 	type PasswordCredentialAdapter,
+	assertPublicUserData,
 	D1UserAdapter,
 	DrizzleUserAdapter,
+	omitSensitiveUserData,
 	UserAdapter
 } from './database/index.ts'
 
