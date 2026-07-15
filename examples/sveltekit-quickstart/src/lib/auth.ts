@@ -1,9 +1,13 @@
 import { GoobitsAuth } from '@goobits/auth'
 import { drizzleAdapter } from '@goobits/auth/adapters/drizzle'
 import { GoogleProvider } from '@goobits/auth/providers'
+import { MemoryRateLimitStore } from '@goobits/security/rate-limit'
 
 import { env } from '$env/dynamic/private'
 import { db, schema } from '$lib/server/db'
+
+// Replace this process-local store with shared durable state for multi-instance production.
+const rateLimitStore = new MemoryRateLimitStore()
 
 export const auth = new GoobitsAuth({
 	adapter: drizzleAdapter(db, {
@@ -20,6 +24,7 @@ export const auth = new GoobitsAuth({
 		}
 	},
 	security: {
+		rateLimit: { store: rateLimitStore },
 		alerts: {
 			enabled: true,
 			webhook: {

@@ -132,3 +132,14 @@ before deploying this version, and verify the migration from a snapshot. There
 is intentionally no plaintext compatibility fallback: unreadable legacy rows
 must be migrated or their owners must re-enroll. Bind the user ID as
 authenticated context and retain old decryption keys for controlled rotation.
+
+## Secure profile boundaries
+
+The `secure` profile now requires built-in CSRF by default. If an application
+already enforces an equivalent origin boundary before every auth route, disable
+the built-in check only with
+`csrf: { mode: 'off', externalBoundary: true }`. Production `secure` and
+`strict` profiles also require an explicit shared rate-limit store; `strict`
+requires a shared CSRF store because it validates token expiry. The browser
+client now echoes same-origin CSRF cookies through
+`@goobits/security/csrf-client` automatically.

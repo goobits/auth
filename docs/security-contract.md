@@ -7,7 +7,7 @@ This package enforces authentication primitives and secure defaults, while autho
 - `basic`:
   CSRF `off`, rate limit `optional`, audit `optional`.
 - `secure` (recommended default):
-  CSRF `optional`, rate limit `required`, audit `required`, alerts enabled.
+  CSRF `required`, rate limit `required`, audit `required`, alerts enabled.
 - `strict`:
   CSRF `required`, rate limit `required`, audit `required`, alerts enabled.
 
@@ -15,11 +15,13 @@ This package enforces authentication primitives and secure defaults, while autho
 
 ```ts
 import { GoobitsAuth } from '@goobits/auth'
+import { sharedRateLimitStore } from '$lib/server/security/rate-limit'
 
 const auth = new GoobitsAuth({
 	profile: 'secure',
 	adapter,
 	security: {
+		rateLimit: { store: sharedRateLimitStore },
 		alerts: {
 			enabled: true,
 			webhook: {
@@ -29,6 +31,11 @@ const auth = new GoobitsAuth({
 	}
 })
 ```
+
+Applications with a single, application-wide request-origin guard may use
+`csrf: { mode: 'off', externalBoundary: true }` under the `secure` profile.
+That declaration is explicit because Goobits Auth cannot verify an outer
+boundary itself. The `strict` profile always requires built-in CSRF.
 
 ## Responsibilities
 
@@ -49,6 +56,8 @@ const auth = new GoobitsAuth({
     before privileged routes rely on it
   - an MFA secret codec backed by `@goobits/security/crypto` or a managed KMS,
     including key rotation
+  - a shared production rate-limit store; strict or expiry-checked CSRF also
+    requires a shared CSRF store
   - rate limiting for standalone credential and MFA handlers
   - generic route audit logging through `@goobits/security/audit`
   - security headers, TLS/HSTS/CSP at app/edge layer
@@ -84,6 +93,7 @@ rate-limit their login/signup routes aggressively to compensate.
 3. Enable an alert sink with `security.alerts.webhook` or `security.alerts.onAlert`.
 4. Validate secrets at deploy-time (`TOKEN_ENCRYPTION_KEY`, OAuth secrets).
 5. Keep dependency and secret scanning enabled in CI.
+6. Configure shared rate-limit state before using `secure` or `strict` in production.
 
 ## Alert Webhooks
 

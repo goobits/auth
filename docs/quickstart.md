@@ -10,6 +10,7 @@ import { GoobitsAuth } from '@goobits/auth'
 import { drizzleAdapter } from '@goobits/auth/adapters/drizzle'
 import { GoogleProvider } from '@goobits/auth/providers'
 import { db, schema } from '$lib/server/db'
+import { sharedRateLimitStore } from '$lib/server/security/rate-limit'
 import { env } from '$env/dynamic/private'
 
 export const auth = new GoobitsAuth({
@@ -25,9 +26,14 @@ export const auth = new GoobitsAuth({
 				callbackUrl: `${env.APP_URL}/auth/callback/google`
 			})
 		}
-	}
+	},
+	security: { rateLimit: { store: sharedRateLimitStore } }
 })
 ```
+
+Use one durable rate-limit store across production instances. The secure
+profile issues CSRF tokens on safe requests, and `createAuthClient()` echoes
+them on unsafe same-origin requests automatically.
 
 ## Runtime Notes
 

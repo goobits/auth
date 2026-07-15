@@ -1,3 +1,5 @@
+import { createCsrfFetch, type CsrfFetchConfig } from '@goobits/security/csrf-client'
+
 type Base64Input = ArrayBuffer | ArrayBufferView | Uint8Array | string | null | undefined
 
 type PasskeyEndpoints = {
@@ -17,6 +19,7 @@ type PasskeyEndpoints = {
 
 type CreateAuthClientOptions = {
 	baseUrl?: string
+	csrf?: Omit<CsrfFetchConfig, 'fetch'>
 	endpoints?: PasskeyEndpoints
 	fetcher?: typeof fetch
 }
@@ -121,6 +124,7 @@ function serializeCredential(credential: unknown) {
 /** Creates auth client for auth runtime. */
 export function createAuthClient({
 	baseUrl = '',
+	csrf = {},
 	endpoints = {},
 	fetcher = fetch
 }: CreateAuthClientOptions = {}) {
@@ -141,6 +145,10 @@ export function createAuthClient({
 
 	const jsonHeaders = { 'content-type': 'application/json' }
 	const withBase = (path: string) => `${baseUrl}${path}`
+	const authFetch = createCsrfFetch({
+		...csrf,
+		fetch: fetcher
+	})
 
 	return {
 		loginWithOAuth(provider: string) {
@@ -153,7 +161,7 @@ export function createAuthClient({
 		},
 
 		async sendMagicLink({ email, redirectTo }: { email?: string; redirectTo?: string } = {}) {
-			const response = await fetcher(withBase(resolved.magicLinkRequest), {
+			const response = await authFetch(withBase(resolved.magicLinkRequest), {
 				method: 'POST',
 				headers: jsonHeaders,
 				body: JSON.stringify({ email, redirectTo })
@@ -166,7 +174,7 @@ export function createAuthClient({
 			otp,
 			email
 		}: { token?: string; otp?: string; email?: string } = {}) {
-			const response = await fetcher(withBase(resolved.magicLinkVerify), {
+			const response = await authFetch(withBase(resolved.magicLinkVerify), {
 				method: 'POST',
 				headers: jsonHeaders,
 				body: JSON.stringify({ token, otp, email })
@@ -178,14 +186,14 @@ export function createAuthClient({
 			if (!globalThis?.navigator?.credentials) {
 				throw new Error('WebAuthn not supported in this environment')
 			}
-			const optionsRes = await fetcher(withBase(resolved.passkeyRegisterOptions), {
+			const optionsRes = await authFetch(withBase(resolved.passkeyRegisterOptions), {
 				method: 'POST'
 			})
 			const { options, challengeId } = await optionsRes.json()
 			const credential = await navigator.credentials.create({
 				publicKey: parseCreationOptions(options)
 			})
-			const verifyRes = await fetcher(withBase(resolved.passkeyRegisterVerify), {
+			const verifyRes = await authFetch(withBase(resolved.passkeyRegisterVerify), {
 				method: 'POST',
 				headers: jsonHeaders,
 				body: JSON.stringify({
@@ -201,7 +209,7 @@ export function createAuthClient({
 			if (!globalThis?.navigator?.credentials) {
 				throw new Error('WebAuthn not supported in this environment')
 			}
-			const optionsRes = await fetcher(withBase(resolved.passkeyLoginOptions), {
+			const optionsRes = await authFetch(withBase(resolved.passkeyLoginOptions), {
 				method: 'POST',
 				headers: jsonHeaders,
 				body: JSON.stringify({ email })
@@ -210,7 +218,7 @@ export function createAuthClient({
 			const credential = await navigator.credentials.get({
 				publicKey: parseRequestOptions(options)
 			})
-			const verifyRes = await fetcher(withBase(resolved.passkeyLoginVerify), {
+			const verifyRes = await authFetch(withBase(resolved.passkeyLoginVerify), {
 				method: 'POST',
 				headers: jsonHeaders,
 				body: JSON.stringify({
@@ -222,14 +230,14 @@ export function createAuthClient({
 		},
 
 		async getMfaStatus() {
-			const response = await fetcher(withBase(resolved.mfaStatus), {
+			const response = await authFetch(withBase(resolved.mfaStatus), {
 				method: 'GET'
 			})
 			return response.json()
 		},
 
 		async enrollMfa() {
-			const response = await fetcher(withBase(resolved.mfaEnroll), {
+			const response = await authFetch(withBase(resolved.mfaEnroll), {
 				method: 'POST'
 			})
 			return response.json()
@@ -238,7 +246,7 @@ export function createAuthClient({
 		async verifyMfa({ token }: { token: string }) {
 			const form = new FormData()
 			form.set('token', token)
-			const response = await fetcher(withBase(resolved.mfaVerify), {
+			const response = await authFetch(withBase(resolved.mfaVerify), {
 				method: 'POST',
 				body: form
 			})
@@ -246,7 +254,7 @@ export function createAuthClient({
 		},
 
 		async disableMfa() {
-			const response = await fetcher(withBase(resolved.mfaDisable), {
+			const response = await authFetch(withBase(resolved.mfaDisable), {
 				method: 'POST'
 			})
 			return response.json()
@@ -255,7 +263,7 @@ export function createAuthClient({
 		async useMfaBackupCode({ code }: { code: string }) {
 			const form = new FormData()
 			form.set('code', code)
-			const response = await fetcher(withBase(resolved.mfaBackupCode), {
+			const response = await authFetch(withBase(resolved.mfaBackupCode), {
 				method: 'POST',
 				body: form
 			})
@@ -263,7 +271,7 @@ export function createAuthClient({
 		},
 
 		async listSessions() {
-			const response = await fetcher(withBase(resolved.sessions), {
+			const response = await authFetch(withBase(resolved.sessions), {
 				method: 'GET'
 			})
 			return response.json()
@@ -274,7 +282,7 @@ export function createAuthClient({
 			all,
 			others
 		}: { sessionId?: string; all?: boolean; others?: boolean } = {}) {
-			const response = await fetcher(withBase(resolved.sessions), {
+			const response = await authFetch(withBase(resolved.sessions), {
 				method: 'POST',
 				headers: jsonHeaders,
 				body: JSON.stringify({ sessionId, all, others })

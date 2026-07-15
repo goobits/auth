@@ -33,6 +33,7 @@ export type SecurityRoutePolicy = {
 export type SecurityPolicySettings = {
 	csrf: {
 		mode: PolicyMode
+		externalBoundary: boolean
 		cookieName: string
 		headerName: string
 		checkExpiry: boolean

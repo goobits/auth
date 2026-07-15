@@ -22,7 +22,7 @@ const PROFILE_DEFAULTS: Record<SecurityProfile, AuthSecurityConfig> = {
 		audit: { mode: 'optional' }
 	},
 	secure: {
-		csrf: { mode: 'optional', checkExpiry: false },
+		csrf: { mode: 'required', checkExpiry: false },
 		rateLimit: {
 			mode: 'required',
 			max: 20,
@@ -61,6 +61,46 @@ function resolveTrustedProxyHeaders(
 	return rateLimit?.trustProxyHeader === true ? ['x-forwarded-for'] : []
 }
 
+function isProductionRuntime(): boolean {
+	return typeof process !== 'undefined' && process.env['NODE_ENV'] === 'production'
+}
+
+function assertProfileRequirements(profile: SecurityProfile, security: AuthSecurityConfig): void {
+	if (profile === 'basic') return
+	const csrfMode = security.csrf?.mode ?? 'required'
+	const externalCsrfBoundary = security.csrf?.externalBoundary === true
+
+	if (profile === 'strict' && (csrfMode !== 'required' || externalCsrfBoundary)) {
+		throw new Error('The strict auth profile requires built-in CSRF protection')
+	}
+	if (
+		profile === 'secure' &&
+		csrfMode !== 'required' &&
+		!(csrfMode === 'off' && externalCsrfBoundary)
+	) {
+		throw new Error(
+			"The secure auth profile requires CSRF protection or csrf.externalBoundary with mode 'off'"
+		)
+	}
+	if (externalCsrfBoundary && csrfMode !== 'off') {
+		throw new Error("csrf.externalBoundary may only be used with csrf.mode 'off'")
+	}
+	if (security.rateLimit?.mode !== 'required') {
+		throw new Error(`${profile} auth profile requires rate limiting`)
+	}
+	if (isProductionRuntime() && !security.rateLimit.store) {
+		throw new Error(`${profile} auth profile requires a shared rate-limit store in production`)
+	}
+	if (
+		isProductionRuntime() &&
+		csrfMode === 'required' &&
+		security.csrf?.checkExpiry === true &&
+		!security.csrf.store
+	) {
+		throw new Error(`${profile} auth profile requires a shared CSRF store in production`)
+	}
+}
+
 export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 	const profile = config.profile ?? 'secure'
 	const base = PROFILE_DEFAULTS[profile]
@@ -70,7 +110,8 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 		audit: { ...base.audit, ...config.security?.audit },
 		alerts: { ...base.alerts, ...config.security?.alerts }
 	}
-	const csrfStore = new MemoryCsrfStore()
+	assertProfileRequirements(profile, merged)
+	const csrfStore = merged.csrf?.store ?? new MemoryCsrfStore()
 	const webhook = merged.alerts?.webhook
 	const fallbackWebhookUrl =
 		typeof process !== 'undefined' ? process.env['SECURITY_WEBHOOK_URL'] : undefined
@@ -105,6 +146,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 		profile,
 		csrf: {
 			mode: merged.csrf?.mode ?? 'optional',
+			externalBoundary: merged.csrf?.externalBoundary ?? false,
 			cookieName: merged.csrf?.cookieName ?? CSRF_COOKIE_NAME,
 			headerName: merged.csrf?.headerName ?? CSRF_HEADER_NAME,
 			checkExpiry: merged.csrf?.checkExpiry ?? false,

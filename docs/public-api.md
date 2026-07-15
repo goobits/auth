@@ -28,6 +28,7 @@ import { GoobitsAuth } from '@goobits/auth'
 import { drizzleAdapter } from '@goobits/auth/adapters/drizzle'
 import { GoogleProvider } from '@goobits/auth/providers'
 import { db, schema } from '$lib/server/db'
+import { sharedRateLimitStore } from '$lib/server/security/rate-limit'
 import { env } from '$env/dynamic/private'
 
 export const auth = new GoobitsAuth({
@@ -43,9 +44,16 @@ export const auth = new GoobitsAuth({
 				callbackUrl: `${env.APP_URL}/auth/callback/google`
 			})
 		}
-	}
+	},
+	security: { rateLimit: { store: sharedRateLimitStore } }
 })
 ```
+
+`secure` is the default profile. It requires CSRF and rate limiting, and a
+shared rate-limit store is mandatory in production. Applications that enforce
+an equivalent outer request boundary must declare
+`csrf: { mode: 'off', externalBoundary: true }` rather than silently disabling
+CSRF.
 
 ## `GoobitsAuth` surface
 

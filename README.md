@@ -47,6 +47,7 @@ import { GoobitsAuth } from '@goobits/auth'
 import { drizzleAdapter } from '@goobits/auth/adapters/drizzle'
 import { GoogleProvider } from '@goobits/auth/providers'
 import { db, schema } from '$lib/server/db'
+import { sharedRateLimitStore } from '$lib/server/security/rate-limit'
 import { env } from '$env/dynamic/private'
 
 export const auth = new GoobitsAuth({
@@ -63,9 +64,16 @@ export const auth = new GoobitsAuth({
 				callbackUrl: `${env.APP_URL}/auth/callback/google`
 			})
 		}
-	}
+	},
+	security: { rateLimit: { store: sharedRateLimitStore } }
 })
 ```
+
+The `secure` profile requires CSRF and rate limiting. Production deployments
+must provide a shared rate-limit store. If an application-wide origin guard
+already protects every auth route, declare that boundary explicitly with
+`csrf: { mode: 'off', externalBoundary: true }`. The Auth client echoes
+same-origin CSRF cookies through `@goobits/security/csrf-client`.
 
 ## Runtime Targets
 

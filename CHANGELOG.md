@@ -15,6 +15,9 @@
   across validation, refresh, and session-listing round trips.
 - 🔐 PostgreSQL MFA storage now requires an application-owned encryption codec;
   plaintext secrets and implicit plaintext fallback are rejected.
+- 🧱 The secure profile now requires built-in CSRF or an explicit outer request
+  boundary, production profiles require shared policy stores, and the browser
+  client uses `@goobits/security/csrf-client` for unsafe same-origin requests.
 - 👤 Custom application auth routes can now emit outcomes through the same configured audit, threshold, and alert pipeline as Goobits-managed routes.
 - 👤 Trusted proxy headers now require explicit trusted-header configuration before forwarded client IPs are accepted.
 - 👤 OAuth routes no longer use the global OAuth POST fallback, and redirect endpoints enforce safer request paths.

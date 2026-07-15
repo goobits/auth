@@ -9,6 +9,7 @@ import type { VerificationTokenAdapter } from '../adapters/verification-token/Ve
 import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
 import type { OAuthProvider } from '../providers/OAuthProvider.ts'
 import type { WebhookChannelOptions } from '@goobits/security/alerting'
+import type { CsrfTokenStore } from '@goobits/security/csrf'
 import type { SecurityAlertHandler } from '../security/alerts.ts'
 import type { AuthEventEmitter } from '../security/events.ts'
 import type { RateLimitStore } from '@goobits/security/rate-limit'
@@ -169,10 +170,13 @@ export type AuthAlertWebhookConfig = Omit<WebhookChannelOptions, 'url'> & {
 export type AuthSecurityConfig = {
 	csrf?: {
 		mode?: SecurityMode
+		/** Set only when the application enforces an equivalent request boundary before auth routes. */
+		externalBoundary?: boolean
 		cookieName?: string
 		headerName?: string
 		checkExpiry?: boolean
 		httpOnly?: boolean
+		store?: CsrfTokenStore
 	}
 	rateLimit?: {
 		mode?: SecurityMode
