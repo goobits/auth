@@ -12,7 +12,8 @@ import { assertPublicUserData } from '../database/publicUserData.ts'
 import { generateRandomUUID } from '../../utils/crypto.ts'
 import type {
 	PasswordCredential,
-	PasswordCredentialAdapter
+	PasswordCredentialAdapter,
+	UserAdapterBundle
 } from '../database/PasswordCredentialAdapter.ts'
 import { UserAdapter } from '../database/UserAdapter.ts'
 import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
@@ -522,7 +523,12 @@ export function createMemoryAuthAdapters(input: {
 	cookieDomain?: string
 	cookieName: string
 	secureCookies: boolean
-}) {
+}): UserAdapterBundle & {
+	magicLink: MemoryMagicLinkAdapter
+	session: MemorySessionAdapter
+	mfa: MemoryMfaAdapter
+	webauthn: MemoryWebAuthnAdapter
+} {
 	const user = new MemoryUserAdapter()
 	return {
 		magicLink: new MemoryMagicLinkAdapter(),

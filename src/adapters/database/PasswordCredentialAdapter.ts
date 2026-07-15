@@ -1,4 +1,5 @@
 import type { OAuthProfile, User } from '../../types/core.ts'
+import type { UserAdapter } from './UserAdapter.ts'
 
 /** Secret-bearing credential material returned only to authentication code. */
 export type PasswordCredential = {
@@ -19,3 +20,12 @@ export interface PasswordCredentialAdapter {
 	): Promise<User>
 	updatePasswordHash(userId: string, passwordHash: string): Promise<User>
 }
+
+/**
+ * Explicit public-profile and private-credential capabilities backed by one
+ * user store. Consumers should pass only the capability a code path needs.
+ */
+export type UserAdapterBundle = Readonly<{
+	user: UserAdapter
+	passwordCredential: PasswordCredentialAdapter
+}>

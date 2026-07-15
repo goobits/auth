@@ -1,5 +1,6 @@
 import type { User } from '../../types/index.ts'
 import { DrizzleUserAdapter } from '../database/DrizzleUserAdapter.ts'
+import type { UserAdapterBundle } from '../database/PasswordCredentialAdapter.ts'
 import type { DrizzleDbLike, DrizzleTable } from '../drizzleTypes.ts'
 import { DrizzleMagicLinkAdapter } from '../magic-link/DrizzleMagicLinkAdapter.ts'
 import { DrizzleTokenAdapter } from '../oauth-token/DrizzleTokenAdapter.ts'
@@ -71,10 +72,8 @@ export type DrizzleAdapterOptions<TSchema extends DrizzleAuthSchema = DrizzleAut
 }
 
 /** Drizzle Adapter Bundle typed model for runtime integration. */
-export type DrizzleAdapterBundle = {
+export type DrizzleAdapterBundle = UserAdapterBundle & {
 	session: DrizzleSessionAdapter
-	user: DrizzleUserAdapter
-	passwordCredential: DrizzleUserAdapter
 	oauthToken?: DrizzleTokenAdapter
 	verificationToken?: DrizzleVerificationTokenAdapter
 	magicLink?: DrizzleMagicLinkAdapter

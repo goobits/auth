@@ -13,7 +13,8 @@ import { assertPublicUserData } from '../database/publicUserData.ts'
 import { generateRandomUUID } from '../../utils/crypto.ts'
 import type {
 	PasswordCredential,
-	PasswordCredentialAdapter
+	PasswordCredentialAdapter,
+	UserAdapterBundle
 } from '../database/PasswordCredentialAdapter.ts'
 import { UserAdapter } from '../database/UserAdapter.ts'
 import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
@@ -950,7 +951,13 @@ export function createPgAuthAdapters(input: {
 	db: PgPoolLike
 	mfaSecretCodec: MfaSecretCodec
 	secureCookies: boolean
-}) {
+}): UserAdapterBundle & {
+	magicLink: PgMagicLinkAdapter
+	mfa: PgMfaAdapter
+	session: PgSessionAdapter
+	verificationToken: PgVerificationTokenAdapter
+	webauthn: PgWebAuthnAdapter
+} {
 	const user = new PgUserAdapter({ db: input.db })
 	return {
 		magicLink: new PgMagicLinkAdapter({ db: input.db }),

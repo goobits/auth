@@ -10,6 +10,7 @@ export {
 export {
 	type PasswordCredential,
 	type PasswordCredentialAdapter,
+	type UserAdapterBundle,
 	assertPublicUserData,
 	D1UserAdapter,
 	DrizzleUserAdapter,

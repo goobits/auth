@@ -13,6 +13,12 @@ describe('memory auth adapters', () => {
 			cookieName: 'auth',
 			secureCookies: false
 		})
+		const publicCapabilityHasCredentialReader: 'findPasswordCredential' extends keyof typeof adapters.user
+			? true
+			: false = false
+		const credentialCapabilityHasProfileReader: 'getUserByEmail' extends keyof typeof adapters.passwordCredential
+			? true
+			: false = false
 		const user = await adapters.user.createUser({
 			email: 'dev@example.com',
 			id: 'dev-user',
@@ -25,6 +31,8 @@ describe('memory auth adapters', () => {
 		})
 
 		const result = await adapters.session.validateSession(session.id)
+		expect(publicCapabilityHasCredentialReader).toBe(false)
+		expect(credentialCapabilityHasProfileReader).toBe(false)
 		expect(result.user?.id).toBe('dev-user')
 		expect(result.session?.ip).toBe('127.0.0.1')
 	})

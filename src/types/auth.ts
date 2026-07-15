@@ -200,7 +200,8 @@ export type AuthSecurityConfig = {
 	}
 }
 
-type BaseAuthAdapters = {
+/** Explicit persistence capabilities available to auth flows. */
+export type AuthAdapters = {
 	session: SessionAdapter
 	user?: UserAdapter
 	passwordCredential?: PasswordCredentialAdapter
@@ -228,25 +229,25 @@ type CommonAuthConfigFields = {
 }
 
 type AuthConfigNoFeatures = CommonAuthConfigFields & {
-	adapters: BaseAuthAdapters
+	adapters: AuthAdapters
 	magicLink?: undefined
 	webauthn?: undefined
 }
 
 type AuthConfigWithMagicLink = CommonAuthConfigFields & {
-	adapters: BaseAuthAdapters & { magicLink: MagicLinkAdapter }
+	adapters: AuthAdapters & { magicLink: MagicLinkAdapter }
 	magicLink: MagicLinkConfig
 	webauthn?: undefined
 }
 
 type AuthConfigWithWebAuthn = CommonAuthConfigFields & {
-	adapters: BaseAuthAdapters & { webauthn: WebAuthnAdapter }
+	adapters: AuthAdapters & { webauthn: WebAuthnAdapter }
 	magicLink?: undefined
 	webauthn: WebAuthnConfig
 }
 
 type AuthConfigWithBoth = CommonAuthConfigFields & {
-	adapters: BaseAuthAdapters & {
+	adapters: AuthAdapters & {
 		magicLink: MagicLinkAdapter
 		webauthn: WebAuthnAdapter
 	}
