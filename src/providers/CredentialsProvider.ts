@@ -24,6 +24,7 @@ type CredentialsProviderOptions = {
 	normalizeIdentifier?: NormalizeIdentifierFn
 	hashPassword?: HashPasswordFn
 	verifyPassword?: VerifyPasswordFn
+	dummyPasswordHash?: string
 }
 
 /**
@@ -38,6 +39,7 @@ export class CredentialsProvider {
 	normalizeIdentifier: NormalizeIdentifierFn
 	hashPassword: HashPasswordFn
 	verifyPassword: VerifyPasswordFn
+	dummyPasswordHash?: string
 
 	private validateNewPassword(password: string): void {
 		assertPasswordInput(password)
@@ -67,6 +69,7 @@ export class CredentialsProvider {
 			options.normalizeIdentifier ?? ((value) => value.trim().toLowerCase())
 		this.hashPassword = options.hashPassword ?? hashPassword
 		this.verifyPassword = options.verifyPassword ?? verifyPassword
+		if (options.dummyPasswordHash) this.dummyPasswordHash = options.dummyPasswordHash
 	}
 
 	withIdentifier(
@@ -79,6 +82,9 @@ export class CredentialsProvider {
 			normalizeIdentifier: options.normalizeIdentifier ?? this.normalizeIdentifier,
 			hashPassword: this.hashPassword,
 			verifyPassword: this.verifyPassword
+		}
+		if (this.dummyPasswordHash) {
+			providerOptions.dummyPasswordHash = this.dummyPasswordHash
 		}
 		if (this.validatePassword) {
 			providerOptions.validatePassword = this.validatePassword
@@ -142,6 +148,9 @@ export class CredentialsProvider {
 		}
 
 		if (!user || !user.password) {
+			if (this.dummyPasswordHash) {
+				await this.verifyPassword(this.dummyPasswordHash, password)
+			}
 			return { user: null, valid: false }
 		}
 

@@ -135,6 +135,52 @@ describe('CredentialsProvider', () => {
 			expect(result.user).toBeNull()
 		})
 
+		it('performs one dummy verification when an eligible identifier has no password', async () => {
+			const dummyPasswordHash = testHash('timing-sentinel')
+			const hardenedProvider = new CredentialsProvider({
+				dummyPasswordHash,
+				hashPassword,
+				verifyPassword
+			})
+			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue(null)
+
+			await expect(
+				hardenedProvider.authenticate({
+					email: 'missing@example.com',
+					password: 'SomePassword123!',
+					userAdapter: mockUserAdapter
+				})
+			).resolves.toEqual({ user: null, valid: false })
+
+			expect(verifyPassword).toHaveBeenCalledOnce()
+			expect(verifyPassword).toHaveBeenCalledWith(dummyPasswordHash, 'SomePassword123!')
+		})
+
+		it('preserves dummy verification when changing identifier fields', async () => {
+			const dummyPasswordHash = testHash('timing-sentinel')
+			const hardenedProvider = new CredentialsProvider({
+				dummyPasswordHash,
+				hashPassword,
+				verifyPassword
+			}).withIdentifier('username')
+			mockUserAdapter.getUserWithPasswordHashByIdentifier.mockResolvedValue({
+				id: 'passwordless-user',
+				email: 'passwordless@example.com',
+				password: null
+			})
+
+			await expect(
+				hardenedProvider.authenticate({
+					identifier: 'passwordless',
+					password: 'SomePassword123!',
+					userAdapter: mockUserAdapter
+				})
+			).resolves.toEqual({ user: null, valid: false })
+
+			expect(verifyPassword).toHaveBeenCalledOnce()
+			expect(verifyPassword).toHaveBeenCalledWith(dummyPasswordHash, 'SomePassword123!')
+		})
+
 		it('rejects oversized passwords before database or hashing work', async () => {
 			const result = await provider.authenticate({
 				email: 'test@example.com',
