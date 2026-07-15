@@ -41,6 +41,8 @@ const auth = new GoobitsAuth({
   - authorization helper primitives
 - Application must provide:
   - route-level authorization policy decisions
+  - fresh reauthentication for MFA enrollment and removal through
+    `mfa.authorizeSecurityChange`
   - persistence of optional session assurance metadata when privileged routes require it
   - encrypted-at-rest MFA factor persistence and key rotation
   - rate limiting for standalone credential and MFA handlers

@@ -6,6 +6,9 @@
 
 ### 🔒 Security
 
+- 👤 MFA enrollment and removal now require application-owned fresh
+  reauthentication; factor setup is atomic, enabled factors cannot be replaced,
+  and backup-code use fails closed on concurrent consumption.
 - 👤 Custom application auth routes can now emit outcomes through the same configured audit, threshold, and alert pipeline as Goobits-managed routes.
 - 👤 Trusted proxy headers now require explicit trusted-header configuration before forwarded client IPs are accepted.
 - 👤 OAuth routes no longer use the global OAuth POST fallback, and redirect endpoints enforce safer request paths.

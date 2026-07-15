@@ -8,6 +8,8 @@
 - `DatabaseAdapter` has been renamed to `UserAdapter`.
 - Adapter base classes are `abstract` and enforce compile-time implementation.
 - Logout handlers are `RequestHandler`-first.
+- MFA factor mutations require application-owned step-up authorization and
+  atomic adapter methods.
 
 ## Before/After
 
@@ -96,3 +98,16 @@ userAdapter.getUserWithPasswordHash(email)
 - `MockSessionAdapter`
 - `MockUserAdapter`
 - `MockTokenAdapter`
+
+## MFA factor lifecycle
+
+`TotpMfaConfig.authorizeSecurityChange` is now required. The callback receives
+the authenticated user ID, mutation action, and an independent request clone;
+return `true` only after verifying a fresh application credential.
+
+Custom `MfaAdapter` implementations must replace the separate `setSecret`,
+`setBackupCodes`, and `enableMfa` operations with atomic
+`beginEnrollment`/`activateEnrollment` methods. `disableMfa` and
+`consumeBackupCode` now return whether their guarded delete succeeded. This
+prevents active-factor replacement and backup-code replay races without
+compatibility wrappers that preserve unsafe behavior.

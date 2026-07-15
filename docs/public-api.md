@@ -144,6 +144,23 @@ Credential MFA is a two-step flow:
 - complete the short-lived, single-use challenge with
   `createMfaLoginVerifyHandler`; only that handler creates the session
 
+Factor enrollment and removal require an application-owned step-up callback:
+
+```ts
+const mfa = {
+	authorizeSecurityChange: async ({ request, userId }) => {
+		const form = await request.formData()
+		return verifyCurrentPassword(userId, String(form.get('current_password') ?? ''))
+	}
+}
+```
+
+The callback receives an independent request clone and must fail closed unless
+it verifies a fresh credential for the authenticated `userId`. Pending TOTP
+secret and backup-code storage is atomic, an enabled factor cannot be silently
+replaced, and backup codes are accepted only when their atomic single-use
+consume succeeds.
+
 Sessions created by the MFA verification handler receive
 `Session.mfaVerifiedAt`. Persistent session adapters must store and restore this
 optional field when the consuming application uses session assurance for

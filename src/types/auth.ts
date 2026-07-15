@@ -132,12 +132,12 @@ export type WebAuthnConfig = {
 }
 
 /** Security-sensitive account mutation that requires fresh application authorization. */
-export type SecurityChangeAction = 'mfa.enroll' | 'mfa.disable' | 'webauthn.register'
+export type SecurityChangeAction = 'mfa.enroll' | 'mfa.disable'
 
 /** Application-owned step-up authorization for factor enrollment and removal. */
 export type AuthorizeSecurityChange = (input: {
 	action: SecurityChangeAction
-	event: RequestEventLike
+	request: Request
 	userId: string
 }) => boolean | Promise<boolean>
 

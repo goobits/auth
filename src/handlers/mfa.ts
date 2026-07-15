@@ -233,7 +233,13 @@ export function createMfaEnrollHandler(config: MfaSecurityChangeConfig) {
 	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
 		if (!userId) return { success: false, error: 'Unauthorized' }
-		if (!(await authorizeSecurityChange({ action: 'mfa.enroll', event, userId }))) {
+		if (
+			!(await authorizeSecurityChange({
+				action: 'mfa.enroll',
+				request: event.request.clone(),
+				userId
+			}))
+		) {
 			return { success: false, error: 'Reauthentication required' }
 		}
 
@@ -287,7 +293,13 @@ export function createMfaDisableHandler(config: MfaSecurityChangeConfig) {
 	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
 		if (!userId) return { success: false, error: 'Unauthorized' }
-		if (!(await authorizeSecurityChange({ action: 'mfa.disable', event, userId }))) {
+		if (
+			!(await authorizeSecurityChange({
+				action: 'mfa.disable',
+				request: event.request.clone(),
+				userId
+			}))
+		) {
 			return { success: false, error: 'Reauthentication required' }
 		}
 

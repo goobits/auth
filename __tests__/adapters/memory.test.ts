@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
 	createMemoryAuthAdapters,
 	MemoryMagicLinkAdapter,
+	MemoryMfaAdapter,
 	MemoryUserAdapter
 } from '../../src/adapters/memory/index.ts'
 
@@ -64,5 +65,16 @@ describe('memory auth adapters', () => {
 			email: 'dev@example.com'
 		})
 		await expect(adapter.consumeByTokenHash('token-hash')).resolves.toBeNull()
+	})
+
+	it('keeps active MFA factors immutable and backup codes single-use', async () => {
+		const adapter = new MemoryMfaAdapter()
+
+		await expect(adapter.beginEnrollment('user-1', 'secret-1', ['hash-1'])).resolves.toBe(true)
+		await expect(adapter.activateEnrollment('user-1')).resolves.toBe(true)
+		await expect(adapter.beginEnrollment('user-1', 'secret-2', ['hash-2'])).resolves.toBe(false)
+		await expect(adapter.getSecret('user-1')).resolves.toBe('secret-1')
+		await expect(adapter.consumeBackupCode('user-1', 'hash-1')).resolves.toBe(true)
+		await expect(adapter.consumeBackupCode('user-1', 'hash-1')).resolves.toBe(false)
 	})
 })
