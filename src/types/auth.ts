@@ -10,7 +10,7 @@ import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
 import type { OAuthProvider } from '../providers/OAuthProvider.ts'
 import type { WebhookChannelOptions } from '@goobits/security/alerting'
 import type { CsrfTokenStore } from '@goobits/security/csrf'
-import type { SecurityAlertHandler } from '../security/alerts.ts'
+import type { SecurityAlertHandler, ThresholdRule } from '../security/alerts.ts'
 import type { AuthEventEmitter } from '../security/events.ts'
 import type { RateLimitStore } from '@goobits/security/rate-limit'
 import type { Logger } from '../utils/logger.ts'
@@ -192,6 +192,9 @@ export type AuthSecurityConfig = {
 	alerts?: {
 		enabled?: boolean
 		onAlert?: SecurityAlertHandler
+		rules?: ThresholdRule[]
+		store?: RateLimitStore
+		keyPrefix?: string
 		webhook?: AuthAlertWebhookConfig
 	}
 }

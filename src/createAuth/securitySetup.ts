@@ -120,6 +120,9 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 					url: webhookUrl
 				})
 	const alertObserver = createSecurityAlertObserver({
+		...(merged.alerts?.rules ? { rules: merged.alerts.rules } : {}),
+		...(merged.alerts?.store ? { store: merged.alerts.store } : {}),
+		...(merged.alerts?.keyPrefix ? { keyPrefix: merged.alerts.keyPrefix } : {}),
 		onAlert: async (alert) => {
 			await merged.alerts?.onAlert?.(alert)
 			if (alertChannel) {

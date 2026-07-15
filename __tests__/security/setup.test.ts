@@ -71,4 +71,39 @@ describe('auth security profiles', () => {
 		expect(resolved.csrf.store).toBe(csrfStore)
 		expect(resolved.rateLimit.store).toBe(rateLimitStore)
 	})
+
+	it('shares alert thresholds across auth instances through the configured store', async () => {
+		const store = new MemoryRateLimitStore()
+		const onAlert = vi.fn()
+		const security: AuthSecurityConfig = {
+			rateLimit: { store },
+			alerts: {
+				store,
+				keyPrefix: 'test-auth-alert',
+				onAlert
+			}
+		}
+		const first = resolveSecurity(config('secure', security))
+		const second = resolveSecurity(config('secure', security))
+		const event = {
+			name: 'auth.failure' as const,
+			severity: 'warn' as const,
+			timestamp: new Date().toISOString(),
+			route: 'credentials.login',
+			method: 'POST'
+		}
+
+		for (let attempt = 0; attempt < 5; attempt += 1) {
+			await first.audit.emitter?.(event)
+		}
+		expect(onAlert).not.toHaveBeenCalled()
+
+		for (let attempt = 0; attempt < 5; attempt += 1) {
+			await second.audit.emitter?.(event)
+		}
+		expect(onAlert).toHaveBeenCalledOnce()
+		expect(onAlert).toHaveBeenCalledWith(
+			expect.objectContaining({ eventName: 'auth.failure', count: 10 })
+		)
+	})
 })

@@ -1,3 +1,5 @@
+import type { RateLimitStore } from '@goobits/security/rate-limit'
+
 import type { AuthEvent } from './events.ts'
 
 export type AlertSeverity = 'warn' | 'error'
@@ -23,6 +25,8 @@ export type ThresholdRule = {
 export type SecurityAlertConfig = {
 	rules?: ThresholdRule[]
 	onAlert?: SecurityAlertHandler
+	store?: RateLimitStore
+	keyPrefix?: string
 }
 
 type EventWindow = {
@@ -38,15 +42,34 @@ const DEFAULT_RULES: ThresholdRule[] = [
 /** Creates security alert observer for auth security checks. */
 export function createSecurityAlertObserver({
 	rules = DEFAULT_RULES,
-	onAlert
+	onAlert,
+	store,
+	keyPrefix = 'auth-alert'
 }: SecurityAlertConfig = {}) {
 	const windows = new Map<string, EventWindow>()
 
 	return async (event: AuthEvent): Promise<void> => {
 		for (const rule of rules) {
 			if (event.name !== rule.eventName) continue
-			const key = `${rule.eventName}:${rule.windowMs}`
+			const key = `${keyPrefix}:${rule.eventName}:${rule.max}:${rule.windowMs}:${rule.severity}`
 			const now = Date.now()
+			if (store) {
+				const entry = await store.incrementEntry(key, now, rule.windowMs)
+				const minTs = now - rule.windowMs
+				const count = entry.timestamps.filter((timestamp) => timestamp >= minTs).length
+				if (count === rule.max && onAlert) {
+					await onAlert({
+						type: 'threshold_exceeded',
+						eventName: rule.eventName,
+						severity: rule.severity,
+						count,
+						windowMs: rule.windowMs,
+						timestamp: new Date(now).toISOString()
+					})
+				}
+				continue
+			}
+
 			const window = windows.get(key) ?? { timestamps: [] }
 			const minTs = now - rule.windowMs
 			window.timestamps = window.timestamps.filter((ts) => ts >= minTs)
