@@ -78,6 +78,7 @@ them. Every value here is configurable on the matching config block.
 | WebAuthn challenge timeout        | 60 seconds                                   | `webauthn.timeoutMs`                                              |
 | Session lifetime (KV adapter)     | 30 days                                      | `KVSessionAdapter` constructor `sessionLifetime`                  |
 | Session ID entropy                | 160 bits (20 bytes, base64url)               | n/a                                                               |
+| Absolute password input length    | 1024 characters                              | n/a                                                               |
 | OAuth state / PKCE                | issued by `arctic`, single-use, cookie-bound | n/a                                                               |
 | Argon2 (Cloudflare Workers, WASM) | 12 MiB memory, 2 iterations, 16-byte salt    | not configurable — tune via fork if your edge runtime allows more |
 | Argon2 (Node, `@node-rs/argon2`)  | library defaults (≈ 19 MiB, 2 iterations)    | not configurable in this release                                  |
@@ -94,6 +95,11 @@ rate-limit their login/signup routes aggressively to compensate.
 4. Validate secrets at deploy-time (`TOKEN_ENCRYPTION_KEY`, OAuth secrets).
 5. Keep dependency and secret scanning enabled in CI.
 6. Configure shared rate-limit state before using `secure` or `strict` in production.
+
+Password-length enforcement runs before built-in or application-supplied
+hash/verify functions. TOTP verification accepts integer windows from 0 through
+10 and evaluates every candidate with the shared constant-time comparison
+primitive.
 
 ## Alert Webhooks
 

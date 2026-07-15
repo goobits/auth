@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { argon2id } from 'hash-wasm'
 
-import { hashPassword, validatePasswordStrength, verifyPassword } from '../../src/password/index.ts'
+import {
+	hashPassword,
+	MAX_PASSWORD_LENGTH,
+	validatePasswordStrength,
+	verifyPassword
+} from '../../src/password/index.ts'
 
 const callHashPasswordUnsafe = (password: unknown) =>
 	Reflect.apply(hashPassword, undefined, [password]) as Promise<string>
@@ -61,6 +66,12 @@ describe('Password Utilities', () => {
 
 			expect(hash).toBeDefined()
 			expect(hash.startsWith('$argon2id$')).toBe(true)
+		})
+
+		it('rejects passwords above the absolute hashing limit', async () => {
+			await expect(hashPassword('a'.repeat(MAX_PASSWORD_LENGTH + 1))).rejects.toThrow(
+				`at most ${MAX_PASSWORD_LENGTH} characters`
+			)
 		})
 
 		it('should handle special characters in password', async () => {
@@ -137,6 +148,11 @@ describe('Password Utilities', () => {
 			const hash = await hashPassword('ValidPassword123!')
 			const isValid = await callVerifyPasswordUnsafe(hash, null)
 			expect(isValid).toBe(false)
+		})
+
+		it('rejects oversized passwords before verification', async () => {
+			const hash = await hashPassword('ValidPassword123!')
+			await expect(verifyPassword(hash, 'a'.repeat(MAX_PASSWORD_LENGTH + 1))).resolves.toBe(false)
 		})
 
 		it('should handle case-sensitive passwords correctly', async () => {
@@ -217,6 +233,14 @@ describe('Password Utilities', () => {
 				const result = callValidatePasswordStrengthUnsafe(undefined)
 				expect(result.valid).toBe(false)
 				expect(result.errors).toContain('Password is required')
+			})
+
+			it('rejects passwords above the absolute length limit', () => {
+				const result = validatePasswordStrength('A1a'.repeat(MAX_PASSWORD_LENGTH))
+				expect(result.valid).toBe(false)
+				expect(result.errors).toContain(
+					`Password must be at most ${MAX_PASSWORD_LENGTH} characters long`
+				)
 			})
 		})
 

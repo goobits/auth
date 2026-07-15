@@ -1,8 +1,9 @@
+import { constantTimeEqual, randomBytes, sha256Hex } from '@goobits/security/crypto'
+
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
 function randomCode(length: number = 10): string {
-	const bytes = new Uint8Array(length)
-	crypto.getRandomValues(bytes)
+	const bytes = randomBytes(length)
 	let out = ''
 	for (const b of bytes) {
 		out += ALPHABET[b % ALPHABET.length]
@@ -22,17 +23,6 @@ export function generateBackupCodes({
 	return codes
 }
 
-async function sha256Hex(value: string): Promise<string> {
-	if (!globalThis.crypto?.subtle) {
-		throw new Error('WebCrypto is required')
-	}
-	const data = new TextEncoder().encode(value)
-	const digest = await crypto.subtle.digest('SHA-256', data)
-	return Array.from(new Uint8Array(digest))
-		.map((b) => b.toString(16).padStart(2, '0'))
-		.join('')
-}
-
 /** Hashes MFA backup codes for storage. */
 export async function hashBackupCodes(codes: string[]): Promise<string[]> {
 	return Promise.all(codes.map((c) => sha256Hex(c)))
@@ -48,7 +38,11 @@ export async function verifyBackupCode({
 }): Promise<{ valid: boolean; hash?: string; index?: number }> {
 	if (!code || !hashedCodes?.length) return { valid: false }
 	const hash = await sha256Hex(code)
-	const idx = hashedCodes.indexOf(hash)
+	let idx = -1
+	for (let index = 0; index < hashedCodes.length; index += 1) {
+		const matches = constantTimeEqual(hash, hashedCodes[index] ?? '')
+		if (matches && idx === -1) idx = index
+	}
 	if (idx === -1) return { valid: false }
 	return { valid: true, hash, index: idx }
 }

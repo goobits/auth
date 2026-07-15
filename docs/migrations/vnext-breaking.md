@@ -143,3 +143,11 @@ the built-in check only with
 requires a shared CSRF store because it validates token expiry. The browser
 client now echoes same-origin CSRF cookies through
 `@goobits/security/csrf-client` automatically.
+
+## Credential input hardening
+
+Credential operations now reject passwords above 1024 characters before any
+database lookup, custom validator, hash, or verification work. Signup metadata
+can no longer override the computed password hash, email provider, or initial
+verification state. Session metadata extensions cannot set MFA assurance or
+replace request-derived remember-me, IP, and user-agent values.

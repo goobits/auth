@@ -18,6 +18,9 @@
 - 🧱 The secure profile now requires built-in CSRF or an explicit outer request
   boundary, production profiles require shared policy stores, and the browser
   client uses `@goobits/security/csrf-client` for unsafe same-origin requests.
+- 🧮 Password work now has a 1024-character absolute ceiling, MFA comparisons
+  use shared constant-time primitives with bounded TOTP windows, and security-owned
+  signup/session metadata can no longer be overridden by extension metadata.
 - 👤 Custom application auth routes can now emit outcomes through the same configured audit, threshold, and alert pipeline as Goobits-managed routes.
 - 👤 Trusted proxy headers now require explicit trusted-header configuration before forwarded client IPs are accepted.
 - 👤 OAuth routes no longer use the global OAuth POST fallback, and redirect endpoints enforce safer request paths.

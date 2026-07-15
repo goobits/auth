@@ -12,6 +12,8 @@ describe('backup codes', () => {
 		const hashes = await hashBackupCodes(codes)
 		const result = await verifyBackupCode({ code: codes[1]!, hashedCodes: hashes })
 		expect(result.valid).toBe(true)
+		expect(result.index).toBe(1)
+		expect(result.hash).toBe(hashes[1])
 	})
 
 	it('generates unambiguous fixed-length codes', () => {

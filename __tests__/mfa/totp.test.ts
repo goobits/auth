@@ -28,6 +28,31 @@ describe('totp', () => {
 		await expect(verifyTOTP({ secret, token, time: 1700000000000, window: 0 })).resolves.toBe(false)
 	})
 
+	it.each([-1, 1.5, 11, Number.NaN, Number.POSITIVE_INFINITY])(
+		'rejects an unsafe verification window: %s',
+		async (window) => {
+			const secret = generateSecret()
+			await expect(verifyTOTP({ secret, token: '123456', window })).rejects.toThrow(
+				'TOTP window must be an integer'
+			)
+		}
+	)
+
+	it('rejects malformed tokens before verification', async () => {
+		const secret = generateSecret()
+		await expect(verifyTOTP({ secret, token: '12345' })).resolves.toBe(false)
+		await expect(verifyTOTP({ secret, token: '12345x' })).resolves.toBe(false)
+	})
+
+	it('rejects unsafe generation parameters', async () => {
+		const secret = generateSecret()
+		await expect(generateTOTP({ secret, digits: 0 })).rejects.toThrow('TOTP digits')
+		await expect(generateTOTP({ secret, period: 0 })).rejects.toThrow('TOTP period')
+		await expect(generateTOTP({ secret, time: Number.POSITIVE_INFINITY })).rejects.toThrow(
+			'TOTP time'
+		)
+	})
+
 	it('builds an otpauth URL for authenticator apps', () => {
 		const url = createOtpAuthURL({
 			secret: 'ABC123',

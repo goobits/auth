@@ -11,6 +11,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { UserAdapter } from '../../src/adapters/database/UserAdapter.ts'
+import { MAX_PASSWORD_LENGTH } from '../../src/password/index.ts'
 import { CredentialsProvider } from '../../src/providers/CredentialsProvider.ts'
 
 type MockUserAdapter = Pick<
@@ -132,6 +133,18 @@ describe('CredentialsProvider', () => {
 
 			expect(result.valid).toBe(false)
 			expect(result.user).toBeNull()
+		})
+
+		it('rejects oversized passwords before database or hashing work', async () => {
+			const result = await provider.authenticate({
+				email: 'test@example.com',
+				password: 'a'.repeat(MAX_PASSWORD_LENGTH + 1),
+				userAdapter: mockUserAdapter
+			})
+
+			expect(result).toEqual({ user: null, valid: false })
+			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled()
+			expect(verifyPassword).not.toHaveBeenCalled()
 		})
 
 		it('should reject authentication for user without password', async () => {
@@ -443,6 +456,30 @@ describe('CredentialsProvider', () => {
 				expect.objectContaining({
 					role: 'admin',
 					verified: true
+				})
+			)
+		})
+
+		it('does not let signup metadata override credential security fields', async () => {
+			mockUserAdapter.createUser.mockResolvedValue({ id: 'user-123' })
+
+			await provider.signUp({
+				email: 'user@example.com',
+				password: 'Password123!',
+				metadata: {
+					password: 'attacker-controlled',
+					provider: 'admin',
+					emailVerified: true
+				},
+				userAdapter: mockUserAdapter
+			})
+
+			expect(mockUserAdapter.createUser).toHaveBeenCalledWith(
+				expect.any(Object),
+				expect.objectContaining({
+					password: testHash('Password123!'),
+					provider: 'email',
+					emailVerified: false
 				})
 			)
 		})

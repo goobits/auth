@@ -1,4 +1,19 @@
+import { constantTimeEqual, randomBytes } from '@goobits/security/crypto'
+
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+const MAX_VERIFICATION_WINDOW = 10
+
+function assertTotpParameters(digits: number, period: number, time: number): void {
+	if (!Number.isSafeInteger(digits) || digits < 1 || digits > 10) {
+		throw new RangeError('TOTP digits must be an integer from 1 to 10')
+	}
+	if (!Number.isSafeInteger(period) || period <= 0) {
+		throw new RangeError('TOTP period must be a positive integer')
+	}
+	if (!Number.isFinite(time)) {
+		throw new RangeError('TOTP time must be finite')
+	}
+}
 
 function toBase32(bytes: Uint8Array): string {
 	let bits = 0
@@ -62,9 +77,7 @@ function intToBytes(num: number): Uint8Array {
 
 /** Generates a base32 TOTP shared secret. */
 export function generateSecret({ length = 20 }: { length?: number } = {}): string {
-	const bytes = new Uint8Array(length)
-	crypto.getRandomValues(bytes)
-	return toBase32(bytes)
+	return toBase32(randomBytes(length))
 }
 
 /** Builds an otpauth URL for authenticator apps. */
@@ -105,6 +118,7 @@ export async function generateTOTP({
 	if (!secret) {
 		throw new Error('TOTP secret is required')
 	}
+	assertTotpParameters(digits, period, time)
 	const counter = Math.floor(time / 1000 / period)
 	const counterBytes = intToBytes(counter)
 	const keyBytes = fromBase32(secret)
@@ -137,10 +151,16 @@ export async function verifyTOTP({
 	time?: number
 } = {}): Promise<boolean> {
 	if (!secret || !token) return false
+	if (!Number.isSafeInteger(window) || window < 0 || window > MAX_VERIFICATION_WINDOW) {
+		throw new RangeError(`TOTP window must be an integer from 0 to ${MAX_VERIFICATION_WINDOW}`)
+	}
+	assertTotpParameters(digits, period, time)
+	if (token.length !== digits || !/^\d+$/u.test(token)) return false
+	let valid = false
 	for (let errorWindow = -window; errorWindow <= window; errorWindow += 1) {
 		const t = time + errorWindow * period * 1000
 		const candidate = await generateTOTP({ secret, time: t, digits, period })
-		if (candidate === token) return true
+		valid = constantTimeEqual(candidate, token) || valid
 	}
-	return false
+	return valid
 }

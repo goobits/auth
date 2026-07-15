@@ -1,5 +1,6 @@
 import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
 import { hashPassword, verifyPassword } from '../password/index.ts'
+import { assertPasswordInput, isPasswordWithinLimit } from '../password/policy.ts'
 import type { User } from '../types/core.ts'
 import { getLogger } from '../utils/logger.ts'
 
@@ -39,6 +40,7 @@ export class CredentialsProvider {
 	verifyPassword: VerifyPasswordFn
 
 	private validateNewPassword(password: string): void {
+		assertPasswordInput(password)
 		if (!this.validatePassword) return
 		const validation = this.validatePassword(password)
 		if (!validation.valid) {
@@ -48,7 +50,6 @@ export class CredentialsProvider {
 
 	/** Validates and hashes a password without persisting it. */
 	async createPasswordHash(password: string): Promise<string> {
-		if (!password) throw new Error('Password is required')
 		this.validateNewPassword(password)
 		return await this.hashPassword(password)
 	}
@@ -112,7 +113,7 @@ export class CredentialsProvider {
 		userAdapter: UserAdapter
 	}): Promise<{ user: User | null; valid: boolean }> {
 		const rawIdentifier = identifier ?? email ?? ''
-		if (!rawIdentifier || !password) {
+		if (!rawIdentifier || !password || !isPasswordWithinLimit(password)) {
 			return { user: null, valid: false }
 		}
 
@@ -229,10 +230,10 @@ export class CredentialsProvider {
 
 		// Create user with hashed password
 		const user = await userAdapter.createUser(profile, {
+			...metadata,
 			password: passwordHash,
 			provider: 'email',
-			emailVerified: false,
-			...metadata
+			emailVerified: false
 		})
 
 		return user

@@ -75,7 +75,12 @@ async function assertPublicSurface() {
 		assert.deepEqual(Object.keys(api).sort(), expectedRoot)
 	}
 
-	const expectedPassword = ['hashPassword', 'validatePasswordStrength', 'verifyPassword']
+	const expectedPassword = [
+		'MAX_PASSWORD_LENGTH',
+		'hashPassword',
+		'validatePasswordStrength',
+		'verifyPassword'
+	]
 	for (const target of ['dist/node/password/index.js', 'dist/worker/password/index.js']) {
 		const api = await import(new URL(target, root).href)
 		assert.deepEqual(Object.keys(api).sort(), expectedPassword)

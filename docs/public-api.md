@@ -145,6 +145,10 @@ stored hash through the configured user adapter after successful verification.
 Use this for read-only legacy hash support while all new hashes continue through
 the provider's current hasher.
 
+All credential paths enforce a non-configurable 1024-character absolute limit
+before calling built-in or custom password work. Applications may impose a
+lower product-specific limit, but not a higher one.
+
 Credential MFA is a two-step flow:
 
 - pass `mfa` to `createSigninHandler`; enabled or policy-required users receive

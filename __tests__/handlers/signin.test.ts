@@ -62,6 +62,47 @@ describe('createSigninHandler', () => {
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
 
+	it('keeps security-owned session metadata authoritative', async () => {
+		const credentialsProvider = {
+			authenticate: vi.fn().mockResolvedValue({ user: { id: 'u1' }, valid: true })
+		}
+		const sessionAdapter = {
+			createSession: vi
+				.fn()
+				.mockResolvedValue({ id: 's1', expiresAt: new Date(Date.now() + 1000) }),
+			setSessionCookie: vi.fn()
+		}
+		const handler = createSigninHandler({
+			credentialsProvider,
+			userAdapter: {},
+			sessionAdapter,
+			redirectTo: '',
+			getSessionMetadata: () => ({
+				fingerprint: 'fp-1',
+				ip: 'attacker-controlled',
+				mfaVerifiedAt: new Date(),
+				rememberMe: true,
+				userAgent: 'attacker-controlled'
+			})
+		})
+		const event = createRequestEvent({
+			url: 'http://localhost/signin',
+			method: 'POST',
+			headers: { 'user-agent': 'trusted-agent' },
+			form: { email: 'a@b.com', password: 'pw' }
+		})
+		event.getClientAddress = () => '127.0.0.1'
+
+		await handler(event)
+
+		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1', {
+			fingerprint: 'fp-1',
+			ip: '127.0.0.1',
+			rememberMe: false,
+			userAgent: 'trusted-agent'
+		})
+	})
+
 	it('passes configured identifier fields to the credentials provider', async () => {
 		const credentialsProvider = {
 			authenticate: vi.fn().mockResolvedValue({ user: null, valid: false })

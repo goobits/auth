@@ -153,14 +153,15 @@ export function createSigninHandler(config: {
 			}
 
 			const safeUser = sanitizeUser(user) as User | null
-			const sessionMetadata: SessionMetadata = { rememberMe: remember }
+			const sessionMetadata: SessionMetadata = getSessionMetadata
+				? { ...(await getSessionMetadata(event, user, remember)) }
+				: {}
+			delete sessionMetadata.mfaVerifiedAt
+			sessionMetadata.rememberMe = remember
 			const ip = event.getClientAddress?.()
 			if (ip) sessionMetadata['ip'] = ip
 			const userAgent = event.request.headers.get('user-agent')
 			if (userAgent) sessionMetadata['userAgent'] = userAgent
-			if (getSessionMetadata) {
-				Object.assign(sessionMetadata, await getSessionMetadata(event, user, remember))
-			}
 			if (mfa) {
 				const challenge = await beginMfaLoginChallenge({
 					event,
