@@ -7,9 +7,9 @@ type D1Row = Record<string, D1Value>
 
 type D1DatabaseLike = {
 	prepare: (sql: string) => {
-		bind: (...args: D1Value[]) => {
-			run: () => Promise<void>
-			first: () => Promise<D1Row | null>
+		bind: (...args: unknown[]) => {
+			run: () => Promise<unknown>
+			first: <T = D1Row>() => Promise<T | null>
 		}
 	}
 }
