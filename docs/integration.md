@@ -180,11 +180,13 @@ ciphertext envelope so old keys can decrypt during controlled rotation.
 `packages/calendar/kit/src/auth/calendar-adapters.ts` (in this monorepo) is a
 real working example of consuming the contract. It:
 
-1. Wraps a D1 database that already has `users`/`sessions`/etc. tables but
-   with calendar-specific extra columns (`role`, `settings`, invite tracking).
-2. Implements custom `UserAdapter` and `SessionAdapter` subclasses so the
-   shape the adapters return matches the calendar app's `User` shape.
-3. Hands the bundle to `new GoobitsAuth({ adapter: {...} })` in
+1. Configures the prebuilt `D1UserAdapter` and `D1SessionAdapter` with the
+   calendar table and column names.
+2. Explicitly disables `mfaVerifiedAt` persistence because the calendar MVP
+   does not yet use session assurance.
+3. Reuses a D1-backed rate-limit store for both request limits and durable
+   security-alert thresholds.
+4. Hands the adapters to `new GoobitsAuth({ adapter: {...} })` in
    `packages/calendar/app/src/server/auth/calendar.ts`.
 
 If you're integrating into an app with an existing user table, that file is
