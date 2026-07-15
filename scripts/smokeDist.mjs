@@ -77,6 +77,7 @@ async function assertPublicSurface() {
 
 	const expectedPassword = [
 		'MAX_PASSWORD_LENGTH',
+		'createPasswordMigrationVerifier',
 		'hashPassword',
 		'validatePasswordStrength',
 		'verifyPassword'

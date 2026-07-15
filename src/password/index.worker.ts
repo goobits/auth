@@ -4,6 +4,12 @@ import { argon2id, argon2Verify } from 'hash-wasm'
 import { assertPasswordInput, isPasswordWithinLimit } from './policy.ts'
 
 export { MAX_PASSWORD_LENGTH, validatePasswordStrength } from './policy.ts'
+export {
+	createPasswordMigrationVerifier,
+	type PasswordHashScheme,
+	type PasswordHashVerifier,
+	type PasswordMigrationVerificationResult
+} from './migration.ts'
 
 // Cloudflare Workers-compatible Argon2id (WASM).
 // Tuned for reasonable cost under edge CPU limits; apps should enforce rate limiting.

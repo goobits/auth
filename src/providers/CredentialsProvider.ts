@@ -5,6 +5,7 @@ import type {
 import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
 import { omitSensitiveUserData } from '../adapters/database/publicUserData.ts'
 import { hashPassword, verifyPassword } from '../password/index.ts'
+import type { PasswordMigrationVerificationResult } from '../password/migration.ts'
 import { assertPasswordInput, isPasswordWithinLimit } from '../password/policy.ts'
 import type { User } from '../types/core.ts'
 
@@ -12,10 +13,7 @@ type PasswordValidationResult = { valid: boolean; errors: string[] }
 type ValidatePasswordFn = (password: string) => PasswordValidationResult
 type NormalizeIdentifierFn = (value: string) => string
 type HashPasswordFn = (password: string) => Promise<string>
-export type PasswordVerificationResult = {
-	valid: boolean
-	needsRehash?: boolean
-}
+export type PasswordVerificationResult = PasswordMigrationVerificationResult
 type VerifyPasswordFn = (
 	storedHash: string,
 	password: string

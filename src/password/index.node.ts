@@ -3,6 +3,12 @@ import { hash, verify } from '@node-rs/argon2'
 import { assertPasswordInput, isPasswordWithinLimit } from './policy.ts'
 
 export { MAX_PASSWORD_LENGTH, validatePasswordStrength } from './policy.ts'
+export {
+	createPasswordMigrationVerifier,
+	type PasswordHashScheme,
+	type PasswordHashVerifier,
+	type PasswordMigrationVerificationResult
+} from './migration.ts'
 
 /**
  * Hash a password using Argon2id (native Node module)

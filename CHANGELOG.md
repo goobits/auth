@@ -42,6 +42,8 @@
 
 - 📦 Added `@goobits/auth/verification`, PostgreSQL verification-token storage,
   and a named `auth.routes` facade for clean application composition.
+- 🔑 Added a provider-neutral password migration verifier so applications can
+  retain read-only legacy schemes without duplicating upgrade orchestration.
 - 🧱 Published public-user assertion and projection helpers for custom adapters
   so consumers share the same secret-field boundary as built-in adapters.
 - 🔑 Verification-token hashing, record inspection, atomic consumption, and canonical token types now share one public utility boundary for application adapters and transactional account flows.

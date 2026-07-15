@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { argon2id } from 'hash-wasm'
 
 import {
+	createPasswordMigrationVerifier,
 	hashPassword,
 	MAX_PASSWORD_LENGTH,
 	validatePasswordStrength,
@@ -19,6 +20,49 @@ const callValidatePasswordStrengthUnsafe = (password: unknown) =>
 	}
 
 describe('Password Utilities', () => {
+	describe('createPasswordMigrationVerifier', () => {
+		const verifier = createPasswordMigrationVerifier({
+			current: {
+				matches: (hash) => hash.startsWith('current:'),
+				verify: (hash, password) => hash === `current:${password}`
+			},
+			legacy: [
+				{
+					matches: (hash) => hash.startsWith('legacy:'),
+					verify: (hash, password) => hash === `legacy:${password}`
+				}
+			]
+		})
+
+		it('accepts current hashes without rehash and marks accepted legacy hashes', async () => {
+			await expect(verifier('current:correct', 'correct')).resolves.toEqual({
+				valid: true,
+				needsRehash: false
+			})
+			await expect(verifier('legacy:correct', 'correct')).resolves.toEqual({
+				valid: true,
+				needsRehash: true
+			})
+		})
+
+		it('fails closed for unknown, malformed, and oversized inputs', async () => {
+			await expect(verifier('unknown', 'correct')).resolves.toEqual({
+				valid: false,
+				needsRehash: false
+			})
+			await expect(
+				verifier('legacy:correct', 'x'.repeat(MAX_PASSWORD_LENGTH + 1))
+			).resolves.toEqual({ valid: false, needsRehash: false })
+			const throwing = createPasswordMigrationVerifier({
+				current: { matches: () => true, verify: () => Promise.reject(new Error('malformed')) }
+			})
+			await expect(throwing('current:value', 'correct')).resolves.toEqual({
+				valid: false,
+				needsRehash: false
+			})
+		})
+	})
+
 	describe('hashPassword', () => {
 		it('should hash a password with Argon2id', async () => {
 			const password = 'TestPassword123!'

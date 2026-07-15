@@ -167,6 +167,12 @@ Password-reset confirmation also requires an application-owned
 `completePasswordReset({ tokenHash, passwordHash })` transaction. It must
 atomically consume the token, update the hash, and invalidate existing sessions.
 
+Sites migrating legacy password formats can compose read-only verification with
+`createPasswordMigrationVerifier()` from `@goobits/auth/password`. The current
+scheme remains the only writer; a successful legacy check returns
+`needsRehash: true` so `CredentialsProvider` upgrades through the dedicated
+credential adapter.
+
 ## One-Stop Drizzle Adapter
 
 `drizzleAdapter(db, { schema })` returns a unified bundle. The required
