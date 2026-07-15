@@ -90,6 +90,40 @@ describe('createLogoutHandler', () => {
 		const err = await captureRedirect(handler(event as never))
 		expect(err.status).toBe(302)
 	})
+
+	it('keeps logger delivery isolated per handler instance', async () => {
+		const firstLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+		const secondLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+		const throwingAdapter = (message: string) => ({
+			invalidateSession: vi.fn(async () => {
+				const error = new Error('sensitive storage detail')
+				error.name = message
+				throw error
+			}),
+			deleteSessionCookie: vi.fn()
+		})
+		const first = createLogoutHandler({
+			sessionAdapter: throwingAdapter('first') as never,
+			logger: firstLogger
+		})
+		const second = createLogoutHandler({
+			sessionAdapter: throwingAdapter('second') as never,
+			logger: secondLogger
+		})
+		const event = () =>
+			createRequestEvent({
+				method: 'POST',
+				locals: { session: { id: 's1' } } as never
+			}) as unknown as RequestEventLike
+
+		await captureRedirect(first(event() as never))
+		expect(firstLogger.error).toHaveBeenCalledWith('Error during logout', { errorType: 'first' })
+		expect(secondLogger.error).not.toHaveBeenCalled()
+
+		await captureRedirect(second(event() as never))
+		expect(secondLogger.error).toHaveBeenCalledWith('Error during logout', { errorType: 'second' })
+		expect(firstLogger.error).toHaveBeenCalledOnce()
+	})
 })
 
 describe('createLogoutAction', () => {

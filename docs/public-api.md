@@ -6,11 +6,12 @@ Primary API: `new GoobitsAuth(...)`
 adapters, and UI helpers use SvelteKit request/cookie/build types. Consumers
 outside SvelteKit should prefer low-level subpaths such as
 `@goobits/auth/security`, `@goobits/auth/password`, `@goobits/auth/mfa`, or
-`@goobits/auth/adapters/pg`.
+`@goobits/auth/adapters/pg`. Verification-token helpers live at
+`@goobits/auth/verification`.
 
 ## Stability
 
-The documented exports are stable for the `0.2.x` line. WebAuthn and MFA may
+The documented exports are stable for the `0.3.x` line. WebAuthn and MFA may
 receive additive options as platform behavior evolves.
 
 ## Distribution
@@ -59,6 +60,7 @@ CSRF.
 
 - `auth.handle()`
 - `auth.handlers` (`GET`, `POST`) for catch-all auth route
+- `auth.routes` for individually mounted named route factories
 - `auth.createHandlers({ basePath? })` for custom mount paths
 - `auth.getSession(event)`
 - `auth.requireUser(event)`
@@ -105,7 +107,7 @@ export const GET = async (event) => {
 
 `drizzleAdapter(db, { schema })` returns a single bundle with:
 
-- required: `session`, `user`
+- required: `session`, `user`, `passwordCredential`
 - optional (when tables exist): `oauthToken`, `verificationToken`, `magicLink`, `webauthn`
 
 ### Required schema tables
@@ -141,13 +143,27 @@ Handler options support custom form field names and metadata:
 
 `verifyPassword` may return either a boolean or
 `{ valid, needsRehash }`. When `needsRehash` is true, the provider replaces the
-stored hash through the configured user adapter after successful verification.
+stored hash through the configured `PasswordCredentialAdapter` after successful
+verification.
 Use this for read-only legacy hash support while all new hashes continue through
 the provider's current hasher.
+
+General `UserAdapter` methods never return or accept password hashes. Credential
+handlers receive the bundle's `passwordCredential` capability explicitly, so a
+profile-only code path cannot accidentally acquire secret-bearing records.
+
+Password-reset confirmation requires an application-owned
+`completePasswordReset({ tokenHash, passwordHash })` callback. That callback
+must atomically consume the reset token, update the password hash, and invalidate
+the user's existing sessions before it reports success.
 
 All credential paths enforce a non-configurable 1024-character absolute limit
 before calling built-in or custom password work. Applications may impose a
 lower product-specific limit, but not a higher one.
+
+Unknown and passwordless identifiers run one dummy-hash verification by default.
+Provide a precomputed `dummyPasswordHash` when cold-start latency matters, and
+always retain route-level rate limiting.
 
 Credential MFA is a two-step flow:
 
@@ -191,27 +207,35 @@ between the password and second-factor requests.
 
 ## Security primitives
 
-Use `@goobits/auth/security` when an app owns its route policy or persistence
-layer but should share auth primitives:
+Use `@goobits/auth/security` for auth-specific policy, authorization, audit,
+CSRF ergonomics, alerts, and signed-session primitives:
 
 ```ts
 import {
-	createAuthApiKey,
-	createBasicAuthResponse,
 	createSignedSessionToken,
-	hashAuthApiKey,
-	parseBasicAuthHeader,
+	requireAuthenticated,
+	requireOwnership,
 	validateCsrfRequest,
-	verifyBasicAuthHeader,
-	verifyAuthApiKey,
 	verifySignedSessionToken
 } from '@goobits/auth/security'
 ```
 
-- Basic auth parsing and verification with caller-provided password hash checks.
-- Standard Basic-auth challenge responses.
 - Signed, expiring session-token creation and verification.
-- CSRF issuance/validation, API-key helpers, role/ownership guards, and timing-safe comparisons. Generic rate limiting lives in `@goobits/security/rate-limit`.
+- CSRF issuance/validation, auth event auditing, and role/ownership guards.
+
+Generic primitives are intentionally imported from their Security owners:
+
+```ts
+import {
+	createApiKey,
+	parseApiKeyHeader,
+	parseBasicAuthHeader,
+	verifyApiKey,
+	verifyBasicAuthHeader
+} from '@goobits/security/http-credentials'
+import { constantTimeEqual } from '@goobits/security/crypto'
+import { redactSensitiveData } from '@goobits/security/redaction'
+```
 
 ## Typing App locals
 

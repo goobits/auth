@@ -2,10 +2,10 @@ import { error, redirect } from '@sveltejs/kit'
 import { OAuth2RequestError } from 'arctic'
 
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
+import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
 import type { OAuthProvider } from '../providers/OAuthProvider.ts'
 import type { AuthLocals, RequestEventLike } from '../types/auth.ts'
 import type { OAuthProfile, OAuthTokens } from '../types/index.ts'
-import { getLogger } from '../utils/logger.ts'
 import { handleOAuthCallback } from '../utils/oauth.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 
@@ -19,6 +19,7 @@ type CallbackConfig = {
 		tokens: OAuthTokens
 	) => Promise<void> | void
 	onError?: (event: RequestEventLike, error: unknown) => Promise<void> | void
+	logger?: Logger
 }
 
 /**
@@ -56,9 +57,10 @@ export function createCallbackHandler(config: CallbackConfig) {
 		redirectAfterLogin = '/',
 		isAuthenticated = (locals: AuthLocals) => !!locals.user,
 		onAuthenticated,
-		onError
+		onError,
+		logger
 	} = config
-	const log = getLogger()
+	const log = resolveLogger(logger)
 
 	const isStatusError = (value: unknown): value is { status: number } =>
 		typeof value === 'object' &&
@@ -126,7 +128,7 @@ export function createCallbackHandler(config: CallbackConfig) {
 			}
 
 			// Log and throw generic error
-			log.error?.('Authentication error:', err instanceof Error ? err.message : String(err))
+			log.error('Authentication error', errorContext(err))
 			error(500, 'Authentication system error')
 		}
 	}

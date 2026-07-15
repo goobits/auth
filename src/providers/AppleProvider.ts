@@ -2,8 +2,8 @@ import { decodeBase64IgnorePadding } from '@oslojs/encoding'
 import { base64UrlToBytes, bytesToText } from '@goobits/security/crypto'
 import { Apple } from 'arctic'
 
+import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
 import type { OAuthProfile, OAuthTokens } from '../types/index.ts'
-import { getLogger } from '../utils/logger.ts'
 import { OAuthProvider } from './OAuthProvider.ts'
 
 type AppleProviderConfig = {
@@ -12,6 +12,7 @@ type AppleProviderConfig = {
 	keyId: string
 	privateKey: string
 	callbackUrl: string
+	logger?: Logger
 }
 
 type AppleIdTokenPayload = {
@@ -42,6 +43,7 @@ let cachedAppleJwks: { keys: JsonWebKey[]; expiresAt: number } | null = null
  */
 export class AppleProvider extends OAuthProvider {
 	private client: Apple
+	private readonly logger: Logger
 
 	private readTokenValue(value?: string | (() => string) | null): string | null {
 		if (typeof value === 'function') return value()
@@ -58,6 +60,7 @@ export class AppleProvider extends OAuthProvider {
 	 */
 	constructor(config: AppleProviderConfig) {
 		super('apple', config)
+		this.logger = resolveLogger(config.logger)
 
 		if (
 			!config.clientId ||
@@ -98,10 +101,7 @@ export class AppleProvider extends OAuthProvider {
 
 			return decodeBase64IgnorePadding(cleaned)
 		} catch (error) {
-			getLogger().error?.(
-				'Error decoding Apple private key:',
-				error instanceof Error ? error.message : String(error)
-			)
+			this.logger.error('Error decoding Apple private key', errorContext(error))
 			throw new Error('Invalid Apple private key format')
 		}
 	}
@@ -164,8 +164,8 @@ export class AppleProvider extends OAuthProvider {
 						const fullName = `${firstName} ${lastName}`.trim()
 						if (fullName) name = fullName
 					}
-				} catch (e) {
-					getLogger().warn?.('Could not parse Apple user data:', e)
+				} catch (error) {
+					this.logger.warn('Could not parse Apple user data', errorContext(error))
 				}
 			}
 
@@ -186,10 +186,7 @@ export class AppleProvider extends OAuthProvider {
 				}
 			}
 		} catch (error) {
-			getLogger().error?.(
-				'Error in AppleProvider.getUserProfile:',
-				error instanceof Error ? error.message : String(error)
-			)
+			this.logger.error('Error in AppleProvider.getUserProfile', errorContext(error))
 			throw error
 		}
 	}

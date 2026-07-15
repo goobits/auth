@@ -64,6 +64,7 @@ export type VerificationToken = {
 	token: string
 	expiresAt: Date
 	createdAt: Date
+	metadata?: Record<string, unknown>
 }
 
 /** Describes the auth domain record used for verification token types. */

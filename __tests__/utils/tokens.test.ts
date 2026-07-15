@@ -8,7 +8,7 @@ import {
 	getVerificationTokenRecord,
 	hashVerificationToken,
 	VERIFICATION_TOKEN_TYPES
-} from '../../src/utils/index.ts'
+} from '../../src/verification/index.ts'
 
 type TokenRecord = {
 	id: string

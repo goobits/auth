@@ -37,7 +37,7 @@ const commonEntries = [
 	'src/providers/index.ts',
 	'src/handlers/index.ts',
 	'src/login-context/index.ts',
-	'src/utils/index.ts',
+	'src/verification/index.ts',
 	'src/client/index.ts',
 	'src/password/index.ts',
 	'src/types/index.ts',

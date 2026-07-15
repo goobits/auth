@@ -1,5 +1,3 @@
-export { timingSafeEqual } from '../utils/crypto.ts'
-export { createAuthApiKey, hashAuthApiKey, parseApiKeyHeader, verifyAuthApiKey } from './apiKey.ts'
 export type {
 	AlertSeverity,
 	SecurityAlert,
@@ -11,16 +9,6 @@ export { createSecurityAlertObserver } from './alerts.ts'
 export type { AuthAuditEvent } from './audit.ts'
 export { auditAuthEvent } from './audit.ts'
 export { requireAuthenticated, requireOwnership, requireAuthRole } from './authorize.ts'
-export type {
-	BasicAuthCredentials,
-	BasicAuthPasswordVerifier,
-	VerifyBasicAuthOptions
-} from './basicAuth.ts'
-export {
-	createBasicAuthResponse,
-	parseBasicAuthHeader,
-	verifyBasicAuthHeader
-} from './basicAuth.ts'
 export {
 	CSRF_COOKIE_NAME,
 	CSRF_HEADER_NAME,

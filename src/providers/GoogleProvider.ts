@@ -1,7 +1,7 @@
 import { Google } from 'arctic'
 
+import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
 import type { OAuthProfile, OAuthTokens } from '../types/index.ts'
-import { getLogger } from '../utils/logger.ts'
 import { OAuthProvider } from './OAuthProvider.ts'
 
 type GoogleProviderConfig = {
@@ -9,6 +9,7 @@ type GoogleProviderConfig = {
 	clientSecret: string
 	callbackUrl: string
 	scopes?: string[]
+	logger?: Logger
 }
 
 /**
@@ -18,6 +19,7 @@ type GoogleProviderConfig = {
 export class GoogleProvider extends OAuthProvider {
 	private client: Google
 	private defaultScopes: string[]
+	private readonly logger: Logger
 
 	private getAccessToken(tokens: {
 		accessToken?: string | (() => string) | undefined
@@ -77,6 +79,7 @@ export class GoogleProvider extends OAuthProvider {
 	 */
 	constructor(config: GoogleProviderConfig) {
 		super('google', config)
+		this.logger = resolveLogger(config.logger)
 
 		if (!config.clientId || !config.clientSecret || !config.callbackUrl) {
 			throw new Error('GoogleProvider requires clientId, clientSecret, and callbackUrl')
@@ -165,10 +168,7 @@ export class GoogleProvider extends OAuthProvider {
 				}
 			}
 		} catch (error) {
-			getLogger().error?.(
-				'Error in GoogleProvider.getUserProfile:',
-				error instanceof Error ? error.message : String(error)
-			)
+			this.logger.error('Error in GoogleProvider.getUserProfile', errorContext(error))
 			throw error
 		}
 	}

@@ -19,6 +19,7 @@ Lower-level subpaths are still useful outside a full SvelteKit app when you
 want the primitives directly:
 
 - `@goobits/auth/security`
+- `@goobits/auth/verification`
 - `@goobits/auth/password`
 - `@goobits/auth/mfa`
 - `@goobits/auth/adapters/pg`
@@ -26,7 +27,7 @@ want the primitives directly:
 
 ## Stability
 
-The documented exports are treated as stable for the `0.2.x` line. WebAuthn
+The documented exports are treated as stable for the `0.3.x` line. WebAuthn
 and MFA APIs are production-oriented but may receive additive options as
 browser and authenticator behavior evolves.
 
@@ -103,6 +104,7 @@ export const { GET, POST } = auth.handlers
 - `await auth.requireUser(event)`
 - `await auth.requireAuthRole(event, "admin")`
 - `await auth.getSession(event)`
+- `auth.routes` for individually mounted named route factories
 
 `requireAuthRole()` checks website/session route roles only. Product
 permissions for Spaces, Zones, Goobits, agents, and wormholes should be checked
@@ -110,25 +112,34 @@ through the product access system.
 
 ## Security Primitives
 
-`@goobits/auth/security` also exports low-level helpers for apps that own
-their own route policy or session store:
+`@goobits/auth/security` exports auth-specific policy, authorization, audit,
+CSRF ergonomics, alerting, and signed-session helpers:
 
 ```ts
 import {
-	createAuthApiKey,
-	createBasicAuthResponse,
 	createSignedSessionToken,
-	hashAuthApiKey,
-	verifyBasicAuthHeader,
-	verifyAuthApiKey,
+	requireAuthenticated,
+	requireOwnership,
 	verifySignedSessionToken
 } from '@goobits/auth/security'
 ```
 
-- Basic auth parsing and verification with caller-owned password hash checks.
 - Signed, expiring session-token claims for custom session stores.
-- CSRF cookie helpers, API-key helpers, authorization guards, and timing-safe
-  comparisons. Generic rate limiting lives in `@goobits/security/rate-limit`.
+- Auth event auditing, authorization guards, CSRF cookie helpers, and security
+  policy composition.
+
+Generic HTTP credentials, redaction, cryptography, logging, and rate limiting
+belong to `@goobits/security` and are not re-exported by Auth:
+
+```ts
+import {
+	createApiKey,
+	parseApiKeyHeader,
+	parseBasicAuthHeader,
+	verifyApiKey,
+	verifyBasicAuthHeader
+} from '@goobits/security/http-credentials'
+```
 
 ## Credentials Provider
 
@@ -142,9 +153,25 @@ const credentials = new CredentialsProvider({
 })
 ```
 
+Unknown or passwordless accounts automatically receive a compatible dummy-hash
+verification, reducing credential-enumeration timing differences. Keep the
+signin route rate-limited; pass `dummyPasswordHash` to avoid first-use hash
+generation on latency-sensitive runtimes.
+
+Credential handlers require a `PasswordCredentialAdapter`. Password hashes
+are deliberately absent from the general `UserAdapter`; only the dedicated
+adapter may read or write them. Prebuilt adapter bundles expose this capability
+as `passwordCredential`.
+
+Password-reset confirmation also requires an application-owned
+`completePasswordReset({ tokenHash, passwordHash })` transaction. It must
+atomically consume the token, update the hash, and invalidate existing sessions.
+
 ## One-Stop Drizzle Adapter
 
-`drizzleAdapter(db, { schema })` returns a unified bundle.
+`drizzleAdapter(db, { schema })` returns a unified bundle. The required
+`user` and `passwordCredential` capabilities share the configured users table
+while keeping public profile access separate from secret-bearing access.
 
 - Required tables: `users`, `sessions`
 - Optional tables: `oauthAccounts`, `oauthTokens`, `verificationTokens`, `magicLinkTokens`, `webauthnCredentials`, `webauthnChallenges`

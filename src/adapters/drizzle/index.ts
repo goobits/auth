@@ -74,6 +74,7 @@ export type DrizzleAdapterOptions<TSchema extends DrizzleAuthSchema = DrizzleAut
 export type DrizzleAdapterBundle = {
 	session: DrizzleSessionAdapter
 	user: DrizzleUserAdapter
+	passwordCredential: DrizzleUserAdapter
 	oauthToken?: DrizzleTokenAdapter
 	verificationToken?: DrizzleVerificationTokenAdapter
 	magicLink?: DrizzleMagicLinkAdapter
@@ -173,6 +174,7 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 	return {
 		session,
 		user,
+		passwordCredential: user,
 		...(oauthToken ? { oauthToken } : {}),
 		...(verificationToken ? { verificationToken } : {}),
 		...(magicLink ? { magicLink } : {}),

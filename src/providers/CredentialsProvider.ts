@@ -1,8 +1,12 @@
-import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
+import type {
+	PasswordCredential,
+	PasswordCredentialAdapter
+} from '../adapters/database/PasswordCredentialAdapter.ts'
+import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
+import { omitSensitiveUserData } from '../_internal/publicUserData.ts'
 import { hashPassword, verifyPassword } from '../password/index.ts'
 import { assertPasswordInput, isPasswordWithinLimit } from '../password/policy.ts'
 import type { User } from '../types/core.ts'
-import { getLogger } from '../utils/logger.ts'
 
 type PasswordValidationResult = { valid: boolean; errors: string[] }
 type ValidatePasswordFn = (password: string) => PasswordValidationResult
@@ -17,6 +21,8 @@ type VerifyPasswordFn = (
 	password: string
 ) => Promise<boolean | PasswordVerificationResult>
 
+const DUMMY_PASSWORD_INPUT = 'goobits-auth-non-account-timing-sentinel-v1'
+
 type CredentialsProviderOptions = {
 	validatePassword?: ValidatePasswordFn
 	identifierField?: string
@@ -25,6 +31,7 @@ type CredentialsProviderOptions = {
 	hashPassword?: HashPasswordFn
 	verifyPassword?: VerifyPasswordFn
 	dummyPasswordHash?: string
+	logger?: Logger
 }
 
 /**
@@ -40,6 +47,14 @@ export class CredentialsProvider {
 	hashPassword: HashPasswordFn
 	verifyPassword: VerifyPasswordFn
 	dummyPasswordHash?: string
+	private readonly logger: Logger
+	private dummyPasswordHashPromise?: Promise<string>
+
+	private async getDummyPasswordHash(): Promise<string> {
+		if (this.dummyPasswordHash) return this.dummyPasswordHash
+		this.dummyPasswordHashPromise ??= this.hashPassword(DUMMY_PASSWORD_INPUT)
+		return await this.dummyPasswordHashPromise
+	}
 
 	private validateNewPassword(password: string): void {
 		assertPasswordInput(password)
@@ -69,6 +84,7 @@ export class CredentialsProvider {
 			options.normalizeIdentifier ?? ((value) => value.trim().toLowerCase())
 		this.hashPassword = options.hashPassword ?? hashPassword
 		this.verifyPassword = options.verifyPassword ?? verifyPassword
+		this.logger = resolveLogger(options.logger)
 		if (options.dummyPasswordHash) this.dummyPasswordHash = options.dummyPasswordHash
 	}
 
@@ -81,7 +97,8 @@ export class CredentialsProvider {
 			allowBoth: options.allowBoth ?? this.allowBoth,
 			normalizeIdentifier: options.normalizeIdentifier ?? this.normalizeIdentifier,
 			hashPassword: this.hashPassword,
-			verifyPassword: this.verifyPassword
+			verifyPassword: this.verifyPassword,
+			logger: this.logger
 		}
 		if (this.dummyPasswordHash) {
 			providerOptions.dummyPasswordHash = this.dummyPasswordHash
@@ -100,7 +117,7 @@ export class CredentialsProvider {
 	 * @param identifierField - identifier field value.
 	 * @param allowBoth - allow both value.
 	 * @param {string} params.password - Plain text password
-	 * @param {import('../adapters/database/UserAdapter.ts').UserAdapter} params.userAdapter - User adapter
+	 * @param {PasswordCredentialAdapter} params.passwordCredentialAdapter - Secret-bearing credential adapter
 	 * @returns {Promise<{user: Object, valid: boolean}>}
 	 */
 	async authenticate({
@@ -109,14 +126,14 @@ export class CredentialsProvider {
 		identifierField,
 		allowBoth,
 		password,
-		userAdapter
+		passwordCredentialAdapter
 	}: {
 		email?: string
 		identifier?: string
 		identifierField?: string
 		allowBoth?: boolean
 		password: string
-		userAdapter: UserAdapter
+		passwordCredentialAdapter: PasswordCredentialAdapter
 	}): Promise<{ user: User | null; valid: boolean }> {
 		const rawIdentifier = identifier ?? email ?? ''
 		if (!rawIdentifier || !password || !isPasswordWithinLimit(password)) {
@@ -127,34 +144,33 @@ export class CredentialsProvider {
 		const resolvedAllowBoth = allowBoth ?? this.allowBoth
 		const normalizedIdentifier = this.normalizeIdentifier(rawIdentifier)
 
-		let user: (Record<string, unknown> & { password?: string | null }) | null = null
-		let matchedField: string | null = null
+		let credential: PasswordCredential | null = null
 
 		const tryFields = resolvedAllowBoth
 			? Array.from(new Set([resolvedField, 'email']))
 			: [resolvedField]
 
 		for (const field of tryFields) {
-			if (field === 'email') {
-				user = await userAdapter.getUserWithPasswordHash(normalizedIdentifier)
-			} else if (userAdapter.getUserWithPasswordHashByIdentifier) {
-				user = await userAdapter.getUserWithPasswordHashByIdentifier(normalizedIdentifier, field)
-			}
-
-			if (user) {
-				matchedField = field
-				break
-			}
+			const candidate = await passwordCredentialAdapter.findPasswordCredential(
+				normalizedIdentifier,
+				field
+			)
+			credential ??= candidate
 		}
 
-		if (!user || !user.password) {
-			if (this.dummyPasswordHash) {
-				await this.verifyPassword(this.dummyPasswordHash, password)
+		if (!credential?.passwordHash) {
+			try {
+				await this.verifyPassword(await this.getDummyPasswordHash(), password)
+			} catch (error) {
+				this.logger.error(
+					'[CredentialsProvider] Dummy password verification failed',
+					errorContext(error)
+				)
 			}
 			return { user: null, valid: false }
 		}
 
-		const verification = await this.verifyPassword(user.password, password)
+		const verification = await this.verifyPassword(credential.passwordHash, password)
 		const valid = typeof verification === 'boolean' ? verification : verification.valid
 
 		if (!valid) {
@@ -162,32 +178,18 @@ export class CredentialsProvider {
 		}
 
 		if (typeof verification !== 'boolean' && verification.needsRehash) {
-			const userId =
-				typeof user['id'] === 'string' || typeof user['id'] === 'number' ? String(user['id']) : null
-			if (userId) {
-				try {
-					const upgradedHash = await this.createPasswordHash(password)
-					await userAdapter.updateUser(userId, { password: upgradedHash })
-				} catch (error) {
-					getLogger().error?.(
-						'[CredentialsProvider] Failed to upgrade password hash:',
-						error instanceof Error ? error.message : String(error)
-					)
-				}
+			try {
+				const upgradedHash = await this.createPasswordHash(password)
+				await passwordCredentialAdapter.updatePasswordHash(credential.user.id, upgradedHash)
+			} catch (error) {
+				this.logger.error(
+					'[CredentialsProvider] Failed to upgrade password hash',
+					errorContext(error)
+				)
 			}
 		}
 
-		// Return sanitized user
-		const sanitized =
-			matchedField === 'email'
-				? await userAdapter.getUserByEmail(normalizedIdentifier)
-				: userAdapter.getUserByIdentifier
-					? await userAdapter.getUserByIdentifier(
-							normalizedIdentifier,
-							matchedField ?? resolvedField
-						)
-					: await userAdapter.getUserByEmail(normalizedIdentifier)
-		return { user: sanitized, valid: true }
+		return { user: credential.user, valid: true }
 	}
 
 	/**
@@ -197,7 +199,7 @@ export class CredentialsProvider {
 	 * @param {string} params.password - Plain text password
 	 * @param {string} [params.name] - User name
 	 * @param {Object} [params.metadata] - Additional user data
-	 * @param {import('../adapters/database/UserAdapter.ts').UserAdapter} params.userAdapter - User adapter
+	 * @param {PasswordCredentialAdapter} params.passwordCredentialAdapter - Secret-bearing credential adapter
 	 * @returns {Promise<Object>} Created user (sanitized)
 	 */
 	async signUp({
@@ -205,13 +207,13 @@ export class CredentialsProvider {
 		password,
 		name,
 		metadata = {},
-		userAdapter
+		passwordCredentialAdapter
 	}: {
 		email: string
 		password: string
 		name?: string
 		metadata?: Record<string, unknown>
-		userAdapter: UserAdapter
+		passwordCredentialAdapter: PasswordCredentialAdapter
 	}): Promise<Record<string, unknown>> {
 		if (!email || !password) {
 			throw new Error('Email and password are required')
@@ -237,10 +239,15 @@ export class CredentialsProvider {
 			profile.name = fallbackName
 		}
 
+		const safeMetadata = Object.fromEntries(
+			Object.entries(omitSensitiveUserData(metadata)).filter(
+				([key]) => key !== 'password' && key !== 'provider' && key !== 'emailVerified'
+			)
+		)
+
 		// Create user with hashed password
-		const user = await userAdapter.createUser(profile, {
-			...metadata,
-			password: passwordHash,
+		const user = await passwordCredentialAdapter.createUserWithPassword(profile, passwordHash, {
+			...safeMetadata,
 			provider: 'email',
 			emailVerified: false
 		})
@@ -253,17 +260,17 @@ export class CredentialsProvider {
 	 *
 	 * @param {string} params.userId - User ID
 	 * @param {string} params.newPassword - New plain text password
-	 * @param {import('../adapters/database/UserAdapter.ts').UserAdapter} params.userAdapter - User adapter
+	 * @param {PasswordCredentialAdapter} params.passwordCredentialAdapter - Secret-bearing credential adapter
 	 * @returns {Promise<Object>} Updated user (sanitized)
 	 */
 	async updatePassword({
 		userId,
 		newPassword,
-		userAdapter
+		passwordCredentialAdapter
 	}: {
 		userId: string
 		newPassword: string
-		userAdapter: UserAdapter
+		passwordCredentialAdapter: PasswordCredentialAdapter
 	}): Promise<Record<string, unknown>> {
 		if (!userId || !newPassword) {
 			throw new Error('User ID and new password are required')
@@ -272,9 +279,7 @@ export class CredentialsProvider {
 		const passwordHash = await this.createPasswordHash(newPassword)
 
 		// Update user
-		const user = await userAdapter.updateUser(userId, {
-			password: passwordHash
-		})
+		const user = await passwordCredentialAdapter.updatePasswordHash(userId, passwordHash)
 
 		return user
 	}
@@ -285,25 +290,25 @@ export class CredentialsProvider {
 	 * @param {string} params.email - User email
 	 * @param {string} params.currentPassword - Current plain text password
 	 * @param {string} params.newPassword - New plain text password
-	 * @param {import('../adapters/database/UserAdapter.ts').UserAdapter} params.userAdapter - User adapter
+	 * @param {PasswordCredentialAdapter} params.passwordCredentialAdapter - Secret-bearing credential adapter
 	 * @returns {Promise<{user: Object, valid: boolean}>}
 	 */
 	async changePassword({
 		email,
 		currentPassword,
 		newPassword,
-		userAdapter
+		passwordCredentialAdapter
 	}: {
 		email: string
 		currentPassword: string
 		newPassword: string
-		userAdapter: UserAdapter
+		passwordCredentialAdapter: PasswordCredentialAdapter
 	}): Promise<{ user: Record<string, unknown> | null; valid: boolean }> {
 		// First verify current password
 		const { user, valid } = await this.authenticate({
 			email,
 			password: currentPassword,
-			userAdapter
+			passwordCredentialAdapter
 		})
 
 		if (!valid || !user) {
@@ -324,7 +329,7 @@ export class CredentialsProvider {
 		const updatedUser = await this.updatePassword({
 			userId,
 			newPassword,
-			userAdapter
+			passwordCredentialAdapter
 		})
 
 		return { user: updatedUser, valid: true }

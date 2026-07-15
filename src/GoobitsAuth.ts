@@ -128,6 +128,11 @@ export class GoobitsAuth {
 		return this.defaultHandlers
 	}
 
+	/** Named route factories for applications that mount individual auth endpoints. */
+	get routes(): CoreAuth['routes'] {
+		return this.core.routes
+	}
+
 	/**
 	 * Creates a SvelteKit handle hook that validates sessions and populates auth locals.
 	 */

@@ -1,11 +1,11 @@
 import { redirect } from '@sveltejs/kit'
 
-import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
+import type { PasswordCredentialAdapter } from '../adapters/database/PasswordCredentialAdapter.ts'
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
+import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
 import type { CredentialsProvider } from '../providers/CredentialsProvider.ts'
 import type { RequestEventLike } from '../types/auth.ts'
 import type { SessionMetadata, User } from '../types/index.ts'
-import { getLogger } from '../utils/logger.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 import { beginMfaLoginChallenge, type MfaLoginConfig } from './mfa.ts'
@@ -32,7 +32,7 @@ import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateL
  */
 export function createSigninHandler(config: {
 	credentialsProvider: Pick<CredentialsProvider, 'authenticate'>
-	userAdapter: UserAdapter
+	passwordCredentialAdapter: PasswordCredentialAdapter
 	sessionAdapter: SessionAdapter
 	onSignin?: (user: User | null) => Promise<void> | void
 	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
@@ -48,10 +48,11 @@ export function createSigninHandler(config: {
 		user: User,
 		rememberMe: boolean
 	) => SessionMetadata | Promise<SessionMetadata>
+	logger?: Logger
 }) {
 	const {
 		credentialsProvider,
-		userAdapter,
+		passwordCredentialAdapter,
 		sessionAdapter,
 		onSignin,
 		csrf,
@@ -62,10 +63,11 @@ export function createSigninHandler(config: {
 		identifierField,
 		allowBoth,
 		mfa,
-		getSessionMetadata
+		getSessionMetadata,
+		logger
 	} = config
 
-	const log = getLogger()
+	const log = resolveLogger(logger)
 
 	return async (event: RequestEventLike) => {
 		if (csrf?.validate) {
@@ -117,10 +119,10 @@ export function createSigninHandler(config: {
 				identifierField?: string
 				allowBoth?: boolean
 				password: string
-				userAdapter: UserAdapter
+				passwordCredentialAdapter: PasswordCredentialAdapter
 			} = {
 				password,
-				userAdapter
+				passwordCredentialAdapter
 			}
 			if (email) authInput.email = email
 			if (identifier) authInput.identifier = identifier
@@ -175,7 +177,7 @@ export function createSigninHandler(config: {
 				user: safeUser
 			}
 		} catch (error) {
-			log.error?.('[Signin] Error:', error instanceof Error ? error.message : String(error))
+			log.error('[Signin] Error', errorContext(error))
 
 			// Check if this is a redirect (don't treat as error)
 			if (

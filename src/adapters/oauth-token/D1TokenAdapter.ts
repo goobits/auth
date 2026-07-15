@@ -1,4 +1,5 @@
 import type { OAuthTokens } from '../../types/index.ts'
+import { resolveLogger, type Logger } from '../../_internal/logger.ts'
 import { decryptTokens, encryptTokens } from '../../utils/crypto.ts'
 import { TokenAdapter } from './TokenAdapter.ts'
 
@@ -47,6 +48,7 @@ export class D1TokenAdapter extends TokenAdapter {
 	private encrypt: boolean
 	private encryptionKey: string | null
 	private columns: { userId: string; provider: string; tokens: string }
+	private readonly logger: Logger
 
 	constructor(
 		db: D1DatabaseLike,
@@ -55,6 +57,7 @@ export class D1TokenAdapter extends TokenAdapter {
 			encrypt?: boolean
 			encryptionKey?: string | null
 			columns?: Partial<Record<string, string>>
+			logger?: Logger
 		} = {}
 	) {
 		super()
@@ -62,6 +65,7 @@ export class D1TokenAdapter extends TokenAdapter {
 		this.tokensTable = options.tokensTable || 'oauth_tokens'
 		this.encrypt = options.encrypt !== false
 		this.encryptionKey = options.encryptionKey || null
+		this.logger = resolveLogger(options.logger)
 		this.columns = {
 			userId: options.columns?.['userId'] || 'user_id',
 			provider: options.columns?.['provider'] || 'provider',
@@ -110,8 +114,7 @@ export class D1TokenAdapter extends TokenAdapter {
 	}
 
 	async refreshTokens(userId: string, provider: string) {
-		const { getLogger } = await import('../../utils/logger.ts')
-		getLogger().warn?.('refreshTokens not implemented - use provider-specific refresh logic')
+		this.logger.warn('refreshTokens not implemented - use provider-specific refresh logic')
 		return this.getTokens(userId, provider)
 	}
 

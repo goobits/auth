@@ -1,5 +1,28 @@
 # Schema
 
+## Verification tokens
+
+```sql
+CREATE TABLE verification_tokens (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  type TEXT NOT NULL,
+  token TEXT NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  metadata JSONB
+);
+
+CREATE UNIQUE INDEX verification_tokens_token_type_idx
+  ON verification_tokens (token, type);
+CREATE INDEX verification_tokens_user_type_idx
+  ON verification_tokens (user_id, type);
+CREATE INDEX verification_tokens_expires_idx
+  ON verification_tokens (expires_at);
+```
+
+The PostgreSQL bundle creates the equivalent `auth_verification_tokens` table.
+Tokens stored here are hashes; raw delivery values must never be persisted.
+
 ## Magic link tokens
 
 ```sql

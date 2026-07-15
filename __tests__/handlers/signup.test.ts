@@ -8,8 +8,14 @@ describe('createSignupHandler', () => {
 		const userAdapter = { getUserByEmail: vi.fn().mockResolvedValue({ id: 'u1' }) }
 		const credentialsProvider = { signUp: vi.fn() }
 		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
+		const passwordCredentialAdapter = {}
 
-		const handler = createSignupHandler({ credentialsProvider, userAdapter, sessionAdapter })
+		const handler = createSignupHandler({
+			credentialsProvider,
+			passwordCredentialAdapter,
+			userAdapter,
+			sessionAdapter
+		})
 		const result = await handler(
 			createRequestEvent({
 				url: 'http://localhost/signup',
@@ -26,6 +32,7 @@ describe('createSignupHandler', () => {
 		const userAdapter = {
 			getUserByEmail: vi.fn().mockResolvedValue(null)
 		}
+		const passwordCredentialAdapter = {}
 		const credentialsProvider = {
 			signUp: vi.fn().mockResolvedValue({ id: 'u1', email: 'a@b.com' })
 		}
@@ -44,6 +51,7 @@ describe('createSignupHandler', () => {
 
 		const handler = createSignupHandler({
 			credentialsProvider,
+			passwordCredentialAdapter,
 			userAdapter,
 			sessionAdapter,
 			verificationTokenAdapter,

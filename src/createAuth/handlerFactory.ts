@@ -137,6 +137,7 @@ export function createHandlers(
 			),
 			redirectAfterLogin: urlConfig.afterLogin,
 			isAuthenticated,
+			...(config.logger ? { logger: config.logger } : {}),
 			onAuthenticated: async (event, profile, tokens) => {
 				const providerName = String(event.params['provider'] ?? '')
 				let user = null
@@ -208,6 +209,7 @@ export function createHandlers(
 		sessionAdapter: adapters.session,
 		redirectAfterLogout: urlConfig.afterLogout,
 		getSession: (locals: AuthLocals) => locals.session ?? null,
+		...(config.logger ? { logger: config.logger } : {}),
 		...(hooks.onLogout
 			? {
 					onLogout: async (event: RequestEventLike) => {
@@ -268,6 +270,7 @@ export function createHandlers(
 		const requestConfig: Parameters<typeof createMagicLinkRequestHandler>[0] = {
 			...normalizedMagicLink,
 			magicLinkAdapter: adapters.magicLink!,
+			...(config.logger ? { logger: config.logger } : {}),
 			...(adapters.user ? { userAdapter: adapters.user } : {})
 		}
 		const verifyConfig: Parameters<typeof createMagicLinkVerifyHandler>[0] = {
@@ -278,6 +281,7 @@ export function createHandlers(
 			onLoginMode,
 			redirectAfterLogin: urlConfig.afterLogin,
 			isAuthenticated,
+			...(config.logger ? { logger: config.logger } : {}),
 			...(normalizedMagicLink['sanitizeUser'] === undefined ? { sanitizeUser } : {}),
 			...(adapters.user ? { userAdapter: adapters.user } : {})
 		}

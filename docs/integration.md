@@ -23,6 +23,7 @@ your own, extend the relevant base class and implement its abstract methods.
 ```
 SessionAdapter           — required (session lifecycle + cookie I/O)
 UserAdapter              — optional (needed for OAuth, magic links, passkeys)
+PasswordCredentialAdapter — optional (required for password sign-in/sign-up)
 TokenAdapter             — optional (stores OAuth access/refresh tokens)
 VerificationTokenAdapter — optional (email verification, password reset)
 MagicLinkAdapter         — optional (required if magicLink config is set)
@@ -76,25 +77,39 @@ abstract getUserByProviderId(provider: string, providerId: string): Promise<User
 abstract updateUser(id: string, data: Partial<User> & Record<string, unknown>): Promise<User>
 abstract deleteUser(id: string): Promise<void>
 abstract linkOAuthAccount(userId: string, provider: string, providerAccountId: string): Promise<void>
-abstract getUserWithPasswordHash(email: string): Promise<(User & { password?: string | null }) | null>
 
 // optional
 getUserByIdentifier?(identifier: string, field?: string): Promise<User | null>
-getUserWithPasswordHashByIdentifier?(identifier: string, field?: string): Promise<(User & { password?: string | null }) | null>
 ```
 
 Behavioral expectations:
 
 - Every `getUser*` and `create/update` method returns **sanitized** users —
-  no password hashes, no internal-only fields. The one exception is
-  `getUserWithPasswordHash` (and its identifier variant), which exists
-  precisely to bypass sanitization during credential authentication.
+  no password hashes and no internal-only fields. Password fields supplied to
+  profile creation or updates must not cross this boundary.
 - `linkOAuthAccount` must be idempotent; the OAuth callback path may retry
   it, and the package swallows duplicate-link errors silently.
 - `requireVerifiedEmailForLinking` (default `true`) is enforced inside
   `GoobitsAuth`, not in your adapter. If you want to allow OAuth-to-existing
   account linking on unverified emails, set the config flag — don't relax
   your adapter logic.
+
+### `PasswordCredentialAdapter` (required for password credentials)
+
+```ts
+findPasswordCredential(identifier: string, field?: string): Promise<{
+  user: User
+  passwordHash: string | null
+} | null>
+createUserWithPassword(profile: OAuthProfile, passwordHash: string, metadata?: Record<string, unknown>): Promise<User>
+updatePasswordHash(userId: string, passwordHash: string): Promise<User>
+```
+
+Only credential authentication and password-mutation flows should receive this
+capability. Returned `user` values remain sanitized; the hash is isolated in a
+separate field. Implement account creation with a database uniqueness constraint
+and an insert that cannot turn a concurrent signup into an update of an existing
+account.
 
 ### `TokenAdapter` (OAuth tokens)
 
@@ -126,7 +141,7 @@ find-and-delete, two concurrent verifies of the same token can both succeed,
 creating duplicate sessions.
 
 The three adapter bases — `MagicLinkAdapter`, `VerificationTokenAdapter`,
-`WebAuthnAdapter` — expose `consume*` methods that the framework calls
+`WebAuthnAdapter` — require abstract `consume*` methods that the framework calls
 during verification:
 
 ```ts
@@ -136,36 +151,30 @@ VerificationTokenAdapter.consumeByToken({ token, type })
 WebAuthnAdapter.consumeChallenge(challengeId)
 ```
 
-Each has a **default implementation** that calls `findBy*` followed by
-`deleteById` / `deleteChallenge`. The default is _not_ atomic — two
-concurrent calls on the same key can both observe the record before
-either delete completes. That matches the framework's prior behavior, so
-existing custom adapters remain correct without changes.
-
-**If your storage supports it, override these methods with a single
-atomic statement.** For example:
+There is no find-then-delete compatibility fallback. Implement each method with
+one atomic operation so concurrent verification cannot replay a token or
+challenge. For example:
 
 - **SQL backends** (Postgres, SQLite, MySQL via Drizzle, Cloudflare D1):
   use `DELETE ... RETURNING` — the in-tree Drizzle and D1 adapters do this.
 - **In-memory backends**: a synchronous `Map.get` + `Map.delete` inside
   the same microtask is effectively atomic in single-threaded JS.
-- **Key-value stores without atomic primitives** (e.g. plain KV
-  namespaces): the safest implementation is to keep the default and
-  accept the small race window, or layer an in-process lock keyed by
-  the token hash.
+- **Key-value stores**: use a compare-and-delete transaction, Durable Object,
+  or equivalent storage primitive. Do not enable the feature on a backend that
+  cannot guarantee single-use across instances.
 
 When you override, keep the same return type as the default: the consumed
 record on success, `null` if no row matched.
 
 ## Prebuilt adapters
 
-| Export                                       | Storage                   | Notes                                                                                                      |
-| -------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `drizzleAdapter(db, options)`                | Any Drizzle-supported SQL | One-stop bundle, returns all six adapters. Reads `options.schema` or `options.tables` to bind table names. |
-| `D1SessionAdapter`, `D1UserAdapter`, …       | Cloudflare D1             | Hand-rolled SQL; takes a `D1Database` instance and table names.                                            |
-| `CookieSessionAdapter`, `CookieTokenAdapter` | Signed cookie             | Stateless; good for edge runtimes without a database. Don't combine with passkey/magic-link features.      |
-| `KVSessionAdapter`, `KVTokenAdapter`         | Cloudflare KV             | For environments where D1 isn't available.                                                                 |
-| `createPgAuthAdapters(options)`              | PostgreSQL                | Node-only bundle; requires an application-owned `mfaSecretCodec`.                                          |
+| Export                                       | Storage                   | Notes                                                                                                                                           |
+| -------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `drizzleAdapter(db, options)`                | Any Drizzle-supported SQL | One-stop bundle with separate public-user and password-credential capabilities. Reads `options.schema` or `options.tables` to bind table names. |
+| `D1SessionAdapter`, `D1UserAdapter`, …       | Cloudflare D1             | Hand-rolled SQL; takes a `D1Database` instance and table names.                                                                                 |
+| `CookieSessionAdapter`, `CookieTokenAdapter` | Signed cookie             | Stateless; good for edge runtimes without a database. Don't combine with passkey/magic-link features.                                           |
+| `KVSessionAdapter`, `KVTokenAdapter`         | Cloudflare KV             | For environments where D1 isn't available.                                                                                                      |
+| `createPgAuthAdapters(options)`              | PostgreSQL                | Node-only bundle with verification-token storage; requires an application-owned `mfaSecretCodec`.                                               |
 
 If your storage doesn't fit any of these, extend the base class directly.
 

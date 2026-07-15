@@ -1,8 +1,13 @@
 import { UserAdapter } from '../adapters/database/UserAdapter.ts'
+import type {
+	PasswordCredential,
+	PasswordCredentialAdapter
+} from '../adapters/database/PasswordCredentialAdapter.ts'
 import { TokenAdapter } from '../adapters/oauth-token/TokenAdapter.ts'
 import { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import { generateSessionId } from '../adapters/session/sessionId.ts'
 import type { OAuthProfile, OAuthTokens, Session, User } from '../types/index.ts'
+import { assertPublicUserData } from '../_internal/publicUserData.ts'
 
 export class MockSessionAdapter extends SessionAdapter {
 	private sessions = new Map<string, Session>()
@@ -48,11 +53,12 @@ export class MockSessionAdapter extends SessionAdapter {
 	deleteSessionCookie(): void {}
 }
 
-export class MockUserAdapter extends UserAdapter {
+export class MockUserAdapter extends UserAdapter implements PasswordCredentialAdapter {
 	private users = new Map<string, User & { password?: string | null }>()
 	private oauthIndex = new Map<string, string>()
 
 	async createUser(profile: OAuthProfile, metadata: Record<string, unknown> = {}): Promise<User> {
+		assertPublicUserData(metadata)
 		const id = String((metadata['id'] as string | undefined) ?? profile.id ?? profile.email)
 		const user: User & { password?: string | null } = {
 			id,
@@ -60,10 +66,26 @@ export class MockUserAdapter extends UserAdapter {
 			name: profile.name ?? profile.email,
 			avatar: profile.picture ?? null,
 			emailVerified: Boolean(profile.verified_email),
-			...(typeof metadata['password'] === 'string' ? { password: metadata['password'] } : {})
+			password: null
 		}
 		this.users.set(id, user)
 		return this.sanitize(user) ?? user
+	}
+
+	async createUserWithPassword(
+		profile: OAuthProfile,
+		passwordHash: string,
+		metadata: Record<string, unknown> = {}
+	): Promise<User> {
+		if (!passwordHash) throw new Error('Password hash is required')
+		if (await this.getUserByEmail(profile.email)) {
+			throw new Error('Unable to create user with those details')
+		}
+		const user = await this.createUser(profile, metadata)
+		const stored = this.users.get(user.id)
+		if (!stored) throw new Error('Created user not found')
+		stored.password = passwordHash
+		return this.sanitize(stored) ?? stored
 	}
 
 	async getUserById(id: string): Promise<User | null> {
@@ -85,6 +107,7 @@ export class MockUserAdapter extends UserAdapter {
 	}
 
 	async updateUser(id: string, data: Partial<User> & Record<string, unknown>): Promise<User> {
+		assertPublicUserData(data)
 		const user = this.users.get(String(id))
 		if (!user) throw new Error('User not found')
 		const next = { ...user, ...data }
@@ -104,13 +127,22 @@ export class MockUserAdapter extends UserAdapter {
 		this.oauthIndex.set(`${provider}:${providerAccountId}`, String(userId))
 	}
 
-	async getUserWithPasswordHash(
-		email: string
-	): Promise<(User & { password?: string | null }) | null> {
+	async findPasswordCredential(email: string, field = 'email'): Promise<PasswordCredential | null> {
+		if (field !== 'email') return null
 		for (const user of this.users.values()) {
-			if (user.email === email) return user
+			if (user.email === email) {
+				return { user: this.sanitize(user) ?? user, passwordHash: user.password ?? null }
+			}
 		}
 		return null
+	}
+
+	async updatePasswordHash(userId: string, passwordHash: string): Promise<User> {
+		if (!passwordHash) throw new Error('Password hash is required')
+		const user = this.users.get(userId)
+		if (!user) throw new Error('User not found')
+		user.password = passwordHash
+		return this.sanitize(user) ?? user
 	}
 
 	private sanitize(user: (User & { password?: string | null }) | null): User | null {

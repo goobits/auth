@@ -1,6 +1,7 @@
 import type { RequestEvent, RequestHandler } from '@sveltejs/kit'
 
 import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
+import type { PasswordCredentialAdapter } from '../adapters/database/PasswordCredentialAdapter.ts'
 import type { MagicLinkAdapter } from '../adapters/magic-link/MagicLinkAdapter.ts'
 import type { MfaAdapter } from '../adapters/mfa/MfaAdapter.ts'
 import type { TokenAdapter } from '../adapters/oauth-token/TokenAdapter.ts'
@@ -13,7 +14,7 @@ import type { CsrfTokenStore } from '@goobits/security/csrf'
 import type { SecurityAlertHandler, ThresholdRule } from '../security/alerts.ts'
 import type { AuthEventEmitter } from '../security/events.ts'
 import type { RateLimitStore } from '@goobits/security/rate-limit'
-import type { Logger } from '../utils/logger.ts'
+import type { Logger } from '@goobits/security/logger'
 import type { OAuthProfile, OAuthTokens, Session, SessionSummary, User } from './core.ts'
 
 /** Defines auth locals options for wiring providers, adapters, cookies, hooks, and route handlers. */
@@ -202,6 +203,7 @@ export type AuthSecurityConfig = {
 type BaseAuthAdapters = {
 	session: SessionAdapter
 	user?: UserAdapter
+	passwordCredential?: PasswordCredentialAdapter
 	oauthToken?: TokenAdapter
 	verificationToken?: VerificationTokenAdapter
 	magicLink?: MagicLinkAdapter

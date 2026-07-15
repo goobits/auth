@@ -10,6 +10,12 @@
 - Logout handlers are `RequestHandler`-first.
 - MFA factor mutations require application-owned step-up authorization and
   atomic adapter methods.
+- Password hashes moved from `UserAdapter` to the dedicated
+  `PasswordCredentialAdapter` capability.
+- Verification helpers moved from `@goobits/auth/utils` to
+  `@goobits/auth/verification`.
+- Generic HTTP credentials, cryptography, logging, and redaction are imported
+  directly from `@goobits/security`; Auth no longer re-exports them.
 
 ## Before/After
 
@@ -77,19 +83,45 @@ adapter: {
 }
 ```
 
-### Credentials method
+### Password credential boundary
 
 Before:
 
 ```ts
-userAdapter._getUserWithPassword(email)
+userAdapter.getUserWithPasswordHash(email)
 ```
 
 After:
 
 ```ts
-userAdapter.getUserWithPasswordHash(email)
+passwordCredentialAdapter.findPasswordCredential(email)
+passwordCredentialAdapter.updatePasswordHash(userId, passwordHash)
 ```
+
+Remove password fields from general `createUser` and `updateUser` calls. Pass a
+`PasswordCredentialAdapter` explicitly to credential handlers, or use the
+`passwordCredential` capability returned by a prebuilt adapter bundle.
+
+### Verification utilities
+
+Before:
+
+```ts
+import { hashVerificationToken } from '@goobits/auth/utils'
+```
+
+After:
+
+```ts
+import { hashVerificationToken } from '@goobits/auth/verification'
+```
+
+### Generic security primitives
+
+Import Basic-auth and API-key helpers from
+`@goobits/security/http-credentials`, constant-time and encryption helpers from
+`@goobits/security/crypto`, loggers from `@goobits/security/logger`, and
+redaction from `@goobits/security/redaction`.
 
 ## Testing utilities
 
@@ -151,6 +183,24 @@ database lookup, custom validator, hash, or verification work. Signup metadata
 can no longer override the computed password hash, email provider, or initial
 verification state. Session metadata extensions cannot set MFA assurance or
 replace request-derived remember-me, IP, and user-agent values.
+
+## Atomic password reset completion
+
+`createPasswordResetConfirmHandler` now requires
+`completePasswordReset({ tokenHash, passwordHash })`. Implement it as one
+application-owned transaction that consumes the hashed reset token, updates the
+password hash, and invalidates every existing session. The old adapter sequence
+is intentionally unsupported because token consumption and password mutation
+could partially succeed or race.
+
+## Required atomic token consumption
+
+`MagicLinkAdapter.consumeByTokenHash`,
+`MagicLinkAdapter.consumeByEmailAndOtpHash`,
+`VerificationTokenAdapter.consumeByToken`, and
+`WebAuthnAdapter.consumeChallenge` are abstract and must be backed by an atomic
+consume operation. Remove custom adapters that inherit a find-then-delete
+fallback; no such fallback remains.
 
 ## Proxy rate-limit keys
 

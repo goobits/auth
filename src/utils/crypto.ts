@@ -1,25 +1,11 @@
 import {
 	bytesToHex,
-	constantTimeEqual,
 	hexToBytes,
 	openJson,
 	randomBytes,
 	sealJson,
 	sha256Hex as securitySha256Hex
 } from '@goobits/security/crypto'
-
-/**
- * Constant-time string equality. Returns false immediately for length
- * mismatches (length itself is not secret); for equal-length inputs the
- * comparison is a fixed-iteration XOR fold with no branches.
- *
- * @param a - Point to use.
- * @param b - Point to use.
- */
-export function timingSafeEqual(a: string, b: string): boolean {
-	if (!a || !b) return false
-	return constantTimeEqual(a, b)
-}
 
 function validateEncryptionKey(encryptionKey: string): Uint8Array {
 	const keyBytes = hexToBytes(encryptionKey)
@@ -38,17 +24,8 @@ export async function encryptTokens<T extends Record<string, unknown>>(
 		throw new Error('Encryption key is required')
 	}
 
-	try {
-		validateEncryptionKey(encryptionKey)
-		return JSON.stringify(await sealJson(tokens, { key: encryptionKey }))
-	} catch (error) {
-		const { getLogger } = await import('./logger.ts')
-		getLogger().error?.(
-			'Token encryption error:',
-			error instanceof Error ? error.message : String(error)
-		)
-		throw error
-	}
+	validateEncryptionKey(encryptionKey)
+	return JSON.stringify(await sealJson(tokens, { key: encryptionKey }))
 }
 
 /** Decrypts OAuth token payloads using an application encryption key. */
@@ -64,12 +41,7 @@ export async function decryptTokens<T = Record<string, unknown>>(
 	try {
 		validateEncryptionKey(encryptionKey)
 		return openJson<T>({ key: encryptionKey, seal: JSON.parse(encryptedData) })
-	} catch (error) {
-		const { getLogger } = await import('./logger.ts')
-		getLogger().error?.(
-			'Token decryption error:',
-			error instanceof Error ? error.message : String(error)
-		)
+	} catch {
 		return null
 	}
 }

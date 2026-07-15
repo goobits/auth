@@ -1,12 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { decryptTokens, encryptTokens } from '../../src/utils/crypto.ts'
-import { setLogger } from '../../src/utils/logger.ts'
 
 describe('crypto utils', () => {
-	afterEach(() => {
-		setLogger(null)
-	})
 	it('round-trips token encryption/decryption', async () => {
 		const key = 'a'.repeat(64)
 		const payload = { accessToken: 'abc', refreshToken: 'def' }
@@ -15,18 +11,12 @@ describe('crypto utils', () => {
 		expect(decrypted).toEqual(payload)
 	})
 
-	it('logs encryption errors via the logger', async () => {
-		const error = vi.fn()
-		setLogger({ error })
+	it('propagates encryption errors to the caller', async () => {
 		await expect(encryptTokens({ a: 1 }, 'bad')).rejects.toThrow()
-		expect(error).toHaveBeenCalled()
 	})
 
-	it('logs decryption errors via the logger', async () => {
-		const error = vi.fn()
-		setLogger({ error })
+	it('returns null for invalid encrypted input', async () => {
 		const result = await decryptTokens('not-json', 'bad')
 		expect(result).toBeNull()
-		expect(error).toHaveBeenCalled()
 	})
 })

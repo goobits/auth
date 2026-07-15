@@ -6,6 +6,14 @@
 
 ### 🔒 Security
 
+- 🔐 Password hashes now cross only the dedicated `PasswordCredentialAdapter`
+  capability; general user/profile adapters remain sanitized and password-blind.
+- 🔁 Password-reset completion is application-owned and atomic: consume the
+  hashed token, update the hash, and invalidate existing sessions as one unit.
+- 🎟️ Verification tokens, magic-link tokens, and WebAuthn challenges now require
+  atomic single-use adapter operations with no replay-prone compatibility fallback.
+- 🧵 Logger configuration is instance-scoped; constructing one auth instance no
+  longer changes another instance's logging behavior.
 - 👤 MFA enrollment and removal now require application-owned fresh
   reauthentication; factor setup is atomic, enabled factors cannot be replaced,
   and backup-code use fails closed on concurrent consumption.
@@ -32,13 +40,16 @@
 
 ### 🏠 Internal
 
+- 📦 Added `@goobits/auth/verification`, PostgreSQL verification-token storage,
+  and a named `auth.routes` facade for clean application composition.
 - 🔑 Verification-token hashing, record inspection, atomic consumption, and canonical token types now share one public utility boundary for application adapters and transactional account flows.
 - 📦 Published entrypoints now resolve compiled Node/Worker JavaScript and declarations; the source-only security runtime is bundled at this distribution boundary, and smoke checks cover every export and the packed file list.
 - 🧭 Removed the auth type cycle, stale source-entrypoint map, undeclared TypeScript script runner, unpinned API-map commands, unused `pg-server` fixture dependency, and accidental exports from private helpers.
 - 📚 Public API docs now describe the curated package entrypoints and low-level subpaths.
 - 📦 Development dependencies refreshed for the current package toolchain.
 - Removed generic `auditLog` and `withAuditLogging` exports from `@goobits/auth/security`; generic audit logging now belongs to `@goobits/security/audit`, while auth keeps `auditAuthEvent` for auth-specific event names.
-- Renamed auth-side API-key helpers from admin wording to `createAuthApiKey`, `hashAuthApiKey`, and `verifyAuthApiKey`; admin route authentication belongs to `@goobits/security/admin-auth`.
+- Removed Auth-owned Basic-auth and API-key helpers; generic HTTP credentials now
+  live exclusively in `@goobits/security/http-credentials`.
 - Removed auth-side reCAPTCHA verification. Use `@goobits/security/recaptcha` directly for structured CAPTCHA verification.
 - Removed auth-side rate-limit primitives. Auth route policy now uses `@goobits/security/rate-limit` directly.
 - Routed auth-side CSRF issuance and validation through `@goobits/security/csrf`; auth keeps only SvelteKit cookie ergonomics.

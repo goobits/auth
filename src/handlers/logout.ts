@@ -1,8 +1,8 @@
 import { redirect, type Actions, type RequestHandler } from '@sveltejs/kit'
 
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
+import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
 import type { AuthLocals, RequestEventLike } from '../types/auth.ts'
-import { getLogger } from '../utils/logger.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 
 /**
@@ -34,14 +34,16 @@ export function createLogoutHandler(config: {
 	redirectAfterLogout?: string
 	getSession?: (locals: AuthLocals) => { id: string } | null
 	onLogout?: (event: RequestEventLike) => Promise<void> | void
+	logger?: Logger
 }): RequestHandler {
 	const {
 		sessionAdapter,
 		redirectAfterLogout = '/',
 		getSession = (locals: AuthLocals) => locals.session ?? null,
-		onLogout
+		onLogout,
+		logger
 	} = config
-	const log = getLogger()
+	const log = resolveLogger(logger)
 
 	return async (event) => {
 		try {
@@ -69,7 +71,7 @@ export function createLogoutHandler(config: {
 				throw error
 			}
 
-			log.error?.('Error during logout:', error instanceof Error ? error.message : String(error))
+			log.error('Error during logout', errorContext(error))
 			throw redirect(302, isSafeRedirectPath(redirectAfterLogout) ? redirectAfterLogout : '/')
 		}
 	}
@@ -81,6 +83,7 @@ export function createLogoutAction(config: {
 	redirectAfterLogout?: string
 	getSession?: (locals: AuthLocals) => { id: string } | null
 	onLogout?: (event: RequestEventLike) => Promise<void> | void
+	logger?: Logger
 }): Actions {
 	const handler = createLogoutHandler(config)
 	return {

@@ -8,7 +8,12 @@ import type {
 	User,
 	WebAuthnCredential
 } from '../../types/index.ts'
+import { assertPublicUserData } from '../../_internal/publicUserData.ts'
 import { generateRandomUUID } from '../../utils/crypto.ts'
+import type {
+	PasswordCredential,
+	PasswordCredentialAdapter
+} from '../database/PasswordCredentialAdapter.ts'
 import { UserAdapter } from '../database/UserAdapter.ts'
 import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
 import { MfaAdapter } from '../mfa/MfaAdapter.ts'
@@ -29,11 +34,16 @@ type StoredMagicLinkToken = {
 }
 
 /** In-memory user adapter for local development and tests. */
-export class MemoryUserAdapter extends UserAdapter {
+export class MemoryUserAdapter extends UserAdapter implements PasswordCredentialAdapter {
 	#oauthIndex = new Map<string, string>()
 	#users = new Map<string, StoredUser>()
 
-	async createUser(profile: OAuthProfile, metadata: Record<string, unknown> = {}): Promise<User> {
+	private async insertUser(
+		profile: OAuthProfile,
+		metadata: Record<string, unknown>,
+		passwordHash: string | null
+	): Promise<User> {
+		assertPublicUserData(metadata)
 		const email = profile.email.trim().toLowerCase()
 		const id =
 			stringValue(metadata['id']) || stringValue(profile.id) || (await generateRandomUUID())
@@ -45,7 +55,7 @@ export class MemoryUserAdapter extends UserAdapter {
 			emailVerified: Boolean(profile.verified_email),
 			id,
 			name: stringValue(metadata['name']) || profile.name || email,
-			password: stringValue(metadata['password']) ?? null,
+			password: passwordHash,
 			settings: recordValue(metadata['settings']) ?? {},
 			updatedAt: new Date()
 		}
@@ -54,6 +64,22 @@ export class MemoryUserAdapter extends UserAdapter {
 		}
 		this.#users.set(id, user)
 		return sanitizeUser(user) ?? user
+	}
+
+	async createUser(profile: OAuthProfile, metadata: Record<string, unknown> = {}): Promise<User> {
+		return this.insertUser(profile, metadata, null)
+	}
+
+	async createUserWithPassword(
+		profile: OAuthProfile,
+		passwordHash: string,
+		metadata: Record<string, unknown> = {}
+	): Promise<User> {
+		if (!passwordHash) throw new Error('Password hash is required')
+		if (await this.getUserByEmail(profile.email)) {
+			throw new Error('Unable to create user with those details')
+		}
+		return this.insertUser(profile, metadata, passwordHash)
 	}
 
 	async getUserById(id: string): Promise<User | null> {
@@ -80,6 +106,7 @@ export class MemoryUserAdapter extends UserAdapter {
 	}
 
 	async updateUser(id: string, data: Partial<User> & Record<string, unknown>): Promise<User> {
+		assertPublicUserData(data)
 		const existing = this.#users.get(id)
 		if (!existing) {
 			throw new Error('User not found')
@@ -105,16 +132,30 @@ export class MemoryUserAdapter extends UserAdapter {
 		this.#oauthIndex.set(`${provider}:${providerAccountId}`, userId)
 	}
 
-	async getUserWithPasswordHash(
-		email: string
-	): Promise<(User & { password?: string | null }) | null> {
-		const normalized = email.trim().toLowerCase()
+	async findPasswordCredential(
+		identifier: string,
+		field = 'email'
+	): Promise<PasswordCredential | null> {
+		if (field !== 'email') return null
+		const normalized = identifier.trim().toLowerCase()
 		for (const user of this.#users.values()) {
 			if (user.email === normalized) {
-				return user
+				return {
+					user: sanitizeUser(user) ?? user,
+					passwordHash: user.password ?? null
+				}
 			}
 		}
 		return null
+	}
+
+	async updatePasswordHash(userId: string, passwordHash: string): Promise<User> {
+		if (!passwordHash) throw new Error('Password hash is required')
+		const existing = this.#users.get(userId)
+		if (!existing) throw new Error('User not found')
+		const next = { ...existing, password: passwordHash, updatedAt: new Date() }
+		this.#users.set(userId, next)
+		return sanitizeUser(next) ?? next
 	}
 }
 
@@ -340,6 +381,12 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 		this.#challenges.delete(challengeId)
 	}
 
+	async consumeChallenge(challengeId: string): Promise<Record<string, unknown> | null> {
+		const challenge = this.#challenges.get(challengeId) ?? null
+		if (challenge) this.#challenges.delete(challengeId)
+		return challenge
+	}
+
 	async createCredential({
 		userId,
 		credentialId,
@@ -479,6 +526,7 @@ export function createMemoryAuthAdapters(input: {
 	const user = new MemoryUserAdapter()
 	return {
 		magicLink: new MemoryMagicLinkAdapter(),
+		passwordCredential: user,
 		session: new MemorySessionAdapter({
 			...(input.cookieDomain ? { cookieDomain: input.cookieDomain } : {}),
 			cookieName: input.cookieName,

@@ -6,8 +6,6 @@
 export function sanitizeUser(user: Record<string, unknown> | null): Record<string, unknown> | null {
 	if (!user) return null
 
-	// Remove sensitive fields that should never reach the client
-	const { password: _password, token: _token, ...safeUser } = user
-
-	return safeUser
+	return omitSensitiveUserData(user)
 }
+import { omitSensitiveUserData } from '../_internal/publicUserData.ts'

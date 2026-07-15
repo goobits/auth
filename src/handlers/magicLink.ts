@@ -5,11 +5,11 @@ import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
 import type { MagicLinkAdapter } from '../adapters/magic-link/MagicLinkAdapter.ts'
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
+import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
 import { auditAuthEvent } from '../security/audit.ts'
 import type { AuthHooks, AuthLocals, OnLoginMode, RequestEventLike } from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { jsonResponse, parseRequestData } from '../utils/http.ts'
-import { getLogger } from '../utils/logger.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 import { generateMagicLinkToken, generateOtp, hashToken } from './magicLinkUtils.ts'
@@ -61,6 +61,7 @@ type MagicLinkRequestConfig = {
 	rateLimit?: (event: RequestEventLike) => Promise<void> | void
 	getMetadata?: (event: RequestEventLike) => Promise<Record<string, unknown>>
 	key?: (event: RequestEventLike) => string
+	logger?: Logger
 }
 
 type MagicLinkVerifyConfig = {
@@ -81,6 +82,7 @@ type MagicLinkVerifyConfig = {
 	autoCreateSession?: boolean
 	onLoginMode?: OnLoginMode
 	key?: (event: RequestEventLike) => string
+	logger?: Logger
 }
 
 type MagicLinkTokenRecord = {
@@ -205,8 +207,10 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 		verifyRateLimitWindowMs = 10 * 60 * 1000,
 		sanitizeUser = defaultSanitizeUser,
 		autoCreateSession = true,
-		onLoginMode = 'augment'
+		onLoginMode = 'augment',
+		logger
 	} = config
+	const log = resolveLogger(logger)
 
 	if (!magicLinkAdapter) {
 		throw new Error('createMagicLinkVerifyHandler requires magicLinkAdapter')
@@ -328,9 +332,9 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 			try {
 				await userAdapter.updateUser(user.id, { emailVerified: true })
 			} catch (error) {
-				getLogger().warn?.(
-					'[MagicLink] Failed to mark email as verified after successful login:',
-					error
+				log.warn(
+					'[MagicLink] Failed to mark email as verified after successful login',
+					errorContext(error)
 				)
 			}
 		}

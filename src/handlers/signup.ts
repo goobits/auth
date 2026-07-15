@@ -1,11 +1,13 @@
 import { redirect } from '@sveltejs/kit'
 
 import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.ts'
+import type { PasswordCredentialAdapter } from '../adapters/database/PasswordCredentialAdapter.ts'
+import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
 import type { RequestEventLike } from '../types/auth.ts'
 import type { User } from '../types/index.ts'
-import { getLogger } from '../utils/logger.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
+import { createVerificationToken, VERIFICATION_TOKEN_TYPES } from '../verification/index.ts'
 import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
 
 /**
@@ -37,10 +39,11 @@ export function createSignupHandler(config: {
 			password: string
 			name?: string
 			metadata?: Record<string, unknown>
-			userAdapter: unknown
+			passwordCredentialAdapter: PasswordCredentialAdapter
 		}) => Promise<User>
 	}
 	userAdapter: { getUserByEmail: (email: string) => Promise<User | null> }
+	passwordCredentialAdapter: PasswordCredentialAdapter
 	sessionAdapter?: {
 		createSession: (userId: string) => Promise<{ id: string; expiresAt: Date }>
 		setSessionCookie: (
@@ -61,10 +64,12 @@ export function createSignupHandler(config: {
 	getSignupMetadata?: (
 		formData: FormData
 	) => Record<string, unknown> | Promise<Record<string, unknown>>
+	logger?: Logger
 }) {
 	const {
 		credentialsProvider,
 		userAdapter,
+		passwordCredentialAdapter,
 		sessionAdapter,
 		verificationTokenAdapter,
 		onSignup,
@@ -76,10 +81,11 @@ export function createSignupHandler(config: {
 		sanitizeUser = defaultSanitizeUser,
 		fields,
 		metadataFields,
-		getSignupMetadata
+		getSignupMetadata,
+		logger
 	} = config
 
-	const log = getLogger()
+	const log = resolveLogger(logger)
 
 	return async (event: RequestEventLike) => {
 		if (csrf?.validate) {
@@ -135,11 +141,11 @@ export function createSignupHandler(config: {
 				password: string
 				name?: string
 				metadata?: Record<string, unknown>
-				userAdapter: typeof userAdapter
+				passwordCredentialAdapter: PasswordCredentialAdapter
 			} = {
 				email,
 				password,
-				userAdapter
+				passwordCredentialAdapter
 			}
 			if (name) signUpInput.name = name
 			if (metadataFields?.length) {
@@ -170,9 +176,6 @@ export function createSignupHandler(config: {
 			// Send verification email if adapter and sender provided
 			if (verificationTokenAdapter && sendVerificationEmail) {
 				try {
-					const { createVerificationToken, VERIFICATION_TOKEN_TYPES } =
-						await import('../utils/tokens.ts')
-
 					const token = await createVerificationToken({
 						adapter: verificationTokenAdapter,
 						userId: user.id,
@@ -181,10 +184,7 @@ export function createSignupHandler(config: {
 
 					await sendVerificationEmail(user.email, token)
 				} catch (emailError) {
-					log.error?.(
-						'[Signup] Failed to send verification email:',
-						emailError instanceof Error ? emailError.message : String(emailError)
-					)
+					log.error('[Signup] Failed to send verification email', errorContext(emailError))
 
 					// Don't fail signup if email fails
 				}
@@ -206,7 +206,7 @@ export function createSignupHandler(config: {
 				user: safeUser
 			}
 		} catch (error) {
-			log.error?.('[Signup] Error:', error instanceof Error ? error.message : String(error))
+			log.error('[Signup] Error', errorContext(error))
 
 			// Check if this is a redirect (don't treat as error)
 			if (

@@ -92,6 +92,19 @@ describe('Drizzle Adapters Integration', () => {
 		expect(byEmail?.id).toBe(testUserId)
 	})
 
+	it('keeps password hashes behind the credential capability', async () => {
+		await userAdapter.updatePasswordHash(testUserId, 'encoded-hash')
+		const profile = await userAdapter.getUserById(testUserId)
+		const credential = await userAdapter.findPasswordCredential(profile?.email ?? '')
+
+		expect(profile).not.toHaveProperty('password')
+		expect(profile).not.toHaveProperty('passwordHash')
+		expect(credential).toEqual({ user: profile, passwordHash: 'encoded-hash' })
+		await expect(
+			userAdapter.updateUser(testUserId, { password: 'bypass-attempt' })
+		).rejects.toThrow(/updatePasswordHash/)
+	})
+
 	it('stores encrypted OAuth tokens and deletes them', async () => {
 		const tokens = {
 			accessToken: 'secret-access-token',

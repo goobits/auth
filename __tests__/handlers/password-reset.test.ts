@@ -4,6 +4,7 @@ import {
 	createPasswordResetConfirmHandler,
 	createPasswordResetRequestHandler
 } from '../../src/handlers/passwordReset.ts'
+import { hashVerificationToken } from '../../src/verification/index.ts'
 
 function createEventWithForm(data: Record<string, string>) {
 	return {
@@ -71,14 +72,8 @@ describe('password reset handlers', () => {
 
 	it('rejects invalid or expired reset token', async () => {
 		const handler = createPasswordResetConfirmHandler({
-			credentialsProvider: { updatePassword: vi.fn() },
-			userAdapter: {},
-			verificationTokenAdapter: {
-				findByToken: vi.fn().mockResolvedValue(null),
-				consumeByToken: vi.fn().mockResolvedValue(null),
-				deleteById: vi.fn(),
-				deleteByUserAndType: vi.fn()
-			}
+			credentialsProvider: { createPasswordHash: vi.fn(async () => 'encoded-hash') },
+			completePasswordReset: vi.fn().mockResolvedValue(null)
 		})
 
 		const result = await handler(createEventWithForm({ token: 'bad', password: 'newpass' }))
@@ -86,55 +81,42 @@ describe('password reset handlers', () => {
 		expect(result.error).toMatch(/Invalid or expired/)
 	})
 
-	it('resets password on valid token', async () => {
-		const credentialsProvider = { updatePassword: vi.fn() }
-		const tokenRecord = {
-			token: { id: 't1', expiresAt: new Date(Date.now() + 10000) },
-			user: { id: 'u1' }
-		}
-		const verificationTokenAdapter = {
-			findByToken: vi.fn().mockResolvedValue(tokenRecord),
-			consumeByToken: vi.fn().mockResolvedValue(tokenRecord),
-			deleteById: vi.fn(),
-			deleteByUserAndType: vi.fn()
-		}
-
-		const handler = createPasswordResetConfirmHandler({
-			credentialsProvider,
-			userAdapter: {},
-			verificationTokenAdapter,
-			redirectTo: '/sign-in'
-		})
-
-		const result = await handler(createEventWithForm({ token: 'good', password: 'newpass' }))
-		expect(result.success).toBe(true)
-		expect(credentialsProvider.updatePassword).toHaveBeenCalledWith({
-			userId: 'u1',
-			newPassword: 'newpass',
-			userAdapter: {}
-		})
-	})
-
 	it('delegates atomic completion with a validated password hash', async () => {
 		const completePasswordReset = vi.fn().mockResolvedValue({ userId: 'u1' })
 		const credentialsProvider = {
-			createPasswordHash: vi.fn(async () => 'encoded-hash'),
-			updatePassword: vi.fn()
+			createPasswordHash: vi.fn(async () => 'encoded-hash')
 		}
 		const handler = createPasswordResetConfirmHandler({
 			credentialsProvider,
-			userAdapter: {},
-			verificationTokenAdapter: {},
-			completePasswordReset
+			completePasswordReset,
+			redirectTo: '/sign-in'
 		})
 
 		const result = await handler(createEventWithForm({ token: 'good', password: 'newpass' }))
 
 		expect(result.success).toBe(true)
 		expect(completePasswordReset).toHaveBeenCalledWith({
-			token: 'good',
+			tokenHash: await hashVerificationToken('good'),
 			passwordHash: 'encoded-hash'
 		})
-		expect(credentialsProvider.updatePassword).not.toHaveBeenCalled()
+		expect(result).toMatchObject({ sessionsInvalidated: true, redirectTo: '/sign-in' })
+	})
+
+	it('never exposes storage errors in the public response', async () => {
+		const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+		const handler = createPasswordResetConfirmHandler({
+			credentialsProvider: { createPasswordHash: vi.fn(async () => 'encoded-hash') },
+			completePasswordReset: vi.fn().mockRejectedValue(new Error('database secret detail')),
+			logger
+		})
+
+		const result = await handler(createEventWithForm({ token: 'good', password: 'newpass' }))
+		expect(result).toEqual({
+			error: 'An error occurred while resetting password',
+			success: false
+		})
+		expect(JSON.stringify(result)).not.toContain('database secret detail')
+		expect(logger.error).toHaveBeenCalled()
+		expect(JSON.stringify(logger.error.mock.calls)).not.toContain('database secret detail')
 	})
 })

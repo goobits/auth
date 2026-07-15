@@ -41,6 +41,15 @@ function createSessionAdapter(validateResult: {
 }
 
 describe('GoobitsAuth', () => {
+	it('exposes named route factories from the core auth instance', () => {
+		const auth = new GoobitsAuth({
+			adapter: { session: createSessionAdapter({ session: null, user: null }) }
+		})
+
+		expect(auth.routes.logout().POST).toBeTypeOf('function')
+		expect(() => auth.routes.login()).toThrow(/not configured/)
+	})
+
 	it('populates event.locals.auth via handle()', async () => {
 		const user: User = {
 			id: 'u1',

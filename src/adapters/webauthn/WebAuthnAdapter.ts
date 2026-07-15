@@ -112,18 +112,10 @@ export abstract class WebAuthnAdapter {
 
 	/**
 	 * Atomically find-and-consume a challenge. Should be the only call
-	 * site used during verification. The default below is a non-atomic
-	 * get+delete pair; adapters whose storage supports it should override
-	 * with a single `DELETE ... RETURNING` so two concurrent verifies of
-	 * the same challenge cannot both succeed.
+	 * site used during verification. Implementations must perform one atomic
+	 * consume operation so concurrent verification cannot replay a challenge.
 	 *
 	 * @param challengeId - Identifier to use.
 	 */
-	async consumeChallenge(challengeId: string): Promise<Record<string, unknown> | null> {
-		const record = await this.getChallenge(challengeId)
-		if (record) {
-			await this.deleteChallenge(challengeId)
-		}
-		return record
-	}
+	abstract consumeChallenge(challengeId: string): Promise<Record<string, unknown> | null>
 }

@@ -1,9 +1,9 @@
 import type { Cookies } from '@sveltejs/kit'
 
+import { errorContext, resolveLogger, type Logger } from '../../_internal/logger.ts'
 import { AuthAdapterCapabilityError } from '../../errors/AuthPrincipalResolutionError.ts'
 import type { Session, User } from '../../types/index.ts'
 import { generateRandomUUID } from '../../utils/crypto.ts'
-import { getLogger } from '../../utils/logger.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
 import { parseMfaVerifiedAt } from './sessionAssurance.ts'
 
@@ -48,6 +48,7 @@ export class KVSessionAdapter extends SessionAdapter {
 	private getUserById: ((id: string) => Promise<User | null>) | null
 	private sanitizeUser: (user: User | null) => User | null
 	private keyPrefix: string
+	private readonly logger: Logger
 
 	constructor(
 		namespace: KVNamespaceLike,
@@ -59,6 +60,7 @@ export class KVSessionAdapter extends SessionAdapter {
 			getUserById?: (id: string) => Promise<User | null>
 			sanitizeUser?: (user: User | null) => User | null
 			keyPrefix?: string
+			logger?: Logger
 		} = {}
 	) {
 		super()
@@ -70,6 +72,7 @@ export class KVSessionAdapter extends SessionAdapter {
 		this.getUserById = options.getUserById || null
 		this.sanitizeUser = options.sanitizeUser || this._defaultSanitizeUser
 		this.keyPrefix = options.keyPrefix || 'session'
+		this.logger = resolveLogger(options.logger)
 	}
 
 	_defaultSanitizeUser(user: User | null): User | null {
@@ -106,7 +109,7 @@ export class KVSessionAdapter extends SessionAdapter {
 		try {
 			rawValue = await this.namespace.get(this._key(sessionId), { type: 'json' })
 		} catch (error) {
-			getLogger().warn?.('[KVSessionAdapter] validateSession KV.get failed:', error)
+			this.logger.warn('[KVSessionAdapter] validateSession KV.get failed', errorContext(error))
 			return { session: null, user: null }
 		}
 		const raw = isKVSessionRecord(rawValue) ? rawValue : null
@@ -117,7 +120,7 @@ export class KVSessionAdapter extends SessionAdapter {
 			try {
 				await this.namespace.delete(this._key(sessionId))
 			} catch (error) {
-				getLogger().warn?.('[KVSessionAdapter] failed to delete expired session:', error)
+				this.logger.warn('[KVSessionAdapter] failed to delete expired session', errorContext(error))
 			}
 			return { session: null, user: null }
 		}
@@ -141,7 +144,7 @@ export class KVSessionAdapter extends SessionAdapter {
 				fresh = true
 			} catch (error) {
 				// Refresh is best-effort; the session is still valid until it expires.
-				getLogger().warn?.('[KVSessionAdapter] session refresh failed:', error)
+				this.logger.warn('[KVSessionAdapter] session refresh failed', errorContext(error))
 				newExpiresAt = expiresAt
 			}
 		}
@@ -151,9 +154,9 @@ export class KVSessionAdapter extends SessionAdapter {
 			try {
 				user = this.sanitizeUser(await this.getUserById(String(raw.userId ?? '')))
 			} catch (error) {
-				getLogger().warn?.(
-					'[KVSessionAdapter] getUserById hook threw during validateSession:',
-					error
+				this.logger.warn(
+					'[KVSessionAdapter] getUserById hook threw during validateSession',
+					errorContext(error)
 				)
 			}
 		}
@@ -184,9 +187,9 @@ export class KVSessionAdapter extends SessionAdapter {
 		await Promise.all(
 			matching.map((session) =>
 				this.namespace.delete(this._key(session.id)).catch((error) => {
-					getLogger().warn?.(
-						'[KVSessionAdapter] failed to delete session during bulk invalidate:',
-						error
+					this.logger.warn(
+						'[KVSessionAdapter] failed to delete session during bulk invalidate',
+						errorContext(error)
 					)
 				})
 			)

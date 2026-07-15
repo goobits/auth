@@ -40,10 +40,16 @@ describe('memory auth adapters', () => {
 			password: 'secret'
 		})
 
-		expect(await adapter.getUserWithPasswordHash('test@example.com')).toMatchObject({
-			password: 'secret'
+		expect(await adapter.findPasswordCredential('test@example.com')).toMatchObject({
+			passwordHash: 'secret'
 		})
 		expect(await adapter.getUserByEmail('test@example.com')).not.toHaveProperty('password')
+		await expect(adapter.updateUser('test-user', { password: 'replacement' })).rejects.toThrow(
+			/updatePasswordHash/
+		)
+		await expect(
+			adapter.updateUser('test-user', { settings: { refreshToken: 'private' } })
+		).rejects.toThrow(/dedicated auth capability/)
 	})
 
 	it('stores and consumes magic link tokens atomically', async () => {

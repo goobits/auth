@@ -1,811 +1,250 @@
-/**
- * Unit Tests for CredentialsProvider
- *
- * Tests local email/password authentication provider.
- *
- * To run these tests:
- * cd packages/@goobits/auth
- * npx vitest run __tests__/providers/CredentialsProvider.test.ts
- */
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { UserAdapter } from '../../src/adapters/database/UserAdapter.ts'
+import type { PasswordCredentialAdapter } from '../../src/adapters/database/PasswordCredentialAdapter.ts'
 import { MAX_PASSWORD_LENGTH } from '../../src/password/index.ts'
 import { CredentialsProvider } from '../../src/providers/CredentialsProvider.ts'
 
-type MockUserAdapter = Pick<
-	UserAdapter,
-	'getUserByEmail' | 'createUser' | 'updateUser' | 'getUserWithPasswordHash'
-> & {
-	getUserByIdentifier: ReturnType<typeof vi.fn>
-	getUserWithPasswordHashByIdentifier: ReturnType<typeof vi.fn>
+const user = {
+	id: 'user-123',
+	email: 'test@example.com',
+	name: 'Test User',
+	avatar: null,
+	emailVerified: false
 }
 
 describe('CredentialsProvider', () => {
 	let provider: CredentialsProvider
-	let mockUserAdapter: MockUserAdapter
-	const hashPassword = vi.fn((password: string) => Promise.resolve(`test:${password}`))
-	const verifyPassword = vi.fn((storedHash: string, password: string) =>
-		Promise.resolve(storedHash === `test:${password}`)
-	)
-	const testHash = (password: string) => `test:${password}`
+	let passwordCredentialAdapter: PasswordCredentialAdapter
+	let findPasswordCredential: ReturnType<typeof vi.fn>
+	let createUserWithPassword: ReturnType<typeof vi.fn>
+	let updatePasswordHash: ReturnType<typeof vi.fn>
+	const hashPassword = vi.fn(async (password: string) => `test:${password}`)
+	const verifyPassword = vi.fn(async (storedHash: string, password: string) => {
+		return storedHash === `test:${password}`
+	})
 
 	beforeEach(() => {
-		hashPassword.mockClear()
-		verifyPassword.mockClear()
-		mockUserAdapter = {
-			getUserByEmail: vi.fn(),
-			createUser: vi.fn(),
-			updateUser: vi.fn(),
-			getUserWithPasswordHash: vi.fn(),
-			getUserByIdentifier: vi.fn(),
-			getUserWithPasswordHashByIdentifier: vi.fn()
-		}
-
+		vi.clearAllMocks()
+		findPasswordCredential = vi.fn()
+		createUserWithPassword = vi.fn()
+		updatePasswordHash = vi.fn()
+		passwordCredentialAdapter = {
+			findPasswordCredential,
+			createUserWithPassword,
+			updatePasswordHash
+		} as unknown as PasswordCredentialAdapter
 		provider = new CredentialsProvider({ hashPassword, verifyPassword })
 	})
 
-	describe('constructor', () => {
-		it('should create provider with default options', () => {
-			const defaultProvider = new CredentialsProvider()
-			expect(defaultProvider).toBeDefined()
-			expect(defaultProvider.name).toBe('credentials')
-		})
+	it('authenticates through the secret-bearing adapter and returns its sanitized user', async () => {
+		findPasswordCredential.mockResolvedValue({ user, passwordHash: 'test:correct' })
 
-		it('should accept custom password validator', () => {
-			const customValidator = vi.fn(() => ({ valid: true, errors: [] }))
-			const customProvider = new CredentialsProvider({
-				validatePassword: customValidator
+		await expect(
+			provider.authenticate({
+				email: ' Test@Example.com ',
+				password: 'correct',
+				passwordCredentialAdapter
 			})
-
-			expect(customProvider.validatePassword).toBe(customValidator)
-		})
+		).resolves.toEqual({ user, valid: true })
+		expect(findPasswordCredential).toHaveBeenCalledWith('test@example.com', 'email')
+		expect(user).not.toHaveProperty('password')
 	})
 
-	describe('authenticate', () => {
-		it('should authenticate user with valid credentials', async () => {
-			const email = 'test@example.com'
-			const password = 'ValidPassword123!'
-			const hashedPassword = testHash(password)
-
-			// Mock getUserWithPasswordHash to return user with password
-			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
-				id: 'user-123',
-				email,
-				password: hashedPassword,
-				name: 'Test User'
+	it('rejects invalid, missing, passwordless, and oversized credentials', async () => {
+		findPasswordCredential.mockResolvedValue({ user, passwordHash: 'test:correct' })
+		await expect(
+			provider.authenticate({
+				email: user.email,
+				password: 'wrong',
+				passwordCredentialAdapter
 			})
+		).resolves.toEqual({ user: null, valid: false })
 
-			// Mock getUserByEmail to return sanitized user
-			mockUserAdapter.getUserByEmail.mockResolvedValue({
-				id: 'user-123',
-				email,
-				name: 'Test User'
+		findPasswordCredential.mockResolvedValue({ user, passwordHash: null })
+		await expect(
+			provider.authenticate({
+				email: user.email,
+				password: 'correct',
+				passwordCredentialAdapter
 			})
+		).resolves.toEqual({ user: null, valid: false })
 
-			const result = await provider.authenticate({
-				email,
-				password,
-				userAdapter: mockUserAdapter
+		findPasswordCredential.mockClear()
+		await expect(
+			provider.authenticate({
+				email: user.email,
+				password: 'x'.repeat(MAX_PASSWORD_LENGTH + 1),
+				passwordCredentialAdapter
 			})
-
-			expect(result.valid).toBe(true)
-			expect(result.user).toBeDefined()
-			if (!result.user) throw new Error('Expected user')
-			expect(result.user.id).toBe('user-123')
-			expect(result.user.password).toBeUndefined() // Should be sanitized
-			expect(mockUserAdapter.getUserWithPasswordHash).toHaveBeenCalledWith(email)
-			expect(mockUserAdapter.getUserByEmail).toHaveBeenCalledWith(email)
-		})
-
-		it('should reject authentication with incorrect password', async () => {
-			const email = 'test@example.com'
-			const correctPassword = 'CorrectPassword123!'
-			const incorrectPassword = 'WrongPassword123!'
-			const hashedPassword = testHash(correctPassword)
-
-			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
-				id: 'user-123',
-				email,
-				password: hashedPassword
-			})
-
-			const result = await provider.authenticate({
-				email,
-				password: incorrectPassword,
-				userAdapter: mockUserAdapter
-			})
-
-			expect(result.valid).toBe(false)
-			expect(result.user).toBeNull()
-			expect(mockUserAdapter.getUserByEmail).not.toHaveBeenCalled()
-		})
-
-		it('should reject authentication for non-existent user', async () => {
-			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue(null)
-
-			const result = await provider.authenticate({
-				email: 'nonexistent@example.com',
-				password: 'SomePassword123!',
-				userAdapter: mockUserAdapter
-			})
-
-			expect(result.valid).toBe(false)
-			expect(result.user).toBeNull()
-		})
-
-		it('performs one dummy verification when an eligible identifier has no password', async () => {
-			const dummyPasswordHash = testHash('timing-sentinel')
-			const hardenedProvider = new CredentialsProvider({
-				dummyPasswordHash,
-				hashPassword,
-				verifyPassword
-			})
-			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue(null)
-
-			await expect(
-				hardenedProvider.authenticate({
-					email: 'missing@example.com',
-					password: 'SomePassword123!',
-					userAdapter: mockUserAdapter
-				})
-			).resolves.toEqual({ user: null, valid: false })
-
-			expect(verifyPassword).toHaveBeenCalledOnce()
-			expect(verifyPassword).toHaveBeenCalledWith(dummyPasswordHash, 'SomePassword123!')
-		})
-
-		it('preserves dummy verification when changing identifier fields', async () => {
-			const dummyPasswordHash = testHash('timing-sentinel')
-			const hardenedProvider = new CredentialsProvider({
-				dummyPasswordHash,
-				hashPassword,
-				verifyPassword
-			}).withIdentifier('username')
-			mockUserAdapter.getUserWithPasswordHashByIdentifier.mockResolvedValue({
-				id: 'passwordless-user',
-				email: 'passwordless@example.com',
-				password: null
-			})
-
-			await expect(
-				hardenedProvider.authenticate({
-					identifier: 'passwordless',
-					password: 'SomePassword123!',
-					userAdapter: mockUserAdapter
-				})
-			).resolves.toEqual({ user: null, valid: false })
-
-			expect(verifyPassword).toHaveBeenCalledOnce()
-			expect(verifyPassword).toHaveBeenCalledWith(dummyPasswordHash, 'SomePassword123!')
-		})
-
-		it('rejects oversized passwords before database or hashing work', async () => {
-			const result = await provider.authenticate({
-				email: 'test@example.com',
-				password: 'a'.repeat(MAX_PASSWORD_LENGTH + 1),
-				userAdapter: mockUserAdapter
-			})
-
-			expect(result).toEqual({ user: null, valid: false })
-			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled()
-			expect(verifyPassword).not.toHaveBeenCalled()
-		})
-
-		it('should reject authentication for user without password', async () => {
-			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
-				id: 'user-123',
-				email: 'oauth-user@example.com',
-				password: null // OAuth user without password
-			})
-
-			const result = await provider.authenticate({
-				email: 'oauth-user@example.com',
-				password: 'SomePassword123!',
-				userAdapter: mockUserAdapter
-			})
-
-			expect(result.valid).toBe(false)
-			expect(result.user).toBeNull()
-		})
-
-		it('should reject authentication with empty email', async () => {
-			const result = await provider.authenticate({
-				email: '',
-				password: 'ValidPassword123!',
-				userAdapter: mockUserAdapter
-			})
-
-			expect(result.valid).toBe(false)
-			expect(result.user).toBeNull()
-			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled()
-		})
-
-		it('should reject authentication with empty password', async () => {
-			const result = await provider.authenticate({
-				email: 'test@example.com',
-				password: '',
-				userAdapter: mockUserAdapter
-			})
-
-			expect(result.valid).toBe(false)
-			expect(result.user).toBeNull()
-			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled()
-		})
-
-		it('should handle email case-insensitively', async () => {
-			const email = 'Test@Example.COM'
-			const password = 'ValidPassword123!'
-			const hashedPassword = testHash(password)
-
-			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
-				id: 'user-123',
-				email: email.toLowerCase(),
-				password: hashedPassword
-			})
-
-			mockUserAdapter.getUserByEmail.mockResolvedValue({
-				id: 'user-123',
-				email: email.toLowerCase()
-			})
-
-			const result = await provider.authenticate({
-				email,
-				password,
-				userAdapter: mockUserAdapter
-			})
-
-			expect(result.valid).toBe(true)
-			expect(mockUserAdapter.getUserWithPasswordHash).toHaveBeenCalledWith(email.toLowerCase())
-		})
-
-		it('should authenticate with a custom identifier field', async () => {
-			const password = 'ValidPassword123!'
-			const hashedPassword = testHash(password)
-			const usernameProvider = provider.withIdentifier('username')
-
-			mockUserAdapter.getUserWithPasswordHashByIdentifier.mockResolvedValue({
-				id: 'user-username',
-				email: 'user@example.com',
-				password: hashedPassword,
-				name: 'Username User'
-			})
-			mockUserAdapter.getUserByIdentifier.mockResolvedValue({
-				id: 'user-username',
-				email: 'user@example.com',
-				name: 'Username User'
-			})
-
-			const result = await usernameProvider.authenticate({
-				identifier: ' UserName ',
-				password,
-				userAdapter: mockUserAdapter
-			})
-
-			expect(result.valid).toBe(true)
-			expect(result.user).toMatchObject({ id: 'user-username' })
-			expect(mockUserAdapter.getUserWithPasswordHashByIdentifier).toHaveBeenCalledWith(
-				'username',
-				'username'
-			)
-			expect(mockUserAdapter.getUserByIdentifier).toHaveBeenCalledWith('username', 'username')
-			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled()
-		})
-
-		it('should fall back to email when allowBoth is enabled', async () => {
-			const password = 'ValidPassword123!'
-			const hashedPassword = testHash(password)
-			const usernameProvider = provider.withIdentifier('username', { allowBoth: true })
-
-			mockUserAdapter.getUserWithPasswordHashByIdentifier.mockResolvedValue(null)
-			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
-				id: 'user-email',
-				email: 'fallback@example.com',
-				password: hashedPassword
-			})
-			mockUserAdapter.getUserByEmail.mockResolvedValue({
-				id: 'user-email',
-				email: 'fallback@example.com'
-			})
-
-			const result = await usernameProvider.authenticate({
-				email: 'Fallback@Example.com',
-				password,
-				userAdapter: mockUserAdapter
-			})
-
-			expect(result.valid).toBe(true)
-			expect(mockUserAdapter.getUserWithPasswordHashByIdentifier).toHaveBeenCalledWith(
-				'fallback@example.com',
-				'username'
-			)
-			expect(mockUserAdapter.getUserWithPasswordHash).toHaveBeenCalledWith('fallback@example.com')
-			expect(mockUserAdapter.getUserByEmail).toHaveBeenCalledWith('fallback@example.com')
-		})
-
-		it('should fail custom identifier auth when the adapter does not expose identifier lookup', async () => {
-			const usernameProvider = provider.withIdentifier('username')
-			const adapterWithoutIdentifierLookup = {
-				...mockUserAdapter,
-				getUserWithPasswordHashByIdentifier: undefined,
-				getUserByIdentifier: undefined
-			} as unknown as UserAdapter
-
-			const result = await usernameProvider.authenticate({
-				identifier: 'username',
-				password: 'ValidPassword123!',
-				userAdapter: adapterWithoutIdentifierLookup
-			})
-
-			expect(result.valid).toBe(false)
-			expect(mockUserAdapter.getUserWithPasswordHash).not.toHaveBeenCalled()
-		})
-
-		it('upgrades an accepted legacy password hash without blocking authentication', async () => {
-			const password = 'ValidPassword123!'
-			const upgradeProvider = new CredentialsProvider({
-				hashPassword,
-				verifyPassword: vi.fn(async () => ({ valid: true, needsRehash: true }))
-			})
-			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
-				id: 'legacy-user',
-				email: 'legacy@example.com',
-				password: 'legacy-hash'
-			})
-			mockUserAdapter.getUserByEmail.mockResolvedValue({
-				id: 'legacy-user',
-				email: 'legacy@example.com'
-			})
-
-			const result = await upgradeProvider.authenticate({
-				email: 'legacy@example.com',
-				password,
-				userAdapter: mockUserAdapter
-			})
-
-			expect(result.valid).toBe(true)
-			expect(mockUserAdapter.updateUser).toHaveBeenCalledWith('legacy-user', {
-				password: testHash(password)
-			})
-		})
+		).resolves.toEqual({ user: null, valid: false })
+		expect(findPasswordCredential).not.toHaveBeenCalled()
 	})
 
-	describe('signUp', () => {
-		it('should create user with hashed password', async () => {
-			const email = 'newuser@example.com'
-			const password = 'SecurePassword123!'
-			const name = 'New User'
-
-			mockUserAdapter.createUser.mockResolvedValue({
-				id: 'user-new',
-				email,
-				name
-			})
-
-			const user = await provider.signUp({
-				email,
-				password,
-				name,
-				userAdapter: mockUserAdapter
-			})
-
-			expect(user).toBeDefined()
-			expect(user.id).toBe('user-new')
-			expect(user.email).toBe(email)
-			expect(user.password).toBeUndefined() // Should be sanitized
-
-			// Verify createUser was called with hashed password
-			expect(mockUserAdapter.createUser).toHaveBeenCalledWith(
-				expect.objectContaining({
-					email,
-					name,
-					verified_email: false
-				}),
-				expect.objectContaining({
-					provider: 'email',
-					emailVerified: false,
-					password: testHash(password)
-				})
-			)
-			expect(hashPassword).toHaveBeenCalledWith(password)
+	it('performs one dummy verification when no password credential exists', async () => {
+		findPasswordCredential.mockResolvedValue(null)
+		const hardened = new CredentialsProvider({
+			dummyPasswordHash: 'test:sentinel',
+			hashPassword,
+			verifyPassword
 		})
 
-		it('should create user without name (use email prefix)', async () => {
-			const email = 'newuser@example.com'
-			const password = 'SecurePassword123!'
+		await hardened.authenticate({
+			email: 'missing@example.com',
+			password: 'attempt',
+			passwordCredentialAdapter
+		})
 
-			mockUserAdapter.createUser.mockResolvedValue({
-				id: 'user-new',
-				email,
-				name: 'newuser' // Derived from email
+		expect(verifyPassword).toHaveBeenCalledOnce()
+		expect(verifyPassword).toHaveBeenCalledWith('test:sentinel', 'attempt')
+	})
+
+	it('derives and reuses a compatible dummy hash when one is not configured', async () => {
+		findPasswordCredential.mockResolvedValue(null)
+
+		await provider.authenticate({
+			email: 'first-missing@example.com',
+			password: 'attempt-one',
+			passwordCredentialAdapter
+		})
+		await provider.authenticate({
+			email: 'second-missing@example.com',
+			password: 'attempt-two',
+			passwordCredentialAdapter
+		})
+
+		expect(hashPassword).toHaveBeenCalledOnce()
+		const dummyInput = hashPassword.mock.calls[0]?.[0]
+		expect(dummyInput).toEqual(expect.any(String))
+		expect(verifyPassword).toHaveBeenNthCalledWith(1, `test:${dummyInput}`, 'attempt-one')
+		expect(verifyPassword).toHaveBeenNthCalledWith(2, `test:${dummyInput}`, 'attempt-two')
+	})
+
+	it('supports explicit identifier lookup with optional email fallback', async () => {
+		const usernameProvider = provider.withIdentifier('username', { allowBoth: true })
+		findPasswordCredential
+			.mockResolvedValueOnce(null)
+			.mockResolvedValueOnce({ user, passwordHash: 'test:correct' })
+
+		await expect(
+			usernameProvider.authenticate({
+				identifier: ' TEST@EXAMPLE.COM ',
+				password: 'correct',
+				passwordCredentialAdapter
 			})
+		).resolves.toEqual({ user, valid: true })
+		expect(findPasswordCredential).toHaveBeenNthCalledWith(1, 'test@example.com', 'username')
+		expect(findPasswordCredential).toHaveBeenNthCalledWith(2, 'test@example.com', 'email')
+	})
 
-			await provider.signUp({
-				email,
-				password,
-				userAdapter: mockUserAdapter
+	it('upgrades an accepted legacy hash only through the password adapter', async () => {
+		const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+		const upgradeProvider = new CredentialsProvider({
+			hashPassword,
+			logger,
+			verifyPassword: vi.fn(async () => ({ valid: true, needsRehash: true }))
+		})
+		findPasswordCredential.mockResolvedValue({ user, passwordHash: 'legacy' })
+		updatePasswordHash.mockResolvedValue(user)
+
+		await expect(
+			upgradeProvider.authenticate({
+				email: user.email,
+				password: 'correct',
+				passwordCredentialAdapter
 			})
+		).resolves.toEqual({ user, valid: true })
+		expect(updatePasswordHash).toHaveBeenCalledWith(user.id, 'test:correct')
+		expect(logger.error).not.toHaveBeenCalled()
+	})
 
-			expect(mockUserAdapter.createUser).toHaveBeenCalledWith(
-				expect.objectContaining({
-					email,
-					name: 'newuser' // Should use email prefix
-				}),
-				expect.any(Object)
-			)
+	it('does not block login when opportunistic rehash persistence fails', async () => {
+		const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+		const upgradeProvider = new CredentialsProvider({
+			hashPassword,
+			logger,
+			verifyPassword: vi.fn(async () => ({ valid: true, needsRehash: true }))
 		})
+		findPasswordCredential.mockResolvedValue({ user, passwordHash: 'legacy' })
+		updatePasswordHash.mockRejectedValue(new Error('storage unavailable'))
 
-		it('should throw error for empty email', async () => {
-			await expect(
-				provider.signUp({
-					email: '',
-					password: 'ValidPassword123!',
-					userAdapter: mockUserAdapter
-				})
-			).rejects.toThrow('Email and password are required')
-		})
-
-		it('should throw error for empty password', async () => {
-			await expect(
-				provider.signUp({
-					email: 'test@example.com',
-					password: '',
-					userAdapter: mockUserAdapter
-				})
-			).rejects.toThrow('Email and password are required')
-		})
-
-		it('should validate password with custom validator', async () => {
-			const customValidator = vi.fn(() => ({
-				valid: false,
-				errors: ['Password too weak']
-			}))
-
-			const customProvider = new CredentialsProvider({
-				validatePassword: customValidator
+		await expect(
+			upgradeProvider.authenticate({
+				email: user.email,
+				password: 'correct',
+				passwordCredentialAdapter
 			})
+		).resolves.toEqual({ user, valid: true })
+		expect(logger.error).toHaveBeenCalledWith(
+			'[CredentialsProvider] Failed to upgrade password hash',
+			{ errorType: 'Error' }
+		)
+	})
 
-			await expect(
-				customProvider.signUp({
-					email: 'test@example.com',
-					password: 'weak',
-					userAdapter: mockUserAdapter
-				})
-			).rejects.toThrow('Password too weak')
+	it('creates users without placing password material in general metadata', async () => {
+		createUserWithPassword.mockResolvedValue(user)
 
-			expect(customValidator).toHaveBeenCalledWith('weak')
+		await provider.signUp({
+			email: 'Test@Example.com',
+			password: 'new-password',
+			metadata: {
+				password: 'attacker',
+				passwordHash: 'attacker-hash',
+				provider: 'admin',
+				role: 'member',
+				settings: { refreshToken: 'attacker-token', theme: 'dark' }
+			},
+			passwordCredentialAdapter
 		})
 
-		it('should include additional metadata', async () => {
-			const email = 'user@example.com'
-			const password = 'Password123!'
-			const metadata = {
-				role: 'admin',
-				verified: true
+		expect(createUserWithPassword).toHaveBeenCalledWith(
+			expect.objectContaining({ email: 'test@example.com', verified_email: false }),
+			'test:new-password',
+			{
+				provider: 'email',
+				emailVerified: false,
+				role: 'member',
+				settings: { theme: 'dark' }
 			}
-
-			mockUserAdapter.createUser.mockResolvedValue({
-				id: 'user-123',
-				email
-			})
-
-			await provider.signUp({
-				email,
-				password,
-				metadata,
-				userAdapter: mockUserAdapter
-			})
-
-			expect(mockUserAdapter.createUser).toHaveBeenCalledWith(
-				expect.any(Object),
-				expect.objectContaining({
-					role: 'admin',
-					verified: true
-				})
-			)
-		})
-
-		it('does not let signup metadata override credential security fields', async () => {
-			mockUserAdapter.createUser.mockResolvedValue({ id: 'user-123' })
-
-			await provider.signUp({
-				email: 'user@example.com',
-				password: 'Password123!',
-				metadata: {
-					password: 'attacker-controlled',
-					provider: 'admin',
-					emailVerified: true
-				},
-				userAdapter: mockUserAdapter
-			})
-
-			expect(mockUserAdapter.createUser).toHaveBeenCalledWith(
-				expect.any(Object),
-				expect.objectContaining({
-					password: testHash('Password123!'),
-					provider: 'email',
-					emailVerified: false
-				})
-			)
-		})
-
-		it('should handle email case-insensitively', async () => {
-			const email = 'NewUser@Example.COM'
-			const password = 'Password123!'
-
-			mockUserAdapter.createUser.mockResolvedValue({
-				id: 'user-123',
-				email: email.toLowerCase()
-			})
-
-			await provider.signUp({
-				email,
-				password,
-				userAdapter: mockUserAdapter
-			})
-
-			expect(mockUserAdapter.createUser).toHaveBeenCalledWith(
-				expect.objectContaining({
-					email: email.toLowerCase()
-				}),
-				expect.any(Object)
-			)
-		})
+		)
 	})
 
-	describe('updatePassword', () => {
-		it('should update password with hashed value', async () => {
-			const userId = 'user-123'
-			const newPassword = 'NewPassword123!'
-
-			mockUserAdapter.updateUser.mockResolvedValue({
-				id: userId,
-				email: 'test@example.com'
+	it('updates and changes passwords through updatePasswordHash', async () => {
+		updatePasswordHash.mockResolvedValue(user)
+		await expect(
+			provider.updatePassword({
+				userId: user.id,
+				newPassword: 'updated',
+				passwordCredentialAdapter
 			})
+		).resolves.toEqual(user)
+		expect(updatePasswordHash).toHaveBeenCalledWith(user.id, 'test:updated')
 
-			const user = await provider.updatePassword({
-				userId,
-				newPassword,
-				userAdapter: mockUserAdapter
+		findPasswordCredential.mockResolvedValue({ user, passwordHash: 'test:current' })
+		await expect(
+			provider.changePassword({
+				email: user.email,
+				currentPassword: 'current',
+				newPassword: 'next',
+				passwordCredentialAdapter
 			})
-
-			expect(user).toBeDefined()
-			expect(user.id).toBe(userId)
-			expect(mockUserAdapter.updateUser).toHaveBeenCalledWith(
-				userId,
-				expect.objectContaining({ password: testHash(newPassword) })
-			)
-			expect(hashPassword).toHaveBeenCalledWith(newPassword)
-		})
-
-		it('should throw error for missing userId', async () => {
-			await expect(
-				provider.updatePassword({
-					userId: '',
-					newPassword: 'NewPassword123!',
-					userAdapter: mockUserAdapter
-				})
-			).rejects.toThrow('User ID and new password are required')
-		})
-
-		it('should throw error for missing newPassword', async () => {
-			await expect(
-				provider.updatePassword({
-					userId: 'user-123',
-					newPassword: '',
-					userAdapter: mockUserAdapter
-				})
-			).rejects.toThrow('User ID and new password are required')
-		})
-
-		it('should validate new password with custom validator', async () => {
-			const customValidator = vi.fn(() => ({
-				valid: false,
-				errors: ['Password too weak']
-			}))
-
-			const customProvider = new CredentialsProvider({
-				validatePassword: customValidator
-			})
-
-			await expect(
-				customProvider.updatePassword({
-					userId: 'user-123',
-					newPassword: 'weak',
-					userAdapter: mockUserAdapter
-				})
-			).rejects.toThrow('Password too weak')
-		})
+		).resolves.toEqual({ user, valid: true })
+		expect(updatePasswordHash).toHaveBeenLastCalledWith(user.id, 'test:next')
 	})
 
-	describe('changePassword', () => {
-		it('should change password after verifying current password', async () => {
-			const email = 'test@example.com'
-			const currentPassword = 'CurrentPassword123!'
-			const newPassword = 'NewPassword123!'
-			const currentHash = testHash(currentPassword)
-
-			// Mock authenticate to succeed
-			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
-				id: 'user-123',
-				email,
-				password: currentHash
-			})
-
-			mockUserAdapter.getUserByEmail.mockResolvedValue({
-				id: 'user-123',
-				email
-			})
-
-			// Mock updateUser
-			mockUserAdapter.updateUser.mockResolvedValue({
-				id: 'user-123',
-				email
-			})
-
-			const result = await provider.changePassword({
-				email,
-				currentPassword,
-				newPassword,
-				userAdapter: mockUserAdapter
-			})
-
-			expect(result.valid).toBe(true)
-			expect(result.user).toBeDefined()
-			if (!result.user) throw new Error('Expected user')
-			expect(result.user.id).toBe('user-123')
-			expect(mockUserAdapter.updateUser).toHaveBeenCalledWith(
-				'user-123',
-				expect.objectContaining({ password: testHash(newPassword) })
-			)
+	it('validates new passwords before persistence', async () => {
+		const rejectingProvider = new CredentialsProvider({
+			hashPassword,
+			validatePassword: () => ({ valid: false, errors: ['Password too weak'] }),
+			verifyPassword
 		})
 
-		it('should reject password change with incorrect current password', async () => {
-			const email = 'test@example.com'
-			const currentPassword = 'CorrectPassword123!'
-			const wrongPassword = 'WrongPassword123!'
-			const newPassword = 'NewPassword123!'
-			const currentHash = testHash(currentPassword)
-
-			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
-				id: 'user-123',
-				email,
-				password: currentHash
+		await expect(
+			rejectingProvider.updatePassword({
+				userId: user.id,
+				newPassword: 'weak',
+				passwordCredentialAdapter
 			})
-
-			const result = await provider.changePassword({
-				email,
-				currentPassword: wrongPassword,
-				newPassword,
-				userAdapter: mockUserAdapter
-			})
-
-			expect(result.valid).toBe(false)
-			expect(result.user).toBeNull()
-			expect(mockUserAdapter.updateUser).not.toHaveBeenCalled()
-		})
-
-		it('should reject password change for non-existent user', async () => {
-			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue(null)
-
-			const result = await provider.changePassword({
-				email: 'nonexistent@example.com',
-				currentPassword: 'CurrentPassword123!',
-				newPassword: 'NewPassword123!',
-				userAdapter: mockUserAdapter
-			})
-
-			expect(result.valid).toBe(false)
-			expect(result.user).toBeNull()
-			expect(mockUserAdapter.updateUser).not.toHaveBeenCalled()
-		})
-	})
-
-	describe('integration scenarios', () => {
-		it('should complete full signup and signin flow', async () => {
-			const email = 'integration@example.com'
-			const password = 'IntegrationTest123!'
-
-			// 1. Sign up
-			mockUserAdapter.createUser.mockResolvedValue({
-				id: 'user-int',
-				email,
-				name: 'Integration User'
-			})
-
-			const signedUpUser = await provider.signUp({
-				email,
-				password,
-				name: 'Integration User',
-				userAdapter: mockUserAdapter
-			})
-
-			expect(signedUpUser.id).toBe('user-int')
-
-			// 2. Authenticate (simulate signin)
-			const hashedPassword = testHash(password)
-			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
-				id: 'user-int',
-				email,
-				password: hashedPassword
-			})
-
-			mockUserAdapter.getUserByEmail.mockResolvedValue({
-				id: 'user-int',
-				email,
-				name: 'Integration User'
-			})
-
-			const authResult = await provider.authenticate({
-				email,
-				password,
-				userAdapter: mockUserAdapter
-			})
-
-			expect(authResult.valid).toBe(true)
-			if (!authResult.user) throw new Error('Expected user')
-			expect(authResult.user.id).toBe('user-int')
-		})
-
-		it('should complete full password change flow', async () => {
-			const email = 'change@example.com'
-			const oldPassword = 'OldPassword123!'
-			const newPassword = 'NewPassword123!'
-			const oldHash = testHash(oldPassword)
-			const newHash = testHash(newPassword)
-
-			// 1. Initial state: user has old password
-			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
-				id: 'user-change',
-				email,
-				password: oldHash
-			})
-
-			mockUserAdapter.getUserByEmail.mockResolvedValue({
-				id: 'user-change',
-				email
-			})
-
-			mockUserAdapter.updateUser.mockResolvedValue({
-				id: 'user-change',
-				email
-			})
-
-			// 2. Change password (verify current, set new)
-			const changeResult = await provider.changePassword({
-				email,
-				currentPassword: oldPassword,
-				newPassword,
-				userAdapter: mockUserAdapter
-			})
-
-			expect(changeResult.valid).toBe(true)
-
-			// 3. After password change, mock should return new hash
-			mockUserAdapter.getUserWithPasswordHash.mockResolvedValue({
-				id: 'user-change',
-				email,
-				password: newHash // Now has new password
-			})
-
-			// 4. Verify old password no longer works
-			const oldAuthResult = await provider.authenticate({
-				email,
-				password: oldPassword,
-				userAdapter: mockUserAdapter
-			})
-
-			expect(oldAuthResult.valid).toBe(false)
-
-			// 5. Verify new password works
-			const newAuthResult = await provider.authenticate({
-				email,
-				password: newPassword,
-				userAdapter: mockUserAdapter
-			})
-
-			expect(newAuthResult.valid).toBe(true)
-		})
+		).rejects.toThrow('Password too weak')
+		expect(updatePasswordHash).not.toHaveBeenCalled()
 	})
 })

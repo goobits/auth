@@ -1,10 +1,10 @@
 import type { Cookies, RequestEvent } from '@sveltejs/kit'
+import { constantTimeEqual } from '@goobits/security/crypto'
 import { generateCodeVerifier, generateState } from 'arctic'
 
 import type { OAuthProvider } from '../providers/OAuthProvider.ts'
 import type { RequestEventLike } from '../types/auth.ts'
 import type { OAuthProfile, OAuthTokens } from '../types/index.ts'
-import { timingSafeEqual } from './crypto.ts'
 
 type CookiesLike = Pick<Cookies, 'set' | 'get' | 'delete'>
 
@@ -92,7 +92,7 @@ export function cleanupOAuthCookies(cookies: CookiesLike, provider: string): voi
 export function validateOAuthCallback(params: OAuthCallbackParams): boolean {
 	const { code, state, storedState, storedCodeVerifier } = params
 
-	const stateMatches = timingSafeEqual(state ?? '', storedState ?? '')
+	const stateMatches = constantTimeEqual(state ?? '', storedState ?? '')
 	return !!(code && storedCodeVerifier && storedState && stateMatches)
 }
 

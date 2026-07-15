@@ -9,7 +9,7 @@ import {
 	createVerificationToken,
 	getVerificationTokenRecord,
 	VERIFICATION_TOKEN_TYPES
-} from '../utils/tokens.ts'
+} from '../verification/index.ts'
 
 const DEFAULT_LOGIN_CHALLENGE_COOKIE = 'goobits_mfa_login'
 const DEFAULT_LOGIN_CHALLENGE_TTL_MS = 5 * 60 * 1000

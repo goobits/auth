@@ -6,15 +6,25 @@ import type {
 	OAuthProfile,
 	Session,
 	User,
+	VerificationToken,
 	WebAuthnCredential
 } from '../../types/index.ts'
+import { assertPublicUserData } from '../../_internal/publicUserData.ts'
 import { generateRandomUUID } from '../../utils/crypto.ts'
+import type {
+	PasswordCredential,
+	PasswordCredentialAdapter
+} from '../database/PasswordCredentialAdapter.ts'
 import { UserAdapter } from '../database/UserAdapter.ts'
 import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
 import { MfaAdapter } from '../mfa/MfaAdapter.ts'
 import { SessionAdapter } from '../session/SessionAdapter.ts'
 import { parseMfaVerifiedAt } from '../session/sessionAssurance.ts'
 import { generateSessionId } from '../session/sessionId.ts'
+import {
+	VerificationTokenAdapter,
+	type VerificationTokenRecord
+} from '../verification-token/VerificationTokenAdapter.ts'
 import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.ts'
 
 /** Pg Pool Like typed model for runtime integration. */
@@ -97,8 +107,18 @@ type MagicLinkTokenRow = {
 	user_id: string | null
 }
 
+type VerificationTokenRow = {
+	created_at: Date
+	expires_at: Date
+	id: string
+	metadata: Record<string, unknown> | null
+	token: string
+	type: string
+	user_id: string
+}
+
 /** Postgres user adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
-export class PgUserAdapter extends UserAdapter {
+export class PgUserAdapter extends UserAdapter implements PasswordCredentialAdapter {
 	#db: PgPoolLike
 
 	constructor({ db }: { db: PgPoolLike }) {
@@ -107,10 +127,10 @@ export class PgUserAdapter extends UserAdapter {
 	}
 
 	async createUser(profile: OAuthProfile, metadata: Record<string, unknown> = {}): Promise<User> {
+		assertPublicUserData(metadata)
 		const id = stringValue(metadata['id']) || (await generateRandomUUID())
 		const email = normalizeEmail(profile.email)
 		const name = stringValue(metadata['name']) || profile.name || email
-		const password = stringValue(metadata['password'])
 		const row = (
 			await this.#db.query<UserRow>(
 				`
@@ -131,11 +151,45 @@ export class PgUserAdapter extends UserAdapter {
 					Boolean(profile.verified_email),
 					stringValue(metadata['role']),
 					JSON.stringify(recordValue(metadata['settings']) ?? {}),
-					password
+					null
 				]
 			)
 		).rows[0]
 		return toUser(requireRow(row))
+	}
+
+	async createUserWithPassword(
+		profile: OAuthProfile,
+		passwordHash: string,
+		metadata: Record<string, unknown> = {}
+	): Promise<User> {
+		assertPublicUserData(metadata)
+		if (!passwordHash) throw new Error('Password hash is required')
+		const id = stringValue(metadata['id']) || (await generateRandomUUID())
+		const email = normalizeEmail(profile.email)
+		const name = stringValue(metadata['name']) || profile.name || email
+		const row = (
+			await this.#db.query<UserRow>(
+				`
+			INSERT INTO auth_users (id, email, name, avatar, email_verified, role, settings, password)
+			VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)
+			ON CONFLICT (email) DO NOTHING
+			RETURNING *
+		`,
+				[
+					id,
+					email,
+					name,
+					profile.picture ?? null,
+					Boolean(profile.verified_email),
+					stringValue(metadata['role']),
+					JSON.stringify(recordValue(metadata['settings']) ?? {}),
+					passwordHash
+				]
+			)
+		).rows[0]
+		if (!row) throw new Error('Unable to create user with those details')
+		return toUser(row)
 	}
 
 	async getUserById(id: string): Promise<User | null> {
@@ -169,6 +223,7 @@ export class PgUserAdapter extends UserAdapter {
 	}
 
 	async updateUser(id: string, data: Partial<User> & Record<string, unknown>): Promise<User> {
+		assertPublicUserData(data)
 		const existing = await this.getUserById(id)
 		if (!existing) {
 			throw new Error('User not found')
@@ -220,15 +275,29 @@ export class PgUserAdapter extends UserAdapter {
 		)
 	}
 
-	async getUserWithPasswordHash(
-		email: string
-	): Promise<(User & { password?: string | null }) | null> {
+	async findPasswordCredential(
+		identifier: string,
+		field = 'email'
+	): Promise<PasswordCredential | null> {
+		if (field !== 'email') return null
 		const row = (
 			await this.#db.query<UserRow>('SELECT * FROM auth_users WHERE email = $1', [
-				normalizeEmail(email)
+				normalizeEmail(identifier)
 			])
 		).rows[0]
-		return row ? { ...toUser(row), password: row.password } : null
+		return row ? { user: toUser(row), passwordHash: row.password } : null
+	}
+
+	async updatePasswordHash(userId: string, passwordHash: string): Promise<User> {
+		if (!passwordHash) throw new Error('Password hash is required')
+		const row = (
+			await this.#db.query<UserRow>(
+				'UPDATE auth_users SET password = $2, updated_at = now() WHERE id = $1 RETURNING *',
+				[userId, passwordHash]
+			)
+		).rows[0]
+		if (!row) throw new Error('User not found')
+		return toUser(row)
 	}
 }
 
@@ -429,6 +498,16 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 
 	async deleteChallenge(challengeId: string): Promise<void> {
 		await this.#db.query('DELETE FROM auth_webauthn_challenges WHERE id = $1', [challengeId])
+	}
+
+	async consumeChallenge(challengeId: string): Promise<Record<string, unknown> | null> {
+		const row = (
+			await this.#db.query<WebAuthnChallengeRow>(
+				'DELETE FROM auth_webauthn_challenges WHERE id = $1 RETURNING *',
+				[challengeId]
+			)
+		).rows[0]
+		return row ? toWebAuthnChallenge(row) : null
 	}
 
 	async createCredential({
@@ -783,6 +862,87 @@ export class PgMagicLinkAdapter extends MagicLinkAdapter {
 	}
 }
 
+/** PostgreSQL verification-token adapter with atomic single-use consumption. */
+export class PgVerificationTokenAdapter extends VerificationTokenAdapter {
+	#db: PgPoolLike
+
+	constructor({ db }: { db: PgPoolLike }) {
+		super()
+		this.#db = db
+	}
+
+	async create({
+		userId,
+		type,
+		token,
+		expiresAt,
+		metadata
+	}: {
+		userId: string
+		type: string
+		token: string
+		expiresAt: Date
+		metadata?: Record<string, unknown>
+	}): Promise<void> {
+		await this.#db.query(
+			`INSERT INTO auth_verification_tokens (id, user_id, type, token, expires_at, metadata)
+			 VALUES ($1, $2, $3, $4, $5, $6::jsonb)`,
+			[await generateRandomUUID(), userId, type, token, expiresAt, JSON.stringify(metadata ?? {})]
+		)
+	}
+
+	async findByToken({
+		token,
+		type
+	}: {
+		token: string
+		type: string
+	}): Promise<VerificationTokenRecord | null> {
+		const row = (
+			await this.#db.query<VerificationTokenRow>(
+				'SELECT * FROM auth_verification_tokens WHERE token = $1 AND type = $2 LIMIT 1',
+				[token, type]
+			)
+		).rows[0]
+		return row ? this.withUser(row) : null
+	}
+
+	async deleteById(tokenId: string): Promise<void> {
+		await this.#db.query('DELETE FROM auth_verification_tokens WHERE id = $1', [tokenId])
+	}
+
+	async deleteByUserAndType({ userId, type }: { userId: string; type: string }): Promise<void> {
+		await this.#db.query('DELETE FROM auth_verification_tokens WHERE user_id = $1 AND type = $2', [
+			userId,
+			type
+		])
+	}
+
+	async consumeByToken({
+		token,
+		type
+	}: {
+		token: string
+		type: string
+	}): Promise<VerificationTokenRecord | null> {
+		const row = (
+			await this.#db.query<VerificationTokenRow>(
+				'DELETE FROM auth_verification_tokens WHERE token = $1 AND type = $2 RETURNING *',
+				[token, type]
+			)
+		).rows[0]
+		return row ? this.withUser(row) : null
+	}
+
+	private async withUser(row: VerificationTokenRow): Promise<VerificationTokenRecord | null> {
+		const userRow = (
+			await this.#db.query<UserRow>('SELECT * FROM auth_users WHERE id = $1', [row.user_id])
+		).rows[0]
+		if (!userRow) return null
+		return { token: toVerificationToken(row), user: toUser(userRow) }
+	}
+}
+
 /** Creates pg auth adapters for auth storage. */
 export function createPgAuthAdapters(input: {
 	cookieDomain?: string
@@ -791,11 +951,14 @@ export function createPgAuthAdapters(input: {
 	mfaSecretCodec: MfaSecretCodec
 	secureCookies: boolean
 }) {
+	const user = new PgUserAdapter({ db: input.db })
 	return {
 		magicLink: new PgMagicLinkAdapter({ db: input.db }),
 		mfa: new PgMfaAdapter({ db: input.db, secretCodec: input.mfaSecretCodec }),
+		passwordCredential: user,
 		session: new PgSessionAdapter(input),
-		user: new PgUserAdapter({ db: input.db }),
+		user,
+		verificationToken: new PgVerificationTokenAdapter({ db: input.db }),
 		webauthn: new PgWebAuthnAdapter({ db: input.db })
 	}
 }
@@ -841,6 +1004,23 @@ ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS mfa_verified_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS auth_sessions_user_id_idx ON auth_sessions(user_id);
 CREATE INDEX IF NOT EXISTS auth_sessions_expires_at_idx ON auth_sessions(expires_at);
+
+CREATE TABLE IF NOT EXISTS auth_verification_tokens (
+	id TEXT PRIMARY KEY,
+	user_id TEXT NOT NULL REFERENCES auth_users(id) ON DELETE CASCADE,
+	type TEXT NOT NULL,
+	token TEXT NOT NULL,
+	expires_at TIMESTAMPTZ NOT NULL,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	metadata JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS auth_verification_tokens_token_type_idx
+	ON auth_verification_tokens(token, type);
+CREATE INDEX IF NOT EXISTS auth_verification_tokens_user_type_idx
+	ON auth_verification_tokens(user_id, type);
+CREATE INDEX IF NOT EXISTS auth_verification_tokens_expires_at_idx
+	ON auth_verification_tokens(expires_at);
 
 CREATE TABLE IF NOT EXISTS auth_mfa_factors (
 	user_id TEXT PRIMARY KEY REFERENCES auth_users(id) ON DELETE CASCADE,
@@ -976,6 +1156,18 @@ function toMagicLinkToken(row: MagicLinkTokenRow): MagicLinkToken {
 		id: row.id,
 		otpHash: row.otp_hash,
 		tokenHash: row.token_hash,
+		userId: row.user_id
+	}
+}
+
+function toVerificationToken(row: VerificationTokenRow): VerificationToken {
+	return {
+		createdAt: row.created_at,
+		expiresAt: row.expires_at,
+		id: row.id,
+		metadata: row.metadata ?? {},
+		token: row.token,
+		type: row.type,
 		userId: row.user_id
 	}
 }

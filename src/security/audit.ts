@@ -1,6 +1,5 @@
 import { createAuditLogger, type AuditLogger, type AuditOutcome } from '@goobits/security/audit'
-
-import { DEFAULT_REDACT_KEYS, redactObject } from '../utils/redact.ts'
+import { DEFAULT_REDACT_KEYS, redactSensitive } from '@goobits/security/redaction'
 
 /** Auth Audit Event typed model for runtime integration. */
 export type AuthAuditEvent =
@@ -31,7 +30,7 @@ export function auditAuthEvent(
 	payload: Record<string, unknown> = {},
 	options: AuthAuditOptions = {}
 ): void {
-	const safePayload = redactObject(payload, options.redactKeys ?? DEFAULT_REDACT_KEYS)
+	const safePayload = redactSensitive(payload, { keys: options.redactKeys ?? DEFAULT_REDACT_KEYS })
 	const detail = isRecord(safePayload) ? safePayload : { payload: safePayload }
 	const auditor = options.auditor ?? defaultAuditor
 	const actorId = options.actorId ?? auditString(detail['userId'])

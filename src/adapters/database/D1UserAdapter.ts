@@ -1,4 +1,6 @@
 import type { User } from '../../types/index.ts'
+import { assertPublicUserData } from '../../_internal/publicUserData.ts'
+import type { PasswordCredential, PasswordCredentialAdapter } from './PasswordCredentialAdapter.ts'
 import { UserAdapter } from './UserAdapter.ts'
 
 type D1Value = string | number | boolean | null
@@ -23,7 +25,7 @@ type D1UserAdapterOptions = {
 }
 
 /** Cloudflare D1 user adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
-export class D1UserAdapter extends UserAdapter {
+export class D1UserAdapter extends UserAdapter implements PasswordCredentialAdapter {
 	db: D1DatabaseLike
 	usersTable: string
 	oauthAccountsTable: string
@@ -75,7 +77,6 @@ export class D1UserAdapter extends UserAdapter {
 			'name',
 			'avatar',
 			'emailVerified',
-			'password',
 			'role',
 			'settings',
 			'createdAt',
@@ -181,10 +182,16 @@ export class D1UserAdapter extends UserAdapter {
 		return String(value)
 	}
 
-	async createUser(
+	private coerceDbId(id: string): string | number {
+		return /^\d+$/.test(id) ? Number(id) : id
+	}
+
+	private async insertUser(
 		profile: { email: string; name?: string; picture?: string; verified_email?: boolean },
-		metadata: Record<string, unknown> = {}
+		metadata: Record<string, unknown>,
+		passwordHash?: string
 	): Promise<User> {
+		assertPublicUserData(metadata)
 		const normalizedEmail = profile.email.trim().toLowerCase()
 		const userData: Record<string, unknown> = {
 			email: normalizedEmail,
@@ -198,6 +205,7 @@ export class D1UserAdapter extends UserAdapter {
 			if (!this.allowedFields.includes(key)) continue
 			userData[key] = value
 		}
+		if (passwordHash !== undefined) userData['password'] = passwordHash
 
 		const fields = Object.keys(userData)
 		const columns = fields.map((field) => this.mapFieldToColumn(field))
@@ -224,14 +232,31 @@ export class D1UserAdapter extends UserAdapter {
 		throw new Error('Created user not found')
 	}
 
+	async createUser(
+		profile: { email: string; name?: string; picture?: string; verified_email?: boolean },
+		metadata: Record<string, unknown> = {}
+	): Promise<User> {
+		return this.insertUser(profile, metadata)
+	}
+
+	async createUserWithPassword(
+		profile: { email: string; name?: string; picture?: string; verified_email?: boolean },
+		passwordHash: string,
+		metadata: Record<string, unknown> = {}
+	): Promise<User> {
+		if (!passwordHash) throw new Error('Password hash is required')
+		return this.insertUser(profile, metadata, passwordHash)
+	}
+
 	async getUserById(id: string, rawId?: string | number): Promise<User | null> {
 		const sql = `SELECT * FROM ${this.usersTable} WHERE ${this.columns.id} = ? LIMIT 1`
 		const normalizedRow = await this.db.prepare(sql).bind(id).first()
 		if (normalizedRow) {
 			return this.sanitizeUser(this.mapUser(normalizedRow))
 		}
-		if (rawId !== undefined && rawId !== id) {
-			const rawRow = await this.db.prepare(sql).bind(rawId).first()
+		const fallbackId = rawId ?? this.coerceDbId(id)
+		if (fallbackId !== id) {
+			const rawRow = await this.db.prepare(sql).bind(fallbackId).first()
 			return this.sanitizeUser(this.mapUser(rawRow))
 		}
 		return null
@@ -252,6 +277,7 @@ export class D1UserAdapter extends UserAdapter {
 	}
 
 	async updateUser(id: string, data: Partial<User> & Record<string, unknown>): Promise<User> {
+		assertPublicUserData(data)
 		const fields = Object.keys(data)
 		if (fields.length === 0) {
 			const existing = await this.getUserById(id)
@@ -269,7 +295,7 @@ export class D1UserAdapter extends UserAdapter {
 		const sql = `UPDATE ${this.usersTable} SET ${setClause} WHERE ${this.columns.id} = ?`
 		await this.db
 			.prepare(sql)
-			.bind(...values, this.toD1Value(id))
+			.bind(...values, this.coerceDbId(id))
 			.run()
 		const updated = await this.getUserById(id)
 		if (!updated) throw new Error('Updated user not found')
@@ -279,7 +305,7 @@ export class D1UserAdapter extends UserAdapter {
 	async deleteUser(id: string) {
 		await this.db
 			.prepare(`DELETE FROM ${this.usersTable} WHERE ${this.columns.id} = ?`)
-			.bind(id)
+			.bind(this.coerceDbId(id))
 			.run()
 	}
 
@@ -289,20 +315,35 @@ export class D1UserAdapter extends UserAdapter {
 		providerAccountId: string
 	): Promise<void> {
 		const sql = `INSERT INTO ${this.oauthAccountsTable} (${this.oauthColumns.userId}, ${this.oauthColumns.provider}, ${this.oauthColumns.providerAccountId}) VALUES (?, ?, ?)`
-		await this.db.prepare(sql).bind(userId, provider, providerAccountId).run()
+		await this.db.prepare(sql).bind(this.coerceDbId(userId), provider, providerAccountId).run()
 	}
 
-	async getUserWithPasswordHash(
-		email: string
-	): Promise<(User & { password?: string | null }) | null> {
+	async findPasswordCredential(
+		identifier: string,
+		field = 'email'
+	): Promise<PasswordCredential | null> {
+		if (field !== 'email') return null
 		const sql = `SELECT * FROM ${this.usersTable} WHERE lower(${this.columns.email}) = lower(?) ORDER BY ${this.columns.id} ASC LIMIT 1`
-		const row = await this.db.prepare(sql).bind(email.trim()).first()
+		const row = await this.db.prepare(sql).bind(identifier.trim()).first()
 		const mapped = this.mapUser(row)
 		if (!mapped) return null
 		const password = row?.[this.columns['password']] ?? row?.['password']
 		return {
-			...mapped,
-			password: typeof password === 'string' ? password : null
+			user: this.sanitizeUser(mapped) ?? mapped,
+			passwordHash: typeof password === 'string' ? password : null
 		}
+	}
+
+	async updatePasswordHash(userId: string, passwordHash: string): Promise<User> {
+		if (!passwordHash) throw new Error('Password hash is required')
+		await this.db
+			.prepare(
+				`UPDATE ${this.usersTable} SET ${this.columns.password} = ? WHERE ${this.columns.id} = ?`
+			)
+			.bind(passwordHash, this.coerceDbId(userId))
+			.run()
+		const updated = await this.getUserById(userId)
+		if (!updated) throw new Error('Updated user not found')
+		return updated
 	}
 }

@@ -60,8 +60,32 @@ function createMockDb() {
 				},
 				run() {
 					if (sql.startsWith('INSERT INTO users')) {
-						const [email, name, avatar, emailVerified] = bound
-						return { meta: insert('users', { email, name, avatar, email_verified: emailVerified }) }
+						const columns = /INSERT INTO users \(([^)]+)\)/
+							.exec(sql)?.[1]
+							?.split(',')
+							.map((value) => value.trim())
+						if (!columns) throw new Error(`Unable to parse user insert: ${sql}`)
+						return {
+							meta: insert(
+								'users',
+								Object.fromEntries(columns.map((column, i) => [column, bound[i]]))
+							)
+						}
+					}
+					if (sql.startsWith('UPDATE users SET')) {
+						const columns = /UPDATE users SET (.+) WHERE/
+							.exec(sql)?.[1]
+							?.split(',')
+							.map((value) => value.split('=')[0]?.trim())
+							.filter((value): value is string => Boolean(value))
+						if (!columns) throw new Error(`Unable to parse user update: ${sql}`)
+						const id = bound.at(-1)
+						updateWhere(
+							'users',
+							(row) => row.id === id,
+							Object.fromEntries(columns.map((column, i) => [column, bound[i]]))
+						)
+						return { meta: { changes: 1 } }
 					}
 					if (sql.startsWith('INSERT INTO oauth_accounts')) {
 						const [user_id, provider, provider_account_id] = bound
@@ -124,7 +148,10 @@ function createMockDb() {
 						const [id] = bound
 						return findWhere('users', (r) => r.id === id)
 					}
-					if (sql.includes('FROM users') && sql.includes('WHERE email')) {
+					if (
+						sql.includes('FROM users') &&
+						(sql.includes('WHERE email') || sql.includes('WHERE lower(email)'))
+					) {
 						const [email] = bound
 						return findWhere('users', (r) => r.email === email)
 					}
@@ -215,6 +242,27 @@ describe('D1 adapters', () => {
 		expect(result.session?.id).toBe(session.id)
 		expect(result.session?.mfaVerifiedAt).toEqual(mfaVerifiedAt)
 		expect((await sessionAdapter.listSessions(user.id))[0]?.mfaVerifiedAt).toEqual(mfaVerifiedAt)
+	})
+
+	it('keeps D1 password hashes behind the credential capability', async () => {
+		const adapter = new D1UserAdapter(createMockDb())
+		const profile = await adapter.createUserWithPassword(
+			{ email: 'credential@example.com', name: 'Credential User' },
+			'encoded-one'
+		)
+
+		expect(profile).not.toHaveProperty('password')
+		await expect(adapter.findPasswordCredential(profile.email)).resolves.toEqual({
+			user: profile,
+			passwordHash: 'encoded-one'
+		})
+		await adapter.updatePasswordHash(profile.id, 'encoded-two')
+		await expect(adapter.findPasswordCredential(profile.email)).resolves.toMatchObject({
+			passwordHash: 'encoded-two'
+		})
+		await expect(adapter.updateUser(profile.id, { password: 'bypass' })).rejects.toThrow(
+			/updatePasswordHash/
+		)
 	})
 
 	it('stores and retrieves oauth tokens', async () => {

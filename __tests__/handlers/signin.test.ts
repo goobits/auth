@@ -9,9 +9,13 @@ describe('createSigninHandler', () => {
 			authenticate: vi.fn().mockResolvedValue({ user: null, valid: false })
 		}
 		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
-		const userAdapter = {}
+		const passwordCredentialAdapter = {}
 
-		const handler = createSigninHandler({ credentialsProvider, userAdapter, sessionAdapter })
+		const handler = createSigninHandler({
+			credentialsProvider,
+			passwordCredentialAdapter,
+			sessionAdapter
+		})
 		const result = await handler(
 			createRequestEvent({
 				url: 'http://localhost/signin',
@@ -37,7 +41,7 @@ describe('createSigninHandler', () => {
 
 		const handler = createSigninHandler({
 			credentialsProvider,
-			userAdapter: {},
+			passwordCredentialAdapter: {},
 			sessionAdapter,
 			redirectTo: '/dashboard',
 			getSessionMetadata: () => ({ fingerprint: 'fp-1' })
@@ -74,7 +78,7 @@ describe('createSigninHandler', () => {
 		}
 		const handler = createSigninHandler({
 			credentialsProvider,
-			userAdapter: {},
+			passwordCredentialAdapter: {},
 			sessionAdapter,
 			redirectTo: '',
 			getSessionMetadata: () => ({
@@ -108,11 +112,11 @@ describe('createSigninHandler', () => {
 			authenticate: vi.fn().mockResolvedValue({ user: null, valid: false })
 		}
 		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
-		const userAdapter = {}
+		const passwordCredentialAdapter = {}
 
 		const handler = createSigninHandler({
 			credentialsProvider,
-			userAdapter,
+			passwordCredentialAdapter,
 			sessionAdapter,
 			fields: { identifier: 'username', password: 'passcode' },
 			identifierField: 'username',
@@ -133,7 +137,7 @@ describe('createSigninHandler', () => {
 			identifierField: 'username',
 			allowBoth: true,
 			password: 'pw',
-			userAdapter
+			passwordCredentialAdapter
 		})
 	})
 
@@ -164,7 +168,7 @@ describe('createSigninHandler', () => {
 		})
 		const handler = createSigninHandler({
 			credentialsProvider,
-			userAdapter: {},
+			passwordCredentialAdapter: {},
 			sessionAdapter,
 			redirectTo: '',
 			mfa: {

@@ -117,7 +117,8 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			? null
 			: createWebhookChannel({
 					...webhook,
-					url: webhookUrl
+					url: webhookUrl,
+					...(webhook?.logger || config.logger ? { logger: webhook?.logger ?? config.logger } : {})
 				})
 	const alertObserver = createSecurityAlertObserver({
 		...(merged.alerts?.rules ? { rules: merged.alerts.rules } : {}),
@@ -158,6 +159,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			windowMs: merged.rateLimit?.windowMs ?? 60_000,
 			keyPrefix: merged.rateLimit?.keyPrefix ?? 'auth',
 			trustedProxyHeaders: resolveTrustedProxyHeaders(merged.rateLimit),
+			...(config.logger ? { logger: config.logger } : {}),
 			...(merged.rateLimit?.store ? { store: merged.rateLimit.store } : {})
 		},
 		audit: {

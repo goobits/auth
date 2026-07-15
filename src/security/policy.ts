@@ -1,5 +1,6 @@
 import { isHttpError, isRedirect, type RequestHandler } from '@sveltejs/kit'
 import { createRateLimiter, type RateLimitStore } from '@goobits/security/rate-limit'
+import type { Logger } from '@goobits/security/logger'
 import type { RequestEventLike, TrustedProxyHeader } from '../types/auth.ts'
 import { validateCsrfRequest, type CsrfStore } from './csrf.ts'
 import { type AuthEventEmitter, createAuthEvent } from './events.ts'
@@ -47,6 +48,7 @@ export type SecurityPolicySettings = {
 		keyPrefix: string
 		trustedProxyHeaders: readonly TrustedProxyHeader[]
 		store?: RateLimitStore
+		logger?: Logger
 	}
 	audit: {
 		mode: PolicyMode
@@ -102,6 +104,7 @@ export function applySecurityPolicy({ handler, routeId, settings }: ApplyPolicyI
 			}
 		],
 		keyPrefix: settings.rateLimit.keyPrefix,
+		...(settings.rateLimit.logger ? { logger: settings.rateLimit.logger } : {}),
 		...(settings.rateLimit.store ? { store: settings.rateLimit.store } : {})
 	})
 

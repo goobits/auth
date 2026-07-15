@@ -64,31 +64,10 @@ export abstract class UserAdapter {
 	): Promise<void>
 
 	/**
-	 * INTERNAL: Get user with password hash (for authentication only)
-	 * @param {string} email - Email address
-	 * @returns {Promise<Object | null>} Full user object including password
-	 * @private
-	 */
-	abstract getUserWithPasswordHash(
-		email: string
-	): Promise<(User & { password?: string | null }) | null>
-
-	/**
 	 * OPTIONAL: Get user by identifier (returns SANITIZED user)
 	 * @param {string} identifier - Identifier value (e.g. nickname)
 	 * @param {string} [field] - Identifier field name
 	 * @returns {Promise<import('../../types/core.ts').User | null>}
 	 */
 	getUserByIdentifier?(identifier: string, field?: string): Promise<User | null>
-
-	/**
-	 * OPTIONAL: Get user with password hash by identifier (for auth only)
-	 * @param {string} identifier - Identifier value (e.g. nickname)
-	 * @param {string} [field] - Identifier field name
-	 * @returns {Promise<Object | null>} Full user object including password
-	 */
-	getUserWithPasswordHashByIdentifier?(
-		identifier: string,
-		field?: string
-	): Promise<(User & { password?: string | null }) | null>
 }
