@@ -123,3 +123,12 @@ Persistent adapters now round-trip `Session.mfaVerifiedAt`. Add a nullable
 deploying this version. The PostgreSQL bundle's `pgAuthSchemaSql` includes an
 idempotent `ALTER TABLE`; KV records need no migration. D1 applications that do
 not use session assurance may explicitly set `columns.mfaVerifiedAt` to `null`.
+
+## PostgreSQL MFA encryption
+
+`PgMfaAdapter` and `createPgAuthAdapters` now require an `mfaSecretCodec`.
+Encrypt every existing `auth_mfa_factors.secret` value with the selected codec
+before deploying this version, and verify the migration from a snapshot. There
+is intentionally no plaintext compatibility fallback: unreadable legacy rows
+must be migrated or their owners must re-enroll. Bind the user ID as
+authenticated context and retain old decryption keys for controlled rotation.

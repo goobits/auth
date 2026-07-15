@@ -47,4 +47,4 @@ export type {
 export { drizzleAdapter } from './drizzle/index.ts'
 
 // Type-only export keeps the aggregate adapter entrypoint Worker-safe.
-export type { PgPoolLike } from './pg/index.ts'
+export type { MfaSecretCodec, PgPoolLike } from './pg/index.ts'

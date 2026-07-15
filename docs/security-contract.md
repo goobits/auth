@@ -47,7 +47,8 @@ const auth = new GoobitsAuth({
     `webauthn.authorizeSecurityChange`
   - migration of custom session storage to persist optional assurance metadata
     before privileged routes rely on it
-  - encrypted-at-rest MFA factor persistence and key rotation
+  - an MFA secret codec backed by `@goobits/security/crypto` or a managed KMS,
+    including key rotation
   - rate limiting for standalone credential and MFA handlers
   - generic route audit logging through `@goobits/security/audit`
   - security headers, TLS/HSTS/CSP at app/edge layer

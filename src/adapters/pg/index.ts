@@ -25,6 +25,12 @@ export type PgPoolLike = {
 	): Promise<{ rows: T[] }>
 }
 
+/** Encrypts and decrypts PostgreSQL MFA secrets with application-owned key management. */
+export type MfaSecretCodec = {
+	encrypt(secret: string, userId: string): Promise<string>
+	decrypt(ciphertext: string, userId: string): Promise<string>
+}
+
 type UserRow = {
 	avatar: string | null
 	created_at: Date
@@ -531,14 +537,23 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 /** Postgres mfa adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class PgMfaAdapter extends MfaAdapter {
 	#db: PgPoolLike
+	#secretCodec: MfaSecretCodec
 
-	constructor({ db }: { db: PgPoolLike }) {
+	constructor({ db, secretCodec }: { db: PgPoolLike; secretCodec: MfaSecretCodec }) {
 		super()
+		if (typeof secretCodec?.encrypt !== 'function' || typeof secretCodec?.decrypt !== 'function') {
+			throw new Error('PgMfaAdapter requires an MFA secret encryption codec')
+		}
 		this.#db = db
+		this.#secretCodec = secretCodec
 	}
 
 	async beginEnrollment(userId: string, secret: string, backupCodes: string[]): Promise<boolean> {
 		if (backupCodes.length === 0) return false
+		const ciphertext = await this.#secretCodec.encrypt(secret, userId)
+		if (typeof ciphertext !== 'string' || !ciphertext.trim() || ciphertext === secret) {
+			throw new Error('PgMfaAdapter secret codec returned unencrypted plaintext')
+		}
 		const rows = (
 			await this.#db.query<{ user_id: string }>(
 				`
@@ -563,7 +578,7 @@ export class PgMfaAdapter extends MfaAdapter {
 			CROSS JOIN (SELECT COUNT(*) FROM removed) AS removal_complete
 			RETURNING user_id
 		`,
-				[userId, secret, backupCodes]
+				[userId, ciphertext, backupCodes]
 			)
 		).rows
 		return rows.length > 0
@@ -576,7 +591,12 @@ export class PgMfaAdapter extends MfaAdapter {
 				[userId]
 			)
 		).rows[0]
-		return row?.secret ?? null
+		if (!row) return null
+		const secret = await this.#secretCodec.decrypt(row.secret, userId)
+		if (typeof secret !== 'string' || !secret.trim()) {
+			throw new Error('PgMfaAdapter secret codec returned an empty plaintext')
+		}
+		return secret
 	}
 
 	async activateEnrollment(userId: string): Promise<boolean> {
@@ -768,11 +788,12 @@ export function createPgAuthAdapters(input: {
 	cookieDomain?: string
 	cookieName: string
 	db: PgPoolLike
+	mfaSecretCodec: MfaSecretCodec
 	secureCookies: boolean
 }) {
 	return {
 		magicLink: new PgMagicLinkAdapter({ db: input.db }),
-		mfa: new PgMfaAdapter({ db: input.db }),
+		mfa: new PgMfaAdapter({ db: input.db, secretCodec: input.mfaSecretCodec }),
 		session: new PgSessionAdapter(input),
 		user: new PgUserAdapter({ db: input.db }),
 		webauthn: new PgWebAuthnAdapter({ db: input.db })

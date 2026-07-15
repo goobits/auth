@@ -3,8 +3,20 @@ import { describe, expect, it } from 'vitest'
 import {
 	createPgAuthAdapters,
 	pgAuthSchemaSql,
+	type MfaSecretCodec,
 	type PgPoolLike
 } from '../../src/adapters/pg/index.ts'
+
+const mfaSecretCodec: MfaSecretCodec = {
+	async encrypt(secret, userId) {
+		return `test-seal:${userId}:${[...secret].reverse().join('')}`
+	},
+	async decrypt(ciphertext, userId) {
+		const prefix = `test-seal:${userId}:`
+		if (!ciphertext.startsWith(prefix)) throw new Error('Invalid test MFA ciphertext')
+		return [...ciphertext.slice(prefix.length)].reverse().join('')
+	}
+}
 
 describe('pg auth adapters', () => {
 	it('exposes the default postgres schema', () => {
@@ -19,6 +31,18 @@ describe('pg auth adapters', () => {
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_webauthn_challenges')
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_webauthn_credentials')
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_magic_link_tokens')
+	})
+
+	it('requires an MFA secret codec for the postgres bundle', () => {
+		const db: PgPoolLike = { query: async () => ({ rows: [] }) }
+		expect(() =>
+			createPgAuthAdapters({
+				cookieName: 'auth',
+				db,
+				mfaSecretCodec: undefined as never,
+				secureCookies: true
+			})
+		).toThrow('requires an MFA secret encryption codec')
 	})
 
 	it('creates sessions through a node-postgres compatible pool', async () => {
@@ -47,6 +71,7 @@ describe('pg auth adapters', () => {
 		const adapters = createPgAuthAdapters({
 			cookieName: 'auth',
 			db,
+			mfaSecretCodec,
 			secureCookies: true
 		})
 
@@ -103,6 +128,7 @@ describe('pg auth adapters', () => {
 		const adapters = createPgAuthAdapters({
 			cookieName: 'auth',
 			db,
+			mfaSecretCodec,
 			secureCookies: true
 		})
 
@@ -136,10 +162,12 @@ describe('pg auth adapters', () => {
 
 	it('stores MFA secrets and backup codes through the postgres bundle', async () => {
 		const queries: Array<{ text: string; values: readonly unknown[] }> = []
+		let storedSecret = ''
 		const db: PgPoolLike = {
 			async query(text, values = []) {
 				queries.push({ text, values })
 				if (text.includes('INSERT INTO auth_mfa_factors')) {
+					storedSecret = String(values[1])
 					return { rows: [{ user_id: 'user-1' }] }
 				}
 				if (text.includes('UPDATE auth_mfa_factors AS factor')) {
@@ -150,7 +178,7 @@ describe('pg auth adapters', () => {
 						rows: [
 							{
 								enabled_at: new Date('2026-01-01T00:00:00.000Z'),
-								secret: 'SECRET',
+								secret: storedSecret,
 								user_id: values[0]
 							}
 						]
@@ -178,6 +206,7 @@ describe('pg auth adapters', () => {
 		const adapters = createPgAuthAdapters({
 			cookieName: 'auth',
 			db,
+			mfaSecretCodec,
 			secureCookies: true
 		})
 
@@ -189,6 +218,8 @@ describe('pg auth adapters', () => {
 		await expect(adapters.mfa.consumeBackupCode('user-1', 'hash-1')).resolves.toBe(true)
 
 		expect(secret).toBe('SECRET')
+		expect(storedSecret).not.toBe('SECRET')
+		expect(storedSecret).not.toContain('SECRET')
 		expect(backupCodes).toEqual(['hash-1'])
 		expect(status).toEqual({
 			backupCodeCount: 1,
@@ -203,6 +234,27 @@ describe('pg auth adapters', () => {
 					query.text.includes('DELETE FROM auth_mfa_backup_codes')
 			)
 		).toBe(true)
+	})
+
+	it('rejects an MFA codec that returns plaintext', async () => {
+		const db: PgPoolLike = {
+			async query() {
+				throw new Error('Database must not receive plaintext MFA secrets')
+			}
+		}
+		const adapters = createPgAuthAdapters({
+			cookieName: 'auth',
+			db,
+			mfaSecretCodec: {
+				encrypt: async (secret) => secret,
+				decrypt: async (ciphertext) => ciphertext
+			},
+			secureCookies: true
+		})
+
+		await expect(adapters.mfa.beginEnrollment('user-1', 'SECRET', ['hash-1'])).rejects.toThrow(
+			'unencrypted plaintext'
+		)
 	})
 
 	it('stores and atomically consumes magic link tokens through the postgres bundle', async () => {
@@ -268,6 +320,7 @@ describe('pg auth adapters', () => {
 		const adapters = createPgAuthAdapters({
 			cookieName: 'auth',
 			db,
+			mfaSecretCodec,
 			secureCookies: true
 		})
 

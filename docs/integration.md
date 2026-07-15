@@ -165,8 +165,15 @@ record on success, `null` if no row matched.
 | `D1SessionAdapter`, `D1UserAdapter`, …       | Cloudflare D1             | Hand-rolled SQL; takes a `D1Database` instance and table names.                                            |
 | `CookieSessionAdapter`, `CookieTokenAdapter` | Signed cookie             | Stateless; good for edge runtimes without a database. Don't combine with passkey/magic-link features.      |
 | `KVSessionAdapter`, `KVTokenAdapter`         | Cloudflare KV             | For environments where D1 isn't available.                                                                 |
+| `createPgAuthAdapters(options)`              | PostgreSQL                | Node-only bundle; requires an application-owned `mfaSecretCodec`.                                          |
 
 If your storage doesn't fit any of these, extend the base class directly.
+
+The PostgreSQL bundle never stores a plaintext TOTP secret and has no plaintext
+fallback. Its required `mfaSecretCodec` must bind ciphertext to the supplied
+user ID and use `@goobits/security/crypto` AES-GCM primitives, a managed KMS, or
+an equivalent authenticated-encryption service. Keep key identifiers in the
+ciphertext envelope so old keys can decrypt during controlled rotation.
 
 ## How `@calendar/kit` does it (worked example)
 
