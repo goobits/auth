@@ -5,11 +5,14 @@ import type { MfaStatus } from '../../types/core.ts'
  */
 export abstract class MfaAdapter {
 	/**
-	 * Store or replace a user's pending TOTP secret.
+	 * Atomically begin or replace a pending MFA enrollment.
+	 * Active factors must not be replaced.
 	 * @param userId User identifier.
 	 * @param secret Base32 TOTP secret.
+	 * @param backupCodes Backup-code hashes created for the pending factor.
+	 * @returns Whether enrollment was stored.
 	 */
-	abstract setSecret(userId: string, secret: string): Promise<void>
+	abstract beginEnrollment(userId: string, secret: string, backupCodes: string[]): Promise<boolean>
 
 	/**
 	 * Return a user's TOTP secret, when enrollment has started.
@@ -19,23 +22,18 @@ export abstract class MfaAdapter {
 	abstract getSecret(userId: string): Promise<string | null>
 
 	/**
-	 * Mark MFA enabled for a user.
+	 * Activate a pending MFA enrollment.
 	 * @param userId User identifier.
+	 * @returns Whether a complete pending enrollment was activated.
 	 */
-	abstract enableMfa(userId: string): Promise<void>
+	abstract activateEnrollment(userId: string): Promise<boolean>
 
 	/**
 	 * Disable MFA and remove related TOTP material.
 	 * @param userId User identifier.
+	 * @returns Whether an MFA factor was removed.
 	 */
-	abstract disableMfa(userId: string): Promise<void>
-
-	/**
-	 * Replace a user's backup-code hashes.
-	 * @param userId User identifier.
-	 * @param codes Backup-code hashes.
-	 */
-	abstract setBackupCodes(userId: string, codes: string[]): Promise<void>
+	abstract disableMfa(userId: string): Promise<boolean>
 
 	/**
 	 * Return unused backup-code hashes for a user.
@@ -48,8 +46,9 @@ export abstract class MfaAdapter {
 	 * Consume one backup-code hash.
 	 * @param userId User identifier.
 	 * @param hash Backup-code hash.
+	 * @returns Whether the unused code was consumed.
 	 */
-	abstract consumeBackupCode(userId: string, hash: string): Promise<void>
+	abstract consumeBackupCode(userId: string, hash: string): Promise<boolean>
 
 	/**
 	 * Return MFA enrollment status.

@@ -20,6 +20,7 @@ import {
 	createMfaStatusHandler,
 	createMfaVerifyHandler
 } from '../../src/handlers/mfa.ts'
+import type { MfaStore } from '../../src/handlers/mfa.ts'
 import * as backup from '../../src/mfa/backupCodes.ts'
 import * as totp from '../../src/mfa/totp.ts'
 import { createCookies, createRequestEvent } from '../testKit.ts'
@@ -33,36 +34,79 @@ function createEvent({ locals = {}, form = {} } = {}) {
 	})
 }
 
+const authorizeSecurityChange = vi.fn(async () => true)
+
+function createStore(overrides: Partial<MfaStore> = {}): MfaStore {
+	return {
+		activateEnrollment: vi.fn(async () => true),
+		beginEnrollment: vi.fn(async () => true),
+		consumeBackupCode: vi.fn(async () => true),
+		disableMfa: vi.fn(async () => true),
+		getBackupCodes: vi.fn(async () => []),
+		getSecret: vi.fn(async () => 'SECRET'),
+		getStatus: vi.fn(async () => ({
+			backupCodeCount: 8,
+			enabled: true,
+			enabledAt: new Date()
+		})),
+		...overrides
+	}
+}
+
 beforeEach(() => {
 	vi.mocked(totp.verifyTOTP).mockReset()
 	vi.mocked(backup.verifyBackupCode).mockReset()
+	authorizeSecurityChange.mockClear()
+	authorizeSecurityChange.mockResolvedValue(true)
 })
 
 describe('MFA handlers', () => {
 	it('enroll requires user', async () => {
 		const handler = createMfaEnrollHandler({
+			authorizeSecurityChange,
 			getUserId: () => null,
-			store: {},
+			store: createStore(),
 			issuer: 'Test'
 		})
 		const result = await handler(createEvent())
 		expect(result.success).toBe(false)
 	})
 
-	it('enroll stores secret and backup codes', async () => {
-		const store = {
-			setSecret: vi.fn(),
-			setBackupCodes: vi.fn()
-		}
+	it('enroll atomically stores a pending secret and backup codes after step-up', async () => {
+		const store = createStore()
 		const handler = createMfaEnrollHandler({
+			authorizeSecurityChange,
 			getUserId: () => 'u1',
 			store,
 			issuer: 'Test'
 		})
 		const result = await handler(createEvent({ locals: { userId: 'u1' } }))
 		expect(result.success).toBe(true)
-		expect(store.setSecret).toHaveBeenCalledWith('u1', 'SECRET')
-		expect(store.setBackupCodes).toHaveBeenCalledWith('u1', ['hash1', 'hash2'])
+		expect(authorizeSecurityChange).toHaveBeenCalledWith(
+			expect.objectContaining({ action: 'mfa.enroll', userId: 'u1' })
+		)
+		expect(store.beginEnrollment).toHaveBeenCalledWith('u1', 'SECRET', ['hash1', 'hash2'])
+	})
+
+	it('enroll fails closed when step-up is denied or an active factor wins the race', async () => {
+		const store = createStore()
+		authorizeSecurityChange.mockResolvedValueOnce(false)
+		const denied = createMfaEnrollHandler({
+			authorizeSecurityChange,
+			getUserId: () => 'u1',
+			store
+		})
+		await expect(denied(createEvent())).resolves.toEqual({
+			success: false,
+			error: 'Reauthentication required'
+		})
+		expect(store.beginEnrollment).not.toHaveBeenCalled()
+
+		vi.mocked(store.beginEnrollment).mockResolvedValueOnce(false)
+		await expect(denied(createEvent())).resolves.toEqual({
+			success: false,
+			error: 'Multi-factor authentication is already enabled'
+		})
 	})
 
 	it('status returns adapter-backed enrollment status', async () => {
@@ -71,11 +115,7 @@ describe('MFA handlers', () => {
 			enabled: true,
 			enabledAt: new Date('2026-01-01T00:00:00.000Z')
 		}
-		const store = {
-			getBackupCodes: vi.fn(),
-			getSecret: vi.fn(),
-			getStatus: vi.fn(async () => status)
-		}
+		const store = createStore({ getStatus: vi.fn(async () => status) })
 		const handler = createMfaStatusHandler({ getUserId: () => 'u1', store })
 		const result = await handler(createEvent({ locals: { userId: 'u1' } }))
 
@@ -84,52 +124,78 @@ describe('MFA handlers', () => {
 	})
 
 	it('verify rejects invalid token', async () => {
-		const store = { getSecret: vi.fn(async () => 'SECRET'), enableMfa: vi.fn() }
+		const store = createStore()
 		vi.mocked(totp.verifyTOTP).mockResolvedValue(false)
 		const handler = createMfaVerifyHandler({ getUserId: () => 'u1', store })
 		const result = await handler(
 			createEvent({ locals: { userId: 'u1' }, form: { token: '000000' } })
 		)
 		expect(result.success).toBe(false)
-		expect(store.enableMfa).not.toHaveBeenCalled()
+		expect(store.activateEnrollment).not.toHaveBeenCalled()
 	})
 
 	it('disable requires user', async () => {
-		const store = { disableMfa: vi.fn() }
-		const handler = createMfaDisableHandler({ getUserId: () => null, store })
+		const store = createStore()
+		const handler = createMfaDisableHandler({
+			authorizeSecurityChange,
+			getUserId: () => null,
+			store
+		})
 		const result = await handler(createEvent())
 		expect(result.success).toBe(false)
 		expect(store.disableMfa).not.toHaveBeenCalled()
 	})
 
 	it('verify rejects missing enrollment secret', async () => {
-		const store = { getSecret: vi.fn(async () => null), enableMfa: vi.fn() }
+		const store = createStore({ getSecret: vi.fn(async () => null) })
 		const handler = createMfaVerifyHandler({ getUserId: () => 'u1', store })
 		const result = await handler(
 			createEvent({ locals: { userId: 'u1' }, form: { token: '000000' } })
 		)
 		expect(result).toEqual({ success: false, error: 'MFA enrollment not started' })
-		expect(store.enableMfa).not.toHaveBeenCalled()
+		expect(store.activateEnrollment).not.toHaveBeenCalled()
 	})
 
-	it('disable invokes store.disableMfa for the authenticated user', async () => {
-		const store = { disableMfa: vi.fn(async () => undefined) }
-		const handler = createMfaDisableHandler({ getUserId: () => 'u1', store })
-		const result = await handler(createEvent({ locals: { userId: 'u1' } }))
+	it('disable requires step-up and an active factor code', async () => {
+		const store = createStore()
+		vi.mocked(totp.verifyTOTP).mockResolvedValue(true)
+		const handler = createMfaDisableHandler({
+			authorizeSecurityChange,
+			getUserId: () => 'u1',
+			store
+		})
+		const result = await handler(
+			createEvent({ locals: { userId: 'u1' }, form: { token: '123456' } })
+		)
 		expect(result.success).toBe(true)
+		expect(authorizeSecurityChange).toHaveBeenCalledWith(
+			expect.objectContaining({ action: 'mfa.disable', userId: 'u1' })
+		)
 		expect(store.disableMfa).toHaveBeenCalledWith('u1')
 	})
 
 	it('backup code consumes valid code', async () => {
 		vi.mocked(backup.verifyBackupCode).mockResolvedValue({ valid: true, hash: 'h1' })
-		const store = {
-			getBackupCodes: vi.fn(async () => ['h1']),
-			consumeBackupCode: vi.fn()
-		}
+		const store = createStore({
+			getBackupCodes: vi.fn(async () => ['h1'])
+		})
 		const handler = createMfaBackupCodeHandler({ getUserId: () => 'u1', store })
 		const result = await handler(createEvent({ locals: { userId: 'u1' }, form: { code: 'code1' } }))
 		expect(result.success).toBe(true)
 		expect(store.consumeBackupCode).toHaveBeenCalledWith('u1', 'h1')
+	})
+
+	it('rejects a backup code that loses the atomic consume race', async () => {
+		vi.mocked(backup.verifyBackupCode).mockResolvedValue({ valid: true, hash: 'h1' })
+		const store = createStore({
+			consumeBackupCode: vi.fn(async () => false),
+			getBackupCodes: vi.fn(async () => ['h1'])
+		})
+		const handler = createMfaBackupCodeHandler({ getUserId: () => 'u1', store })
+
+		await expect(
+			handler(createEvent({ locals: { userId: 'u1' }, form: { code: 'code1' } }))
+		).resolves.toEqual({ success: false, error: 'Invalid backup code' })
 	})
 
 	it('creates a session only after a single-use login challenge passes', async () => {
@@ -176,16 +242,7 @@ describe('MFA handlers', () => {
 			}),
 			deleteById: vi.fn(async () => undefined)
 		}
-		const store = {
-			getStatus: vi.fn(async () => ({ enabled: true, enabledAt: new Date(), backupCodeCount: 8 })),
-			getSecret: vi.fn(async () => 'SECRET'),
-			getBackupCodes: vi.fn(async () => []),
-			consumeBackupCode: vi.fn(async () => undefined),
-			setSecret: vi.fn(),
-			setBackupCodes: vi.fn(),
-			enableMfa: vi.fn(),
-			disableMfa: vi.fn()
-		}
+		const store = createStore()
 		const cookies = createCookies()
 		await beginMfaLoginChallenge({
 			event: createRequestEvent({ cookies }),

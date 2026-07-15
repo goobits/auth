@@ -132,6 +132,12 @@ describe('pg auth adapters', () => {
 		const db: PgPoolLike = {
 			async query(text, values = []) {
 				queries.push({ text, values })
+				if (text.includes('INSERT INTO auth_mfa_factors')) {
+					return { rows: [{ user_id: 'user-1' }] }
+				}
+				if (text.includes('UPDATE auth_mfa_factors AS factor')) {
+					return { rows: [{ user_id: 'user-1' }] }
+				}
 				if (text.includes('SELECT user_id, secret, enabled_at FROM auth_mfa_factors')) {
 					return {
 						rows: [
@@ -156,6 +162,9 @@ describe('pg auth adapters', () => {
 						]
 					}
 				}
+				if (text.includes('DELETE FROM auth_mfa_backup_codes')) {
+					return { rows: [{ code_hash: 'hash-1' }] }
+				}
 				return { rows: [] }
 			}
 		}
@@ -165,13 +174,12 @@ describe('pg auth adapters', () => {
 			secureCookies: true
 		})
 
-		await adapters.mfa.setSecret('user-1', 'SECRET')
-		await adapters.mfa.setBackupCodes('user-1', ['hash-1'])
-		await adapters.mfa.enableMfa('user-1')
+		await expect(adapters.mfa.beginEnrollment('user-1', 'SECRET', ['hash-1'])).resolves.toBe(true)
+		await expect(adapters.mfa.activateEnrollment('user-1')).resolves.toBe(true)
 		const secret = await adapters.mfa.getSecret('user-1')
 		const backupCodes = await adapters.mfa.getBackupCodes('user-1')
 		const status = await adapters.mfa.getStatus('user-1')
-		await adapters.mfa.consumeBackupCode('user-1', 'hash-1')
+		await expect(adapters.mfa.consumeBackupCode('user-1', 'hash-1')).resolves.toBe(true)
 
 		expect(secret).toBe('SECRET')
 		expect(backupCodes).toEqual(['hash-1'])
@@ -181,9 +189,13 @@ describe('pg auth adapters', () => {
 			enabledAt: new Date('2026-01-01T00:00:00.000Z')
 		})
 		expect(queries.some((query) => query.text.includes('INSERT INTO auth_mfa_factors'))).toBe(true)
-		expect(queries.some((query) => query.text.includes('INSERT INTO auth_mfa_backup_codes'))).toBe(
-			true
-		)
+		expect(
+			queries.some(
+				(query) =>
+					query.text.includes('INSERT INTO auth_mfa_backup_codes') &&
+					query.text.includes('DELETE FROM auth_mfa_backup_codes')
+			)
+		).toBe(true)
 	})
 
 	it('stores and atomically consumes magic link tokens through the postgres bundle', async () => {

@@ -340,6 +340,7 @@ export function createHandlers(
 	if (mfa) {
 		const getUserId = (locals: AuthLocals) => locals.user?.id ?? null
 		const mfaConfig = {
+			authorizeSecurityChange: mfa.authorizeSecurityChange,
 			getUserId,
 			store: adapters.mfa!,
 			...(mfa.issuer ? { issuer: mfa.issuer } : {}),

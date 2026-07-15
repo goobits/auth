@@ -131,8 +131,19 @@ export type WebAuthnConfig = {
 	}
 }
 
+/** Security-sensitive account mutation that requires fresh application authorization. */
+export type SecurityChangeAction = 'mfa.enroll' | 'mfa.disable' | 'webauthn.register'
+
+/** Application-owned step-up authorization for factor enrollment and removal. */
+export type AuthorizeSecurityChange = (input: {
+	action: SecurityChangeAction
+	event: RequestEventLike
+	userId: string
+}) => boolean | Promise<boolean>
+
 /** Defines totp mfa config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type TotpMfaConfig = {
+	authorizeSecurityChange: AuthorizeSecurityChange
 	issuer?: string
 	label?: (userId: string, locals: RequestEventLike['locals']) => string
 }

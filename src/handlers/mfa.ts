@@ -2,7 +2,7 @@ import type { VerificationTokenAdapter } from '../adapters/verification-token/Ve
 import type { Session, SessionMetadata } from '../types/core.ts'
 import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../mfa/backupCodes.ts'
 import { createOtpAuthURL, generateSecret, verifyTOTP } from '../mfa/totp.ts'
-import type { RequestEventLike } from '../types/auth.ts'
+import type { AuthorizeSecurityChange, RequestEventLike } from '../types/auth.ts'
 import type { User } from '../types/core.ts'
 import {
 	consumeVerificationTokenRecord,
@@ -16,14 +16,13 @@ const DEFAULT_LOGIN_CHALLENGE_TTL_MS = 5 * 60 * 1000
 
 /** Mfa Store typed model for runtime integration. */
 export type MfaStore = {
-	setSecret: (userId: string, secret: string) => Promise<void>
-	setBackupCodes: (userId: string, codes: string[]) => Promise<void>
-	enableMfa: (userId: string) => Promise<void>
+	beginEnrollment: (userId: string, secret: string, backupCodes: string[]) => Promise<boolean>
+	activateEnrollment: (userId: string) => Promise<boolean>
 	getSecret: (userId: string) => Promise<string | null>
-	disableMfa: (userId: string) => Promise<void>
+	disableMfa: (userId: string) => Promise<boolean>
 	getBackupCodes: (userId: string) => Promise<string[]>
-	consumeBackupCode: (userId: string, hash: string) => Promise<void>
-	getStatus?: (userId: string) => Promise<{
+	consumeBackupCode: (userId: string, hash: string) => Promise<boolean>
+	getStatus: (userId: string) => Promise<{
 		enabled: boolean
 		enabledAt: Date | null
 		backupCodeCount: number
@@ -36,6 +35,11 @@ export type MfaConfig = {
 	store: MfaStore
 	issuer?: string
 	label?: (userId: string, locals: RequestEventLike['locals']) => string
+}
+
+/** Configuration for MFA operations that change a user's factors. */
+export type MfaSecurityChangeConfig = MfaConfig & {
+	authorizeSecurityChange: AuthorizeSecurityChange
 }
 
 type MfaLoginStore = MfaStore & {
@@ -191,7 +195,9 @@ export function createMfaLoginVerifyHandler(
 			return { success: false, error: 'Invalid or expired login challenge' }
 		}
 
-		if (backupHash) await config.store.consumeBackupCode(userId, backupHash)
+		if (backupHash && !(await config.store.consumeBackupCode(userId, backupHash))) {
+			return { success: false, error: 'Invalid authentication code' }
+		}
 		const session = await config.sessionAdapter.createSession(userId, {
 			...challengeMetadata(consumed.token.metadata),
 			mfaVerifiedAt: new Date()
@@ -212,13 +218,7 @@ export function createMfaStatusHandler(config: MfaConfig) {
 	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
 		if (!userId) return { success: false, error: 'Unauthorized' }
-		const status = store.getStatus
-			? await store.getStatus(userId)
-			: {
-					backupCodeCount: (await store.getBackupCodes(userId)).length,
-					enabled: Boolean(await store.getSecret(userId)),
-					enabledAt: null
-				}
+		const status = await store.getStatus(userId)
 		return { success: true, status }
 	}
 }
@@ -228,11 +228,14 @@ export function createMfaStatusHandler(config: MfaConfig) {
  *
  * @param {Object} config - Configuration for this operation.
  */
-export function createMfaEnrollHandler(config: MfaConfig) {
-	const { getUserId, store, issuer, label } = config
+export function createMfaEnrollHandler(config: MfaSecurityChangeConfig) {
+	const { authorizeSecurityChange, getUserId, store, issuer, label } = config
 	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
 		if (!userId) return { success: false, error: 'Unauthorized' }
+		if (!(await authorizeSecurityChange({ action: 'mfa.enroll', event, userId }))) {
+			return { success: false, error: 'Reauthentication required' }
+		}
 
 		const secret = generateSecret()
 		const otpLabel = label ? label(userId, event.locals) : String(userId)
@@ -245,8 +248,9 @@ export function createMfaEnrollHandler(config: MfaConfig) {
 		const backupCodes = generateBackupCodes()
 		const hashedCodes = await hashBackupCodes(backupCodes)
 
-		await store.setSecret(userId, secret)
-		await store.setBackupCodes(userId, hashedCodes)
+		if (!(await store.beginEnrollment(userId, secret, hashedCodes))) {
+			return { success: false, error: 'Multi-factor authentication is already enabled' }
+		}
 
 		return { success: true, secret, otpauthUrl, backupCodes }
 	}
@@ -270,18 +274,42 @@ export function createMfaVerifyHandler(config: MfaConfig) {
 		if (token) verifyInput.token = token
 		const valid = await verifyTOTP(verifyInput)
 		if (!valid) return { success: false, error: 'Invalid code' }
-		await store.enableMfa(userId)
+		if (!(await store.activateEnrollment(userId))) {
+			return { success: false, error: 'MFA enrollment not started' }
+		}
 		return { success: true }
 	}
 }
 
 /** Creates mfa disable handler for auth HTTP handlers. */
-export function createMfaDisableHandler(config: MfaConfig) {
-	const { getUserId, store } = config
+export function createMfaDisableHandler(config: MfaSecurityChangeConfig) {
+	const { authorizeSecurityChange, getUserId, store } = config
 	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
 		if (!userId) return { success: false, error: 'Unauthorized' }
-		await store.disableMfa(userId)
+		if (!(await authorizeSecurityChange({ action: 'mfa.disable', event, userId }))) {
+			return { success: false, error: 'Reauthentication required' }
+		}
+
+		const secret = await store.getSecret(userId)
+		if (!secret) return { success: false, error: 'Multi-factor authentication is not enabled' }
+		const formData = await event.request.formData()
+		const token = formData.get('token')?.toString() ?? ''
+		const backupCode = formData.get('backupCode')?.toString() ?? ''
+		let valid = token ? await verifyTOTP({ secret, token }) : false
+		if (!valid && backupCode) {
+			const backup = await verifyBackupCode({
+				code: backupCode,
+				hashedCodes: await store.getBackupCodes(userId)
+			})
+			if (backup.valid && backup.hash) {
+				valid = await store.consumeBackupCode(userId, backup.hash)
+			}
+		}
+		if (!valid) return { success: false, error: 'Invalid authentication code' }
+		if (!(await store.disableMfa(userId))) {
+			return { success: false, error: 'Multi-factor authentication is not enabled' }
+		}
 		return { success: true }
 	}
 }
@@ -298,7 +326,9 @@ export function createMfaBackupCodeHandler(config: MfaConfig) {
 		const result = await verifyBackupCode({ code: code ?? '', hashedCodes })
 		if (!result.valid) return { success: false, error: 'Invalid backup code' }
 		if (!result.hash) return { success: false, error: 'Invalid backup code' }
-		await store.consumeBackupCode(userId, result.hash)
+		if (!(await store.consumeBackupCode(userId, result.hash))) {
+			return { success: false, error: 'Invalid backup code' }
+		}
 		return { success: true }
 	}
 }

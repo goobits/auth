@@ -128,18 +128,17 @@ describe('createSigninHandler', () => {
 			redirectTo: '',
 			mfa: {
 				store: {
+					activateEnrollment: vi.fn(),
+					beginEnrollment: vi.fn(),
+					consumeBackupCode: vi.fn(),
+					disableMfa: vi.fn(),
+					getBackupCodes: vi.fn(),
+					getSecret: vi.fn(),
 					getStatus: vi.fn(async () => ({
 						enabled: true,
 						enabledAt: new Date(),
 						backupCodeCount: 8
-					})),
-					getSecret: vi.fn(),
-					getBackupCodes: vi.fn(),
-					consumeBackupCode: vi.fn(),
-					setSecret: vi.fn(),
-					setBackupCodes: vi.fn(),
-					enableMfa: vi.fn(),
-					disableMfa: vi.fn()
+					}))
 				},
 				verificationTokenAdapter,
 				secureCookies: false

@@ -418,44 +418,44 @@ export class MemoryMfaAdapter extends MfaAdapter {
 	#backupCodes = new Map<string, Set<string>>()
 	#factors = new Map<string, { enabledAt: Date | null; secret: string }>()
 
-	async setSecret(userId: string, secret: string): Promise<void> {
+	async beginEnrollment(userId: string, secret: string, backupCodes: string[]): Promise<boolean> {
+		if (backupCodes.length === 0) return false
 		const existing = this.#factors.get(userId)
+		if (existing?.enabledAt) return false
 		this.#factors.set(userId, {
-			enabledAt: existing?.enabledAt ?? null,
+			enabledAt: null,
 			secret
 		})
+		this.#backupCodes.set(userId, new Set(backupCodes))
+		return true
 	}
 
 	async getSecret(userId: string): Promise<string | null> {
 		return this.#factors.get(userId)?.secret ?? null
 	}
 
-	async enableMfa(userId: string): Promise<void> {
+	async activateEnrollment(userId: string): Promise<boolean> {
 		const existing = this.#factors.get(userId)
-		if (!existing) {
-			return
-		}
+		if (!existing || existing.enabledAt || !this.#backupCodes.get(userId)?.size) return false
 		this.#factors.set(userId, {
 			...existing,
 			enabledAt: new Date()
 		})
+		return true
 	}
 
-	async disableMfa(userId: string): Promise<void> {
-		this.#factors.delete(userId)
+	async disableMfa(userId: string): Promise<boolean> {
+		const removed = this.#factors.delete(userId)
 		this.#backupCodes.delete(userId)
-	}
-
-	async setBackupCodes(userId: string, codes: string[]): Promise<void> {
-		this.#backupCodes.set(userId, new Set(codes))
+		return removed
 	}
 
 	async getBackupCodes(userId: string): Promise<string[]> {
 		return [...(this.#backupCodes.get(userId) ?? [])]
 	}
 
-	async consumeBackupCode(userId: string, hash: string): Promise<void> {
-		this.#backupCodes.get(userId)?.delete(hash)
+	async consumeBackupCode(userId: string, hash: string): Promise<boolean> {
+		return this.#backupCodes.get(userId)?.delete(hash) ?? false
 	}
 
 	async getStatus(userId: string): Promise<MfaStatus> {

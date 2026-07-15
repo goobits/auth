@@ -533,17 +533,36 @@ export class PgMfaAdapter extends MfaAdapter {
 		this.#db = db
 	}
 
-	async setSecret(userId: string, secret: string): Promise<void> {
-		await this.#db.query(
-			`
-			INSERT INTO auth_mfa_factors (user_id, secret)
-			VALUES ($1, $2)
-			ON CONFLICT (user_id) DO UPDATE SET
-				secret = EXCLUDED.secret,
-				updated_at = now()
+	async beginEnrollment(userId: string, secret: string, backupCodes: string[]): Promise<boolean> {
+		if (backupCodes.length === 0) return false
+		const rows = (
+			await this.#db.query<{ user_id: string }>(
+				`
+			WITH factor AS (
+				INSERT INTO auth_mfa_factors (user_id, secret, enabled_at)
+				VALUES ($1, $2, NULL)
+				ON CONFLICT (user_id) DO UPDATE SET
+					secret = EXCLUDED.secret,
+					enabled_at = NULL,
+					updated_at = now()
+				WHERE auth_mfa_factors.enabled_at IS NULL
+				RETURNING user_id
+			), removed AS (
+				DELETE FROM auth_mfa_backup_codes
+				WHERE user_id IN (SELECT user_id FROM factor)
+				RETURNING user_id
+			)
+			INSERT INTO auth_mfa_backup_codes (user_id, code_hash)
+			SELECT factor.user_id, code_hash
+			FROM factor
+			CROSS JOIN UNNEST($3::text[]) AS code_hash
+			CROSS JOIN (SELECT COUNT(*) FROM removed) AS removal_complete
+			RETURNING user_id
 		`,
-			[userId, secret]
-		)
+				[userId, secret, backupCodes]
+			)
+		).rows
+		return rows.length > 0
 	}
 
 	async getSecret(userId: string): Promise<string | null> {
@@ -556,26 +575,32 @@ export class PgMfaAdapter extends MfaAdapter {
 		return row?.secret ?? null
 	}
 
-	async enableMfa(userId: string): Promise<void> {
-		await this.#db.query(
-			'UPDATE auth_mfa_factors SET enabled_at = COALESCE(enabled_at, now()), updated_at = now() WHERE user_id = $1',
-			[userId]
-		)
-	}
-
-	async disableMfa(userId: string): Promise<void> {
-		await this.#db.query('DELETE FROM auth_mfa_backup_codes WHERE user_id = $1', [userId])
-		await this.#db.query('DELETE FROM auth_mfa_factors WHERE user_id = $1', [userId])
-	}
-
-	async setBackupCodes(userId: string, codes: string[]): Promise<void> {
-		await this.#db.query('DELETE FROM auth_mfa_backup_codes WHERE user_id = $1', [userId])
-		for (const hash of codes) {
-			await this.#db.query(
-				'INSERT INTO auth_mfa_backup_codes (user_id, code_hash) VALUES ($1, $2)',
-				[userId, hash]
+	async activateEnrollment(userId: string): Promise<boolean> {
+		const rows = (
+			await this.#db.query<{ user_id: string }>(
+				`UPDATE auth_mfa_factors AS factor
+				 SET enabled_at = now(), updated_at = now()
+				 WHERE factor.user_id = $1
+				   AND factor.enabled_at IS NULL
+				   AND EXISTS (
+				     SELECT 1 FROM auth_mfa_backup_codes AS backup
+				     WHERE backup.user_id = factor.user_id
+				   )
+				 RETURNING factor.user_id`,
+				[userId]
 			)
-		}
+		).rows
+		return rows.length === 1
+	}
+
+	async disableMfa(userId: string): Promise<boolean> {
+		const rows = (
+			await this.#db.query<{ user_id: string }>(
+				'DELETE FROM auth_mfa_factors WHERE user_id = $1 RETURNING user_id',
+				[userId]
+			)
+		).rows
+		return rows.length === 1
 	}
 
 	async getBackupCodes(userId: string): Promise<string[]> {
@@ -588,11 +613,14 @@ export class PgMfaAdapter extends MfaAdapter {
 		return rows.map((row) => row.code_hash)
 	}
 
-	async consumeBackupCode(userId: string, hash: string): Promise<void> {
-		await this.#db.query(
-			'DELETE FROM auth_mfa_backup_codes WHERE user_id = $1 AND code_hash = $2',
-			[userId, hash]
-		)
+	async consumeBackupCode(userId: string, hash: string): Promise<boolean> {
+		const rows = (
+			await this.#db.query<{ code_hash: string }>(
+				'DELETE FROM auth_mfa_backup_codes WHERE user_id = $1 AND code_hash = $2 RETURNING code_hash',
+				[userId, hash]
+			)
+		).rows
+		return rows.length === 1
 	}
 
 	async getStatus(userId: string): Promise<MfaStatus> {
