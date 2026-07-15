@@ -54,6 +54,14 @@ CREATE INDEX webauthn_challenges_expires_idx ON webauthn_challenges (expires_at)
 ALTER TABLE sessions
   ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   ADD COLUMN last_active_at TIMESTAMP,
+  ADD COLUMN mfa_verified_at TIMESTAMP,
   ADD COLUMN ip TEXT,
   ADD COLUMN user_agent TEXT;
 ```
+
+`mfa_verified_at` is required when privileged routes rely on recent MFA. The
+Drizzle adapter reads the matching `mfaVerifiedAt` schema field, D1 defaults to
+the SQL column above, KV stores it in the session record, and the PostgreSQL
+bundle creates and migrates `auth_sessions.mfa_verified_at`. Set D1's
+`columns.mfaVerifiedAt` to `null` only when the application does not use session
+assurance.

@@ -115,3 +115,11 @@ compatibility wrappers that preserve unsafe behavior.
 `WebAuthnConfig.authorizeSecurityChange` is also required. Registration options
 are issued only after that callback succeeds, and the resulting challenge may
 only be verified by the same authenticated principal.
+
+## Session assurance persistence
+
+Persistent adapters now round-trip `Session.mfaVerifiedAt`. Add a nullable
+`mfa_verified_at` timestamp to existing Drizzle and D1 session tables before
+deploying this version. The PostgreSQL bundle's `pgAuthSchemaSql` includes an
+idempotent `ALTER TABLE`; KV records need no migration. D1 applications that do
+not use session assurance may explicitly set `columns.mfaVerifiedAt` to `null`.

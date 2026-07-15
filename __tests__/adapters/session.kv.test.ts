@@ -38,13 +38,15 @@ describe('KVSessionAdapter', () => {
 		})
 
 		vi.spyOn(Date, 'now').mockReturnValue(0)
-		const session = await adapter.createSession('u1')
+		const mfaVerifiedAt = new Date('2026-07-14T12:00:00.000Z')
+		const session = await adapter.createSession('u1', { mfaVerifiedAt })
 
 		vi.spyOn(Date, 'now').mockReturnValue(700)
 		const { session: validated } = await adapter.validateSession(session.id)
 		expect(validated).toBeTruthy()
 		expect(validated!.fresh).toBe(true)
 		expect(validated!.expiresAt.getTime()).toBeGreaterThan(700)
+		expect(validated!.mfaVerifiedAt).toEqual(mfaVerifiedAt)
 	})
 
 	it('deletes expired sessions', async () => {

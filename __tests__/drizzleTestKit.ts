@@ -17,6 +17,7 @@ export const drizzleSessionsTable = pgTable('sessions', {
 		.notNull()
 		.references(() => drizzleUsersTable.id, { onDelete: 'cascade' }),
 	expiresAt: timestamp('expires_at').notNull(),
+	mfaVerifiedAt: timestamp('mfa_verified_at'),
 	createdAt: timestamp('created_at').defaultNow()
 })
 
@@ -96,6 +97,7 @@ export async function createIntegrationDrizzleFixture(): Promise<IntegrationDbFi
 			expires_at TIMESTAMP NOT NULL,
 			created_at TIMESTAMP DEFAULT now()
 		)`
+		await client`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS mfa_verified_at TIMESTAMP`
 		await client`CREATE TABLE IF NOT EXISTS oauth_tokens (
 			id SERIAL PRIMARY KEY,
 			user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -133,7 +135,8 @@ export async function createIntegrationDrizzleFixture(): Promise<IntegrationDbFi
 			id TEXT PRIMARY KEY,
 			user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 			expires_at TIMESTAMP NOT NULL,
-			created_at TIMESTAMP DEFAULT now()
+			created_at TIMESTAMP DEFAULT now(),
+			mfa_verified_at TIMESTAMP
 		);
 		CREATE TABLE oauth_tokens (
 			id SERIAL PRIMARY KEY,

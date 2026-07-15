@@ -68,8 +68,8 @@ function createMockDb() {
 						return { meta: insert('oauth_accounts', { user_id, provider, provider_account_id }) }
 					}
 					if (sql.startsWith('INSERT INTO sessions')) {
-						const [id, user_id, expires_at] = bound
-						return { meta: insert('sessions', { id, user_id, expires_at }) }
+						const [id, user_id, expires_at, mfa_verified_at] = bound
+						return { meta: insert('sessions', { id, user_id, expires_at, mfa_verified_at }) }
 					}
 					if (sql.startsWith('UPDATE sessions SET')) {
 						const [expires_at, id] = bound
@@ -146,7 +146,8 @@ function createMockDb() {
 							...user,
 							session_id: session.id,
 							user_id: session.user_id,
-							expires_at: session.expires_at
+							expires_at: session.expires_at,
+							mfa_verified_at: session.mfa_verified_at
 						}
 					}
 					if (sql.includes('FROM oauth_tokens')) {
@@ -182,6 +183,10 @@ function createMockDb() {
 					return null
 				},
 				all() {
+					if (sql.includes('FROM sessions')) {
+						const [user_id] = bound
+						return { results: findAll('sessions', (r) => r.user_id === user_id) }
+					}
 					if (sql.includes('FROM oauth_tokens')) {
 						const [user_id] = bound
 						return { results: findAll('oauth_tokens', (r) => r.user_id === user_id) }
@@ -203,10 +208,13 @@ describe('D1 adapters', () => {
 		})
 
 		const user = await userAdapter.createUser({ email: 'a@b.com', name: 'A', verified_email: true })
-		const session = await sessionAdapter.createSession(user.id)
+		const mfaVerifiedAt = new Date('2026-07-14T12:00:00.000Z')
+		const session = await sessionAdapter.createSession(user.id, { mfaVerifiedAt })
 		const result = await sessionAdapter.validateSession(session.id)
 		expect(result.user?.email).toBe('a@b.com')
 		expect(result.session?.id).toBe(session.id)
+		expect(result.session?.mfaVerifiedAt).toEqual(mfaVerifiedAt)
+		expect((await sessionAdapter.listSessions(user.id))[0]?.mfaVerifiedAt).toEqual(mfaVerifiedAt)
 	})
 
 	it('stores and retrieves oauth tokens', async () => {

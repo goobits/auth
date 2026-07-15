@@ -3,6 +3,7 @@ import type { Cookies } from '@sveltejs/kit'
 
 import type { Session, User } from '../../types/index.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
+import { parseMfaVerifiedAt } from './sessionAssurance.ts'
 
 type D1Value = string | number | boolean | null
 type D1Row = Record<string, D1Value>
@@ -31,6 +32,7 @@ type D1SessionOptions = {
 		expiresAt: string
 		createdAt: string | null
 		lastActiveAt: string | null
+		mfaVerifiedAt: string | null
 		ip: string | null
 		userAgent: string | null
 	}>
@@ -66,6 +68,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		expiresAt: string
 		createdAt: string | null
 		lastActiveAt: string | null
+		mfaVerifiedAt: string | null
 		ip: string | null
 		userAgent: string | null
 	}
@@ -98,6 +101,10 @@ export class D1SessionAdapter extends SessionAdapter {
 			expiresAt: options.columns?.expiresAt || 'expires_at',
 			createdAt: options.columns?.createdAt || null,
 			lastActiveAt: options.columns?.lastActiveAt || null,
+			mfaVerifiedAt:
+				options.columns?.mfaVerifiedAt === null
+					? null
+					: options.columns?.mfaVerifiedAt || 'mfa_verified_at',
 			ip: options.columns?.ip || null,
 			userAgent: options.columns?.userAgent || null
 		}
@@ -135,16 +142,26 @@ export class D1SessionAdapter extends SessionAdapter {
 	async createSession(userId: string, metadata: Record<string, unknown> = {}) {
 		const sessionId = this._generateSessionId()
 		const expiresAt = new Date(Date.now() + this.sessionLifetime)
-		const sql = `INSERT INTO ${this.sessionsTable} (${this.columns.sessionId}, ${this.columns.userId}, ${this.columns.expiresAt}) VALUES (?, ?, ?)`
+		const mfaVerifiedAt = parseMfaVerifiedAt(metadata['mfaVerifiedAt'])
+		const columns = [this.columns.sessionId, this.columns.userId, this.columns.expiresAt]
+		const values: D1Value[] = [sessionId, this._coerceDbId(userId), expiresAt.toISOString()]
+		if (this.columns.mfaVerifiedAt) {
+			columns.push(this.columns.mfaVerifiedAt)
+			values.push(mfaVerifiedAt?.toISOString() ?? null)
+		}
+		const placeholders = columns.map(() => '?').join(', ')
 		await this.db
-			.prepare(sql)
-			.bind(sessionId, this._coerceDbId(userId), expiresAt.toISOString())
+			.prepare(`INSERT INTO ${this.sessionsTable} (${columns.join(', ')}) VALUES (${placeholders})`)
+			.bind(...values)
 			.run()
-		return { id: sessionId, userId, expiresAt, ...metadata }
+		return { id: sessionId, userId, expiresAt, ...metadata, mfaVerifiedAt }
 	}
 
 	async validateSession(sessionId: string) {
-		const sql = `SELECT s.${this.columns.sessionId} as session_id, s.${this.columns.userId} as user_id, s.${this.columns.expiresAt} as expires_at, u.*
+		const assuranceSelection = this.columns.mfaVerifiedAt
+			? `s.${this.columns.mfaVerifiedAt} as mfa_verified_at`
+			: 'NULL as mfa_verified_at'
+		const sql = `SELECT s.${this.columns.sessionId} as session_id, s.${this.columns.userId} as user_id, s.${this.columns.expiresAt} as expires_at, ${assuranceSelection}, u.*
 		FROM ${this.sessionsTable} s
 		JOIN ${this.usersTable} u ON s.${this.columns.userId} = u.${this.userColumns.id}
 		WHERE s.${this.columns.sessionId} = ? LIMIT 1`
@@ -188,7 +205,8 @@ export class D1SessionAdapter extends SessionAdapter {
 				id: sessionId,
 				userId: String(userIdRaw),
 				expiresAt: newExpiresAt,
-				fresh
+				fresh,
+				mfaVerifiedAt: parseMfaVerifiedAt(row['mfa_verified_at'])
 			},
 			user
 		}
@@ -305,6 +323,7 @@ export class D1SessionAdapter extends SessionAdapter {
 			this.columns.expiresAt,
 			this.columns.createdAt,
 			this.columns.lastActiveAt,
+			this.columns.mfaVerifiedAt,
 			this.columns.ip,
 			this.columns.userAgent
 		]
@@ -325,10 +344,12 @@ export class D1SessionAdapter extends SessionAdapter {
 			}
 			const expiresAt = new Date(expiresRaw)
 			if (Number.isNaN(expiresAt.getTime())) continue
+			const mfaVerifiedAtRaw = this.columns.mfaVerifiedAt ? row[this.columns.mfaVerifiedAt] : null
 			sessions.push({
 				id: String(id),
 				userId: String(uid),
-				expiresAt
+				expiresAt,
+				mfaVerifiedAt: parseMfaVerifiedAt(mfaVerifiedAtRaw)
 			})
 		}
 		return sessions

@@ -63,13 +63,16 @@ describe('Drizzle Adapters Integration', () => {
 	})
 
 	it('creates and validates a session', async () => {
-		const session = await sessionAdapter.createSession(testUserId)
+		const mfaVerifiedAt = new Date('2026-07-14T12:00:00.000Z')
+		const session = await sessionAdapter.createSession(testUserId, { mfaVerifiedAt })
 
 		expect(session.id).toBeDefined()
 		expect(session.userId).toBe(testUserId)
+		expect(session.mfaVerifiedAt).toEqual(mfaVerifiedAt)
 
 		const { session: validatedSession, user } = await sessionAdapter.validateSession(session.id)
 		expect(validatedSession?.id).toBe(session.id)
+		expect(validatedSession?.mfaVerifiedAt).toEqual(mfaVerifiedAt)
 		expect(user?.id).toBe(testUserId)
 	})
 

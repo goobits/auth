@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm'
 import type { Session, User } from '../../types/index.ts'
 import type { DrizzleDbLike, DrizzleJson, DrizzleRow, DrizzleTable } from '../drizzleTypes.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
+import { parseMfaVerifiedAt } from './sessionAssurance.ts'
 
 type SessionsTable = DrizzleTable & {
 	id: DrizzleTable[string]
@@ -12,6 +13,7 @@ type SessionsTable = DrizzleTable & {
 	expiresAt: DrizzleTable[string]
 	createdAt?: DrizzleTable[string]
 	lastActiveAt?: DrizzleTable[string]
+	mfaVerifiedAt?: DrizzleTable[string]
 	ip?: DrizzleTable[string]
 	userAgent?: DrizzleTable[string]
 }
@@ -57,10 +59,12 @@ function toSession(row: DrizzleRow | null): Session | null {
 	if (!(expiresAt instanceof Date) && typeof expiresAt !== 'string') return null
 	const expiresDate = expiresAt instanceof Date ? expiresAt : new Date(expiresAt)
 	if (Number.isNaN(expiresDate.getTime())) return null
+	const mfaVerifiedAt = parseMfaVerifiedAt(row['mfaVerifiedAt'] ?? row['mfa_verified_at'])
 	return {
 		id,
 		userId: String(userId),
-		expiresAt: expiresDate
+		expiresAt: expiresDate,
+		mfaVerifiedAt
 	}
 }
 
@@ -136,7 +140,12 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 			expiresAt,
 			...pickSessionMetadata(metadata)
 		})
-		return { id: sessionId, userId, expiresAt }
+		return {
+			id: sessionId,
+			userId,
+			expiresAt,
+			mfaVerifiedAt: parseMfaVerifiedAt(metadata['mfaVerifiedAt'])
+		}
 	}
 
 	async validateSession(

@@ -5,6 +5,7 @@ import type { Session, User } from '../../types/index.ts'
 import { generateRandomUUID } from '../../utils/crypto.ts'
 import { getLogger } from '../../utils/logger.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
+import { parseMfaVerifiedAt } from './sessionAssurance.ts'
 
 type KVNamespaceLike = {
 	put: (key: string, value: string, options?: { expirationTtl?: number }) => Promise<void>
@@ -19,6 +20,7 @@ type KVNamespaceLike = {
 type KVSessionRecord = {
 	userId: string
 	expiresAt: string
+	mfaVerifiedAt?: string
 }
 
 function isKVSessionRecord(
@@ -29,7 +31,8 @@ function isKVSessionRecord(
 		'userId' in value &&
 		typeof value['userId'] === 'string' &&
 		'expiresAt' in value &&
-		typeof value['expiresAt'] === 'string'
+		typeof value['expiresAt'] === 'string' &&
+		(!('mfaVerifiedAt' in value) || typeof value['mfaVerifiedAt'] === 'string')
 	)
 }
 
@@ -80,14 +83,16 @@ export class KVSessionAdapter extends SessionAdapter {
 	async createSession(userId: string, metadata: Record<string, unknown> = {}) {
 		const sessionId = await generateRandomUUID()
 		const expiresAt = new Date(Date.now() + this.sessionLifetime)
+		const mfaVerifiedAt = parseMfaVerifiedAt(metadata['mfaVerifiedAt'])
 		const payload = {
 			userId,
-			expiresAt: expiresAt.toISOString()
+			expiresAt: expiresAt.toISOString(),
+			...(mfaVerifiedAt ? { mfaVerifiedAt: mfaVerifiedAt.toISOString() } : {})
 		}
 		await this.namespace.put(this._key(sessionId), JSON.stringify(payload), {
 			expirationTtl: Math.ceil(this.sessionLifetime / 1000)
 		})
-		return { id: sessionId, userId, expiresAt, ...metadata }
+		return { id: sessionId, userId, expiresAt, ...metadata, mfaVerifiedAt }
 	}
 
 	async validateSession(sessionId: string): Promise<{
@@ -126,7 +131,11 @@ export class KVSessionAdapter extends SessionAdapter {
 			try {
 				await this.namespace.put(
 					this._key(sessionId),
-					JSON.stringify({ userId: raw.userId, expiresAt: newExpiresAt.toISOString() }),
+					JSON.stringify({
+						userId: raw.userId,
+						expiresAt: newExpiresAt.toISOString(),
+						...(raw.mfaVerifiedAt ? { mfaVerifiedAt: raw.mfaVerifiedAt } : {})
+					}),
 					{ expirationTtl: Math.ceil(this.sessionLifetime / 1000) }
 				)
 				fresh = true
@@ -150,7 +159,13 @@ export class KVSessionAdapter extends SessionAdapter {
 		}
 
 		return {
-			session: { id: sessionId, userId: raw.userId, expiresAt: newExpiresAt, fresh },
+			session: {
+				id: sessionId,
+				userId: raw.userId,
+				expiresAt: newExpiresAt,
+				fresh,
+				mfaVerifiedAt: parseMfaVerifiedAt(raw.mfaVerifiedAt)
+			},
 			user
 		}
 	}
@@ -194,7 +209,8 @@ export class KVSessionAdapter extends SessionAdapter {
 			sessions.push({
 				id: key.name.replace(`${this.keyPrefix}:`, ''),
 				userId: raw.userId,
-				expiresAt: new Date(raw.expiresAt)
+				expiresAt: new Date(raw.expiresAt),
+				mfaVerifiedAt: parseMfaVerifiedAt(raw.mfaVerifiedAt)
 			})
 		}
 		return sessions

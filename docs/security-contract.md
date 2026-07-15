@@ -45,7 +45,8 @@ const auth = new GoobitsAuth({
     `mfa.authorizeSecurityChange`
   - fresh reauthentication for passkey registration through
     `webauthn.authorizeSecurityChange`
-  - persistence of optional session assurance metadata when privileged routes require it
+  - migration of custom session storage to persist optional assurance metadata
+    before privileged routes rely on it
   - encrypted-at-rest MFA factor persistence and key rotation
   - rate limiting for standalone credential and MFA handlers
   - generic route audit logging through `@goobits/security/audit`

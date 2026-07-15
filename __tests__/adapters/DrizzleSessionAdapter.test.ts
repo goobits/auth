@@ -28,12 +28,14 @@ describe('DrizzleSessionAdapter', () => {
 	})
 
 	it('creates sessions with expiry metadata', async () => {
-		const session = await adapter.createSession('user-123')
+		const mfaVerifiedAt = new Date('2026-07-14T12:00:00.000Z')
+		const session = await adapter.createSession('user-123', { mfaVerifiedAt })
 
 		expect(session.userId).toBe('user-123')
 		expect(session.id).toBeTruthy()
 		expect(session.expiresAt).toBeInstanceOf(Date)
 		expect(session.expiresAt.getTime()).toBeGreaterThan(Date.now())
+		expect(session.mfaVerifiedAt).toEqual(mfaVerifiedAt)
 	})
 
 	it('returns null when no session row exists', async () => {
@@ -74,6 +76,7 @@ describe('DrizzleSessionAdapter', () => {
 
 	it('marks near-expiry sessions as fresh and extends expiry', async () => {
 		let updated = false
+		const mfaVerifiedAt = new Date('2026-07-14T12:00:00.000Z')
 		mockDb.select = () => ({
 			from: () => ({
 				innerJoin: () => ({
@@ -83,7 +86,8 @@ describe('DrizzleSessionAdapter', () => {
 								session: {
 									id: 'session-123',
 									userId: 'user-123',
-									expiresAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000)
+									expiresAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+									mfaVerifiedAt
 								},
 								user: { id: 'user-123', email: 'test@example.com', name: 'Test User' }
 							}
@@ -102,6 +106,7 @@ describe('DrizzleSessionAdapter', () => {
 
 		const result = await adapter.validateSession('session-123')
 		expect(result.session?.fresh).toBe(true)
+		expect(result.session?.mfaVerifiedAt).toEqual(mfaVerifiedAt)
 		expect(updated).toBe(true)
 		expect(result.user?.email).toBe('test@example.com')
 	})

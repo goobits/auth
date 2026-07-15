@@ -10,6 +10,9 @@ describe('pg auth adapters', () => {
 	it('exposes the default postgres schema', () => {
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_users')
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_sessions')
+		expect(pgAuthSchemaSql).toContain(
+			'ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS mfa_verified_at'
+		)
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_oauth_accounts')
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_mfa_factors')
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_mfa_backup_codes')
@@ -31,6 +34,7 @@ describe('pg auth adapters', () => {
 								id: values[0],
 								ip: values[3] ?? null,
 								last_active_at: null,
+								mfa_verified_at: values[6] ?? null,
 								user_agent: values[4] ?? null,
 								user_id: values[1]
 							}
@@ -46,14 +50,17 @@ describe('pg auth adapters', () => {
 			secureCookies: true
 		})
 
+		const mfaVerifiedAt = new Date('2026-07-14T12:00:00.000Z')
 		const session = await adapters.session.createSession('user-1', {
 			fingerprint: 'fingerprint',
 			ip: '127.0.0.1',
+			mfaVerifiedAt,
 			userAgent: 'vitest'
 		})
 
 		expect(session.userId).toBe('user-1')
 		expect(session.fingerprint).toBe('fingerprint')
+		expect(session.mfaVerifiedAt).toEqual(mfaVerifiedAt)
 	})
 
 	it('creates WebAuthn challenges and credentials through the postgres bundle', async () => {

@@ -14,6 +14,7 @@ import { UserAdapter } from '../database/UserAdapter.ts'
 import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
 import { MfaAdapter } from '../mfa/MfaAdapter.ts'
 import { SessionAdapter } from '../session/SessionAdapter.ts'
+import { parseMfaVerifiedAt } from '../session/sessionAssurance.ts'
 import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.ts'
 
 /** Pg Pool Like typed model for runtime integration. */
@@ -44,6 +45,7 @@ type SessionRow = {
 	id: string
 	ip: string | null
 	last_active_at: Date | null
+	mfa_verified_at: Date | null
 	user_agent: string | null
 	user_id: string
 }
@@ -263,8 +265,8 @@ export class PgSessionAdapter extends SessionAdapter {
 		const row = (
 			await this.#db.query<SessionRow>(
 				`
-			INSERT INTO auth_sessions (id, user_id, expires_at, ip, user_agent, fingerprint)
-			VALUES ($1, $2, $3, $4, $5, $6)
+			INSERT INTO auth_sessions (id, user_id, expires_at, ip, user_agent, fingerprint, mfa_verified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
 			RETURNING *
 		`,
 				[
@@ -273,7 +275,8 @@ export class PgSessionAdapter extends SessionAdapter {
 					expiresAt,
 					stringValue(metadata['ip']),
 					stringValue(metadata['userAgent']),
-					stringValue(metadata['fingerprint'])
+					stringValue(metadata['fingerprint']),
+					parseMfaVerifiedAt(metadata['mfaVerifiedAt'])
 				]
 			)
 		).rows[0]
@@ -294,6 +297,7 @@ export class PgSessionAdapter extends SessionAdapter {
 				s.expires_at,
 				s.created_at,
 				s.last_active_at,
+				s.mfa_verified_at,
 				s.ip,
 				s.user_agent,
 				s.fingerprint,
@@ -808,8 +812,11 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
 	last_active_at TIMESTAMPTZ,
 	ip TEXT,
 	user_agent TEXT,
-	fingerprint TEXT
+	fingerprint TEXT,
+	mfa_verified_at TIMESTAMPTZ
 );
+
+ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS mfa_verified_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS auth_sessions_user_id_idx ON auth_sessions(user_id);
 CREATE INDEX IF NOT EXISTS auth_sessions_expires_at_idx ON auth_sessions(expires_at);
@@ -893,6 +900,7 @@ function toSession(row: SessionRow): Session {
 		id: row.id,
 		ip: row.ip,
 		lastActiveAt: row.last_active_at,
+		mfaVerifiedAt: row.mfa_verified_at,
 		userAgent: row.user_agent,
 		userId: row.user_id
 	}

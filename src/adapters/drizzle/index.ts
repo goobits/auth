@@ -29,6 +29,7 @@ type SessionTableShape = DrizzleTable & {
 	id: DrizzleTable[string]
 	userId: DrizzleTable[string]
 	expiresAt: DrizzleTable[string]
+	mfaVerifiedAt?: DrizzleTable[string]
 }
 
 type OAuthAccountsTableShape = DrizzleTable & {
