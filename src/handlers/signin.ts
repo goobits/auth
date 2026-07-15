@@ -9,23 +9,7 @@ import { getLogger } from '../utils/logger.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 import { beginMfaLoginChallenge, type MfaLoginConfig } from './mfa.ts'
-
-type RateLimitConfig = {
-	check?: (key: string) => Promise<{ allowed: boolean }>
-	key?: (event: RequestEventLike) => string
-	trustProxyHeader?: boolean
-}
-
-function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
-	if (rateLimit?.key) return rateLimit.key(event)
-	if (rateLimit?.trustProxyHeader) {
-		const forwardedFor = event.request.headers.get('x-forwarded-for')
-		const firstForwardedIp = forwardedFor?.split(',')[0]?.trim()
-		if (firstForwardedIp) return firstForwardedIp
-	}
-	if (event.getClientAddress) return event.getClientAddress()
-	return 'unknown'
-}
+import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
 
 /**
  * Create a signin handler for credentials-based authentication
@@ -52,7 +36,7 @@ export function createSigninHandler(config: {
 	sessionAdapter: SessionAdapter
 	onSignin?: (user: User | null) => Promise<void> | void
 	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
-	rateLimit?: RateLimitConfig
+	rateLimit?: HandlerRateLimitConfig
 	redirectTo?: string
 	sanitizeUser?: (user: User | null) => User | null
 	fields?: { identifier?: string; email?: string; password?: string; remember?: string }
@@ -95,7 +79,7 @@ export function createSigninHandler(config: {
 		}
 
 		if (rateLimit?.check) {
-			const key = getRateLimitKey(event, rateLimit)
+			const key = resolveHandlerRateLimitKey(event, rateLimit)
 			const result = await rateLimit.check(key)
 			if (!result?.allowed) {
 				return {

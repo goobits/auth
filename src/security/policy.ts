@@ -45,7 +45,6 @@ export type SecurityPolicySettings = {
 		max: number
 		windowMs: number
 		keyPrefix: string
-		trustProxyHeader: boolean
 		trustedProxyHeaders: readonly TrustedProxyHeader[]
 		store?: RateLimitStore
 	}

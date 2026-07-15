@@ -1,4 +1,5 @@
 import type { MagicLinkToken } from '../../types/index.ts'
+import { generateRandomUUID } from '../../utils/crypto.ts'
 import { MagicLinkAdapter } from './MagicLinkAdapter.ts'
 
 type D1Value = string | number | boolean | null
@@ -63,7 +64,7 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 		expiresAt: Date
 		metadata?: Record<string, unknown>
 	}) {
-		const id = crypto.randomUUID()
+		const id = await generateRandomUUID()
 		const sql = `INSERT INTO ${this.tokensTable} (${this.columns.id}, ${this.columns.userId}, ${this.columns.email}, ${this.columns.tokenHash}, ${this.columns.otpHash}, ${this.columns.expiresAt}) VALUES (?, ?, ?, ?, ?, ?)`
 		await this.db
 			.prepare(sql)

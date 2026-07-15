@@ -92,11 +92,6 @@ export async function generateRandomUUID(): Promise<string> {
 	return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 
-/** Returns cryptographically secure random bytes. */
-export async function getRandomBytes(length: number): Promise<Uint8Array> {
-	return randomBytes(length)
-}
-
 /** Hashes a value with SHA-256 and returns hex. */
 export async function sha256Hex(value: string | Uint8Array): Promise<string> {
 	return securitySha256Hex(value)

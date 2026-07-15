@@ -1,7 +1,7 @@
-import { encodeBase64url } from '@oslojs/encoding'
 import type { Cookies } from '@sveltejs/kit'
 
 import { SessionAdapter } from './SessionAdapter.ts'
+import { generateSessionId } from './sessionId.ts'
 
 /**
  * Cookie-based Session Adapter
@@ -41,22 +41,8 @@ export class CookieSessionAdapter extends SessionAdapter {
 		this._sessions = new Map()
 	}
 
-	/**
-	 * Generate cryptographically secure session ID
-	 * @returns {string}
-	 * @private
-	 */
-	_generateSessionId(): string {
-		const bytes = new Uint8Array(20)
-		crypto.getRandomValues(bytes)
-
-		// Cookie values are not reliably percent-decoded by all runtimes. Avoid '=' padding
-		// so we never emit values that need encoding like `%3D`.
-		return encodeBase64url(bytes).replace(/=+$/g, '')
-	}
-
 	async createSession(userId: string, metadata: Record<string, unknown> = {}) {
-		const sessionId = this._generateSessionId()
+		const sessionId = generateSessionId()
 		const expiresAt = new Date(Date.now() + this.sessionLifetime)
 
 		const session = {

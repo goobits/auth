@@ -1,4 +1,3 @@
-import { encodeBase64url } from '@oslojs/encoding'
 import type { Cookies } from '@sveltejs/kit'
 
 import type {
@@ -9,11 +8,13 @@ import type {
 	User,
 	WebAuthnCredential
 } from '../../types/index.ts'
+import { generateRandomUUID } from '../../utils/crypto.ts'
 import { UserAdapter } from '../database/UserAdapter.ts'
 import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
 import { MfaAdapter } from '../mfa/MfaAdapter.ts'
 import { TokenAdapter } from '../oauth-token/TokenAdapter.ts'
 import { SessionAdapter } from '../session/SessionAdapter.ts'
+import { generateSessionId } from '../session/sessionId.ts'
 import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.ts'
 
 type StoredUser = User & { password?: string | null }
@@ -34,7 +35,8 @@ export class MemoryUserAdapter extends UserAdapter {
 
 	async createUser(profile: OAuthProfile, metadata: Record<string, unknown> = {}): Promise<User> {
 		const email = profile.email.trim().toLowerCase()
-		const id = stringValue(metadata['id']) || stringValue(profile.id) || crypto.randomUUID()
+		const id =
+			stringValue(metadata['id']) || stringValue(profile.id) || (await generateRandomUUID())
 		const role = stringValue(metadata['role'])
 		const user: StoredUser = {
 			avatar: profile.picture ?? null,
@@ -242,7 +244,7 @@ export class MemorySessionAdapter extends SessionAdapter {
 		const session: Session = {
 			expiresAt: new Date(Date.now() + this.#sessionLifetimeMs),
 			fingerprint: stringValue(metadata['fingerprint']) ?? null,
-			id: randomSessionId(),
+			id: generateSessionId(24),
 			ip: stringValue(metadata['ip']) ?? null,
 			userAgent: stringValue(metadata['userAgent']) ?? null,
 			userId
@@ -551,10 +553,4 @@ function sanitizeUser(user: StoredUser | null): User | null {
 
 function stringValue(value: unknown): string | undefined {
 	return typeof value === 'string' && value.trim() ? value.trim() : undefined
-}
-
-function randomSessionId(): string {
-	const bytes = new Uint8Array(24)
-	crypto.getRandomValues(bytes)
-	return encodeBase64url(bytes).replace(/=+$/g, '')
 }

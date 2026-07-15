@@ -13,6 +13,7 @@ import { getLogger } from '../utils/logger.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 import { generateMagicLinkToken, generateOtp, hashToken } from './magicLinkUtils.ts'
+import { resolveHandlerRateLimitKey } from './rateLimitKey.ts'
 import { ensureSessionAfterLogin } from './sessionLifecycle.ts'
 
 type MagicLinkTokenAdapter = Pick<
@@ -59,7 +60,6 @@ type MagicLinkRequestConfig = {
 	baseUrl?: string
 	rateLimit?: (event: RequestEventLike) => Promise<void> | void
 	getMetadata?: (event: RequestEventLike) => Promise<Record<string, unknown>>
-	trustProxyHeader?: boolean
 	key?: (event: RequestEventLike) => string
 }
 
@@ -80,7 +80,6 @@ type MagicLinkVerifyConfig = {
 	sanitizeUser?: (user: User | null) => User | null
 	autoCreateSession?: boolean
 	onLoginMode?: OnLoginMode
-	trustProxyHeader?: boolean
 	key?: (event: RequestEventLike) => string
 }
 
@@ -90,22 +89,6 @@ type MagicLinkTokenRecord = {
 	email?: string
 	expiresAt?: string | Date
 	[key: string]: unknown
-}
-
-type RateLimitKeyConfig = {
-	key?: (event: RequestEventLike) => string
-	trustProxyHeader?: boolean
-}
-
-function getRateLimitKey(event: RequestEventLike, config: RateLimitKeyConfig): string {
-	if (config?.key) return config.key(event)
-	if (config?.trustProxyHeader) {
-		const forwardedFor = event.request.headers.get('x-forwarded-for')
-		const firstForwardedIp = forwardedFor?.split(',')[0]?.trim()
-		if (firstForwardedIp) return firstForwardedIp
-	}
-	if (event.getClientAddress) return event.getClientAddress()
-	return 'unknown'
 }
 
 /** Creates magic link request handler for auth HTTP handlers. */
@@ -272,7 +255,7 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 			return jsonResponse({ ok: false, error: 'Invalid magic link' }, 400)
 		}
 
-		const ipKey = getRateLimitKey(event, config)
+		const ipKey = resolveHandlerRateLimitKey(event, config)
 		const identifier = email || (token ? await hashToken(token) : 'unknown')
 		const rateKey = `${identifier}:${ipKey}`
 		const rateResult = await checkMagicLinkRateLimit(rateKey)

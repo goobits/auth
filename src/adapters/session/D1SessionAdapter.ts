@@ -1,9 +1,9 @@
-import { encodeBase64url } from '@oslojs/encoding'
 import type { Cookies } from '@sveltejs/kit'
 
 import type { Session, User } from '../../types/index.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
 import { parseMfaVerifiedAt } from './sessionAssurance.ts'
+import { generateSessionId } from './sessionId.ts'
 
 type D1Value = string | number | boolean | null
 type D1Row = Record<string, D1Value>
@@ -126,21 +126,12 @@ export class D1SessionAdapter extends SessionAdapter {
 		return user
 	}
 
-	_generateSessionId(): string {
-		const bytes = new Uint8Array(20)
-		crypto.getRandomValues(bytes)
-
-		// Cookie values are not reliably percent-decoded by all runtimes. Avoid '=' padding
-		// so we never emit values that need encoding like `%3D`.
-		return encodeBase64url(bytes).replace(/=+$/g, '')
-	}
-
 	private _coerceDbId(id: string): string | number {
 		return /^\d+$/.test(id) ? Number(id) : id
 	}
 
 	async createSession(userId: string, metadata: Record<string, unknown> = {}) {
-		const sessionId = this._generateSessionId()
+		const sessionId = generateSessionId()
 		const expiresAt = new Date(Date.now() + this.sessionLifetime)
 		const mfaVerifiedAt = parseMfaVerifiedAt(metadata['mfaVerifiedAt'])
 		const columns = [this.columns.sessionId, this.columns.userId, this.columns.expiresAt]

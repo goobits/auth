@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 
 import type { MagicLinkToken } from '../../types/index.ts'
+import { generateRandomUUID } from '../../utils/crypto.ts'
 import {
 	type DrizzleDbLike,
 	type DrizzleJson,
@@ -123,7 +124,7 @@ export class DrizzleMagicLinkAdapter extends MagicLinkAdapter {
 		const found = await this.findByTokenHash(tokenHash)
 		if (found) return found
 		return {
-			id: crypto.randomUUID(),
+			id: await generateRandomUUID(),
 			userId,
 			email,
 			tokenHash,

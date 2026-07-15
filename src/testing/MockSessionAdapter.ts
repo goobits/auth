@@ -1,6 +1,7 @@
 import { UserAdapter } from '../adapters/database/UserAdapter.ts'
 import { TokenAdapter } from '../adapters/oauth-token/TokenAdapter.ts'
 import { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
+import { generateSessionId } from '../adapters/session/sessionId.ts'
 import type { OAuthProfile, OAuthTokens, Session, User } from '../types/index.ts'
 
 export class MockSessionAdapter extends SessionAdapter {
@@ -13,7 +14,7 @@ export class MockSessionAdapter extends SessionAdapter {
 
 	async createSession(userId: string): Promise<Session> {
 		const session: Session = {
-			id: `session:${crypto.randomUUID()}`,
+			id: `session:${generateSessionId()}`,
 			userId,
 			expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
 		}

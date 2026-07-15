@@ -1,15 +1,14 @@
-import { encodeBase64url } from '@oslojs/encoding'
+import { bytesToBase64Url, randomBytes } from '@goobits/security/crypto'
 
-import { getRandomBytes, sha256Hex } from '../utils/crypto.ts'
+import { sha256Hex } from '../utils/crypto.ts'
 
 export async function generateMagicLinkToken(bytesLength: number = 32): Promise<string> {
-	const bytes = await getRandomBytes(bytesLength)
-	return encodeBase64url(bytes)
+	return bytesToBase64Url(randomBytes(bytesLength))
 }
 
 export async function generateOtp(digits: number = 6): Promise<string> {
 	const max = 10 ** digits
-	const bytes = await getRandomBytes(4)
+	const bytes = randomBytes(4)
 	const b0 = bytes[0] ?? 0
 	const b1 = bytes[1] ?? 0
 	const b2 = bytes[2] ?? 0

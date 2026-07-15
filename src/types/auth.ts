@@ -101,7 +101,6 @@ export type MagicLinkConfig = {
 		normalizeEmail?: (email: string) => string
 		exposeToken?: boolean
 		baseUrl?: string
-		trustProxyHeader?: boolean
 		key?: (event: RequestEventLike) => string
 	}
 	limits?: {
@@ -183,7 +182,6 @@ export type AuthSecurityConfig = {
 		max?: number
 		windowMs?: number
 		keyPrefix?: string
-		trustProxyHeader?: boolean
 		trustedProxyHeaders?: TrustedProxyHeader[]
 		store?: RateLimitStore
 	}

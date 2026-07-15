@@ -6,7 +6,7 @@ import {
 	parseApiKeyHeader,
 	timingSafeEqual,
 	verifyAuthApiKey
-} from '../../src/security/apiKey.ts'
+} from '../../src/security/index.ts'
 
 describe('auth API-key helpers', () => {
 	describe('createAuthApiKey', () => {

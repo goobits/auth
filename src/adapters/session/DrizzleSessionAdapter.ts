@@ -1,4 +1,3 @@
-import { encodeBase64url } from '@oslojs/encoding'
 import type { Cookies } from '@sveltejs/kit'
 import { eq } from 'drizzle-orm'
 
@@ -6,6 +5,7 @@ import type { Session, User } from '../../types/index.ts'
 import type { DrizzleDbLike, DrizzleJson, DrizzleRow, DrizzleTable } from '../drizzleTypes.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
 import { parseMfaVerifiedAt } from './sessionAssurance.ts'
+import { generateSessionId } from './sessionId.ts'
 
 type SessionsTable = DrizzleTable & {
 	id: DrizzleTable[string]
@@ -119,20 +119,11 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		return user
 	}
 
-	_generateSessionId(): string {
-		const bytes = new Uint8Array(20)
-		crypto.getRandomValues(bytes)
-
-		// Cookie values are not reliably percent-decoded by all runtimes. Avoid '=' padding
-		// so we never emit values that need encoding like `%3D`.
-		return encodeBase64url(bytes).replace(/=+$/g, '')
-	}
-
 	async createSession(
 		userId: string,
 		metadata: Record<string, DrizzleJson> = {}
 	): Promise<Session> {
-		const sessionId = this._generateSessionId()
+		const sessionId = generateSessionId()
 		const expiresAt = new Date(Date.now() + this.sessionLifetime)
 		await this.db.insert(this.sessionsTable).values({
 			id: sessionId,

@@ -19,12 +19,7 @@ import type { RequestEventLike } from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { getLogger } from '../utils/logger.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
-
-type RateLimitConfig = {
-	check?: (key: string) => Promise<{ allowed: boolean }>
-	key?: (event: RequestEventLike) => string
-	trustProxyHeader?: boolean
-}
+import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
 
 /** Creates password reset request handler for auth HTTP handlers. */
 export function createPasswordResetRequestHandler(config: {
@@ -38,7 +33,7 @@ export function createPasswordResetRequestHandler(config: {
 	}) => Promise<User | null>
 	expiresInMs?: number
 	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
-	rateLimit?: RateLimitConfig
+	rateLimit?: HandlerRateLimitConfig
 }) {
 	const {
 		userAdapter,
@@ -64,13 +59,7 @@ export function createPasswordResetRequestHandler(config: {
 		}
 
 		if (rateLimit?.check) {
-			const forwardedFor = rateLimit?.trustProxyHeader
-				? event.request.headers.get('x-forwarded-for')
-				: null
-			const firstForwardedIp = forwardedFor?.split(',')[0]?.trim()
-			const key = rateLimit.key
-				? rateLimit.key(event)
-				: firstForwardedIp || event.getClientAddress?.() || 'unknown'
+			const key = resolveHandlerRateLimitKey(event, rateLimit)
 			const result = await rateLimit.check(key)
 			if (!result?.allowed) {
 				return {

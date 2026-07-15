@@ -42,7 +42,6 @@ function createAuditSettings(emitter: ReturnType<typeof vi.fn>) {
 			max: 10,
 			windowMs: 60_000,
 			keyPrefix: 'test-audit',
-			trustProxyHeader: false,
 			trustedProxyHeaders: []
 		},
 		audit: { mode: 'required' as const, emitter },
@@ -68,7 +67,6 @@ describe('security policy wrapper', () => {
 					max: 10,
 					windowMs: 60_000,
 					keyPrefix: 'test',
-					trustProxyHeader: false,
 					trustedProxyHeaders: []
 				},
 				audit: { mode: 'off' },
@@ -99,7 +97,6 @@ describe('security policy wrapper', () => {
 					max: 1,
 					windowMs: 60_000,
 					keyPrefix: 'test',
-					trustProxyHeader: false,
 					trustedProxyHeaders: []
 				},
 				audit: { mode: 'off' },
@@ -138,7 +135,6 @@ describe('security policy wrapper', () => {
 					max: 1,
 					windowMs: 60_000,
 					keyPrefix: 'test-forwarded',
-					trustProxyHeader: true,
 					trustedProxyHeaders: ['x-forwarded-for']
 				},
 				audit: { mode: 'off' },
@@ -185,7 +181,6 @@ describe('security policy wrapper', () => {
 					max: 1,
 					windowMs: 60_000,
 					keyPrefix: 'test-cloudflare',
-					trustProxyHeader: false,
 					trustedProxyHeaders: ['cf-connecting-ip']
 				},
 				audit: { mode: 'off' },
@@ -241,7 +236,6 @@ describe('security policy wrapper', () => {
 					max: 1,
 					windowMs: 60_000,
 					keyPrefix: 'test-untrusted-forwarded',
-					trustProxyHeader: false,
 					trustedProxyHeaders: ['cf-connecting-ip']
 				},
 				audit: { mode: 'off' },

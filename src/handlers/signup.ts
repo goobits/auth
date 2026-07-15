@@ -6,23 +6,7 @@ import type { User } from '../types/index.ts'
 import { getLogger } from '../utils/logger.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
-
-type RateLimitConfig = {
-	check?: (key: string) => Promise<{ allowed: boolean }>
-	key?: (event: RequestEventLike) => string
-	trustProxyHeader?: boolean
-}
-
-function getRateLimitKey(event: RequestEventLike, rateLimit?: RateLimitConfig) {
-	if (rateLimit?.key) return rateLimit.key(event)
-	if (rateLimit?.trustProxyHeader) {
-		const forwardedFor = event.request.headers.get('x-forwarded-for')
-		const firstForwardedIp = forwardedFor?.split(',')[0]?.trim()
-		if (firstForwardedIp) return firstForwardedIp
-	}
-	if (event.getClientAddress) return event.getClientAddress()
-	return 'unknown'
-}
+import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
 
 /**
  * Create a signup handler for credentials-based authentication
@@ -68,7 +52,7 @@ export function createSignupHandler(config: {
 	onSignup?: (user: User | null) => Promise<void> | void
 	sendVerificationEmail?: (email: string, token: string) => Promise<void> | void
 	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
-	rateLimit?: RateLimitConfig
+	rateLimit?: HandlerRateLimitConfig
 	redirectTo?: string
 	autoLogin?: boolean
 	sanitizeUser?: (user: User | null) => User | null
@@ -109,7 +93,7 @@ export function createSignupHandler(config: {
 		}
 
 		if (rateLimit?.check) {
-			const key = getRateLimitKey(event, rateLimit)
+			const key = resolveHandlerRateLimitKey(event, rateLimit)
 			const result = await rateLimit.check(key)
 			if (!result?.allowed) {
 				return {

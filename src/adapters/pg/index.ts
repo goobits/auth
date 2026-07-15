@@ -1,5 +1,3 @@
-import { randomBytes, randomUUID } from 'node:crypto'
-
 import type { Cookies } from '@sveltejs/kit'
 
 import type {
@@ -10,11 +8,13 @@ import type {
 	User,
 	WebAuthnCredential
 } from '../../types/index.ts'
+import { generateRandomUUID } from '../../utils/crypto.ts'
 import { UserAdapter } from '../database/UserAdapter.ts'
 import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
 import { MfaAdapter } from '../mfa/MfaAdapter.ts'
 import { SessionAdapter } from '../session/SessionAdapter.ts'
 import { parseMfaVerifiedAt } from '../session/sessionAssurance.ts'
+import { generateSessionId } from '../session/sessionId.ts'
 import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.ts'
 
 /** Pg Pool Like typed model for runtime integration. */
@@ -107,7 +107,7 @@ export class PgUserAdapter extends UserAdapter {
 	}
 
 	async createUser(profile: OAuthProfile, metadata: Record<string, unknown> = {}): Promise<User> {
-		const id = stringValue(metadata['id']) || randomUUID()
+		const id = stringValue(metadata['id']) || (await generateRandomUUID())
 		const email = normalizeEmail(profile.email)
 		const name = stringValue(metadata['name']) || profile.name || email
 		const password = stringValue(metadata['password'])
@@ -266,7 +266,7 @@ export class PgSessionAdapter extends SessionAdapter {
 	}
 
 	async createSession(userId: string, metadata: Record<string, unknown> = {}): Promise<Session> {
-		const id = randomBytes(24).toString('base64url')
+		const id = generateSessionId(24)
 		const expiresAt = new Date(Date.now() + this.#sessionLifetimeMs)
 		const row = (
 			await this.#db.query<SessionRow>(
@@ -703,7 +703,7 @@ export class PgMagicLinkAdapter extends MagicLinkAdapter {
 			RETURNING *
 		`,
 				[
-					randomUUID(),
+					await generateRandomUUID(),
 					userId,
 					normalizeEmail(email),
 					tokenHash,

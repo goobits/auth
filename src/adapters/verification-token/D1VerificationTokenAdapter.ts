@@ -1,4 +1,5 @@
 import type { User, VerificationToken } from '../../types/index.ts'
+import { generateRandomUUID } from '../../utils/crypto.ts'
 import { VerificationTokenAdapter } from './VerificationTokenAdapter.ts'
 
 type D1Value = string | number | boolean | null
@@ -158,7 +159,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 			this.columns.expiresAt
 		]
 		const values: D1Value[] = [
-			crypto.randomUUID(),
+			await generateRandomUUID(),
 			this.coerceDbId(userId),
 			type,
 			token,

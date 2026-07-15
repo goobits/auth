@@ -82,9 +82,6 @@ function normalizeMagicLinkConfig(
 		...(hooks.getMetadata !== undefined ? { getMetadata: hooks.getMetadata } : {}),
 		...(hooks.createUser !== undefined ? { createUser: hooks.createUser } : {}),
 		...(hooks.sanitizeUser !== undefined ? { sanitizeUser: hooks.sanitizeUser } : {}),
-		...(settings.trustProxyHeader !== undefined
-			? { trustProxyHeader: settings.trustProxyHeader }
-			: {}),
 		...(settings.key !== undefined ? { key: settings.key } : {})
 	}
 	const onLogin = hooks.onLogin ?? globalHooks?.onLogin

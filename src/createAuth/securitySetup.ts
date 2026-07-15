@@ -27,8 +27,7 @@ const PROFILE_DEFAULTS: Record<SecurityProfile, AuthSecurityConfig> = {
 			mode: 'required',
 			max: 20,
 			windowMs: 60_000,
-			keyPrefix: 'auth',
-			trustProxyHeader: false
+			keyPrefix: 'auth'
 		},
 		audit: { mode: 'required' },
 		alerts: { enabled: true }
@@ -39,8 +38,7 @@ const PROFILE_DEFAULTS: Record<SecurityProfile, AuthSecurityConfig> = {
 			mode: 'required',
 			max: 10,
 			windowMs: 60_000,
-			keyPrefix: 'auth',
-			trustProxyHeader: false
+			keyPrefix: 'auth'
 		},
 		audit: { mode: 'required' },
 		alerts: { enabled: true }
@@ -52,13 +50,11 @@ const TRUSTED_PROXY_HEADERS = new Set<TrustedProxyHeader>(['cf-connecting-ip', '
 function resolveTrustedProxyHeaders(
 	rateLimit: AuthSecurityConfig['rateLimit']
 ): TrustedProxyHeader[] {
-	const explicitHeaders = rateLimit?.trustedProxyHeaders
-	if (explicitHeaders && explicitHeaders.length > 0) {
-		return Array.from(
-			new Set(explicitHeaders.filter((header) => TRUSTED_PROXY_HEADERS.has(header)))
+	return Array.from(
+		new Set(
+			(rateLimit?.trustedProxyHeaders ?? []).filter((header) => TRUSTED_PROXY_HEADERS.has(header))
 		)
-	}
-	return rateLimit?.trustProxyHeader === true ? ['x-forwarded-for'] : []
+	)
 }
 
 function isProductionRuntime(): boolean {
@@ -158,7 +154,6 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			max: merged.rateLimit?.max ?? 20,
 			windowMs: merged.rateLimit?.windowMs ?? 60_000,
 			keyPrefix: merged.rateLimit?.keyPrefix ?? 'auth',
-			trustProxyHeader: merged.rateLimit?.trustProxyHeader ?? false,
 			trustedProxyHeaders: resolveTrustedProxyHeaders(merged.rateLimit),
 			...(merged.rateLimit?.store ? { store: merged.rateLimit.store } : {})
 		},

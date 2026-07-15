@@ -1,15 +1,6 @@
-import {
-	bytesToHex,
-	constantTimeEqual as securityConstantTimeEqual,
-	randomBytes,
-	sha256Hex
-} from '@goobits/security/crypto'
+import { bytesToHex, randomBytes, sha256Hex } from '@goobits/security/crypto'
 
-/** Compares two strings using the shared constant-time security helper. */
-export function timingSafeEqual(a: string, b: string): boolean {
-	if (!a || !b) return false
-	return securityConstantTimeEqual(a, b)
-}
+import { timingSafeEqual } from '../utils/crypto.ts'
 
 /** Creates a random auth API key with a prefix. */
 export async function createAuthApiKey({

@@ -23,6 +23,9 @@
   signup/session metadata can no longer be overridden by extension metadata.
 - 👤 Custom application auth routes can now emit outcomes through the same configured audit, threshold, and alert pipeline as Goobits-managed routes.
 - 👤 Trusted proxy headers now require explicit trusted-header configuration before forwarded client IPs are accepted.
+- 🧭 Standalone auth handlers now share one rate-limit key resolver; the
+  ambiguous `trustProxyHeader` switch was removed in favor of exact managed
+  `trustedProxyHeaders` or an application-owned `rateLimit.key` callback.
 - 👤 OAuth routes no longer use the global OAuth POST fallback, and redirect endpoints enforce safer request paths.
 - 👤 Auth error logging now avoids raw exception objects so sensitive provider, password, and token details are not emitted.
 - 👤 Auth crypto-sensitive helpers for API keys, CSRF tokens, signed session tokens, token encryption, random bytes, and SHA-256 now use `@goobits/security/crypto` while preserving the auth-facing helper APIs.

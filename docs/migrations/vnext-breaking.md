@@ -151,3 +151,13 @@ database lookup, custom validator, hash, or verification work. Signup metadata
 can no longer override the computed password hash, email provider, or initial
 verification state. Session metadata extensions cannot set MFA assurance or
 replace request-derived remember-me, IP, and user-agent values.
+
+## Proxy rate-limit keys
+
+The boolean `security.rateLimit.trustProxyHeader` and
+`magicLink.settings.trustProxyHeader` options were removed. Configure the
+central policy with an explicit `security.rateLimit.trustedProxyHeaders` list
+only for headers overwritten by your trusted edge. Standalone credential,
+password-reset, and magic-link handlers never infer trust from request headers;
+provide their `rateLimit.key` or `magicLink.settings.key` callback when they run
+outside the central policy.
