@@ -43,6 +43,8 @@ const auth = new GoobitsAuth({
   - route-level authorization policy decisions
   - fresh reauthentication for MFA enrollment and removal through
     `mfa.authorizeSecurityChange`
+  - fresh reauthentication for passkey registration through
+    `webauthn.authorizeSecurityChange`
   - persistence of optional session assurance metadata when privileged routes require it
   - encrypted-at-rest MFA factor persistence and key rotation
   - rate limiting for standalone credential and MFA handlers

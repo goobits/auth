@@ -50,7 +50,15 @@ vi.mock('@simplewebauthn/server', () => ({
 	}))
 }))
 
-function createEvent({ method = 'POST', body }: { method?: string; body?: unknown } = {}) {
+function createEvent({
+	method = 'POST',
+	body,
+	user = { id: 'u1', email: 'u1@example.com', name: 'User' }
+}: {
+	method?: string
+	body?: unknown
+	user?: { id: string; email: string; name: string } | null
+} = {}) {
 	const headers = new Headers()
 	let requestBody = body
 	if (body && typeof body !== 'string') {
@@ -66,7 +74,7 @@ function createEvent({ method = 'POST', body }: { method?: string; body?: unknow
 		cookies: {
 			set: vi.fn()
 		},
-		locals: { user: { id: 'u1', email: 'u1@example.com', name: 'User' } },
+		locals: { user },
 		url: new URL('http://localhost')
 	}
 }
@@ -105,6 +113,7 @@ describe('webauthn handlers', () => {
 	it('stores registration challenge and returns options', async () => {
 		const webauthnAdapter = createWebAuthnAdapter()
 		const handler = createWebAuthnRegisterOptionsHandler({
+			authorizeSecurityChange: vi.fn(async () => true),
 			webauthnAdapter,
 			rpName: 'Example',
 			rpID: 'example.com'
@@ -115,6 +124,25 @@ describe('webauthn handlers', () => {
 
 		expect(payload.options.challenge).toBe('reg-challenge')
 		expect(webauthnAdapter._challenges.size).toBe(1)
+	})
+
+	it('requires fresh authorization before creating registration options', async () => {
+		const webauthnAdapter = createWebAuthnAdapter()
+		const authorizeSecurityChange = vi.fn(async () => false)
+		const handler = createWebAuthnRegisterOptionsHandler({
+			authorizeSecurityChange,
+			webauthnAdapter,
+			rpName: 'Example',
+			rpID: 'example.com'
+		})
+
+		const response = await handler(createEvent() as RequestEventLike)
+
+		expect(response.status).toBe(403)
+		expect(authorizeSecurityChange).toHaveBeenCalledWith(
+			expect.objectContaining({ action: 'webauthn.register', userId: 'u1' })
+		)
+		expect(webauthnAdapter._challenges.size).toBe(0)
 	})
 
 	it('verifies registration and saves credential', async () => {
@@ -143,6 +171,60 @@ describe('webauthn handlers', () => {
 
 		expect(payload.ok).toBe(true)
 		expect(webauthnAdapter._credentials.size).toBe(1)
+	})
+
+	it('rejects registration verification under a different principal', async () => {
+		const webauthnAdapter = createWebAuthnAdapter()
+		const challengeId = 'principal-mismatch'
+		await webauthnAdapter.createChallenge({
+			challengeId,
+			userId: 'u2',
+			challenge: 'reg-challenge',
+			type: 'registration',
+			expiresAt: new Date(Date.now() + 1000)
+		})
+		const handler = createWebAuthnRegisterVerifyHandler({
+			webauthnAdapter,
+			rpID: 'example.com',
+			origin: 'http://localhost'
+		})
+
+		const response = await handler(
+			createEvent({
+				body: { challengeId, credential: { id: 'cred' } }
+			}) as RequestEventLike
+		)
+
+		expect(response.status).toBe(403)
+		expect(webauthnAdapter._credentials.size).toBe(0)
+		expect(webauthnAdapter._challenges.size).toBe(0)
+	})
+
+	it('requires an authenticated principal to verify registration', async () => {
+		const webauthnAdapter = createWebAuthnAdapter()
+		await webauthnAdapter.createChallenge({
+			challengeId: 'authenticated-registration',
+			userId: 'u1',
+			challenge: 'reg-challenge',
+			type: 'registration',
+			expiresAt: new Date(Date.now() + 1000)
+		})
+		const handler = createWebAuthnRegisterVerifyHandler({
+			webauthnAdapter,
+			rpID: 'example.com',
+			origin: 'http://localhost'
+		})
+
+		const response = await handler(
+			createEvent({
+				body: { challengeId: 'authenticated-registration', credential: { id: 'cred' } },
+				user: null
+			}) as RequestEventLike
+		)
+
+		expect(response.status).toBe(401)
+		expect(webauthnAdapter._credentials.size).toBe(0)
+		expect(webauthnAdapter._challenges.size).toBe(1)
 	})
 
 	it('verifies authentication and creates session', async () => {

@@ -161,6 +161,12 @@ secret and backup-code storage is atomic, an enabled factor cannot be silently
 replaced, and backup codes are accepted only when their atomic single-use
 consume succeeds.
 
+Passkey registration uses the same callback with the
+`webauthn.register` action. Registration challenges are bound to the
+authenticated principal, and verification rejects a challenge completed under
+a different or missing principal. Applications can satisfy the callback from a
+recent-authentication session marker or another fresh credential check.
+
 Sessions created by the MFA verification handler receive
 `Session.mfaVerifiedAt`. Persistent session adapters must store and restore this
 optional field when the consuming application uses session assurance for

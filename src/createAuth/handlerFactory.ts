@@ -293,6 +293,7 @@ export function createHandlers(
 	if (webauthn) {
 		const attestationType = webauthn.attestation === 'indirect' ? 'none' : webauthn.attestation
 		const registerOptionsConfig: WebAuthnRegisterOptionsHandlerConfig = {
+			authorizeSecurityChange: webauthn.authorizeSecurityChange,
 			webauthnAdapter: adapters.webauthn!,
 			rpID: webauthn.rpID ?? '',
 			rpName: webauthn.rpName ?? 'Passkey',

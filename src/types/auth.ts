@@ -119,6 +119,7 @@ export type MagicLinkConfig = {
 
 /** Defines web authn config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type WebAuthnConfig = {
+	authorizeSecurityChange: AuthorizeSecurityChange
 	origin?: string
 	rpID?: string
 	rpName?: string
@@ -132,7 +133,7 @@ export type WebAuthnConfig = {
 }
 
 /** Security-sensitive account mutation that requires fresh application authorization. */
-export type SecurityChangeAction = 'mfa.enroll' | 'mfa.disable'
+export type SecurityChangeAction = 'mfa.enroll' | 'mfa.disable' | 'webauthn.register'
 
 /** Application-owned step-up authorization for factor enrollment and removal. */
 export type AuthorizeSecurityChange = (input: {

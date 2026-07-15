@@ -111,3 +111,7 @@ Custom `MfaAdapter` implementations must replace the separate `setSecret`,
 `consumeBackupCode` now return whether their guarded delete succeeded. This
 prevents active-factor replacement and backup-code replay races without
 compatibility wrappers that preserve unsafe behavior.
+
+`WebAuthnConfig.authorizeSecurityChange` is also required. Registration options
+are issued only after that callback succeeds, and the resulting challenge may
+only be verified by the same authenticated principal.

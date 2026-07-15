@@ -13,7 +13,12 @@ import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
 import { auditAuthEvent } from '../security/audit.ts'
-import type { AuthHooks, OnLoginMode, RequestEventLike } from '../types/auth.ts'
+import type {
+	AuthorizeSecurityChange,
+	AuthHooks,
+	OnLoginMode,
+	RequestEventLike
+} from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { generateRandomUUID } from '../utils/crypto.ts'
 import { jsonResponse, parseRequestDataWithSchema } from '../utils/http.ts'
@@ -32,6 +37,7 @@ import {
 } from './webauthnUtils.ts'
 
 export type WebAuthnRegisterOptionsHandlerConfig = {
+	authorizeSecurityChange: AuthorizeSecurityChange
 	webauthnAdapter: Pick<WebAuthnAdapter, 'listCredentials' | 'createChallenge'>
 	rpName: string
 	rpID: string
@@ -48,6 +54,7 @@ export function createWebAuthnRegisterOptionsHandler(
 	config: WebAuthnRegisterOptionsHandlerConfig
 ): RequestHandler {
 	const {
+		authorizeSecurityChange,
 		webauthnAdapter,
 		rpName,
 		rpID,
@@ -67,6 +74,15 @@ export function createWebAuthnRegisterOptionsHandler(
 		const user = await getUser(event)
 		if (!user || !user.id) {
 			return jsonResponse({ ok: false, error: 'Unauthorized' }, 401)
+		}
+		if (
+			!(await authorizeSecurityChange({
+				action: 'webauthn.register',
+				request: event.request.clone(),
+				userId: user.id
+			}))
+		) {
+			return jsonResponse({ ok: false, error: 'Reauthentication required' }, 403)
 		}
 
 		const credentials = await webauthnAdapter.listCredentials(user.id)
@@ -116,6 +132,7 @@ export type WebAuthnRegisterVerifyHandlerConfig = {
 	rpID: string
 	origin: string
 	requireUserVerification?: boolean
+	getUser?: (event: RequestEventLike) => User | null | Promise<User | null>
 	onCredentialCreated?: (input: {
 		userId: string
 		credentialId: string
@@ -132,6 +149,7 @@ export function createWebAuthnRegisterVerifyHandler(
 		rpID,
 		origin,
 		requireUserVerification = false,
+		getUser = (event: RequestEventLike) => event.locals.user ?? null,
 		onCredentialCreated
 	} = config
 
@@ -140,6 +158,10 @@ export function createWebAuthnRegisterVerifyHandler(
 	}
 
 	return async (event: RequestEventLike) => {
+		const user = await getUser(event)
+		if (!user?.id) {
+			return jsonResponse({ ok: false, error: 'Unauthorized' }, 401)
+		}
 		const data = await parseRequestDataWithSchema(event.request, registerVerifyRequestSchema)
 		if (!data) {
 			return jsonResponse({ ok: false, error: 'Invalid request' }, 400)
@@ -154,6 +176,9 @@ export function createWebAuthnRegisterVerifyHandler(
 		}
 		if (challenge.type !== 'registration') {
 			return jsonResponse({ ok: false, error: 'Invalid challenge' }, 400)
+		}
+		if (!challenge.userId || challenge.userId !== user.id) {
+			return jsonResponse({ ok: false, error: 'Challenge principal mismatch' }, 403)
 		}
 
 		if (new Date(challenge.expiresAt) < new Date()) {
@@ -188,10 +213,7 @@ export function createWebAuthnRegisterVerifyHandler(
 			typeof credentialIdRaw === 'string' ? credentialIdRaw : encodeCredential(credentialIdRaw)
 		const publicKey = encodeCredential(publicKeyRaw)
 		const counter = typeof counterRaw === 'number' ? counterRaw : 0
-		const userId = challenge.userId
-		if (!userId) {
-			return jsonResponse({ ok: false, error: 'Challenge user missing' }, 400)
-		}
+		const userId = user.id
 
 		await webauthnAdapter.createCredential({
 			userId,
