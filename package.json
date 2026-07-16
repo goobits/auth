@@ -168,6 +168,9 @@
 		},
 		"./ui/qr-code": {
 			"types": "./dist/types/ui/QrCode.svelte",
+			"workerd": "./dist/worker/ui/QrCode.svelte",
+			"worker": "./dist/worker/ui/QrCode.svelte",
+			"browser": "./dist/worker/ui/QrCode.svelte",
 			"node": "./dist/node/ui/QrCode.svelte",
 			"default": "./dist/worker/ui/QrCode.svelte"
 		},
