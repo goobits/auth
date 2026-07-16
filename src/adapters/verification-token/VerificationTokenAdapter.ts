@@ -15,6 +15,27 @@ export type VerificationTokenRecord<TUser = Record<string, unknown>> = {
  */
 export abstract class VerificationTokenAdapter {
 	/**
+	 * Atomically replace the active token for one user and token type.
+	 *
+	 * Implementations must commit the replacement as one database operation or
+	 * transaction. Deleting the previous token before inserting the new one can
+	 * strand the user when the insert fails.
+	 */
+	abstract replaceForUserAndType({
+		userId,
+		type,
+		token,
+		expiresAt,
+		metadata
+	}: {
+		userId: string
+		type: string
+		token: string
+		expiresAt: Date
+		metadata?: Record<string, unknown>
+	}): Promise<void>
+
+	/**
 	 * Create a new verification token
 	 *
 	 * @param userId - Identifier to use.

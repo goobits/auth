@@ -201,6 +201,7 @@ describe('createSigninHandler', () => {
 		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
 		const verificationTokenAdapter = {
 			create: vi.fn(),
+			replaceForUserAndType: vi.fn(),
 			deleteByUserAndType: vi.fn(),
 			findByToken: vi.fn(),
 			deleteById: vi.fn()
@@ -250,6 +251,7 @@ describe('createSigninHandler', () => {
 		})
 		const verificationTokenAdapter = {
 			create: vi.fn(),
+			replaceForUserAndType: vi.fn(),
 			deleteByUserAndType: vi.fn(),
 			findByToken: vi.fn(),
 			deleteById: vi.fn()

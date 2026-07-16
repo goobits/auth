@@ -51,6 +51,7 @@ type VerificationTokensTableShape = DrizzleTable & {
 	type: DrizzleTable[string]
 	token: DrizzleTable[string]
 	expiresAt: DrizzleTable[string]
+	metadata: DrizzleTable[string]
 }
 
 /** Drizzle Auth Schema typed model for runtime integration. */

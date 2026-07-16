@@ -16,6 +16,7 @@ type TokenRecord = {
 	userId: string
 	type: string
 	expiresAt: Date
+	metadata?: Record<string, unknown>
 }
 
 function createAdapter() {
@@ -26,6 +27,21 @@ function createAdapter() {
 		return { token: record, user: { id: record.userId, password: 'secret' } }
 	}
 	return {
+		replaceForUserAndType: vi.fn(
+			async ({ userId, type, token, expiresAt, metadata }: Omit<TokenRecord, 'id'>) => {
+				for (const [key, value] of tokens.entries()) {
+					if (value.userId === userId && value.type === type) tokens.delete(key)
+				}
+				tokens.set(token, {
+					id: token,
+					token,
+					userId,
+					type,
+					expiresAt,
+					...(metadata ? { metadata } : {})
+				})
+			}
+		),
 		deleteByUserAndType: vi.fn(async ({ userId, type }: { userId: string; type: string }) => {
 			for (const [key, value] of tokens.entries()) {
 				if (value.userId === userId && value.type === type) tokens.delete(key)
@@ -62,7 +78,8 @@ describe('verification tokens', () => {
 			type: VERIFICATION_TOKEN_TYPES.EMAIL_VERIFICATION
 		})
 		const tokenHash = await hashVerificationToken(token)
-		expect(adapter.deleteByUserAndType).toHaveBeenCalled()
+		expect(adapter.replaceForUserAndType).toHaveBeenCalledOnce()
+		expect(adapter.deleteByUserAndType).not.toHaveBeenCalled()
 		expect(adapter._tokens.has(tokenHash)).toBe(true)
 	})
 
@@ -75,7 +92,7 @@ describe('verification tokens', () => {
 			metadata: { rememberMe: true }
 		})
 
-		expect(adapter.create).toHaveBeenCalledWith(
+		expect(adapter.replaceForUserAndType).toHaveBeenCalledWith(
 			expect.objectContaining({
 				metadata: { rememberMe: true }
 			})

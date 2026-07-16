@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { drizzleAdapter } from '../../src/adapters/drizzle/index.ts'
 import type { DrizzleDbLike, DrizzleTable } from '../../src/adapters/drizzleTypes.ts'
@@ -40,7 +40,7 @@ describe('drizzleAdapter', () => {
 			sessions: table(['id', 'userId', 'expiresAt']),
 			oauthAccounts: table(['userId', 'provider', 'providerAccountId']),
 			oauthTokens: table(['userId', 'provider', 'tokens']),
-			verificationTokens: table(['id', 'userId', 'type', 'token', 'expiresAt']),
+			verificationTokens: table(['id', 'userId', 'type', 'token', 'expiresAt', 'metadata']),
 			magicLinkTokens: table([
 				'id',
 				'userId',
@@ -75,5 +75,33 @@ describe('drizzleAdapter', () => {
 		expect(adapters.verificationToken).toBeDefined()
 		expect(adapters.magicLink).toBeDefined()
 		expect(adapters.webauthn).toBeDefined()
+	})
+
+	it('uses the configured user/type conflict target for atomic token replacement', async () => {
+		const onConflictDoUpdate = vi.fn(async () => undefined)
+		const db = createMockDb()
+		db.insert = () => ({
+			values: () => ({ onConflictDoUpdate })
+		})
+		const schema = {
+			users: table(['id', 'email', 'name']),
+			sessions: table(['id', 'userId', 'expiresAt']),
+			verificationTokens: table(['id', 'userId', 'type', 'token', 'expiresAt', 'metadata'])
+		}
+		const adapter = drizzleAdapter(db, { schema }).verificationToken
+
+		await adapter?.replaceForUserAndType({
+			userId: 'user-1',
+			type: 'email_verification',
+			token: 'hashed-token',
+			expiresAt: new Date('2099-01-01T00:00:00.000Z'),
+			metadata: { purpose: 'signup' }
+		})
+
+		expect(onConflictDoUpdate).toHaveBeenCalledWith(
+			expect.objectContaining({
+				set: expect.objectContaining({ metadata: { purpose: 'signup' } })
+			})
+		)
 	})
 })

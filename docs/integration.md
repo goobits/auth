@@ -169,6 +169,12 @@ challenge. For example:
 When you override, keep the same return type as the default: the consumed
 record on success, `null` if no row matched.
 
+Token issuance has a matching atomicity requirement.
+`VerificationTokenAdapter.replaceForUserAndType` must replace the active token
+for one `(userId, type)` in a single transaction or upsert. Back the pair with
+a unique constraint. A delete-then-insert implementation can invalidate a
+working recovery or MFA challenge when the insert fails and is unsupported.
+
 ## Prebuilt adapters
 
 | Export                                       | Storage                   | Notes                                                                                                                                           |

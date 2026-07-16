@@ -24,6 +24,9 @@ describe('pg auth adapters', () => {
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_sessions')
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_verification_tokens')
 		expect(pgAuthSchemaSql).toContain(
+			'CREATE UNIQUE INDEX IF NOT EXISTS auth_verification_tokens_user_type_idx'
+		)
+		expect(pgAuthSchemaSql).toContain(
 			'ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS mfa_verified_at'
 		)
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_oauth_accounts')
@@ -90,6 +93,7 @@ describe('pg auth adapters', () => {
 
 	it('atomically consumes postgres verification tokens', async () => {
 		let tokenRow: Record<string, unknown> | null = null
+		let replacementWasAtomic = false
 		const userRow = {
 			avatar: null,
 			created_at: new Date('2026-01-01T00:00:00.000Z'),
@@ -105,6 +109,7 @@ describe('pg auth adapters', () => {
 		const db: PgPoolLike = {
 			async query(text, values = []) {
 				if (text.includes('INSERT INTO auth_verification_tokens')) {
+					replacementWasAtomic = text.includes('ON CONFLICT (user_id, type) DO UPDATE')
 					tokenRow = {
 						created_at: new Date('2026-01-01T00:00:00.000Z'),
 						expires_at: values[4],
@@ -136,13 +141,14 @@ describe('pg auth adapters', () => {
 			mfaSecretCodec,
 			secureCookies: true
 		})
-		await adapters.verificationToken.create({
+		await adapters.verificationToken.replaceForUserAndType({
 			userId: 'owner',
 			type: 'password_reset',
 			token: 'hashed-token',
 			expiresAt: new Date('2099-01-01T00:00:00.000Z'),
 			metadata: { requestId: 'request-1' }
 		})
+		expect(replacementWasAtomic).toBe(true)
 
 		await expect(
 			adapters.verificationToken.consumeByToken({

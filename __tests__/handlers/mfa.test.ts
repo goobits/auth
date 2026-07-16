@@ -266,7 +266,8 @@ describe('MFA handlers', () => {
 		} | null = null
 		const verificationTokenAdapter = {
 			deleteByUserAndType: vi.fn(async () => undefined),
-			create: vi.fn(
+			create: vi.fn(async () => undefined),
+			replaceForUserAndType: vi.fn(
 				async (input: {
 					userId: string
 					type: string

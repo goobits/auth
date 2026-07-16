@@ -14,7 +14,7 @@ CREATE TABLE verification_tokens (
 
 CREATE UNIQUE INDEX verification_tokens_token_type_idx
   ON verification_tokens (token, type);
-CREATE INDEX verification_tokens_user_type_idx
+CREATE UNIQUE INDEX verification_tokens_user_type_idx
   ON verification_tokens (user_id, type);
 CREATE INDEX verification_tokens_expires_idx
   ON verification_tokens (expires_at);
@@ -22,6 +22,8 @@ CREATE INDEX verification_tokens_expires_idx
 
 The PostgreSQL bundle creates the equivalent `auth_verification_tokens` table.
 Tokens stored here are hashes; raw delivery values must never be persisted.
+The `(user_id, type)` uniqueness constraint lets adapters replace an active
+token atomically, so a failed replacement cannot delete the user's prior token.
 
 ## Magic link tokens
 

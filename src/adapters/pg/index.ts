@@ -890,6 +890,32 @@ export class PgVerificationTokenAdapter extends VerificationTokenAdapter {
 		)
 	}
 
+	async replaceForUserAndType({
+		userId,
+		type,
+		token,
+		expiresAt,
+		metadata
+	}: {
+		userId: string
+		type: string
+		token: string
+		expiresAt: Date
+		metadata?: Record<string, unknown>
+	}): Promise<void> {
+		await this.#db.query(
+			`INSERT INTO auth_verification_tokens (id, user_id, type, token, expires_at, metadata)
+			 VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+			 ON CONFLICT (user_id, type) DO UPDATE SET
+				id = EXCLUDED.id,
+				token = EXCLUDED.token,
+				expires_at = EXCLUDED.expires_at,
+				metadata = EXCLUDED.metadata,
+				created_at = now()`,
+			[await generateRandomUUID(), userId, type, token, expiresAt, JSON.stringify(metadata ?? {})]
+		)
+	}
+
 	async findByToken({
 		token,
 		type
@@ -1022,7 +1048,7 @@ CREATE TABLE IF NOT EXISTS auth_verification_tokens (
 
 CREATE UNIQUE INDEX IF NOT EXISTS auth_verification_tokens_token_type_idx
 	ON auth_verification_tokens(token, type);
-CREATE INDEX IF NOT EXISTS auth_verification_tokens_user_type_idx
+CREATE UNIQUE INDEX IF NOT EXISTS auth_verification_tokens_user_type_idx
 	ON auth_verification_tokens(user_id, type);
 CREATE INDEX IF NOT EXISTS auth_verification_tokens_expires_at_idx
 	ON auth_verification_tokens(expires_at);

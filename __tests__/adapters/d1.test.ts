@@ -130,9 +130,22 @@ function createMockDb() {
 						return { meta: insert('oauth_tokens', { user_id, provider, tokens }) }
 					}
 					if (sql.startsWith('INSERT INTO verification_tokens')) {
-						const [id, user_id, type, token, expires_at, created_at] = bound
-						const row: TableRow = { id, user_id, type, token, expires_at }
-						if (sql.includes('created_at')) row.created_at = created_at
+						const columns = /INSERT INTO verification_tokens \(([^)]+)\)/
+							.exec(sql)?.[1]
+							?.split(',')
+							.map((value) => value.trim())
+						if (!columns) throw new Error(`Unable to parse verification token insert: ${sql}`)
+						const row = Object.fromEntries(columns.map((column, i) => [column, bound[i]]))
+						if (sql.includes('ON CONFLICT')) {
+							const existing = findWhere(
+								'verification_tokens',
+								(value) => value.user_id === row.user_id && value.type === row.type
+							)
+							if (existing) {
+								Object.assign(existing, row)
+								return { meta: { changes: 1 } }
+							}
+						}
 						return { meta: insert('verification_tokens', row) }
 					}
 					if (sql.startsWith('DELETE FROM verification_tokens')) {
@@ -215,6 +228,7 @@ function createMockDb() {
 								...(sql.includes(' AS token_created_at')
 									? { token_created_at: vt.created_at }
 									: {}),
+								...(sql.includes(' AS token_metadata') ? { token_metadata: vt.metadata } : {}),
 								user_id: user?.id,
 								user_email: user?.email,
 								user_name: user?.name,
@@ -405,6 +419,37 @@ describe('D1 adapters', () => {
 
 		expect(record?.token.createdAt).toBeInstanceOf(Date)
 		expect(record?.token.createdAt.getTime()).toBeGreaterThan(0)
+	})
+
+	it('atomically replaces D1 verification tokens and round-trips metadata', async () => {
+		const db = createMockDb()
+		const userAdapter = new D1UserAdapter(db)
+		const user = await userAdapter.createUser({ email: 'replace@example.com', name: 'Replace' })
+		const tokens = new D1VerificationTokenAdapter(db, {
+			columns: { createdAt: 'created_at', metadata: 'metadata' }
+		})
+
+		await tokens.replaceForUserAndType({
+			userId: user.id,
+			type: 'mfa_login',
+			token: 'first-token',
+			expiresAt: new Date(Date.now() + 1000),
+			metadata: { rememberMe: false }
+		})
+		await tokens.replaceForUserAndType({
+			userId: user.id,
+			type: 'mfa_login',
+			token: 'second-token',
+			expiresAt: new Date(Date.now() + 2000),
+			metadata: { rememberMe: true }
+		})
+
+		await expect(
+			tokens.findByToken({ token: 'first-token', type: 'mfa_login' })
+		).resolves.toBeNull()
+		await expect(
+			tokens.findByToken({ token: 'second-token', type: 'mfa_login' })
+		).resolves.toMatchObject({ token: { metadata: { rememberMe: true } } })
 	})
 
 	it('keeps D1 verification token and user ids distinct', async () => {

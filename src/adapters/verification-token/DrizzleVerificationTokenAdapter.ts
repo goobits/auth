@@ -3,6 +3,8 @@ import { and, eq } from 'drizzle-orm'
 import type { User, VerificationToken } from '../../types/index.ts'
 import {
 	type DrizzleDbLike,
+	type InsertConflictQuery,
+	type DrizzleJson,
 	type DrizzleRow,
 	type DrizzleTable,
 	requireColumn,
@@ -16,6 +18,7 @@ type TokensTable = DrizzleTable & {
 	type: DrizzleTable[string]
 	token: DrizzleTable[string]
 	expiresAt: DrizzleTable[string]
+	metadata: DrizzleTable[string]
 }
 
 type UsersTable = DrizzleTable & {
@@ -27,6 +30,48 @@ type TokenUserRecord = {
 	user: User
 }
 
+function isDrizzleJson(value: unknown): value is DrizzleJson {
+	if (
+		value === null ||
+		typeof value === 'string' ||
+		typeof value === 'number' ||
+		typeof value === 'boolean' ||
+		value instanceof Date
+	) {
+		return true
+	}
+	if (Array.isArray(value)) return value.every(isDrizzleJson)
+	if (typeof value !== 'object') return false
+	return Object.values(value).every(isDrizzleJson)
+}
+
+function isDrizzleJsonRecord(value: unknown): value is Record<string, DrizzleJson> {
+	return (
+		value !== null &&
+		typeof value === 'object' &&
+		!Array.isArray(value) &&
+		!(value instanceof Date) &&
+		Object.values(value).every(isDrizzleJson)
+	)
+}
+
+function toMetadata(value: Record<string, unknown> | undefined): Record<string, DrizzleJson> {
+	const candidate: unknown = value ?? {}
+	if (!isDrizzleJsonRecord(candidate)) {
+		throw new TypeError('Verification token metadata must be JSON-serializable')
+	}
+	return candidate
+}
+
+function supportsAtomicUpsert(value: unknown): value is InsertConflictQuery {
+	return (
+		value !== null &&
+		typeof value === 'object' &&
+		'onConflictDoUpdate' in value &&
+		typeof value.onConflictDoUpdate === 'function'
+	)
+}
+
 function toToken(row: DrizzleRow | null): VerificationToken | null {
 	if (!row) return null
 	const id = row['id']
@@ -35,6 +80,7 @@ function toToken(row: DrizzleRow | null): VerificationToken | null {
 	const token = row['token']
 	const expiresAt = row['expiresAt'] ?? row['expires_at']
 	const createdAt = row['createdAt'] ?? row['created_at']
+	const metadata = row['metadata']
 	if (typeof id !== 'string' && typeof id !== 'number') return null
 	if (typeof userId !== 'string' && typeof userId !== 'number') return null
 	if (typeof type !== 'string') return null
@@ -54,7 +100,8 @@ function toToken(row: DrizzleRow | null): VerificationToken | null {
 		type,
 		token,
 		expiresAt: expiresDate,
-		createdAt: Number.isNaN(createdDate.getTime()) ? new Date() : createdDate
+		createdAt: Number.isNaN(createdDate.getTime()) ? new Date() : createdDate,
+		...(isDrizzleJsonRecord(metadata) ? { metadata } : {})
 	}
 }
 
@@ -110,18 +157,54 @@ export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
 		userId,
 		type,
 		token,
-		expiresAt
+		expiresAt,
+		metadata
 	}: {
 		userId: string
 		type: string
 		token: string
 		expiresAt: Date
+		metadata?: Record<string, unknown>
 	}): Promise<void> {
 		await this.db.insert(this.tokensTable).values({
 			userId,
 			type,
 			token,
-			expiresAt
+			expiresAt,
+			metadata: toMetadata(metadata)
+		})
+	}
+
+	override async replaceForUserAndType({
+		userId,
+		type,
+		token,
+		expiresAt,
+		metadata
+	}: {
+		userId: string
+		type: string
+		token: string
+		expiresAt: Date
+		metadata?: Record<string, unknown>
+	}): Promise<void> {
+		const insert = this.db.insert(this.tokensTable).values({
+			userId,
+			type,
+			token,
+			expiresAt,
+			metadata: toMetadata(metadata)
+		})
+		if (!supportsAtomicUpsert(insert)) {
+			throw new TypeError('Drizzle verification-token replacement requires atomic upsert support')
+		}
+		await insert.onConflictDoUpdate({
+			target: [this.tokensTable.userId, this.tokensTable.type],
+			set: {
+				token,
+				expiresAt,
+				metadata: toMetadata(metadata)
+			}
 		})
 	}
 

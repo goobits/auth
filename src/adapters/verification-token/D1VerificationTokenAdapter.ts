@@ -19,6 +19,10 @@ type TokenUserRecord = {
 	user: User
 }
 
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+	return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
 function getOwnOrFallback(
 	row: D1Row,
 	key: string,
@@ -52,6 +56,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		token: string
 		expiresAt: string
 		createdAt?: string
+		metadata?: string
 	}
 	private userColumns: {
 		id: string
@@ -81,6 +86,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 			expiresAt: options.columns?.['expiresAt'] || 'expires_at'
 		}
 		if (options.columns?.['createdAt']) this.columns.createdAt = options.columns['createdAt']
+		if (options.columns?.['metadata']) this.columns.metadata = options.columns['metadata']
 		this.userColumns = {
 			id: options.userColumns?.['id'] || 'id',
 			email: options.userColumns?.['email'] || 'email',
@@ -102,6 +108,8 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		const expiresAt = row['token_expires_at'] ?? row[this.columns.expiresAt]
 		const createdAt =
 			row['token_created_at'] ?? (this.columns.createdAt ? row[this.columns.createdAt] : null)
+		const metadata =
+			row['token_metadata'] ?? (this.columns.metadata ? row[this.columns.metadata] : null)
 		const userId = row['user_id'] ?? row[this.userColumns.id] ?? tokenUserId
 		const email = row['user_email'] ?? row[this.userColumns.email]
 		const name = row['user_name'] ?? row[this.userColumns.name]
@@ -122,13 +130,15 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		const expiresAtDate = new Date(expiresAt)
 		if (Number.isNaN(expiresAtDate.getTime())) return null
 		const createdAtDate = coerceTokenDate(createdAt) ?? new Date()
+		const parsedMetadata = this.parseMetadata(metadata)
 		const tokenRecord: VerificationToken = {
 			id: String(tokenId),
 			userId: String(tokenUserId),
 			type,
 			token,
 			expiresAt: expiresAtDate,
-			createdAt: createdAtDate
+			createdAt: createdAtDate,
+			...(parsedMetadata ? { metadata: parsedMetadata } : {})
 		}
 		const user: User = {
 			id: String(userId),
@@ -140,16 +150,28 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		return { token: tokenRecord, user }
 	}
 
+	private parseMetadata(value: D1Value | undefined): Record<string, unknown> | undefined {
+		if (typeof value !== 'string') return undefined
+		try {
+			const parsed: unknown = JSON.parse(value)
+			return isUnknownRecord(parsed) ? parsed : undefined
+		} catch {
+			return undefined
+		}
+	}
+
 	async create({
 		userId,
 		type,
 		token,
-		expiresAt
+		expiresAt,
+		metadata
 	}: {
 		userId: string
 		type: string
 		token: string
 		expiresAt: Date
+		metadata?: Record<string, unknown>
 	}) {
 		const columns = [
 			this.columns.id,
@@ -169,9 +191,59 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 			columns.push(this.columns.createdAt)
 			values.push(Math.floor(Date.now() / 1000))
 		}
+		if (this.columns.metadata) {
+			columns.push(this.columns.metadata)
+			values.push(JSON.stringify(metadata ?? {}))
+		}
 		await this.db
 			.prepare(
 				`INSERT INTO ${this.tokensTable} (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`
+			)
+			.bind(...values)
+			.run()
+	}
+
+	override async replaceForUserAndType({
+		userId,
+		type,
+		token,
+		expiresAt,
+		metadata
+	}: {
+		userId: string
+		type: string
+		token: string
+		expiresAt: Date
+		metadata?: Record<string, unknown>
+	}): Promise<void> {
+		const columns = [
+			this.columns.id,
+			this.columns.userId,
+			this.columns.type,
+			this.columns.token,
+			this.columns.expiresAt
+		]
+		const values: D1Value[] = [
+			await generateRandomUUID(),
+			this.coerceDbId(userId),
+			type,
+			token,
+			expiresAt.toISOString()
+		]
+		const updatedColumns = [this.columns.id, this.columns.token, this.columns.expiresAt]
+		if (this.columns.createdAt) {
+			columns.push(this.columns.createdAt)
+			values.push(Math.floor(Date.now() / 1000))
+			updatedColumns.push(this.columns.createdAt)
+		}
+		if (this.columns.metadata) {
+			columns.push(this.columns.metadata)
+			values.push(JSON.stringify(metadata ?? {}))
+			updatedColumns.push(this.columns.metadata)
+		}
+		await this.db
+			.prepare(
+				`INSERT INTO ${this.tokensTable} (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')}) ON CONFLICT (${this.columns.userId}, ${this.columns.type}) DO UPDATE SET ${updatedColumns.map((column) => `${column} = excluded.${column}`).join(', ')}`
 			)
 			.bind(...values)
 			.run()
@@ -187,9 +259,12 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		const createdAtSelect = this.columns.createdAt
 			? `, t.${this.columns.createdAt} AS token_created_at`
 			: ''
+		const metadataSelect = this.columns.metadata
+			? `, t.${this.columns.metadata} AS token_metadata`
+			: ''
 		const row = await this.db
 			.prepare(
-				`SELECT t.${this.columns.id} AS token_id, t.${this.columns.userId} AS token_user_id, t.${this.columns.type} AS token_type, t.${this.columns.token} AS verification_token, t.${this.columns.expiresAt} AS token_expires_at${createdAtSelect}, u.${this.userColumns.id} AS user_id, u.${this.userColumns.email} AS user_email, u.${this.userColumns.name} AS user_name, u.${this.userColumns.avatar} AS user_avatar FROM ${this.tokensTable} t JOIN ${this.usersTable} u ON t.${this.columns.userId} = u.${this.userColumns.id} WHERE t.${this.columns.token} = ? AND t.${this.columns.type} = ? LIMIT 1`
+				`SELECT t.${this.columns.id} AS token_id, t.${this.columns.userId} AS token_user_id, t.${this.columns.type} AS token_type, t.${this.columns.token} AS verification_token, t.${this.columns.expiresAt} AS token_expires_at${createdAtSelect}${metadataSelect}, u.${this.userColumns.id} AS user_id, u.${this.userColumns.email} AS user_email, u.${this.userColumns.name} AS user_name, u.${this.userColumns.avatar} AS user_avatar FROM ${this.tokensTable} t JOIN ${this.usersTable} u ON t.${this.columns.userId} = u.${this.userColumns.id} WHERE t.${this.columns.token} = ? AND t.${this.columns.type} = ? LIMIT 1`
 			)
 			.bind(token, type)
 			.first()
@@ -251,6 +326,9 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 			user_email: userRow?.[this.userColumns.email] ?? null,
 			user_name: userRow?.[this.userColumns.name] ?? null,
 			user_avatar: userRow?.[this.userColumns.avatar] ?? null
+		}
+		if (this.columns.metadata) {
+			merged['token_metadata'] = deletedRow[this.columns.metadata] ?? null
 		}
 		return this.mapTokenAndUser(merged)
 	}

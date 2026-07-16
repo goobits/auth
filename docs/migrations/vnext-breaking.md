@@ -203,6 +203,11 @@ could partially succeed or race.
 consume operation. Remove custom adapters that inherit a find-then-delete
 fallback; no such fallback remains.
 
+`VerificationTokenAdapter.replaceForUserAndType` is also required. Add a unique
+constraint on `(user_id, type)` and implement replacement as one upsert or
+transaction. Token metadata must be stored and returned so MFA and other
+multi-request challenges do not lose server-owned authorization context.
+
 ## Proxy rate-limit keys
 
 The boolean `security.rateLimit.trustProxyHeader` and

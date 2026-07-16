@@ -18,8 +18,15 @@ export type SelectQuery<T> = {
 	}
 }
 
+export type InsertConflictQuery = {
+	onConflictDoUpdate: (options: {
+		target: SQLWrapper | SQLWrapper[]
+		set: DrizzleRow
+	}) => Promise<void>
+}
+
 export type InsertQuery = {
-	values: (values: DrizzleRow) => Promise<void>
+	values: (values: DrizzleRow) => Promise<void> | InsertConflictQuery
 }
 
 export type UpdateQuery = {

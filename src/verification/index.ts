@@ -34,8 +34,7 @@ export async function createVerificationToken({
 	const tokenHash = await hashVerificationToken(tokenValue)
 	const expiresAt = new Date(Date.now() + expiresInMs)
 
-	await adapter.deleteByUserAndType({ userId, type })
-	await adapter.create({
+	await adapter.replaceForUserAndType({
 		userId,
 		type,
 		token: tokenHash,
