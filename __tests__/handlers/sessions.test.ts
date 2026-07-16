@@ -33,47 +33,61 @@ function createEvent(body: Record<string, unknown> | string | null = null) {
 describe('session handlers', () => {
 	it('lists sessions and marks current', async () => {
 		const sessionAdapter = {
-			listSessions: vi.fn(async () => [
-				{ id: 's1', userId: 'u1', expiresAt: new Date() },
-				{ id: 's2', userId: 'u1', expiresAt: new Date() }
+			listManagedSessions: vi.fn(async () => [
+				{ id: 'm1', userId: 'u1', expiresAt: new Date() },
+				{ id: 'm2', userId: 'u1', expiresAt: new Date() }
 			])
+		}
+		const event = createEvent()
+		event.locals.session = {
+			id: 'secret-current',
+			managementId: 'm1',
+			userId: 'u1',
+			expiresAt: new Date()
 		}
 
 		const handler = createSessionListHandler({ sessionAdapter })
-		const response = await handler(createEvent())
+		const response = await handler(event)
 		const payload = await response.json()
 		const sessions = payload.sessions as Array<SessionSummary & { current: boolean }>
 
 		expect(payload.ok).toBe(true)
-		expect(sessions.find((s) => s.id === 's1')?.current).toBe(true)
+		expect(sessions.find((s) => s.id === 'm1')?.current).toBe(true)
 	})
 
 	it('revokes other sessions', async () => {
 		const sessionAdapter = {
-			listSessions: vi.fn(async () => [
-				{ id: 's1', userId: 'u1' },
-				{ id: 's2', userId: 'u1' }
+			listManagedSessions: vi.fn(async () => [
+				{ id: 'm1', userId: 'u1', expiresAt: new Date() },
+				{ id: 'm2', userId: 'u1', expiresAt: new Date() }
 			]),
-			invalidateSession: vi.fn(async () => {})
+			revokeManagedSession: vi.fn(async () => {})
+		}
+		const event = createEvent({ others: true })
+		event.locals.session = {
+			id: 'secret-current',
+			managementId: 'm1',
+			userId: 'u1',
+			expiresAt: new Date()
 		}
 
 		const handler = createSessionRevokeHandler({ sessionAdapter })
-		const response = await handler(createEvent({ others: true }))
+		const response = await handler(event)
 		const payload = await response.json()
 
 		expect(payload.ok).toBe(true)
-		expect(sessionAdapter.invalidateSession).toHaveBeenCalledWith('s2')
+		expect(sessionAdapter.revokeManagedSession).toHaveBeenCalledWith('u1', 'm2')
 	})
 
 	it('projects management handles without exposing bearer credentials', async () => {
 		const expiresAt = new Date(Date.now() + 60_000)
 		const sessionAdapter = {
-			listSessions: vi.fn(async () => [
+			listManagedSessions: vi.fn(async () => [
 				{
-					id: 'secret-bearer',
-					managementId: 'public-handle',
+					id: 'public-handle',
 					userId: 'u1',
 					expiresAt,
+					bearerId: 'secret-bearer',
 					fingerprint: 'secret-fingerprint'
 				}
 			])
@@ -97,31 +111,42 @@ describe('session handlers', () => {
 		expect(JSON.stringify(payload)).not.toContain('secret-fingerprint')
 	})
 
+	it('never falls back to adapters that expose only bearer-session listing', async () => {
+		const handler = createSessionListHandler({
+			sessionAdapter: {
+				listSessions: vi.fn(async () => [
+					{ id: 'secret-bearer', userId: 'u1', expiresAt: new Date() }
+				])
+			} as never
+		})
+
+		const response = await handler(createEvent())
+
+		expect(response.status).toBe(501)
+		expect(JSON.stringify(await response.json())).not.toContain('secret-bearer')
+	})
+
 	it('revokes distinct management handles rather than bearer credentials', async () => {
 		const sessionAdapter = {
-			listSessions: vi.fn(async () => [
+			listManagedSessions: vi.fn(async () => [
 				{
-					id: 'secret-bearer',
-					managementId: 'public-handle',
+					id: 'public-handle',
 					userId: 'u1',
 					expiresAt: new Date()
 				}
 			]),
-			invalidateSession: vi.fn(async () => {})
+			revokeManagedSession: vi.fn(async () => {})
 		}
 		const handler = createSessionRevokeHandler({ sessionAdapter })
 
 		const response = await handler(createEvent({ id: 'public-handle' }))
 
 		expect(response.status).toBe(200)
-		expect(sessionAdapter.invalidateSession).toHaveBeenCalledWith('public-handle')
-		expect(sessionAdapter.invalidateSession).not.toHaveBeenCalledWith('secret-bearer')
+		expect(sessionAdapter.revokeManagedSession).toHaveBeenCalledWith('u1', 'public-handle')
 	})
 
 	it('returns 501 when bulk revoke is unsupported', async () => {
-		const sessionAdapter = {
-			invalidateSession: vi.fn(async () => {})
-		}
+		const sessionAdapter = {}
 
 		const handler = createSessionRevokeHandler({ sessionAdapter })
 		const response = await handler(createEvent({ all: true }))
@@ -134,14 +159,14 @@ describe('session handlers', () => {
 
 	it('maps adapter failures to deterministic responses', async () => {
 		const sessionAdapter = {
-			listSessions: vi.fn(async () => [{ id: 's2', userId: 'u1' }]),
-			invalidateSession: vi.fn(async () => {
+			listManagedSessions: vi.fn(async () => [{ id: 'm2', userId: 'u1', expiresAt: new Date() }]),
+			revokeManagedSession: vi.fn(async () => {
 				throw new Error('db down')
 			})
 		}
 
 		const handler = createSessionRevokeHandler({ sessionAdapter })
-		const response = await handler(createEvent({ id: 's2' }))
+		const response = await handler(createEvent({ id: 'm2' }))
 		const payload = await response.json()
 
 		expect(response.status).toBe(500)

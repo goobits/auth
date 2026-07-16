@@ -1,13 +1,16 @@
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import { AuthAdapterCapabilityError } from '../errors/AuthPrincipalResolutionError.ts'
 import type { AuthLocals, RequestEventLike } from '../types/auth.ts'
-import type { Session } from '../types/index.ts'
+import type { Session, SessionSummary } from '../types/index.ts'
 import { jsonResponse, parseRequestData } from '../utils/http.ts'
 
 type SessionManagementAdapter = Partial<
 	Pick<
 		SessionAdapter,
-		'listSessions' | 'invalidateSession' | 'invalidateUserSessions' | 'deleteSessionCookie'
+		| 'listManagedSessions'
+		| 'revokeManagedSession'
+		| 'invalidateUserSessions'
+		| 'deleteSessionCookie'
 	>
 >
 
@@ -18,18 +21,21 @@ type SessionHandlerConfig = {
 	getSession?: (locals: AuthLocals) => Session | null
 }
 
-const managementIdFor = (session: Session): string => session.managementId ?? session.id
-
-const toSafeSessionSummary = (session: Session, currentManagementId?: string) => ({
-	id: managementIdFor(session),
+const toSafeSessionSummary = (session: SessionSummary, currentManagementId?: string) => ({
+	id: session.id,
 	userId: session.userId,
 	expiresAt: session.expiresAt,
 	createdAt: session.createdAt ?? null,
 	lastActiveAt: session.lastActiveAt ?? null,
 	ip: session.ip ?? null,
 	userAgent: session.userAgent ?? null,
-	current: currentManagementId === managementIdFor(session)
+	current: currentManagementId === session.id
 })
+
+const isUnsupportedError = (error: unknown): boolean =>
+	error instanceof AuthAdapterCapabilityError ||
+	(error instanceof Error &&
+		(error.message.includes('not support') || error.message.includes('not implemented')))
 
 /** Creates session list handler for auth HTTP handlers. */
 export function createSessionListHandler(config: SessionHandlerConfig) {
@@ -49,14 +55,22 @@ export function createSessionListHandler(config: SessionHandlerConfig) {
 			return jsonResponse({ ok: false, error: 'Unauthorized' }, 401)
 		}
 
-		if (typeof sessionAdapter.listSessions !== 'function') {
+		if (typeof sessionAdapter.listManagedSessions !== 'function') {
 			return jsonResponse({ ok: false, error: 'Session listing not supported' }, 501)
 		}
 
 		const user = getUser(event.locals)
 		const current = getSession(event.locals)
-		const sessions = await sessionAdapter.listSessions(user.id)
-		const currentManagementId = current?.managementId ?? current?.id
+		let sessions: SessionSummary[]
+		try {
+			sessions = await sessionAdapter.listManagedSessions(user.id)
+		} catch (error) {
+			if (isUnsupportedError(error)) {
+				return jsonResponse({ ok: false, error: 'Session listing not supported' }, 501)
+			}
+			return jsonResponse({ ok: false, error: 'Failed to list sessions' }, 500)
+		}
+		const currentManagementId = current?.managementId
 		const normalized = sessions.map((session) => toSafeSessionSummary(session, currentManagementId))
 
 		return jsonResponse({ ok: true, sessions: normalized })
@@ -81,15 +95,10 @@ export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 			return jsonResponse({ ok: false, error: 'Unauthorized' }, 401)
 		}
 
-		const isUnsupportedError = (error: unknown): boolean =>
-			error instanceof AuthAdapterCapabilityError ||
-			(error instanceof Error &&
-				(error.message.includes('not support') || error.message.includes('not implemented')))
-
 		const data = await parseRequestData(event.request)
 		const user = getUser(event.locals)
 		const current = getSession(event.locals)
-		const currentManagementId = current?.managementId ?? current?.id
+		const currentManagementId = current?.managementId
 
 		const sessionId =
 			typeof data['sessionId'] === 'string'
@@ -102,19 +111,19 @@ export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 			data['others'] === true || data['others'] === 'true' || data['others'] === 1
 
 		if (sessionId) {
-			if (typeof sessionAdapter.listSessions !== 'function') {
+			if (
+				typeof sessionAdapter.listManagedSessions !== 'function' ||
+				typeof sessionAdapter.revokeManagedSession !== 'function'
+			) {
 				return jsonResponse({ ok: false, error: 'Session listing not supported' }, 501)
 			}
-			const sessions = await sessionAdapter.listSessions(user.id)
-			const ownedSession = sessions.find((session) => managementIdFor(session) === sessionId)
+			const sessions = await sessionAdapter.listManagedSessions(user.id)
+			const ownedSession = sessions.find((session) => session.id === sessionId)
 			if (!ownedSession) {
 				return jsonResponse({ ok: false, error: 'Session not found' }, 404)
 			}
-			if (typeof sessionAdapter.invalidateSession !== 'function') {
-				return jsonResponse({ ok: false, error: 'Session invalidation not supported' }, 501)
-			}
 			try {
-				await sessionAdapter.invalidateSession(managementIdFor(ownedSession))
+				await sessionAdapter.revokeManagedSession(user.id, ownedSession.id)
 			} catch (error) {
 				if (isUnsupportedError(error)) {
 					return jsonResponse({ ok: false, error: 'Session invalidation not supported' }, 501)
@@ -146,18 +155,18 @@ export function createSessionRevokeHandler(config: SessionHandlerConfig) {
 		}
 
 		if (revokeOthers) {
-			if (typeof sessionAdapter.listSessions !== 'function') {
+			if (
+				typeof sessionAdapter.listManagedSessions !== 'function' ||
+				typeof sessionAdapter.revokeManagedSession !== 'function'
+			) {
 				return jsonResponse({ ok: false, error: 'Session listing not supported' }, 501)
 			}
-			const sessions = await sessionAdapter.listSessions(user.id)
-			if (typeof sessionAdapter.invalidateSession !== 'function') {
-				return jsonResponse({ ok: false, error: 'Session invalidation not supported' }, 501)
-			}
+			const sessions = await sessionAdapter.listManagedSessions(user.id)
 			try {
 				await Promise.all(
 					sessions
-						.filter((session) => managementIdFor(session) !== currentManagementId)
-						.map((session) => sessionAdapter.invalidateSession!(managementIdFor(session)))
+						.filter((session) => session.id !== currentManagementId)
+						.map((session) => sessionAdapter.revokeManagedSession!(user.id, session.id))
 				)
 			} catch (error) {
 				if (isUnsupportedError(error)) {

@@ -110,8 +110,10 @@ function createMockDb() {
 						return { meta: { changes: 1 } }
 					}
 					if (sql.startsWith('DELETE FROM sessions')) {
-						const [value] = bound
-						if (sql.includes('user_id')) {
+						const [value, userId] = bound
+						if (sql.includes('management_id')) {
+							deleteWhere('sessions', (r) => r.management_id === value && r.user_id === userId)
+						} else if (sql.includes('user_id')) {
 							deleteWhere('sessions', (r) => r.user_id === value)
 						} else {
 							deleteWhere('sessions', (r) => r.id === value)
@@ -181,6 +183,7 @@ function createMockDb() {
 						return {
 							...user,
 							session_id: session.id,
+							session_management_id: session.management_id,
 							user_id: session.user_id,
 							expires_at: session.expires_at,
 							mfa_verified_at: session.mfa_verified_at,
@@ -290,6 +293,46 @@ describe('D1 adapters', () => {
 		expect(await sessionAdapter.listSessions(user.id)).toEqual([
 			expect.objectContaining({ createdAt, ip: '192.0.2.10', userAgent: 'Test Browser' })
 		])
+	})
+
+	it('round-trips Unix-second assurance timestamps and non-secret management handles', async () => {
+		const db = createMockDb()
+		const userAdapter = new D1UserAdapter(db)
+		const sessionAdapter = new D1SessionAdapter(db, {
+			timestampFormat: 'unix-seconds',
+			columns: {
+				managementId: 'management_id',
+				createdAt: 'created_at',
+				lastActiveAt: 'last_active_at',
+				mfaVerifiedAt: 'mfa_verified_at'
+			}
+		})
+		const user = await userAdapter.createUser({
+			email: 'assurance@example.com',
+			name: 'Assurance User'
+		})
+		const createdAt = new Date('2026-07-15T10:00:00.000Z')
+		const mfaVerifiedAt = new Date('2026-07-15T10:05:00.000Z')
+		const session = await sessionAdapter.createSession(user.id, { createdAt, mfaVerifiedAt })
+		const validated = await sessionAdapter.validateSession(session.id)
+		const managed = await sessionAdapter.listManagedSessions(user.id)
+
+		expect(validated.session).toMatchObject({
+			createdAt,
+			lastActiveAt: createdAt,
+			mfaVerifiedAt,
+			managementId: session.managementId
+		})
+		expect(managed).toEqual([
+			expect.objectContaining({ id: session.managementId, userId: user.id })
+		])
+		expect(managed[0]?.id).not.toBe(session.id)
+
+		await sessionAdapter.revokeManagedSession(user.id, managed[0]?.id ?? '')
+		await expect(sessionAdapter.validateSession(session.id)).resolves.toEqual({
+			session: null,
+			user: null
+		})
 	})
 
 	it('keeps D1 password hashes behind the credential capability', async () => {

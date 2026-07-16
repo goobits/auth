@@ -110,6 +110,7 @@ export type MfaStatus = {
 
 /** Describes the auth domain record used for session summary. */
 export type SessionSummary = {
+	/** Non-secret handle used by session-management APIs. */
 	id: string
 	userId: string
 	expiresAt: Date

@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit'
 
-import type { Session, SessionMetadata, User } from '../../types/core.ts'
+import type { Session, SessionMetadata, SessionSummary, User } from '../../types/core.ts'
 
 /**
  * Base Session Adapter Interface
@@ -44,6 +44,15 @@ export abstract class SessionAdapter {
 	 * @returns {Promise<Array<import('../../types/core.ts').Session>>}
 	 */
 	abstract listSessions(userId: string): Promise<Session[]>
+
+	/**
+	 * List non-secret session-management records for a user.
+	 * Adapters must not expose bearer session IDs through this capability.
+	 */
+	listManagedSessions?(userId: string): Promise<SessionSummary[]>
+
+	/** Revoke one session by its non-secret management handle and owner. */
+	revokeManagedSession?(userId: string, managementId: string): Promise<void>
 
 	/**
 	 * Set session cookie
