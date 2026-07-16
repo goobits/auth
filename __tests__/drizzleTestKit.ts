@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import { pgTable, serial, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 
 import type { DrizzleDbLike } from '../src/adapters/drizzleTypes.ts'
 
@@ -21,16 +21,20 @@ export const drizzleSessionsTable = pgTable('sessions', {
 	createdAt: timestamp('created_at').defaultNow()
 })
 
-export const drizzleOauthTokensTable = pgTable('oauth_tokens', {
-	id: serial('id').primaryKey(),
-	userId: uuid('user_id')
-		.notNull()
-		.references(() => drizzleUsersTable.id, { onDelete: 'cascade' }),
-	provider: text('provider').notNull(),
-	tokens: text('tokens').notNull(),
-	createdAt: timestamp('created_at').defaultNow(),
-	updatedAt: timestamp('updated_at').defaultNow()
-})
+export const drizzleOauthTokensTable = pgTable(
+	'oauth_tokens',
+	{
+		id: serial('id').primaryKey(),
+		userId: uuid('user_id')
+			.notNull()
+			.references(() => drizzleUsersTable.id, { onDelete: 'cascade' }),
+		provider: text('provider').notNull(),
+		tokens: text('tokens').notNull(),
+		createdAt: timestamp('created_at').defaultNow(),
+		updatedAt: timestamp('updated_at').defaultNow()
+	},
+	(table) => [unique('oauth_tokens_user_provider_unique').on(table.userId, table.provider)]
+)
 
 export const drizzleMagicLinkTokensTable = pgTable('magic_link_tokens', {
 	id: uuid('id').primaryKey().defaultRandom(),
@@ -104,7 +108,8 @@ export async function createIntegrationDrizzleFixture(): Promise<IntegrationDbFi
 			provider TEXT NOT NULL,
 			tokens TEXT NOT NULL,
 			created_at TIMESTAMP DEFAULT now(),
-			updated_at TIMESTAMP DEFAULT now()
+			updated_at TIMESTAMP DEFAULT now(),
+			UNIQUE(user_id, provider)
 		)`
 
 		return {
@@ -144,7 +149,8 @@ export async function createIntegrationDrizzleFixture(): Promise<IntegrationDbFi
 			provider TEXT NOT NULL,
 			tokens TEXT NOT NULL,
 			created_at TIMESTAMP DEFAULT now(),
-			updated_at TIMESTAMP DEFAULT now()
+			updated_at TIMESTAMP DEFAULT now(),
+			UNIQUE(user_id, provider)
 		);
 		CREATE TABLE magic_link_tokens (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

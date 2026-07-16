@@ -16,7 +16,10 @@ import { env } from '$env/dynamic/private'
 export const auth = new GoobitsAuth({
 	adapter: drizzleAdapter(db, {
 		schema,
-		oauthTokenEncryptionKey: env.TOKEN_ENCRYPTION_KEY
+		oauthTokenEncryption: {
+			encryptionKeyringJson: env.TOKEN_ENCRYPTION_KEYRING,
+			legacyEncryptionKeyId: 'previous'
+		}
 	}),
 	providers: {
 		google: {

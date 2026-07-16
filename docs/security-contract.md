@@ -94,7 +94,7 @@ rate-limit their login/signup routes aggressively to compensate.
 2. Allowlist only proxy headers that the trusted edge overwrites; standalone
    handler key callbacks must enforce the same boundary.
 3. Enable an alert sink with `security.alerts.webhook` or `security.alerts.onAlert`.
-4. Validate secrets at deploy-time (`TOKEN_ENCRYPTION_KEY`, OAuth secrets).
+4. Validate secrets at deploy-time (`TOKEN_ENCRYPTION_KEYRING`, OAuth secrets).
 5. Keep dependency and secret scanning enabled in CI.
 6. Configure shared rate-limit state before using `secure` or `strict` in production.
 

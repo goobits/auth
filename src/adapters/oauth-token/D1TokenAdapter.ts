@@ -1,6 +1,8 @@
 import type { OAuthTokens } from '../../types/index.ts'
 import { resolveLogger, type Logger } from '../../_internal/logger.ts'
-import { decryptTokens, encryptTokens } from '../../utils/crypto.ts'
+import type { OAuthTokenCodec, OAuthTokenEncryptionOptions } from './OAuthTokenCodec.ts'
+import { resolveOAuthTokenCodec } from './_tokenEncryption.ts'
+import { openOAuthTokens, serializeOAuthTokens } from './_tokenPayload.ts'
 import { TokenAdapter } from './TokenAdapter.ts'
 
 type D1Value = string | number | boolean | null
@@ -15,85 +17,60 @@ type D1DatabaseLike = {
 	}
 }
 
-function isObjectRecord(value: unknown): value is Record<string, unknown> {
-	return !!value && typeof value === 'object'
-}
-
-function parseOAuthTokens(raw: string): OAuthTokens | null {
-	try {
-		const data: unknown = JSON.parse(raw)
-		if (!isObjectRecord(data)) return null
-		const record = data
-		if (typeof record['accessToken'] !== 'string') return null
-		if (record['refreshToken'] !== null && typeof record['refreshToken'] !== 'string') {
-			return null
-		}
-		if (record['scope'] !== null && typeof record['scope'] !== 'string') return null
-		if (typeof record['accessTokenExpiresAt'] !== 'string') return null
-		return {
-			accessToken: record['accessToken'],
-			refreshToken: record['refreshToken'],
-			scope: record['scope'],
-			accessTokenExpiresAt: record['accessTokenExpiresAt']
-		}
-	} catch {
-		return null
+function quoteIdentifier(value: string): string {
+	if (!/^[A-Za-z_][A-Za-z0-9_]*$/u.test(value)) {
+		throw new Error('D1TokenAdapter received an invalid SQL identifier')
 	}
+	return `"${value}"`
 }
 
 /** Cloudflare D1 token adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class D1TokenAdapter extends TokenAdapter {
 	private db: D1DatabaseLike
 	private tokensTable: string
-	private encrypt: boolean
-	private encryptionKey: string | null
+	private readonly tokenCodec: OAuthTokenCodec | null
 	private columns: { userId: string; provider: string; tokens: string }
 	private readonly logger: Logger
 
 	constructor(
 		db: D1DatabaseLike,
-		options: {
+		options: OAuthTokenEncryptionOptions & {
 			tokensTable?: string
-			encrypt?: boolean
-			encryptionKey?: string | null
 			columns?: Partial<Record<string, string>>
 			logger?: Logger
 		} = {}
 	) {
 		super()
 		this.db = db
-		this.tokensTable = options.tokensTable || 'oauth_tokens'
-		this.encrypt = options.encrypt !== false
-		this.encryptionKey = options.encryptionKey || null
+		this.tokensTable = quoteIdentifier(options.tokensTable || 'oauth_tokens')
+		this.tokenCodec = resolveOAuthTokenCodec(options, 'D1TokenAdapter')
 		this.logger = resolveLogger(options.logger)
 		this.columns = {
-			userId: options.columns?.['userId'] || 'user_id',
-			provider: options.columns?.['provider'] || 'provider',
-			tokens: options.columns?.['tokens'] || 'tokens'
-		}
-
-		if (this.encrypt && !this.encryptionKey) {
-			throw new Error('D1TokenAdapter requires encryptionKey when encryption is enabled')
+			userId: quoteIdentifier(options.columns?.['userId'] || 'user_id'),
+			provider: quoteIdentifier(options.columns?.['provider'] || 'provider'),
+			tokens: quoteIdentifier(options.columns?.['tokens'] || 'tokens')
 		}
 	}
 
-	async storeTokens(userId: string, provider: string, tokens: Record<string, unknown>) {
-		const key = this.encryptionKey ?? ''
-		const tokenData = this.encrypt ? await encryptTokens(tokens, key) : JSON.stringify(tokens)
-
+	private async writeTokens(userId: string, provider: string, tokenData: string): Promise<void> {
 		await this.db
 			.prepare(
-				`DELETE FROM ${this.tokensTable} WHERE ${this.columns.userId} = ? AND ${this.columns.provider} = ?`
-			)
-			.bind(userId, provider)
-			.run()
-
-		await this.db
-			.prepare(
-				`INSERT INTO ${this.tokensTable} (${this.columns.userId}, ${this.columns.provider}, ${this.columns.tokens}) VALUES (?, ?, ?)`
+				`INSERT INTO ${this.tokensTable} (${this.columns.userId}, ${this.columns.provider}, ${this.columns.tokens})
+				 VALUES (?, ?, ?)
+				 ON CONFLICT (${this.columns.userId}, ${this.columns.provider})
+				 DO UPDATE SET ${this.columns.tokens} = excluded.${this.columns.tokens}`
 			)
 			.bind(userId, provider, tokenData)
 			.run()
+	}
+
+	async storeTokens(userId: string, provider: string, tokens: OAuthTokens) {
+		const context = { userId, provider }
+		await this.writeTokens(
+			userId,
+			provider,
+			await serializeOAuthTokens(tokens, this.tokenCodec, context)
+		)
 	}
 
 	async getTokens(userId: string, provider: string) {
@@ -105,12 +82,14 @@ export class D1TokenAdapter extends TokenAdapter {
 			.first()
 
 		if (!row) return null
-		const key = this.encryptionKey ?? ''
 		const tokenValue = row['tokens']
 		if (typeof tokenValue !== 'string') return null
-		return this.encrypt
-			? await decryptTokens<OAuthTokens>(tokenValue, key)
-			: parseOAuthTokens(tokenValue)
+		return openOAuthTokens({
+			value: tokenValue,
+			codec: this.tokenCodec,
+			context: { userId, provider },
+			reseal: (ciphertext) => this.writeTokens(userId, provider, ciphertext)
+		})
 	}
 
 	async refreshTokens(userId: string, provider: string) {

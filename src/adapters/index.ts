@@ -15,7 +15,13 @@ export {
 
 // Token Adapters (OAuth tokens)
 export {
+	type AesGcmOAuthTokenCodecOptions,
+	type OAuthTokenCipherContext,
+	type OAuthTokenCodec,
+	type OAuthTokenEncryptionOptions,
+	type OpenedOAuthTokenPayload,
 	CookieTokenAdapter,
+	createAesGcmOAuthTokenCodec,
 	D1TokenAdapter,
 	DrizzleTokenAdapter,
 	TokenAdapter

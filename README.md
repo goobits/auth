@@ -55,7 +55,10 @@ export const auth = new GoobitsAuth({
 	profile: 'secure',
 	adapter: drizzleAdapter(db, {
 		schema,
-		oauthTokenEncryptionKey: env.TOKEN_ENCRYPTION_KEY
+		oauthTokenEncryption: {
+			encryptionKeyringJson: env.TOKEN_ENCRYPTION_KEYRING,
+			legacyEncryptionKeyId: 'previous'
+		}
 	}),
 	providers: {
 		google: {

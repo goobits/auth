@@ -124,9 +124,11 @@ deleteTokens(userId: string, provider: string): Promise<void>
 ```
 
 Only needed if you want refresh-token-driven re-auth or downstream API
-calls using the user's OAuth tokens. The Drizzle bundle accepts an
-`oauthTokenEncryptionKey` and encrypts at rest; if you roll your own,
-do the same — these are bearer credentials.
+calls using the user's OAuth tokens. The Drizzle bundle accepts a rotation-ready
+`oauthTokenEncryption` keyring or custom codec, binds ciphertext to the user and
+provider, and lazily reseals retired keys. Enforce a unique `(user_id, provider)`
+constraint for atomic storage. If you roll your own, preserve the same controls —
+these are bearer credentials.
 
 ### `VerificationTokenAdapter`, `MagicLinkAdapter`, `WebAuthnAdapter`
 

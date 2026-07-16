@@ -245,3 +245,16 @@ Prefer `security.rateLimit.windows` for custom policy. The legacy `max` and
 Auth threshold-rule severities now use the shared Security vocabulary:
 `warning` replaces `warn`, and `critical` replaces `error`. Auth event severities
 remain `info | warn | error`; only alert-notification policy changed.
+
+## OAuth token encryption rotation
+
+Prefer `oauthTokenEncryption.encryptionKeyringJson` (or an application-owned
+`tokenCodec`) over `oauthTokenEncryptionKey`. During migration, keep the old key
+in the keyring and set `legacyEncryptionKeyId` to its ID. Legacy ciphertext is
+then readable and is lazily resealed with record-bound associated data under the
+active key. Remove the old key only after every retained token has been read or
+an explicit bulk reseal has completed.
+
+D1 and Drizzle OAuth token tables must enforce a unique `(user_id, provider)`
+constraint. Token stores now use atomic upsert rather than delete-then-insert;
+add and validate that constraint before deploying this version.

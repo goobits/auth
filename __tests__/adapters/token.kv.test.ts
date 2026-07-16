@@ -24,8 +24,13 @@ describe('KVTokenAdapter', () => {
 	it('roundtrips tokens when encryption is disabled', async () => {
 		const namespace = createNamespace()
 		const adapter = new KVTokenAdapter(namespace, { encrypt: false })
-		await adapter.storeTokens('u1', 'google', { access_token: 'tok' })
+		await adapter.storeTokens('u1', 'google', {
+			accessToken: 'tok',
+			refreshToken: null,
+			scope: null,
+			accessTokenExpiresAt: new Date().toISOString()
+		})
 		const tokens = await adapter.getTokens('u1', 'google')
-		expect(tokens?.access_token).toBe('tok')
+		expect(tokens?.accessToken).toBe('tok')
 	})
 })

@@ -4,6 +4,7 @@ import type { UserAdapterBundle } from '../database/PasswordCredentialAdapter.ts
 import type { DrizzleDbLike, DrizzleTable } from '../drizzleTypes.ts'
 import { DrizzleMagicLinkAdapter } from '../magic-link/DrizzleMagicLinkAdapter.ts'
 import { DrizzleTokenAdapter } from '../oauth-token/DrizzleTokenAdapter.ts'
+import type { OAuthTokenEncryptionOptions } from '../oauth-token/OAuthTokenCodec.ts'
 import { DrizzleSessionAdapter } from '../session/DrizzleSessionAdapter.ts'
 import { DrizzleVerificationTokenAdapter } from '../verification-token/DrizzleVerificationTokenAdapter.ts'
 import { DrizzleWebAuthnAdapter } from '../webauthn/DrizzleWebAuthnAdapter.ts'
@@ -61,7 +62,10 @@ export type DrizzleAuthSchema = Partial<Record<TableKey, DrizzleTable>>
 export type DrizzleAdapterOptions<TSchema extends DrizzleAuthSchema = DrizzleAuthSchema> = {
 	schema?: TSchema
 	tables?: Partial<Record<TableKey, DrizzleTable>>
+	oauthTokenEncryption?: OAuthTokenEncryptionOptions
+	/** @deprecated Prefer `oauthTokenEncryption.encryptionKeyringJson`. */
 	oauthTokenEncryptionKey?: string | null
+	/** @deprecated Prefer `oauthTokenEncryption.encrypt`. */
 	oauthTokenEncrypt?: boolean
 	session?: {
 		sessionLifetime?: number
@@ -70,6 +74,26 @@ export type DrizzleAdapterOptions<TSchema extends DrizzleAuthSchema = DrizzleAut
 		secureCookies?: boolean
 	}
 	sanitizeUser?: (user: User | null) => User | null
+}
+
+function resolveOAuthTokenEncryptionOptions(
+	options: DrizzleAdapterOptions
+): OAuthTokenEncryptionOptions {
+	if (
+		options.oauthTokenEncryption &&
+		(options.oauthTokenEncryptionKey !== undefined || options.oauthTokenEncrypt !== undefined)
+	) {
+		throw new Error(
+			'drizzleAdapter accepts oauthTokenEncryption or legacy flat OAuth token options, not both'
+		)
+	}
+	if (options.oauthTokenEncryption) return options.oauthTokenEncryption
+	return {
+		...(options.oauthTokenEncryptionKey !== undefined
+			? { encryptionKey: options.oauthTokenEncryptionKey }
+			: {}),
+		...(options.oauthTokenEncrypt !== undefined ? { encrypt: options.oauthTokenEncrypt } : {})
+	}
 }
 
 /** Drizzle Adapter Bundle typed model for runtime integration. */
@@ -136,13 +160,7 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 	const oauthToken = oauthTokensTable
 		? new DrizzleTokenAdapter(db, {
 				tokensTable: oauthTokensTable,
-				...(options.oauthTokenEncryptionKey !== undefined
-					? { encryptionKey: options.oauthTokenEncryptionKey }
-					: {}),
-				encrypt:
-					options.oauthTokenEncrypt ??
-					(typeof options.oauthTokenEncryptionKey === 'string' &&
-						options.oauthTokenEncryptionKey.length > 0)
+				...resolveOAuthTokenEncryptionOptions(options)
 			})
 		: undefined
 

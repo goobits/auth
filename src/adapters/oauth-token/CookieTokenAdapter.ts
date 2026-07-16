@@ -1,7 +1,9 @@
 import type { Cookies } from '@sveltejs/kit'
 
 import type { OAuthTokens } from '../../types/index.ts'
-import { decryptTokens, encryptTokens } from '../../utils/crypto.ts'
+import type { OAuthTokenCodec, OAuthTokenEncryptionOptions } from './OAuthTokenCodec.ts'
+import { resolveOAuthTokenCodec } from './_tokenEncryption.ts'
+import { openOAuthTokens, serializeOAuthTokens } from './_tokenPayload.ts'
 import { TokenAdapter } from './TokenAdapter.ts'
 
 /**
@@ -10,7 +12,7 @@ import { TokenAdapter } from './TokenAdapter.ts'
  */
 export class CookieTokenAdapter extends TokenAdapter {
 	private cookieName: string
-	private encryptionKey: string
+	private readonly tokenCodec: OAuthTokenCodec
 	private secureCookies: boolean
 	private maxAge: number
 	private _cookies: Cookies | null
@@ -18,28 +20,24 @@ export class CookieTokenAdapter extends TokenAdapter {
 	/**
 	 * @param {Object} options - Configuration options
 	 * @param {string} options.cookieName - Cookie name for storing tokens
-	 * @param {string} options.encryptionKey - 32-byte hex encryption key
+	 * @param {string} options.encryptionKeyringJson - Rotation-ready AES-GCM keyring JSON
 	 * @param {boolean} [options.secureCookies=true] - Use secure cookies
 	 * @param {number} [options.maxAge=604800] - Cookie max age in seconds (default: 7 days)
 	 */
 	constructor(
-		options: {
+		options: OAuthTokenEncryptionOptions & {
 			cookieName?: string
-			encryptionKey?: string
 			secureCookies?: boolean
 			maxAge?: number
 		} = {}
 	) {
 		super()
 		this.cookieName = options.cookieName || 'oauth_tokens'
-		this.encryptionKey = options.encryptionKey || ''
+		const tokenCodec = resolveOAuthTokenCodec(options, 'CookieTokenAdapter')
+		if (!tokenCodec) throw new Error('CookieTokenAdapter cannot disable token encryption')
+		this.tokenCodec = tokenCodec
 		this.secureCookies = options.secureCookies !== false
 		this.maxAge = options.maxAge || 60 * 60 * 24 * 7 // 7 days
-
-		if (!this.encryptionKey) {
-			throw new Error('CookieTokenAdapter requires encryptionKey option')
-		}
-
 		// Store for provider-specific cookies
 		this._cookies = null
 	}
@@ -53,15 +51,12 @@ export class CookieTokenAdapter extends TokenAdapter {
 		this._cookies = cookies
 	}
 
-	async storeTokens(_userId: string, provider: string, tokens: Record<string, unknown>) {
+	private setTokenCookie(provider: string, value: string): void {
 		if (!this._cookies) {
 			throw new Error('Cookies not set. Call _setCookies() first.')
 		}
-
-		const encryptedTokens = await encryptTokens(tokens, this.encryptionKey)
 		const cookieName = `${this.cookieName}_${provider}`
-
-		this._cookies.set(cookieName, encryptedTokens, {
+		this._cookies.set(cookieName, value, {
 			httpOnly: true,
 			secure: this.secureCookies,
 			sameSite: 'strict',
@@ -70,7 +65,15 @@ export class CookieTokenAdapter extends TokenAdapter {
 		})
 	}
 
-	async getTokens(_userId: string, provider: string): Promise<OAuthTokens | null> {
+	async storeTokens(userId: string, provider: string, tokens: OAuthTokens) {
+		const encryptedTokens = await serializeOAuthTokens(tokens, this.tokenCodec, {
+			userId,
+			provider
+		})
+		this.setTokenCookie(provider, encryptedTokens)
+	}
+
+	async getTokens(userId: string, provider: string): Promise<OAuthTokens | null> {
 		if (!this._cookies) {
 			throw new Error('Cookies not set. Call _setCookies() first.')
 		}
@@ -80,7 +83,12 @@ export class CookieTokenAdapter extends TokenAdapter {
 
 		if (!encryptedTokens) return null
 
-		return (await decryptTokens(encryptedTokens, this.encryptionKey)) as OAuthTokens
+		return openOAuthTokens({
+			value: encryptedTokens,
+			codec: this.tokenCodec,
+			context: { userId, provider },
+			reseal: async (ciphertext) => this.setTokenCookie(provider, ciphertext)
+		})
 	}
 
 	async refreshTokens(

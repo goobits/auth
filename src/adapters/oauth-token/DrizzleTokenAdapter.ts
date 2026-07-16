@@ -1,14 +1,16 @@
 import { and, eq } from 'drizzle-orm'
 
 import type { OAuthTokens } from '../../types/index.ts'
-import { decryptTokens, encryptTokens } from '../../utils/crypto.ts'
 import {
 	type DrizzleDbLike,
-	type DrizzleJson,
+	type InsertConflictQuery,
 	type DrizzleTable,
 	requireColumn,
 	requireCondition
 } from '../drizzleTypes.ts'
+import type { OAuthTokenCodec, OAuthTokenEncryptionOptions } from './OAuthTokenCodec.ts'
+import { resolveOAuthTokenCodec } from './_tokenEncryption.ts'
+import { openOAuthTokens, serializeOAuthTokens } from './_tokenPayload.ts'
 import { TokenAdapter } from './TokenAdapter.ts'
 
 type TokensTable = DrizzleTable & {
@@ -17,47 +19,25 @@ type TokensTable = DrizzleTable & {
 	tokens: DrizzleTable[string]
 }
 
-function normalizeOAuthTokens(value: DrizzleJson): OAuthTokens | null {
-	if (!value || typeof value !== 'object' || Array.isArray(value) || value instanceof Date) {
-		return null
-	}
-	const accessTokenRaw = value['accessToken']
-	const refreshTokenRaw = value['refreshToken']
-	const scopeRaw = value['scope']
-	const accessTokenExpiresAtRaw = value['accessTokenExpiresAt']
-	if (typeof accessTokenRaw !== 'string') return null
-	const refreshToken =
-		typeof refreshTokenRaw === 'string' || refreshTokenRaw === null ? refreshTokenRaw : null
-	const scope = typeof scopeRaw === 'string' || scopeRaw === null ? scopeRaw : null
-	let accessTokenExpiresAt: string
-	if (typeof accessTokenExpiresAtRaw === 'string') {
-		accessTokenExpiresAt = accessTokenExpiresAtRaw
-	} else if (accessTokenExpiresAtRaw instanceof Date) {
-		accessTokenExpiresAt = accessTokenExpiresAtRaw.toISOString()
-	} else {
-		accessTokenExpiresAt = new Date().toISOString()
-	}
-	return {
-		accessToken: accessTokenRaw,
-		refreshToken,
-		scope,
-		accessTokenExpiresAt
-	}
+function supportsAtomicUpsert(value: unknown): value is InsertConflictQuery {
+	return (
+		value !== null &&
+		typeof value === 'object' &&
+		'onConflictDoUpdate' in value &&
+		typeof value.onConflictDoUpdate === 'function'
+	)
 }
 
 /** Drizzle token adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class DrizzleTokenAdapter extends TokenAdapter {
 	private db: DrizzleDbLike
 	private tokensTable: TokensTable
-	private encryptionKey: string | null
-	private encrypt: boolean
+	private readonly tokenCodec: OAuthTokenCodec | null
 
 	constructor(
 		db: DrizzleDbLike,
-		options: {
+		options: OAuthTokenEncryptionOptions & {
 			tokensTable?: TokensTable
-			encryptionKey?: string | null
-			encrypt?: boolean
 		} = {}
 	) {
 		super()
@@ -66,38 +46,33 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 		}
 		this.db = db
 		this.tokensTable = options.tokensTable
-		this.encryptionKey = options.encryptionKey ?? null
-		this.encrypt = options.encrypt !== false
-		if (this.encrypt && !this.encryptionKey) {
-			throw new Error('DrizzleTokenAdapter requires encryptionKey when encryption is enabled')
-		}
+		this.tokenCodec = resolveOAuthTokenCodec(options, 'DrizzleTokenAdapter')
 	}
 
-	private getEncryptionKey(): string {
-		if (!this.encryptionKey) {
-			throw new Error('Encryption key is required')
-		}
-		return this.encryptionKey
-	}
-
-	async storeTokens(userId: string, provider: string, tokens: OAuthTokens): Promise<void> {
-		const key = this.getEncryptionKey()
-		const tokenData = this.encrypt ? await encryptTokens(tokens, key) : JSON.stringify(tokens)
-		await this.db
-			.delete(this.tokensTable)
-			.where(
-				requireCondition(
-					and(
-						eq(requireColumn(this.tokensTable, 'userId'), userId),
-						eq(requireColumn(this.tokensTable, 'provider'), provider)
-					)
-				)
-			)
-		await this.db.insert(this.tokensTable).values({
+	private async writeTokens(userId: string, provider: string, tokenData: string): Promise<void> {
+		const insert = this.db.insert(this.tokensTable).values({
 			userId,
 			provider,
 			tokens: tokenData
 		})
+		if (!supportsAtomicUpsert(insert)) {
+			throw new TypeError('Drizzle OAuth token storage requires atomic upsert support')
+		}
+		await insert.onConflictDoUpdate({
+			target: [
+				requireColumn(this.tokensTable, 'userId'),
+				requireColumn(this.tokensTable, 'provider')
+			],
+			set: { tokens: tokenData }
+		})
+	}
+
+	async storeTokens(userId: string, provider: string, tokens: OAuthTokens): Promise<void> {
+		await this.writeTokens(
+			userId,
+			provider,
+			await serializeOAuthTokens(tokens, this.tokenCodec, { userId, provider })
+		)
 	}
 
 	async getTokens(userId: string, provider: string): Promise<OAuthTokens | null> {
@@ -115,12 +90,12 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 		if (!row) return null
 		const raw = row['tokens']
 		if (typeof raw !== 'string') return null
-		if (this.encrypt) {
-			const decrypted = await decryptTokens<DrizzleJson>(raw, this.getEncryptionKey())
-			return decrypted ? normalizeOAuthTokens(decrypted) : null
-		}
-		const parsed: DrizzleJson = JSON.parse(raw)
-		return normalizeOAuthTokens(parsed)
+		return openOAuthTokens({
+			value: raw,
+			codec: this.tokenCodec,
+			context: { userId, provider },
+			reseal: (ciphertext) => this.writeTokens(userId, provider, ciphertext)
+		})
 	}
 
 	async refreshTokens(_userId: string, _provider: string): Promise<OAuthTokens | null> {

@@ -35,7 +35,10 @@ import { env } from '$env/dynamic/private'
 export const auth = new GoobitsAuth({
 	adapter: drizzleAdapter(db, {
 		schema,
-		oauthTokenEncryptionKey: env.TOKEN_ENCRYPTION_KEY
+		oauthTokenEncryption: {
+			encryptionKeyringJson: env.TOKEN_ENCRYPTION_KEYRING,
+			legacyEncryptionKeyId: 'previous'
+		}
 	}),
 	providers: {
 		google: {
@@ -109,6 +112,12 @@ export const GET = async (event) => {
 
 - required: `session`, `user`, `passwordCredential`
 - optional (when tables exist): `oauthToken`, `verificationToken`, `magicLink`, `webauthn`
+
+When `oauthTokens` exists, configure `oauthTokenEncryption` with either a
+rotation-ready `encryptionKeyringJson` or an application `tokenCodec`. The table
+must enforce one row per `(userId, provider)` so stores and lazy key rotation use
+an atomic upsert. The old `oauthTokenEncryptionKey` option remains only as a
+migration bridge.
 
 ### Required schema tables
 

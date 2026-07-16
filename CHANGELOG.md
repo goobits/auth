@@ -43,6 +43,12 @@
 - 🔔 Threshold alerts now use the shared Security mechanism and
   `warning | critical` vocabulary instead of maintaining a second counter and
   `warn | error` severity model in Auth.
+- 🔑 OAuth token adapters now accept rotation-ready codecs/keyrings, bind new
+  ciphertext to user and provider identity, read explicitly mapped legacy
+  ciphertext, and lazily reseal retired-key payloads under the active key.
+- 🧱 D1 and Drizzle OAuth token writes now require atomic `(user, provider)`
+  upserts, preventing read-time resealing or concurrent login from deleting a
+  valid token row.
 
 ### 🏠 Internal
 

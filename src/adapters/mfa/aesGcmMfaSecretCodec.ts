@@ -4,6 +4,7 @@ import {
 	bytesToText,
 	createAesGcmKeyringFromJson,
 	openAesGcmWithKeyring,
+	parseAesGcmKeyringSeal,
 	sealAesGcmWithKeyring
 } from '@goobits/security/crypto'
 
@@ -11,32 +12,12 @@ import type { MfaSecretCodec } from './MfaAdapter.ts'
 
 const DEFAULT_ASSOCIATED_DATA_PREFIX = '@goobits/auth:mfa-secret'
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 function parseSeal(ciphertext: string): AesGcmKeyringSeal {
-	let value: unknown
 	try {
-		value = JSON.parse(ciphertext)
+		return parseAesGcmKeyringSeal(JSON.parse(ciphertext))
 	} catch {
 		throw new Error('@goobits/auth: invalid encrypted MFA secret')
 	}
-	if (
-		!isRecord(value) ||
-		Object.keys(value).some((key) => key !== 'keyId' && key !== 'seal') ||
-		typeof value['keyId'] !== 'string' ||
-		!isRecord(value['seal']) ||
-		Object.keys(value['seal']).some(
-			(key) => key !== 'algorithm' && key !== 'iv' && key !== 'ciphertext'
-		) ||
-		value['seal']['algorithm'] !== 'AES-GCM' ||
-		typeof value['seal']['iv'] !== 'string' ||
-		typeof value['seal']['ciphertext'] !== 'string'
-	) {
-		throw new Error('@goobits/auth: invalid encrypted MFA secret')
-	}
-	return value as unknown as AesGcmKeyringSeal
 }
 
 /** Builds an MFA-secret codec backed by Security's rotation-ready AES-GCM keyring. */

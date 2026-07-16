@@ -109,7 +109,8 @@ describe('Drizzle Adapters Integration', () => {
 		const tokens = {
 			accessToken: 'secret-access-token',
 			refreshToken: 'secret-refresh-token',
-			accessTokenExpiresAt: new Date(Date.now() + 3600 * 1000)
+			scope: 'profile',
+			accessTokenExpiresAt: new Date(Date.now() + 3600 * 1000).toISOString()
 		}
 
 		await tokenAdapter.storeTokens(testUserId, 'google', tokens)
@@ -124,6 +125,19 @@ describe('Drizzle Adapters Integration', () => {
 			.where(eq(drizzleOauthTokensTable.userId, testUserId))
 		expect(row.tokens).not.toContain('secret-access-token')
 		expect(row.tokens).not.toContain('secret-refresh-token')
+
+		await tokenAdapter.storeTokens(testUserId, 'google', {
+			...tokens,
+			accessToken: 'replacement-access-token'
+		})
+		const rows = await db
+			.select()
+			.from(drizzleOauthTokensTable)
+			.where(eq(drizzleOauthTokensTable.userId, testUserId))
+		expect(rows).toHaveLength(1)
+		await expect(tokenAdapter.getTokens(testUserId, 'google')).resolves.toMatchObject({
+			accessToken: 'replacement-access-token'
+		})
 
 		await tokenAdapter.deleteTokens(testUserId, 'google')
 		expect(await tokenAdapter.getTokens(testUserId, 'google')).toBeNull()

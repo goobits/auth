@@ -52,6 +52,7 @@ function createMockDb() {
 
 	return {
 		prepare(sql: string) {
+			sql = sql.replaceAll('"', '')
 			let bound: unknown[] = []
 			return {
 				bind(...args: unknown[]) {
@@ -127,6 +128,16 @@ function createMockDb() {
 					}
 					if (sql.startsWith('INSERT INTO oauth_tokens')) {
 						const [user_id, provider, tokens] = bound
+						if (sql.includes('ON CONFLICT')) {
+							const existing = findWhere(
+								'oauth_tokens',
+								(row) => row.user_id === user_id && row.provider === provider
+							)
+							if (existing) {
+								existing.tokens = tokens
+								return { meta: { changes: 1 } }
+							}
+						}
 						return { meta: insert('oauth_tokens', { user_id, provider, tokens }) }
 					}
 					if (sql.startsWith('INSERT INTO verification_tokens')) {
@@ -381,6 +392,25 @@ describe('D1 adapters', () => {
 		})
 		const tokens = await tokenAdapter.getTokens('1', 'google')
 		expect(tokens?.accessToken).toBe('x')
+		await tokenAdapter.storeTokens('1', 'google', {
+			accessToken: 'rotated',
+			refreshToken: null,
+			scope: null,
+			accessTokenExpiresAt: new Date().toISOString()
+		})
+		await expect(tokenAdapter.getTokens('1', 'google')).resolves.toMatchObject({
+			accessToken: 'rotated'
+		})
+	})
+
+	it('rejects unsafe OAuth token table identifiers', () => {
+		expect(
+			() =>
+				new D1TokenAdapter(createMockDb(), {
+					tokensTable: 'oauth_tokens; DROP TABLE users',
+					encryptionKey: 'a'.repeat(64)
+				})
+		).toThrow(/invalid SQL identifier/)
 	})
 
 	it('creates and finds verification tokens', async () => {
