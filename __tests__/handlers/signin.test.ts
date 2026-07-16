@@ -4,6 +4,29 @@ import { createSigninHandler } from '../../src/handlers/signin.ts'
 import { captureRejected, createRequestEvent, getRedirectLocation } from '../testKit.ts'
 
 describe('createSigninHandler', () => {
+	it('requires owned guards or an explicit outer security boundary', () => {
+		const baseConfig = {
+			credentialsProvider: { authenticate: vi.fn() },
+			passwordCredentialAdapter: {},
+			sessionAdapter: {
+				createSession: vi.fn(),
+				validateSession: vi.fn(),
+				invalidateSession: vi.fn(),
+				invalidateUserSessions: vi.fn(),
+				listSessions: vi.fn()
+			}
+		}
+
+		expect(() => createSigninHandler(baseConfig)).toThrow(/requires CSRF and rate-limit/)
+		expect(() =>
+			createSigninHandler({
+				...baseConfig,
+				csrf: { validate: async () => true },
+				rateLimit: { check: async () => ({ allowed: true }) }
+			})
+		).not.toThrow()
+	})
+
 	it('rejects invalid credentials without setting cookie', async () => {
 		const credentialsProvider = {
 			authenticate: vi.fn().mockResolvedValue({ user: null, valid: false })
@@ -12,6 +35,7 @@ describe('createSigninHandler', () => {
 		const passwordCredentialAdapter = {}
 
 		const handler = createSigninHandler({
+			externalSecurityBoundary: true,
 			credentialsProvider,
 			passwordCredentialAdapter,
 			sessionAdapter
@@ -40,6 +64,7 @@ describe('createSigninHandler', () => {
 		}
 
 		const handler = createSigninHandler({
+			externalSecurityBoundary: true,
 			credentialsProvider,
 			passwordCredentialAdapter: {},
 			sessionAdapter,
@@ -76,6 +101,7 @@ describe('createSigninHandler', () => {
 		})
 		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
 		const handler = createSigninHandler({
+			externalSecurityBoundary: true,
 			credentialsProvider: {
 				authenticate: vi.fn().mockResolvedValue({ user, valid: true })
 			},
@@ -121,6 +147,7 @@ describe('createSigninHandler', () => {
 			setSessionCookie: vi.fn()
 		}
 		const handler = createSigninHandler({
+			externalSecurityBoundary: true,
 			credentialsProvider,
 			passwordCredentialAdapter: {},
 			sessionAdapter,
@@ -159,6 +186,7 @@ describe('createSigninHandler', () => {
 		const passwordCredentialAdapter = {}
 
 		const handler = createSigninHandler({
+			externalSecurityBoundary: true,
 			credentialsProvider,
 			passwordCredentialAdapter,
 			sessionAdapter,
@@ -212,6 +240,7 @@ describe('createSigninHandler', () => {
 			form: { email: 'a@b.com', password: 'pw' }
 		})
 		const handler = createSigninHandler({
+			externalSecurityBoundary: true,
 			credentialsProvider,
 			passwordCredentialAdapter: {},
 			sessionAdapter,
@@ -258,6 +287,7 @@ describe('createSigninHandler', () => {
 		}
 		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
 		const handler = createSigninHandler({
+			externalSecurityBoundary: true,
 			credentialsProvider: {
 				authenticate: vi.fn().mockResolvedValue({
 					user: {

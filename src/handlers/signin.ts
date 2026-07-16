@@ -10,6 +10,10 @@ import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 import { beginMfaLoginChallenge, type MfaLoginConfig } from './mfa.ts'
 import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
+import {
+	assertStandaloneSecurityBoundary,
+	type StandaloneSecurityBoundary
+} from './_standaloneSecurity.ts'
 
 /**
  * Create a signin handler for credentials-based authentication
@@ -46,33 +50,40 @@ export type SigninDeniedResult = {
 
 export type SigninHookResult = SigninDeniedResult | void
 
-export function createSigninHandler(config: {
-	credentialsProvider: Pick<CredentialsProvider, 'authenticate'>
-	passwordCredentialAdapter: PasswordCredentialAdapter
-	sessionAdapter: SessionAdapter
-	onSignin?: (
-		user: User | null,
-		context: SigninHookContext
-	) => Promise<SigninHookResult> | SigninHookResult
-	authorizeSignin?: (
-		user: User,
-		context: SigninHookContext
-	) => Promise<SigninHookResult> | SigninHookResult
-	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
-	rateLimit?: HandlerRateLimitConfig
-	redirectTo?: string
-	sanitizeUser?: (user: User | null) => User | null
-	fields?: { identifier?: string; email?: string; password?: string; remember?: string }
-	identifierField?: string
-	allowBoth?: boolean
-	mfa?: MfaLoginConfig
-	getSessionMetadata?: (
-		event: RequestEventLike,
-		user: User,
-		rememberMe: boolean
-	) => SessionMetadata | Promise<SessionMetadata>
-	logger?: Logger
-}) {
+export function createSigninHandler(
+	config: {
+		credentialsProvider: Pick<CredentialsProvider, 'authenticate'>
+		passwordCredentialAdapter: PasswordCredentialAdapter
+		sessionAdapter: SessionAdapter
+		onSignin?: (
+			user: User | null,
+			context: SigninHookContext
+		) => Promise<SigninHookResult> | SigninHookResult
+		authorizeSignin?: (
+			user: User,
+			context: SigninHookContext
+		) => Promise<SigninHookResult> | SigninHookResult
+		csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
+		rateLimit?: HandlerRateLimitConfig
+		redirectTo?: string
+		sanitizeUser?: (user: User | null) => User | null
+		fields?: { identifier?: string; email?: string; password?: string; remember?: string }
+		identifierField?: string
+		allowBoth?: boolean
+		mfa?: MfaLoginConfig
+		getSessionMetadata?: (
+			event: RequestEventLike,
+			user: User,
+			rememberMe: boolean
+		) => SessionMetadata | Promise<SessionMetadata>
+		logger?: Logger
+	} & StandaloneSecurityBoundary
+) {
+	assertStandaloneSecurityBoundary('createSigninHandler', {
+		hasCsrf: typeof config.csrf?.validate === 'function',
+		hasRateLimit: typeof config.rateLimit?.check === 'function',
+		...(config.externalSecurityBoundary === true ? { externalSecurityBoundary: true } : {})
+	})
 	const {
 		credentialsProvider,
 		passwordCredentialAdapter,

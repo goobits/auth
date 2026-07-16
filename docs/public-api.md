@@ -141,6 +141,12 @@ Handler options support custom form field names and metadata:
 - `createSigninHandler({ fields: { identifier, password, remember }, identifierField })`
 - `createSignupHandler({ fields: { email, password, name }, metadataFields, getSignupMetadata })`
 
+Standalone signin, signup, and password-reset handlers fail at construction
+unless both CSRF and rate-limit callbacks are configured. When an application
+already enforces equivalent checks before the handler, acknowledge that
+boundary explicitly with `externalSecurityBoundary: true`; omission is never a
+silent opt-out.
+
 `verifyPassword` may return either a boolean or
 `{ valid, needsRehash }`. When `needsRehash` is true, the provider replaces the
 stored hash through the configured `PasswordCredentialAdapter` after successful

@@ -217,3 +217,16 @@ only for headers overwritten by your trusted edge. Standalone credential,
 password-reset, and magic-link handlers never infer trust from request headers;
 provide their `rateLimit.key` or `magicLink.settings.key` callback when they run
 outside the central policy.
+
+## Standalone handler security boundary
+
+`createSigninHandler`, `createSignupHandler`,
+`createPasswordResetRequestHandler`, and
+`createPasswordResetConfirmHandler` now require handler-owned CSRF and
+rate-limit callbacks. If an outer application policy always runs first, pass
+`externalSecurityBoundary: true` explicitly.
+
+`CookieSessionAdapter` has been removed. It stored sessions in one process and
+could not resolve users, so it was neither stateless nor safe for multi-instance
+or serverless deployment. Use D1, Drizzle, KV, PostgreSQL, or a custom durable
+`SessionAdapter` instead.

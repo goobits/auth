@@ -24,22 +24,33 @@ import {
 	VERIFICATION_TOKEN_TYPES
 } from '../verification/index.ts'
 import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
+import {
+	assertStandaloneSecurityBoundary,
+	type StandaloneSecurityBoundary
+} from './_standaloneSecurity.ts'
 
 /** Creates password reset request handler for auth HTTP handlers. */
-export function createPasswordResetRequestHandler(config: {
-	userAdapter: { getUserByEmail: (email: string) => Promise<User | null> }
-	verificationTokenAdapter: VerificationTokenAdapter
-	sendPasswordResetEmail: (email: string, token: string) => Promise<void> | void
-	resolveUser?: (input: {
-		email: string
-		identifier: string | null
-		event: RequestEventLike
-	}) => Promise<User | null>
-	expiresInMs?: number
-	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
-	rateLimit?: HandlerRateLimitConfig
-	logger?: Logger
-}) {
+export function createPasswordResetRequestHandler(
+	config: {
+		userAdapter: { getUserByEmail: (email: string) => Promise<User | null> }
+		verificationTokenAdapter: VerificationTokenAdapter
+		sendPasswordResetEmail: (email: string, token: string) => Promise<void> | void
+		resolveUser?: (input: {
+			email: string
+			identifier: string | null
+			event: RequestEventLike
+		}) => Promise<User | null>
+		expiresInMs?: number
+		csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
+		rateLimit?: HandlerRateLimitConfig
+		logger?: Logger
+	} & StandaloneSecurityBoundary
+) {
+	assertStandaloneSecurityBoundary('createPasswordResetRequestHandler', {
+		hasCsrf: typeof config.csrf?.validate === 'function',
+		hasRateLimit: typeof config.rateLimit?.check === 'function',
+		...(config.externalSecurityBoundary === true ? { externalSecurityBoundary: true } : {})
+	})
 	const {
 		userAdapter,
 		verificationTokenAdapter,
@@ -134,17 +145,24 @@ export function createPasswordResetRequestHandler(config: {
  * @param {string} [config.redirectTo] - Redirect URL after reset (default: '/sign-in')
  * @returns {Function} SvelteKit request handler
  */
-export function createPasswordResetConfirmHandler(config: {
-	credentialsProvider: Pick<CredentialsProvider, 'createPasswordHash'>
-	completePasswordReset: (input: {
-		tokenHash: string
-		passwordHash: string
-	}) => Promise<{ userId: string } | null>
-	redirectTo?: string
-	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
-	rateLimit?: HandlerRateLimitConfig
-	logger?: Logger
-}) {
+export function createPasswordResetConfirmHandler(
+	config: {
+		credentialsProvider: Pick<CredentialsProvider, 'createPasswordHash'>
+		completePasswordReset: (input: {
+			tokenHash: string
+			passwordHash: string
+		}) => Promise<{ userId: string } | null>
+		redirectTo?: string
+		csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
+		rateLimit?: HandlerRateLimitConfig
+		logger?: Logger
+	} & StandaloneSecurityBoundary
+) {
+	assertStandaloneSecurityBoundary('createPasswordResetConfirmHandler', {
+		hasCsrf: typeof config.csrf?.validate === 'function',
+		hasRateLimit: typeof config.rateLimit?.check === 'function',
+		...(config.externalSecurityBoundary === true ? { externalSecurityBoundary: true } : {})
+	})
 	const {
 		credentialsProvider,
 		completePasswordReset,

@@ -178,13 +178,13 @@ working recovery or MFA challenge when the insert fails and is unsupported.
 
 ## Prebuilt adapters
 
-| Export                                       | Storage                   | Notes                                                                                                                                           |
-| -------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `drizzleAdapter(db, options)`                | Any Drizzle-supported SQL | One-stop bundle with separate public-user and password-credential capabilities. Reads `options.schema` or `options.tables` to bind table names. |
-| `D1SessionAdapter`, `D1UserAdapter`, …       | Cloudflare D1             | Hand-rolled SQL; takes a `D1Database` instance and table names.                                                                                 |
-| `CookieSessionAdapter`, `CookieTokenAdapter` | Signed cookie             | Stateless; good for edge runtimes without a database. Don't combine with passkey/magic-link features.                                           |
-| `KVSessionAdapter`, `KVTokenAdapter`         | Cloudflare KV             | For environments where D1 isn't available.                                                                                                      |
-| `createPgAuthAdapters(options)`              | PostgreSQL                | Node-only bundle with verification-token storage; requires an application-owned `mfaSecretCodec`.                                               |
+| Export                                 | Storage                   | Notes                                                                                                                                           |
+| -------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `drizzleAdapter(db, options)`          | Any Drizzle-supported SQL | One-stop bundle with separate public-user and password-credential capabilities. Reads `options.schema` or `options.tables` to bind table names. |
+| `D1SessionAdapter`, `D1UserAdapter`, … | Cloudflare D1             | Hand-rolled SQL; takes a `D1Database` instance and table names.                                                                                 |
+| `KVSessionAdapter`, `KVTokenAdapter`   | Cloudflare KV             | For environments where D1 isn't available.                                                                                                      |
+| `CookieTokenAdapter`                   | Encrypted cookie          | OAuth-token storage only; requires an encryption key. It is not a session adapter.                                                              |
+| `createPgAuthAdapters(options)`        | PostgreSQL                | Node-only bundle with verification-token storage; requires an application-owned `mfaSecretCodec`.                                               |
 
 If your storage doesn't fit any of these, extend the base class directly.
 

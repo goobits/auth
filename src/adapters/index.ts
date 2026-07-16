@@ -1,10 +1,5 @@
 // Session Adapters
-export {
-	CookieSessionAdapter,
-	D1SessionAdapter,
-	DrizzleSessionAdapter,
-	SessionAdapter
-} from './session/index.ts'
+export { D1SessionAdapter, DrizzleSessionAdapter, SessionAdapter } from './session/index.ts'
 
 // Database Adapters
 export {

@@ -9,6 +9,10 @@ import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 import { createVerificationToken, VERIFICATION_TOKEN_TYPES } from '../verification/index.ts'
 import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
+import {
+	assertStandaloneSecurityBoundary,
+	type StandaloneSecurityBoundary
+} from './_standaloneSecurity.ts'
 
 /**
  * Create a signup handler for credentials-based authentication
@@ -32,40 +36,47 @@ import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateL
  * @param {Function} [config.getSignupMetadata] - Compute additional metadata from FormData
  * @returns {Function} SvelteKit request handler
  */
-export function createSignupHandler(config: {
-	credentialsProvider: {
-		signUp: (input: {
-			email: string
-			password: string
-			name?: string
-			metadata?: Record<string, unknown>
-			passwordCredentialAdapter: PasswordCredentialAdapter
-		}) => Promise<User>
-	}
-	userAdapter: { getUserByEmail: (email: string) => Promise<User | null> }
-	passwordCredentialAdapter: PasswordCredentialAdapter
-	sessionAdapter?: {
-		createSession: (userId: string) => Promise<{ id: string; expiresAt: Date }>
-		setSessionCookie: (
-			cookies: RequestEventLike['cookies'],
-			session: { id: string; expiresAt: Date }
-		) => void
-	}
-	verificationTokenAdapter?: VerificationTokenAdapter
-	onSignup?: (user: User | null) => Promise<void> | void
-	sendVerificationEmail?: (email: string, token: string) => Promise<void> | void
-	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
-	rateLimit?: HandlerRateLimitConfig
-	redirectTo?: string
-	autoLogin?: boolean
-	sanitizeUser?: (user: User | null) => User | null
-	fields?: { email?: string; password?: string; name?: string }
-	metadataFields?: string[]
-	getSignupMetadata?: (
-		formData: FormData
-	) => Record<string, unknown> | Promise<Record<string, unknown>>
-	logger?: Logger
-}) {
+export function createSignupHandler(
+	config: {
+		credentialsProvider: {
+			signUp: (input: {
+				email: string
+				password: string
+				name?: string
+				metadata?: Record<string, unknown>
+				passwordCredentialAdapter: PasswordCredentialAdapter
+			}) => Promise<User>
+		}
+		userAdapter: { getUserByEmail: (email: string) => Promise<User | null> }
+		passwordCredentialAdapter: PasswordCredentialAdapter
+		sessionAdapter?: {
+			createSession: (userId: string) => Promise<{ id: string; expiresAt: Date }>
+			setSessionCookie: (
+				cookies: RequestEventLike['cookies'],
+				session: { id: string; expiresAt: Date }
+			) => void
+		}
+		verificationTokenAdapter?: VerificationTokenAdapter
+		onSignup?: (user: User | null) => Promise<void> | void
+		sendVerificationEmail?: (email: string, token: string) => Promise<void> | void
+		csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
+		rateLimit?: HandlerRateLimitConfig
+		redirectTo?: string
+		autoLogin?: boolean
+		sanitizeUser?: (user: User | null) => User | null
+		fields?: { email?: string; password?: string; name?: string }
+		metadataFields?: string[]
+		getSignupMetadata?: (
+			formData: FormData
+		) => Record<string, unknown> | Promise<Record<string, unknown>>
+		logger?: Logger
+	} & StandaloneSecurityBoundary
+) {
+	assertStandaloneSecurityBoundary('createSignupHandler', {
+		hasCsrf: typeof config.csrf?.validate === 'function',
+		hasRateLimit: typeof config.rateLimit?.check === 'function',
+		...(config.externalSecurityBoundary === true ? { externalSecurityBoundary: true } : {})
+	})
 	const {
 		credentialsProvider,
 		userAdapter,
