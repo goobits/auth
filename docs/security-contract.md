@@ -81,7 +81,7 @@ them. Every value here is configurable on the matching config block.
 | Session ID entropy                | 160 bits (20 bytes, base64url)               | n/a                                                               |
 | Absolute password input length    | 1024 characters                              | n/a                                                               |
 | OAuth state / PKCE                | issued by `arctic`, single-use, cookie-bound | n/a                                                               |
-| Argon2 (Cloudflare Workers, WASM) | 12 MiB memory, 2 iterations, 16-byte salt    | not configurable — tune via fork if your edge runtime allows more |
+| Argon2 (Cloudflare Workers, WASM) | 12 MiB memory, 3 iterations, 16-byte salt    | not configurable — tune via fork if your edge runtime allows more |
 | Argon2 (Node, `@node-rs/argon2`)  | library defaults (≈ 19 MiB, 2 iterations)    | not configurable in this release                                  |
 
 The WASM Argon2 parameters sit at the OWASP minimum — defensible for edge
