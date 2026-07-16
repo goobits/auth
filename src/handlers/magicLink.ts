@@ -1,4 +1,5 @@
 import { redirect, type RequestHandler } from '@sveltejs/kit'
+import { constantTimeEqual } from '@goobits/security/crypto'
 import { createRateLimiter } from '@goobits/security/rate-limit'
 
 import { AUTH_ROUTE_PATHS, resolveAuthRoutePath } from '../_routePaths.ts'
@@ -6,8 +7,9 @@ import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
 import type { MagicLinkAdapter } from '../adapters/magic-link/MagicLinkAdapter.ts'
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
-import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
+import type { Logger } from '../_internal/logger.ts'
 import { auditAuthEvent } from '../security/audit.ts'
+import { CSRF_COOKIE_NAME } from '../security/csrf.ts'
 import type { AuthHooks, AuthLocals, OnLoginMode, RequestEventLike } from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { jsonResponse, parseRequestData } from '../utils/http.ts'
@@ -83,6 +85,10 @@ type MagicLinkVerifyConfig = {
 	autoCreateSession?: boolean
 	onLoginMode?: OnLoginMode
 	key?: (event: RequestEventLike) => string
+	requireUserConfirmation?: boolean
+	confirmationCookieName?: string
+	confirmationTtlSeconds?: number
+	csrfCookieName?: string
 	logger?: Logger
 }
 
@@ -92,6 +98,49 @@ type MagicLinkTokenRecord = {
 	email?: string
 	expiresAt?: string | Date
 	[key: string]: unknown
+}
+
+function isProductionRuntime(): boolean {
+	return typeof process !== 'undefined' && process.env['NODE_ENV'] === 'production'
+}
+
+function escapeHtml(value: string): string {
+	return value
+		.replaceAll('&', '&amp;')
+		.replaceAll('<', '&lt;')
+		.replaceAll('>', '&gt;')
+		.replaceAll('"', '&quot;')
+		.replaceAll("'", '&#39;')
+}
+
+function magicLinkConfirmationResponse({
+	token,
+	redirectTo,
+	confirmation,
+	csrfToken
+}: {
+	token: string
+	redirectTo: string
+	confirmation: string
+	csrfToken: string
+}): Response {
+	const redirectField = redirectTo
+		? `<input type="hidden" name="redirectTo" value="${escapeHtml(redirectTo)}">`
+		: ''
+	const body = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Confirm sign in</title></head>
+<body><main><h1>Confirm sign in</h1><p>Continue only if you requested this sign-in link.</p><form method="post"><input type="hidden" name="token" value="${escapeHtml(token)}"><input type="hidden" name="confirmation" value="${escapeHtml(confirmation)}"><input type="hidden" name="_csrf" value="${escapeHtml(csrfToken)}">${redirectField}<button type="submit">Continue</button></form></main></body></html>`
+	return new Response(body, {
+		status: 200,
+		headers: {
+			'cache-control': 'no-store, private',
+			'content-type': 'text/html; charset=utf-8',
+			'content-security-policy':
+				"default-src 'none'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+			'referrer-policy': 'no-referrer',
+			'x-content-type-options': 'nosniff'
+		}
+	})
 }
 
 /** Creates magic link request handler for auth HTTP handlers. */
@@ -119,6 +168,9 @@ export function createMagicLinkRequestHandler(config: MagicLinkRequestConfig): R
 	}
 	if (typeof sendEmail !== 'function') {
 		throw new Error('createMagicLinkRequestHandler requires sendEmail')
+	}
+	if (exposeToken && isProductionRuntime()) {
+		throw new Error('Magic-link token exposure is forbidden in production')
 	}
 
 	return async (event: RequestEventLike) => {
@@ -154,7 +206,7 @@ export function createMagicLinkRequestHandler(config: MagicLinkRequestConfig): R
 		const expiresAt = new Date(Date.now() + expiresInMs)
 		const metadata = typeof getMetadata === 'function' ? await getMetadata(event) : {}
 
-		await magicLinkAdapter.createToken({
+		const createdToken = await magicLinkAdapter.createToken({
 			userId: user?.id ?? null,
 			email,
 			tokenHash,
@@ -172,16 +224,23 @@ export function createMagicLinkRequestHandler(config: MagicLinkRequestConfig): R
 			url.searchParams.set('redirectTo', redirectTo)
 		}
 
-		await sendEmail({
-			email,
-			link: url.toString(),
-			otp,
-			token,
-			expiresAt,
-			user,
-			redirectTo,
-			secureCookies
-		})
+		try {
+			await sendEmail({
+				email,
+				link: url.toString(),
+				otp,
+				token,
+				expiresAt,
+				user,
+				redirectTo,
+				secureCookies
+			})
+		} catch (error) {
+			const createdTokenId =
+				createdToken && typeof createdToken['id'] === 'string' ? createdToken['id'] : null
+			if (createdTokenId) await magicLinkAdapter.deleteById(createdTokenId)
+			throw error
+		}
 
 		if (exposeToken) {
 			return jsonResponse({ ok: true, token, otp })
@@ -209,9 +268,11 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 		sanitizeUser = defaultSanitizeUser,
 		autoCreateSession = true,
 		onLoginMode = 'augment',
-		logger
+		requireUserConfirmation = true,
+		confirmationCookieName = 'goobits_magic_confirmation',
+		confirmationTtlSeconds = 10 * 60,
+		csrfCookieName = CSRF_COOKIE_NAME
 	} = config
-	const log = resolveLogger(logger)
 
 	if (!magicLinkAdapter) {
 		throw new Error('createMagicLinkVerifyHandler requires magicLinkAdapter')
@@ -236,7 +297,7 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 
 	return async (event: RequestEventLike) => {
 		if (isAuthenticated(event.locals)) {
-			throw redirect(302, redirectAfterLogin)
+			throw redirect(302, isSafeRedirectPath(redirectAfterLogin) ? redirectAfterLogin : '/')
 		}
 
 		const data = await parseRequestData(event.request)
@@ -256,7 +317,12 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 			''
 		const email = normalizeEmail(String(emailInput || ''))
 
-		if (!token && !(otp && email)) {
+		if (
+			(!token && !(otp && email)) ||
+			(token && token.length > 1024) ||
+			(otp && otp.length > 32) ||
+			email.length > 320
+		) {
 			return jsonResponse({ ok: false, error: 'Invalid magic link' }, 400)
 		}
 
@@ -266,6 +332,37 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 		const rateResult = await checkMagicLinkRateLimit(rateKey)
 		if (!rateResult?.allowed) {
 			return jsonResponse({ ok: false, error: 'Too many attempts. Try again later.' }, 429)
+		}
+
+		if (token && requireUserConfirmation && event.request.method === 'GET') {
+			const confirmation = await generateMagicLinkToken()
+			event.cookies.set(confirmationCookieName, confirmation, {
+				httpOnly: true,
+				secure: config.secureCookies ?? true,
+				sameSite: 'lax',
+				path: '/',
+				maxAge: confirmationTtlSeconds
+			})
+			return magicLinkConfirmationResponse({
+				token,
+				redirectTo,
+				confirmation,
+				csrfToken: event.cookies.get(csrfCookieName) ?? ''
+			})
+		}
+
+		if (token && requireUserConfirmation) {
+			const submittedConfirmation =
+				typeof data['confirmation'] === 'string' ? data['confirmation'] : ''
+			const storedConfirmation = event.cookies.get(confirmationCookieName) ?? ''
+			event.cookies.delete(confirmationCookieName, { path: '/' })
+			if (
+				!submittedConfirmation ||
+				!storedConfirmation ||
+				!constantTimeEqual(submittedConfirmation, storedConfirmation)
+			) {
+				return jsonResponse({ ok: false, error: 'Invalid magic link confirmation' }, 400)
+			}
 		}
 
 		// Atomic find-and-delete: in-tree adapters (Drizzle/D1) override
@@ -330,14 +427,7 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 		}
 
 		if (user && userAdapter && user.emailVerified === false) {
-			try {
-				await userAdapter.updateUser(user.id, { emailVerified: true })
-			} catch (error) {
-				log.warn(
-					'[MagicLink] Failed to mark email as verified after successful login',
-					errorContext(error)
-				)
-			}
+			await userAdapter.updateUser(user.id, { emailVerified: true })
 		}
 
 		let userId = user?.id ? String(user.id) : recordUserId

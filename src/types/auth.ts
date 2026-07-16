@@ -101,6 +101,9 @@ export type MagicLinkConfig = {
 		secureCookies?: boolean
 		normalizeEmail?: (email: string) => string
 		exposeToken?: boolean
+		requireUserConfirmation?: boolean
+		confirmationCookieName?: string
+		confirmationTtlSeconds?: number
 		baseUrl?: string
 		key?: (event: RequestEventLike) => string
 	}

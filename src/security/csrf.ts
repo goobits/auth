@@ -83,10 +83,24 @@ export async function validateCsrfRequest({
 		throw new Error('validateCsrfRequest requires request and cookies')
 	}
 
-	const headerToken = request.headers.get(headerName) || ''
+	let submittedToken = request.headers.get(headerName) || ''
+	if (!submittedToken) {
+		const contentType = request.headers.get('content-type') || ''
+		if (
+			contentType.includes('application/x-www-form-urlencoded') ||
+			contentType.includes('multipart/form-data')
+		) {
+			const formData = await request
+				.clone()
+				.formData()
+				.catch(() => null)
+			const formToken = formData?.get('_csrf')
+			if (typeof formToken === 'string') submittedToken = formToken
+		}
+	}
 	const cookieToken = cookies.get(cookieName) || ''
 	const headers = new Headers()
-	headers.set(headerName, headerToken)
+	headers.set(headerName, submittedToken)
 	headers.set('cookie', `${cookieName}=${cookieToken}`)
 	const csrf = createCsrf({
 		cookieName,

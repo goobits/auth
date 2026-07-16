@@ -205,6 +205,13 @@ MFA login challenges reuse `VerificationTokenAdapter`. Adapters should preserve
 the optional token metadata when remember-me or session context must survive
 between the password and second-factor requests.
 
+Magic-link token URLs use a scanner-safe confirmation interstitial by default.
+The GET request does not consume the token; a short-lived, HttpOnly
+confirmation cookie and deliberate POST are required. Set
+`settings.requireUserConfirmation: false` only when an application-owned page
+already provides an equivalent same-origin confirmation boundary. Raw token
+exposure is rejected when `NODE_ENV=production`.
+
 ## Security primitives
 
 Use `@goobits/auth/security` for auth-specific policy, authorization, audit,

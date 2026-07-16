@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
 	createMagicLinkRequestHandler,
@@ -19,11 +19,13 @@ type MagicLinkTokenRecord = {
 function createEvent({
 	method = 'POST',
 	body,
-	url = 'http://localhost/auth'
+	url = 'http://localhost/auth',
+	cookieStore = new Map<string, string>()
 }: {
 	method?: string
 	body?: unknown
 	url?: string
+	cookieStore?: Map<string, string>
 } = {}) {
 	const headers = new Headers()
 	let requestBody = body
@@ -38,8 +40,9 @@ function createEvent({
 			headers
 		}),
 		cookies: {
-			set: vi.fn(),
-			delete: vi.fn()
+			get: vi.fn((name: string) => cookieStore.get(name)),
+			set: vi.fn((name: string, value: string) => cookieStore.set(name, value)),
+			delete: vi.fn((name: string) => cookieStore.delete(name))
 		},
 		locals: {},
 		url: new URL(url)
@@ -96,6 +99,10 @@ function createMagicLinkAdapter() {
 }
 
 describe('magic link handlers', () => {
+	afterEach(() => {
+		vi.unstubAllEnvs()
+	})
+
 	it('does not send email when user is missing and signup disabled', async () => {
 		const magicLinkAdapter = createMagicLinkAdapter()
 		const sendEmail = vi.fn()
@@ -112,6 +119,35 @@ describe('magic link handlers', () => {
 		expect(payload.ok).toBe(true)
 		expect(sendEmail).not.toHaveBeenCalled()
 		expect(magicLinkAdapter._tokens.size).toBe(0)
+	})
+
+	it('deletes a newly issued token when delivery fails', async () => {
+		const magicLinkAdapter = createMagicLinkAdapter()
+		const handler = createMagicLinkRequestHandler({
+			magicLinkAdapter,
+			userAdapter: {
+				getUserByEmail: vi.fn(async (email) => ({ id: 'u1', email }))
+			},
+			sendEmail: vi.fn(async () => {
+				throw new Error('delivery failed')
+			})
+		})
+
+		await expect(
+			handler(createEvent({ body: { email: 'u1@example.com' } }) as RequestEventLike)
+		).rejects.toThrow('delivery failed')
+		expect(magicLinkAdapter._tokens.size).toBe(0)
+	})
+
+	it('forbids raw token exposure in production', () => {
+		vi.stubEnv('NODE_ENV', 'production')
+		expect(() =>
+			createMagicLinkRequestHandler({
+				magicLinkAdapter: createMagicLinkAdapter(),
+				sendEmail: vi.fn(),
+				exposeToken: true
+			})
+		).toThrow('forbidden in production')
 	})
 
 	it('verifies token and creates session', async () => {
@@ -141,7 +177,8 @@ describe('magic link handlers', () => {
 		const verifyHandler = createMagicLinkVerifyHandler({
 			magicLinkAdapter,
 			userAdapter,
-			sessionAdapter
+			sessionAdapter,
+			requireUserConfirmation: false
 		})
 
 		const verifyEvent = createEvent({ body: { token } })
@@ -151,6 +188,48 @@ describe('magic link handlers', () => {
 		expect(payload.ok).toBe(true)
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1')
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
+	})
+
+	it('does not create a session when verified-email persistence fails', async () => {
+		const magicLinkAdapter = createMagicLinkAdapter()
+		const requestHandler = createMagicLinkRequestHandler({
+			magicLinkAdapter,
+			userAdapter: {
+				getUserByEmail: vi.fn(async (email) => ({ id: 'u1', email, emailVerified: false }))
+			},
+			sendEmail: vi.fn(),
+			exposeToken: true
+		})
+		const requestResponse = await requestHandler(
+			createEvent({ body: { email: 'u1@example.com' } }) as RequestEventLike
+		)
+		const { token } = await requestResponse.json()
+		const sessionAdapter = {
+			createSession: vi.fn(),
+			setSessionCookie: vi.fn()
+		}
+		const verifyHandler = createMagicLinkVerifyHandler({
+			magicLinkAdapter,
+			userAdapter: {
+				getUserByEmail: vi.fn(async (email) => ({ id: 'u1', email, emailVerified: false })),
+				getUserById: vi.fn(async (id) => ({
+					id,
+					email: 'u1@example.com',
+					emailVerified: false
+				})),
+				updateUser: vi.fn(async () => {
+					throw new Error('database unavailable')
+				}),
+				createUser: vi.fn()
+			},
+			sessionAdapter,
+			requireUserConfirmation: false
+		})
+
+		await expect(
+			verifyHandler(createEvent({ body: { token } }) as RequestEventLike)
+		).rejects.toThrow('database unavailable')
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
 	})
 
 	it('creates a session when onLogin returns a userId', async () => {
@@ -176,7 +255,8 @@ describe('magic link handlers', () => {
 		const verifyHandler = createMagicLinkVerifyHandler({
 			magicLinkAdapter,
 			sessionAdapter,
-			onLogin: async () => ({ userId: 'hook-user' })
+			onLogin: async () => ({ userId: 'hook-user' }),
+			requireUserConfirmation: false
 		})
 
 		const verifyResponse = await verifyHandler(createEvent({ body: { token } }) as RequestEventLike)
@@ -210,7 +290,8 @@ describe('magic link handlers', () => {
 		const verifyHandler = createMagicLinkVerifyHandler({
 			magicLinkAdapter,
 			sessionAdapter,
-			onLogin: async () => undefined
+			onLogin: async () => undefined,
+			requireUserConfirmation: false
 		})
 
 		const verifyResponse = await verifyHandler(createEvent({ body: { token } }) as RequestEventLike)
@@ -222,7 +303,7 @@ describe('magic link handlers', () => {
 		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
 	})
 
-	it('redirects GET verification to redirectTo when provided', async () => {
+	it('does not consume a GET link until its browser confirmation is posted', async () => {
 		const magicLinkAdapter = createMagicLinkAdapter()
 		const sendEmail = vi.fn()
 		const userAdapter = {
@@ -255,17 +336,32 @@ describe('magic link handlers', () => {
 			sessionAdapter,
 			redirectAfterLogin: '/fallback'
 		})
+		const cookieStore = new Map([['csrf-token', 'csrf-value']])
+		const getResponse = await verifyHandler(
+			createEvent({
+				method: 'GET',
+				url: `http://localhost/auth/magic?token=${token}&redirectTo=%2Fdashboard`,
+				cookieStore
+			}) as RequestEventLike
+		)
+		const html = await getResponse.text()
+		const confirmation = /name="confirmation" value="([^"]+)"/.exec(html)?.[1] ?? ''
 
-		await expect(
-			verifyHandler(
-				createEvent({
-					method: 'GET',
-					url: `http://localhost/auth/magic?token=${token}&redirectTo=%2Fdashboard`
-				}) as RequestEventLike
-			)
-		).rejects.toMatchObject({
-			status: 302,
-			location: '/dashboard'
-		})
+		expect(getResponse.status).toBe(200)
+		expect(getResponse.headers.get('cache-control')).toContain('no-store')
+		expect(confirmation).not.toBe('')
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
+		expect(magicLinkAdapter._tokens.size).toBe(1)
+
+		const postResponse = await verifyHandler(
+			createEvent({
+				body: { token, redirectTo: '/dashboard', confirmation },
+				url: 'http://localhost/auth/magic',
+				cookieStore
+			}) as RequestEventLike
+		)
+		expect(await postResponse.json()).toMatchObject({ ok: true })
+		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1')
+		expect(magicLinkAdapter._tokens.size).toBe(0)
 	})
 })

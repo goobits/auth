@@ -30,4 +30,18 @@ describe('csrf', () => {
 		const valid = await validateCsrfRequest({ request, cookies })
 		expect(valid).toBe(false)
 	})
+
+	it('accepts the standard form field without consuming the request body', async () => {
+		const cookies = createCookies()
+		cookies.set('csrf-token', 'form-token')
+		const request = new Request('http://localhost', {
+			method: 'POST',
+			headers: { 'content-type': 'application/x-www-form-urlencoded' },
+			body: new URLSearchParams({ _csrf: 'form-token', value: 'kept' })
+		})
+
+		await expect(validateCsrfRequest({ request, cookies })).resolves.toBe(true)
+		const originalForm = await request.formData()
+		expect(originalForm.get('value')).toBe('kept')
+	})
 })
