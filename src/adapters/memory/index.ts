@@ -130,7 +130,12 @@ export class MemoryUserAdapter extends UserAdapter implements PasswordCredential
 		provider: string,
 		providerAccountId: string
 	): Promise<void> {
-		this.#oauthIndex.set(`${provider}:${providerAccountId}`, userId)
+		const key = `${provider}:${providerAccountId}`
+		const owner = this.#oauthIndex.get(key)
+		if (owner && owner !== userId) {
+			throw new Error('OAuth provider account is already linked to another user')
+		}
+		this.#oauthIndex.set(key, userId)
 	}
 
 	async findPasswordCredential(

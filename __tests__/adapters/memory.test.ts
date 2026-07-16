@@ -60,6 +60,30 @@ describe('memory auth adapters', () => {
 		).rejects.toThrow(/dedicated auth capability/)
 	})
 
+	it('keeps one immutable owner for each OAuth provider identity', async () => {
+		const adapter = new MemoryUserAdapter()
+		adapter.setUser({
+			avatar: null,
+			email: 'owner@example.com',
+			emailVerified: true,
+			id: 'owner-1',
+			name: 'Owner'
+		})
+
+		await expect(
+			adapter.linkOAuthAccount('owner-1', 'google', 'provider-1')
+		).resolves.toBeUndefined()
+		await expect(
+			adapter.linkOAuthAccount('owner-1', 'google', 'provider-1')
+		).resolves.toBeUndefined()
+		await expect(adapter.linkOAuthAccount('owner-2', 'google', 'provider-1')).rejects.toThrow(
+			'already linked'
+		)
+		await expect(adapter.getUserByProviderId('google', 'provider-1')).resolves.toMatchObject({
+			id: 'owner-1'
+		})
+	})
+
 	it('stores and consumes magic link tokens atomically', async () => {
 		const adapter = new MemoryMagicLinkAdapter()
 		await adapter.createToken({

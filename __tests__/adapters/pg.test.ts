@@ -120,6 +120,30 @@ describe('pg auth adapters', () => {
 		expect(insertSql).not.toContain('DO UPDATE')
 	})
 
+	it('never reassigns an existing PostgreSQL OAuth identity', async () => {
+		const db: PgPoolLike = {
+			async query(text) {
+				if (text.includes('INSERT INTO auth_oauth_accounts')) {
+					return { rows: [{ user_id: 'owner-1' }] }
+				}
+				throw new Error(`Unexpected query: ${text}`)
+			}
+		}
+		const adapters = createPgAuthAdapters({
+			cookieName: 'auth',
+			db,
+			mfaSecretCodec,
+			secureCookies: true
+		})
+
+		await expect(
+			adapters.user.linkOAuthAccount('owner-1', 'google', 'provider-1')
+		).resolves.toBeUndefined()
+		await expect(adapters.user.linkOAuthAccount('owner-2', 'google', 'provider-1')).rejects.toThrow(
+			'already linked'
+		)
+	})
+
 	it('atomically consumes postgres verification tokens', async () => {
 		let tokenRow: Record<string, unknown> | null = null
 		let replacementWasAtomic = false

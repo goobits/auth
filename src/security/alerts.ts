@@ -57,7 +57,15 @@ export function createSecurityAlertObserver({
 				const entry = await store.incrementEntry(key, now, rule.windowMs)
 				const minTs = now - rule.windowMs
 				const count = entry.timestamps.filter((timestamp) => timestamp >= minTs).length
-				if (count === rule.max && onAlert) {
+				if (count >= rule.max && onAlert) {
+					const bucket = Math.floor(now / rule.windowMs)
+					const alertClaim = await store.incrementEntry(
+						`${key}:notification:${bucket}`,
+						now,
+						rule.windowMs
+					)
+					const claimCount = alertClaim.timestamps.filter((timestamp) => timestamp >= minTs).length
+					if (claimCount !== 1) continue
 					await onAlert({
 						type: 'threshold_exceeded',
 						eventName: rule.eventName,

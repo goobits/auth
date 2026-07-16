@@ -124,7 +124,12 @@ export class MockUserAdapter extends UserAdapter implements PasswordCredentialAd
 		provider: string,
 		providerAccountId: string
 	): Promise<void> {
-		this.oauthIndex.set(`${provider}:${providerAccountId}`, String(userId))
+		const key = `${provider}:${providerAccountId}`
+		const owner = this.oauthIndex.get(key)
+		if (owner && owner !== String(userId)) {
+			throw new Error('OAuth provider account is already linked to another user')
+		}
+		this.oauthIndex.set(key, String(userId))
 	}
 
 	async findPasswordCredential(email: string, field = 'email'): Promise<PasswordCredential | null> {

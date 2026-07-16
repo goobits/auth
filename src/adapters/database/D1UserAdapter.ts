@@ -315,7 +315,13 @@ export class D1UserAdapter extends UserAdapter implements PasswordCredentialAdap
 		providerAccountId: string
 	): Promise<void> {
 		const sql = `INSERT INTO ${this.oauthAccountsTable} (${this.oauthColumns.userId}, ${this.oauthColumns.provider}, ${this.oauthColumns.providerAccountId}) VALUES (?, ?, ?)`
-		await this.db.prepare(sql).bind(this.coerceDbId(userId), provider, providerAccountId).run()
+		try {
+			await this.db.prepare(sql).bind(this.coerceDbId(userId), provider, providerAccountId).run()
+		} catch (error) {
+			const owner = await this.getUserByProviderId(provider, providerAccountId)
+			if (owner?.id === userId) return
+			throw error
+		}
 	}
 
 	async findPasswordCredential(

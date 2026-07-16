@@ -3,6 +3,7 @@ import { MemoryRateLimitStore } from '@goobits/security/rate-limit'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { resolveSecurity } from '../../src/createAuth/securitySetup.ts'
+import { createSecurityAlertObserver } from '../../src/security/alerts.ts'
 import type { AuthConfig, AuthSecurityConfig, SecurityProfile } from '../../src/types/auth.ts'
 
 function config(
@@ -105,5 +106,46 @@ describe('auth security profiles', () => {
 		expect(onAlert).toHaveBeenCalledWith(
 			expect.objectContaining({ eventName: 'auth.failure', count: 10 })
 		)
+	})
+
+	it('claims one alert even when concurrent storage jumps past the exact threshold', async () => {
+		const timestampsByKey = new Map<string, number[]>()
+		const store = {
+			async getEntry(key: string) {
+				const timestamps = timestampsByKey.get(key)
+				return timestamps ? { timestamps } : null
+			},
+			async incrementEntry(key: string, now: number) {
+				const timestamps = timestampsByKey.get(key) ?? []
+				if (!key.includes(':notification:') && timestamps.length === 0) {
+					for (let index = 0; index < 10; index += 1) timestamps.push(now)
+				}
+				timestamps.push(now)
+				timestampsByKey.set(key, timestamps)
+				return { timestamps }
+			},
+			async deleteEntry(key: string) {
+				timestampsByKey.delete(key)
+			}
+		}
+		const onAlert = vi.fn()
+		const observer = createSecurityAlertObserver({
+			store,
+			onAlert,
+			rules: [{ eventName: 'auth.failure', max: 10, windowMs: 60_000, severity: 'warn' }]
+		})
+		const event = {
+			name: 'auth.failure' as const,
+			severity: 'warn' as const,
+			timestamp: new Date().toISOString(),
+			route: 'credentials.login',
+			method: 'POST'
+		}
+
+		await observer(event)
+		await observer(event)
+
+		expect(onAlert).toHaveBeenCalledOnce()
+		expect(onAlert).toHaveBeenCalledWith(expect.objectContaining({ count: 11 }))
 	})
 })

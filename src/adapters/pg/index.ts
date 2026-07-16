@@ -259,14 +259,21 @@ export class PgUserAdapter extends UserAdapter implements PasswordCredentialAdap
 		provider: string,
 		providerAccountId: string
 	): Promise<void> {
-		await this.#db.query(
-			`
+		const owner = (
+			await this.#db.query<{ user_id: string }>(
+				`
 			INSERT INTO auth_oauth_accounts (provider, provider_account_id, user_id)
 			VALUES ($1, $2, $3)
-			ON CONFLICT (provider, provider_account_id) DO UPDATE SET user_id = EXCLUDED.user_id
+			ON CONFLICT (provider, provider_account_id) DO UPDATE
+				SET user_id = auth_oauth_accounts.user_id
+			RETURNING user_id
 		`,
-			[provider, providerAccountId, userId]
-		)
+				[provider, providerAccountId, userId]
+			)
+		).rows[0]?.user_id
+		if (owner !== userId) {
+			throw new Error('OAuth provider account is already linked to another user')
+		}
 	}
 
 	async findPasswordCredential(

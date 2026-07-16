@@ -189,11 +189,17 @@ export class DrizzleUserAdapter extends UserAdapter implements PasswordCredentia
 				'OAuth accounts table not configured. Set oauthAccountsTable in adapter options.'
 			)
 		}
-		await this.db.insert(this.oauthAccountsTable).values({
-			userId,
-			provider,
-			providerAccountId
-		})
+		try {
+			await this.db.insert(this.oauthAccountsTable).values({
+				userId,
+				provider,
+				providerAccountId
+			})
+		} catch (error) {
+			const owner = await this.getUserByProviderId(provider, providerAccountId)
+			if (owner?.id === userId) return
+			throw error
+		}
 	}
 
 	async findPasswordCredential(

@@ -152,9 +152,11 @@ export function createHandlers(
 			onAuthenticated: async (event, profile, tokens) => {
 				const providerName = String(event.params['provider'] ?? '')
 				let user = null
+				let needsProviderLink = false
 
 				if (adapters.user) {
 					user = await adapters.user.getUserByProviderId(providerName, profile.id)
+					needsProviderLink = !user
 
 					if (!user && profile.email) {
 						const existingByEmail = await adapters.user.getUserByEmail(profile.email)
@@ -177,7 +179,7 @@ export function createHandlers(
 					if (!user) {
 						user = await adapters.user.createUser(profile)
 					}
-					if (user && adapters.user.linkOAuthAccount) {
+					if (user && needsProviderLink && adapters.user.linkOAuthAccount) {
 						await adapters.user.linkOAuthAccount(user.id, providerName, profile.id)
 					}
 				}
