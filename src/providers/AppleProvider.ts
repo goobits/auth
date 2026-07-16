@@ -19,12 +19,15 @@ type AppleIdTokenPayload = {
 	iss?: string
 	aud?: string | string[]
 	exp?: number
+	iat?: number
+	nbf?: number
 	email?: string
+	email_verified?: boolean | string
 	sub?: string
 }
 
 type AppleTokenResponse = {
-	idToken: string | (() => string) | (() => { email?: string; sub?: string })
+	idToken: string | (() => string)
 	accessToken?: string | (() => string)
 	refreshToken?: string | (() => string)
 	scope?: string
@@ -33,9 +36,17 @@ type AppleTokenResponse = {
 	expires_in?: number
 }
 
+type AppleJwk = JsonWebKey & {
+	alg?: string
+	kid?: string
+	use?: string
+}
+
 const APPLE_ISSUER = 'https://appleid.apple.com'
 const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys'
-let cachedAppleJwks: { keys: JsonWebKey[]; expiresAt: number } | null = null
+const APPLE_CLOCK_SKEW_SECONDS = 5 * 60
+const APPLE_JWKS_MAX_BYTES = 128 * 1024
+let cachedAppleJwks: { keys: AppleJwk[]; expiresAt: number } | null = null
 
 /**
  * Apple OAuth Provider
@@ -146,7 +157,11 @@ export class AppleProvider extends OAuthProvider {
 					? await validateAuthorizationCode.call(this.client, code, codeVerifier)
 					: await validateAuthorizationCode.call(this.client, code)
 
-			const { email, sub: appleUserId } = await this.verifyIdToken(tokens)
+			const {
+				email,
+				email_verified: emailVerified,
+				sub: appleUserId
+			} = await this.verifyIdToken(tokens)
 
 			if (!email || !appleUserId) {
 				throw new Error('Invalid token data from Apple')
@@ -156,6 +171,7 @@ export class AppleProvider extends OAuthProvider {
 
 			// Handle first-time sign in data if present
 			if (userData) {
+				if (userData.length > 16 * 1024) throw new Error('Apple user data is too large')
 				try {
 					const userJson = JSON.parse(userData)
 					if (userJson.name) {
@@ -174,7 +190,7 @@ export class AppleProvider extends OAuthProvider {
 					id: appleUserId,
 					email: email as string,
 					...(name && { name }),
-					verified_email: true
+					verified_email: emailVerified === true || emailVerified === 'true'
 				},
 				tokens: {
 					accessToken: this.readTokenValue(tokens.accessToken) ?? '',
@@ -193,11 +209,13 @@ export class AppleProvider extends OAuthProvider {
 
 	private async verifyIdToken(tokens: AppleTokenResponse): Promise<AppleIdTokenPayload> {
 		const rawIdToken = typeof tokens.idToken === 'function' ? tokens.idToken() : tokens.idToken
-		if (rawIdToken && typeof rawIdToken === 'object') return rawIdToken as AppleIdTokenPayload
 		const idTokenValue = typeof rawIdToken === 'string' ? rawIdToken : ''
 
 		if (!idTokenValue) {
 			throw new Error('Missing Apple ID token')
+		}
+		if (idTokenValue.length > 16 * 1024) {
+			throw new Error('Apple ID token is too large')
 		}
 
 		const [headerPart, payloadPart, signaturePart] = idTokenValue.split('.')
@@ -210,8 +228,12 @@ export class AppleProvider extends OAuthProvider {
 			throw new Error('Unsupported Apple ID token header')
 		}
 
-		const jwks = await getAppleJwks()
-		const jwk = jwks.keys.find((key) => (key as JsonWebKey & { kid?: string }).kid === header.kid)
+		let jwks = await getAppleJwks()
+		let jwk = jwks.keys.find((key) => key.kid === header.kid)
+		if (!jwk) {
+			jwks = await getAppleJwks(true)
+			jwk = jwks.keys.find((key) => key.kid === header.kid)
+		}
 		if (!jwk) {
 			throw new Error('Apple ID token key not found')
 		}
@@ -241,6 +263,22 @@ export class AppleProvider extends OAuthProvider {
 		}
 		if (!payload.exp || payload.exp <= nowSeconds) {
 			throw new Error('Expired Apple ID token')
+		}
+		if (payload.iat && payload.iat > nowSeconds + APPLE_CLOCK_SKEW_SECONDS) {
+			throw new Error('Invalid Apple ID token issued-at time')
+		}
+		if (payload.nbf && payload.nbf > nowSeconds + APPLE_CLOCK_SKEW_SECONDS) {
+			throw new Error('Apple ID token is not active')
+		}
+		if (
+			typeof payload.sub !== 'string' ||
+			!payload.sub ||
+			payload.sub.length > 255 ||
+			typeof payload.email !== 'string' ||
+			!payload.email ||
+			payload.email.length > 320
+		) {
+			throw new Error('Invalid Apple ID token identity')
 		}
 		return payload
 	}
@@ -276,17 +314,39 @@ function parseJwtPart(value: string): unknown {
 	return JSON.parse(bytesToText(base64UrlToBytes(value)))
 }
 
-async function getAppleJwks(): Promise<{ keys: JsonWebKey[] }> {
+async function getAppleJwks(forceRefresh = false): Promise<{ keys: AppleJwk[] }> {
 	const now = Date.now()
-	if (cachedAppleJwks && cachedAppleJwks.expiresAt > now) {
+	if (!forceRefresh && cachedAppleJwks && cachedAppleJwks.expiresAt > now) {
 		return { keys: cachedAppleJwks.keys }
 	}
-	const response = await fetch(APPLE_JWKS_URL)
+	const response = await fetch(APPLE_JWKS_URL, {
+		signal: AbortSignal.timeout(5000),
+		headers: { accept: 'application/json' }
+	})
 	if (!response.ok) {
 		throw new Error(`Apple JWKS fetch failed (${response.status})`)
 	}
-	const body = (await response.json()) as { keys?: JsonWebKey[] }
-	const keys = Array.isArray(body.keys) ? body.keys : []
+	const contentLength = Number(response.headers.get('content-length') ?? 0)
+	if (contentLength > APPLE_JWKS_MAX_BYTES) {
+		throw new Error('Apple JWKS response too large')
+	}
+	const responseText = await response.text()
+	if (new TextEncoder().encode(responseText).byteLength > APPLE_JWKS_MAX_BYTES) {
+		throw new Error('Apple JWKS response too large')
+	}
+	const body = JSON.parse(responseText) as { keys?: AppleJwk[] }
+	const keys = Array.isArray(body.keys)
+		? body.keys
+				.filter(
+					(key) =>
+						key.kty === 'RSA' &&
+						typeof key.kid === 'string' &&
+						(!key.use || key.use === 'sig') &&
+						(!key.alg || key.alg === 'RS256')
+				)
+				.slice(0, 10)
+		: []
+	if (keys.length === 0) throw new Error('Apple JWKS response contained no signing keys')
 	cachedAppleJwks = { keys, expiresAt: now + 60 * 60 * 1000 }
 	return { keys }
 }

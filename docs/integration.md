@@ -90,12 +90,13 @@ Behavioral expectations:
 - Every `getUser*` and `create/update` method returns **sanitized** users —
   no password hashes and no internal-only fields. Password fields supplied to
   profile creation or updates must not cross this boundary.
-- `linkOAuthAccount` must be idempotent; the OAuth callback path may retry
-  it, and the package swallows duplicate-link errors silently.
+- `linkOAuthAccount` must be idempotent and enforce a unique
+  `(provider, providerAccountId)` owner. Link errors fail the callback closed;
+  they are never swallowed before session creation.
 - `requireVerifiedEmailForLinking` (default `true`) is enforced inside
-  `GoobitsAuth`, not in your adapter. If you want to allow OAuth-to-existing
-  account linking on unverified emails, set the config flag — don't relax
-  your adapter logic.
+  `GoobitsAuth`, not in your adapter. Provider email claims must always be
+  explicitly verified before matching an existing account. The option controls
+  whether the existing local account must also already be verified.
 
 ### `PasswordCredentialAdapter` (required for password credentials)
 

@@ -14,6 +14,7 @@ import {
 	createMfaVerifyHandler
 } from '../handlers/mfa.ts'
 import { ensureSessionAfterLogin } from '../handlers/sessionLifecycle.ts'
+import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
 import { createSessionListHandler, createSessionRevokeHandler } from '../handlers/sessions.ts'
 import {
 	createWebAuthnLoginOptionsHandler,
@@ -73,6 +74,15 @@ function normalizeMagicLinkConfig(
 			: {}),
 		...(settings.normalizeEmail !== undefined ? { normalizeEmail: settings.normalizeEmail } : {}),
 		...(settings.exposeToken !== undefined ? { exposeToken: settings.exposeToken } : {}),
+		...(settings.requireUserConfirmation !== undefined
+			? { requireUserConfirmation: settings.requireUserConfirmation }
+			: {}),
+		...(settings.confirmationCookieName !== undefined
+			? { confirmationCookieName: settings.confirmationCookieName }
+			: {}),
+		...(settings.confirmationTtlSeconds !== undefined
+			? { confirmationTtlSeconds: settings.confirmationTtlSeconds }
+			: {}),
 		...(settings.baseUrl !== undefined ? { baseUrl: settings.baseUrl } : {}),
 		...(limits.request !== undefined ? { rateLimit: limits.request } : {}),
 		...(limits.verify !== undefined ? { verifyRateLimit: limits.verify } : {}),
@@ -144,37 +154,31 @@ export function createHandlers(
 				let user = null
 
 				if (adapters.user) {
-					try {
-						user = await adapters.user.getUserByProviderId(providerName, profile.id)
-					} catch {
-						user = null
-					}
+					user = await adapters.user.getUserByProviderId(providerName, profile.id)
 
-					const canLookupByEmail = profile.email
-						? profile.verified_email !== undefined
-							? profile.verified_email === true
-							: true
-						: false
-					if (!user && canLookupByEmail) {
+					if (!user && profile.email) {
 						const existingByEmail = await adapters.user.getUserByEmail(profile.email)
-						if (
-							existingByEmail &&
-							requireVerifiedEmailForLinking &&
-							existingByEmail.emailVerified !== true
-						) {
-							throw new Error('Existing account email must be verified before OAuth linking')
+						if (existingByEmail) {
+							if (profile.verified_email !== true) {
+								throw new AuthPrincipalResolutionError(
+									'Provider must verify the email before OAuth account linking',
+									403
+								)
+							}
+							if (requireVerifiedEmailForLinking && existingByEmail.emailVerified !== true) {
+								throw new AuthPrincipalResolutionError(
+									'Existing account email must be verified before OAuth linking',
+									403
+								)
+							}
+							user = existingByEmail
 						}
-						user = existingByEmail
 					}
 					if (!user) {
 						user = await adapters.user.createUser(profile)
 					}
 					if (user && adapters.user.linkOAuthAccount) {
-						try {
-							await adapters.user.linkOAuthAccount(user.id, providerName, profile.id)
-						} catch {
-							// ignore duplicate link failures
-						}
+						await adapters.user.linkOAuthAccount(user.id, providerName, profile.id)
 					}
 				}
 
@@ -183,17 +187,20 @@ export function createHandlers(
 					const hookResult = await hooks.onLogin(event, profile, tokens, user)
 					userId = resolveOnLoginUserId(hookResult, userId)
 				}
-				userId = await ensureSessionAfterLogin({
+				if (adapters.oauthToken) {
+					if (!userId) {
+						throw new AuthPrincipalResolutionError()
+					}
+					await adapters.oauthToken.storeTokens(userId, providerName, tokens)
+				}
+
+				await ensureSessionAfterLogin({
 					event,
 					sessionAdapter: adapters.session,
 					userId,
 					autoCreateSession,
 					onLoginMode
 				})
-
-				if (adapters.oauthToken) {
-					await adapters.oauthToken.storeTokens(userId, providerName, tokens)
-				}
 			},
 			...(hooks.onError
 				? {
@@ -282,6 +289,7 @@ export function createHandlers(
 			onLoginMode,
 			redirectAfterLogin: urlConfig.afterLogin,
 			isAuthenticated,
+			csrfCookieName: security.csrf.cookieName,
 			...(config.logger ? { logger: config.logger } : {}),
 			...(normalizedMagicLink['sanitizeUser'] === undefined ? { sanitizeUser } : {}),
 			...(adapters.user ? { userAdapter: adapters.user } : {})

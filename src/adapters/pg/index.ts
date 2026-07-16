@@ -133,11 +133,7 @@ export class PgUserAdapter extends UserAdapter implements PasswordCredentialAdap
 				`
 			INSERT INTO auth_users (id, email, name, avatar, email_verified, role, settings, password)
 			VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)
-			ON CONFLICT (email) DO UPDATE SET
-				name = EXCLUDED.name,
-				avatar = COALESCE(EXCLUDED.avatar, auth_users.avatar),
-				email_verified = auth_users.email_verified OR EXCLUDED.email_verified,
-				updated_at = now()
+			ON CONFLICT (email) DO NOTHING
 			RETURNING *
 		`,
 				[
@@ -152,7 +148,8 @@ export class PgUserAdapter extends UserAdapter implements PasswordCredentialAdap
 				]
 			)
 		).rows[0]
-		return toUser(requireRow(row))
+		if (!row) throw new Error('Unable to create OAuth user with those details')
+		return toUser(row)
 	}
 
 	async createUserWithPassword(

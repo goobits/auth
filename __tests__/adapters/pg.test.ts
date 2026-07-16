@@ -91,6 +91,35 @@ describe('pg auth adapters', () => {
 		)
 	})
 
+	it('never turns OAuth user creation into an update of an existing email owner', async () => {
+		let insertSql = ''
+		const db: PgPoolLike = {
+			async query(text) {
+				if (text.includes('INSERT INTO auth_users')) {
+					insertSql = text
+					return { rows: [] }
+				}
+				throw new Error(`Unexpected query: ${text}`)
+			}
+		}
+		const adapters = createPgAuthAdapters({
+			cookieName: 'auth',
+			db,
+			mfaSecretCodec,
+			secureCookies: true
+		})
+
+		await expect(
+			adapters.user.createUser({
+				id: 'provider-user',
+				email: 'existing@example.com',
+				verified_email: false
+			})
+		).rejects.toThrow('Unable to create OAuth user')
+		expect(insertSql).toContain('ON CONFLICT (email) DO NOTHING')
+		expect(insertSql).not.toContain('DO UPDATE')
+	})
+
 	it('atomically consumes postgres verification tokens', async () => {
 		let tokenRow: Record<string, unknown> | null = null
 		let replacementWasAtomic = false
