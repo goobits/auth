@@ -1,4 +1,3 @@
-import { decodeBase64IgnorePadding } from '@oslojs/encoding'
 import { base64UrlToBytes, bytesToText } from '@goobits/security/crypto'
 import { Apple } from 'arctic'
 
@@ -110,7 +109,7 @@ export class AppleProvider extends OAuthProvider {
 				.replaceAll('\n', '')
 				.trim()
 
-			return decodeBase64IgnorePadding(cleaned)
+			return base64UrlToBytes(cleaned.replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/u, ''))
 		} catch (error) {
 			this.logger.error('Error decoding Apple private key', errorContext(error))
 			throw new Error('Invalid Apple private key format')

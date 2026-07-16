@@ -1,4 +1,4 @@
-import { decodeBase64url, encodeBase64url } from '@oslojs/encoding'
+import { base64UrlToBytes, bytesToBase64Url } from '@goobits/security/crypto'
 import {
 	type AuthenticationResponseJSON,
 	type AuthenticatorTransportFuture,
@@ -30,7 +30,7 @@ export function toUint8Array(value: unknown): Uint8Array {
 		return new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
 	}
 	if (typeof value === 'string') {
-		return decodeBase64url(value)
+		return base64UrlToBytes(value)
 	}
 	if (Array.isArray(value) && value.every((entry) => typeof entry === 'number')) {
 		return Uint8Array.from(value)
@@ -39,7 +39,7 @@ export function toUint8Array(value: unknown): Uint8Array {
 }
 
 export function encodeCredential(value: unknown): string {
-	return encodeBase64url(toUint8Array(value))
+	return bytesToBase64Url(toUint8Array(value))
 }
 
 const registrationResponseSchema = z.custom<RegistrationResponseJSON>(

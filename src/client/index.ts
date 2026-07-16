@@ -1,4 +1,5 @@
 import { createCsrfFetch, type CsrfFetchConfig } from '@goobits/security/csrf-client'
+import { base64UrlToBytes, bytesToBase64Url } from '@goobits/security/crypto/encoding'
 
 import { AUTH_ROUTE_PATHS, resolveAuthRoutePath } from '../_routePaths.ts'
 
@@ -159,25 +160,6 @@ function mergeHeaders(
 	return headers
 }
 
-function decodeBase64url(value: string): Uint8Array {
-	const base64 = value.replace(/-/g, '+').replace(/_/g, '/')
-	const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
-	const binary = globalThis.atob(padded)
-	const bytes = new Uint8Array(binary.length)
-	for (let index = 0; index < binary.length; index += 1) {
-		bytes[index] = binary.charCodeAt(index)
-	}
-	return bytes
-}
-
-function encodeBase64url(value: Uint8Array): string {
-	let binary = ''
-	for (const byte of value) {
-		binary += String.fromCharCode(byte)
-	}
-	return globalThis.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
-}
-
 function toUint8Array(value: Base64Input): Uint8Array {
 	if (!value) return new Uint8Array()
 	if (value instanceof Uint8Array) return value
@@ -185,12 +167,12 @@ function toUint8Array(value: Base64Input): Uint8Array {
 	if (ArrayBuffer.isView(value)) {
 		return new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
 	}
-	if (typeof value === 'string') return decodeBase64url(value)
+	if (typeof value === 'string') return base64UrlToBytes(value)
 	return new Uint8Array(value)
 }
 
 function toBase64url(value: Base64Input): string {
-	return encodeBase64url(toUint8Array(value))
+	return bytesToBase64Url(toUint8Array(value))
 }
 
 function parseCreationOptions(

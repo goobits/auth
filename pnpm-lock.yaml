@@ -16,9 +16,6 @@ importers:
       '@goobits/security':
         specifier: workspace:*
         version: link:../security
-      '@oslojs/encoding':
-        specifier: ^1.1.0
-        version: 1.1.0
       '@simplewebauthn/server':
         specifier: ^13.3.2
         version: 13.3.2

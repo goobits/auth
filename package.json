@@ -276,7 +276,6 @@
 	},
 	"dependencies": {
 		"@goobits/security": "workspace:*",
-		"@oslojs/encoding": "^1.1.0",
 		"@simplewebauthn/server": "^13.3.2",
 		"arctic": "^3.7.0",
 		"hash-wasm": "^4.12.0",
