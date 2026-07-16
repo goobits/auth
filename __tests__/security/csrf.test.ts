@@ -44,4 +44,16 @@ describe('csrf', () => {
 		const originalForm = await request.formData()
 		expect(originalForm.get('value')).toBe('kept')
 	})
+
+	it('rejects oversized form bodies through the shared bounded parser', async () => {
+		const cookies = createCookies()
+		cookies.set('csrf-token', 'form-token')
+		const request = new Request('http://localhost', {
+			method: 'POST',
+			headers: { 'content-type': 'application/x-www-form-urlencoded' },
+			body: new URLSearchParams({ _csrf: 'form-token', padding: 'x'.repeat(70_000) })
+		})
+
+		await expect(validateCsrfRequest({ request, cookies })).resolves.toBe(false)
+	})
 })
