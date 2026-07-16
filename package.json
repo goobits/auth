@@ -118,6 +118,11 @@
 			"node": "./dist/node/ui/index.js",
 			"default": "./dist/worker/ui/index.js"
 		},
+		"./ui/qr-code": {
+			"types": "./dist/types/ui/QrCode.svelte",
+			"node": "./dist/node/ui/QrCode.svelte",
+			"default": "./dist/worker/ui/QrCode.svelte"
+		},
 		"./ui/theme.css": {
 			"node": "./dist/node/ui/theme.css",
 			"default": "./dist/worker/ui/theme.css"
