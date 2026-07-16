@@ -10,6 +10,7 @@ import {
 	createMfaDisableHandler,
 	createMfaEnrollHandler,
 	createMfaStatusHandler,
+	createMfaStepUpHandler,
 	createMfaVerifyHandler
 } from '../handlers/mfa.ts'
 import { ensureSessionAfterLogin } from '../handlers/sessionLifecycle.ts'
@@ -351,9 +352,14 @@ export function createHandlers(
 		handlers.mfa = {
 			status: asJsonHandler(createMfaStatusHandler(mfaConfig)),
 			enroll: asJsonHandler(createMfaEnrollHandler(mfaConfig)),
-			verify: asJsonHandler(createMfaVerifyHandler(mfaConfig)),
+			verify: asJsonHandler(
+				createMfaVerifyHandler({ ...mfaConfig, sessionAdapter: adapters.session })
+			),
 			disable: asJsonHandler(createMfaDisableHandler(mfaConfig)),
-			backupCode: asJsonHandler(createMfaBackupCodeHandler(mfaConfig))
+			backupCode: asJsonHandler(createMfaBackupCodeHandler(mfaConfig)),
+			stepUp: asJsonHandler(
+				createMfaStepUpHandler({ ...mfaConfig, sessionAdapter: adapters.session })
+			)
 		}
 	}
 
@@ -429,6 +435,10 @@ export function buildRoutes(handlers: AuthHandlers): AuthRoutes {
 		mfaBackupCode: () => {
 			if (!handlers.mfa) throw new Error('MFA handlers not configured')
 			return { POST: handlers.mfa.backupCode }
+		},
+		mfaStepUp: () => {
+			if (!handlers.mfa) throw new Error('MFA handlers not configured')
+			return { POST: handlers.mfa.stepUp }
 		},
 		sessions: () => {
 			if (!handlers.sessions) throw new Error('Session handlers not configured')

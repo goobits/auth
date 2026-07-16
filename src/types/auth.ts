@@ -141,6 +141,7 @@ export type AuthorizeSecurityChange = (input: {
 	action: SecurityChangeAction
 	request: Request
 	userId: string
+	session: Session | null
 }) => boolean | Promise<boolean>
 
 /** Defines totp mfa config options for wiring providers, adapters, cookies, hooks, and route handlers. */
@@ -287,6 +288,7 @@ export type AuthHandlers = {
 		verify: RequestHandler
 		disable: RequestHandler
 		backupCode: RequestHandler
+		stepUp: RequestHandler
 	}
 	sessions?: {
 		list: RequestHandler
@@ -310,6 +312,7 @@ export type AuthRoutes = {
 	mfaVerify: () => { POST: RequestHandler }
 	mfaDisable: () => { POST: RequestHandler }
 	mfaBackupCode: () => { POST: RequestHandler }
+	mfaStepUp: () => { POST: RequestHandler }
 	sessions: () => { GET: RequestHandler; POST: RequestHandler }
 }
 

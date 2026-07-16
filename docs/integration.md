@@ -194,8 +194,9 @@ real working example of consuming the contract. It:
 
 1. Configures the prebuilt `D1UserAdapter` and `D1SessionAdapter` with the
    calendar table and column names.
-2. Explicitly disables `mfaVerifiedAt` persistence because the calendar MVP
-   does not yet use session assurance.
+2. Configures `D1MfaAdapter` with the calendar factor tables and an AES-GCM
+   keyring codec, and explicitly persists `createdAt`, `mfaVerifiedAt`, client
+   IP, and user agent for session assurance.
 3. Reuses a D1-backed rate-limit store for both request limits and durable
    security-alert thresholds.
 4. Hands the adapters to `new GoobitsAuth({ adapter: {...} })` in

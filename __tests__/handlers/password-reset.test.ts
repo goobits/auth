@@ -81,6 +81,28 @@ describe('password reset handlers', () => {
 		expect(result.error).toMatch(/Invalid or expired/)
 	})
 
+	it('protects reset confirmation with CSRF and rate limiting', async () => {
+		const completePasswordReset = vi.fn()
+		const csrfBlocked = createPasswordResetConfirmHandler({
+			credentialsProvider: { createPasswordHash: vi.fn() },
+			completePasswordReset,
+			csrf: { validate: vi.fn().mockResolvedValue(false) }
+		})
+		await expect(
+			csrfBlocked(createEventWithForm({ token: 'good', password: 'newpass' }))
+		).resolves.toEqual({ error: 'Invalid CSRF token', success: false })
+
+		const rateBlocked = createPasswordResetConfirmHandler({
+			credentialsProvider: { createPasswordHash: vi.fn() },
+			completePasswordReset,
+			rateLimit: { check: vi.fn().mockResolvedValue({ allowed: false }) }
+		})
+		await expect(
+			rateBlocked(createEventWithForm({ token: 'good', password: 'newpass' }))
+		).resolves.toEqual({ error: 'Too many attempts. Try again later.', success: false })
+		expect(completePasswordReset).not.toHaveBeenCalled()
+	})
+
 	it('delegates atomic completion with a validated password hash', async () => {
 		const completePasswordReset = vi.fn().mockResolvedValue({ userId: 'u1' })
 		const credentialsProvider = {

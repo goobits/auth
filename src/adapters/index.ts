@@ -42,7 +42,12 @@ export {
 } from './magic-link/index.ts'
 
 // MFA Adapters
-export { MfaAdapter } from './mfa/index.ts'
+export {
+	createAesGcmMfaSecretCodec,
+	D1MfaAdapter,
+	MfaAdapter,
+	type MfaSecretCodec
+} from './mfa/index.ts'
 
 // WebAuthn Adapters
 export { D1WebAuthnAdapter, DrizzleWebAuthnAdapter, WebAuthnAdapter } from './webauthn/index.ts'
@@ -56,4 +61,4 @@ export type {
 export { drizzleAdapter } from './drizzle/index.ts'
 
 // Type-only export keeps the aggregate adapter entrypoint Worker-safe.
-export type { MfaSecretCodec, PgPoolLike } from './pg/index.ts'
+export type { PgPoolLike } from './pg/index.ts'

@@ -83,8 +83,9 @@ ALTER TABLE sessions
 ```
 
 `mfa_verified_at` is required when privileged routes rely on recent MFA. The
-Drizzle adapter reads the matching `mfaVerifiedAt` schema field, D1 defaults to
-the SQL column above, KV stores it in the session record, and the PostgreSQL
-bundle creates and migrates `auth_sessions.mfa_verified_at`. Set D1's
-`columns.mfaVerifiedAt` to `null` only when the application does not use session
-assurance.
+Drizzle adapter reads the matching `mfaVerifiedAt` schema field, KV stores it in
+the session record, and the PostgreSQL bundle creates and migrates
+`auth_sessions.mfa_verified_at`. D1 keeps optional session columns disabled by
+default for existing-schema compatibility; applications using assurance must
+set `columns.mfaVerifiedAt` (and normally `columns.createdAt`) to their real SQL
+column names.

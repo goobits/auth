@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { createAuthClient, type CreateAuthClientOptions } from '../client/index.ts'
+
 	type SessionRecord = {
 		id: string
 		current?: boolean
@@ -7,16 +9,18 @@
 	}
 
 	let {
-		listEndpoint = '/auth/sessions',
-		revokeEndpoint = '/auth/sessions',
+		listEndpoint,
+		revokeEndpoint,
 		fetcher = fetch,
 		headers = {},
+		csrf = {},
 		sessions: initialSessions = null
 	}: {
 		listEndpoint?: string
 		revokeEndpoint?: string
 		fetcher?: typeof fetch
 		headers?: Record<string, string>
+		csrf?: CreateAuthClientOptions['csrf']
 		sessions?: SessionRecord[] | null
 	} = $props()
 
@@ -27,18 +31,28 @@
 	let didApplyInitialSessions = false
 	let didRequestInitialSessions = false
 
+	function client() {
+		const endpoints = {
+			...(listEndpoint ? { sessions: listEndpoint } : {}),
+			...(revokeEndpoint ? { sessionRevoke: revokeEndpoint } : {})
+		}
+		return createAuthClient({
+			csrf,
+			fetcher,
+			headers,
+			endpoints
+		})
+	}
+
 	async function loadSessions() {
 		loading = true
 		error = null
 		try {
-			const response = await fetcher(listEndpoint, {
-				headers
-			})
-			const data = await response.json()
-			if (!response.ok || !data.ok) {
+			const data = await client().listSessions()
+			if (!data.ok) {
 				throw new Error(data.error || 'Failed to load sessions')
 			}
-			sessions = data.sessions as SessionRecord[]
+			sessions = data.sessions
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load sessions'
 		} finally {
@@ -50,16 +64,8 @@
 		revokingId = sessionId
 		error = null
 		try {
-			const response = await fetcher(revokeEndpoint, {
-				method: 'POST',
-				headers: {
-					'content-type': 'application/json',
-					...headers
-				},
-				body: JSON.stringify({ sessionId })
-			})
-			const data = await response.json()
-			if (!response.ok || !data.ok) {
+			const data = await client().revokeSession({ sessionId })
+			if (!data.ok) {
 				throw new Error(data.error || 'Failed to revoke session')
 			}
 			await loadSessions()

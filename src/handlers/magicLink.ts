@@ -1,6 +1,7 @@
 import { redirect, type RequestHandler } from '@sveltejs/kit'
 import { createRateLimiter } from '@goobits/security/rate-limit'
 
+import { AUTH_ROUTE_PATHS, resolveAuthRoutePath } from '../_routePaths.ts'
 import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
 import type { MagicLinkAdapter } from '../adapters/magic-link/MagicLinkAdapter.ts'
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
@@ -101,7 +102,7 @@ export function createMagicLinkRequestHandler(config: MagicLinkRequestConfig): R
 		sendEmail,
 		allowSignup = false,
 		expiresInMs = 15 * 60 * 1000,
-		magicLinkPath = '/auth/magic/verify',
+		magicLinkPath = resolveAuthRoutePath('/auth', AUTH_ROUTE_PATHS.magicLinkVerify),
 		includeOtp = true,
 		otpDigits = 6,
 		singleUsePerEmail = true,

@@ -153,8 +153,9 @@ only be verified by the same authenticated principal.
 Persistent adapters now round-trip `Session.mfaVerifiedAt`. Add a nullable
 `mfa_verified_at` timestamp to existing Drizzle and D1 session tables before
 deploying this version. The PostgreSQL bundle's `pgAuthSchemaSql` includes an
-idempotent `ALTER TABLE`; KV records need no migration. D1 applications that do
-not use session assurance may explicitly set `columns.mfaVerifiedAt` to `null`.
+idempotent `ALTER TABLE`; KV records need no migration. D1 applications must
+explicitly set `columns.mfaVerifiedAt` to the migrated column when they use
+session assurance; the compatibility default is `null`.
 
 ## PostgreSQL MFA encryption
 

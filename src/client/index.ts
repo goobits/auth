@@ -1,8 +1,10 @@
 import { createCsrfFetch, type CsrfFetchConfig } from '@goobits/security/csrf-client'
 
+import { AUTH_ROUTE_PATHS, resolveAuthRoutePath } from '../_routePaths.ts'
+
 type Base64Input = ArrayBuffer | ArrayBufferView | Uint8Array | string | null | undefined
 
-type PasskeyEndpoints = {
+export type AuthClientEndpoints = {
 	magicLinkRequest?: string
 	magicLinkVerify?: string
 	passkeyRegisterOptions?: string
@@ -14,14 +16,147 @@ type PasskeyEndpoints = {
 	mfaVerify?: string
 	mfaDisable?: string
 	mfaBackupCode?: string
+	mfaStepUp?: string
 	sessions?: string
+	sessionRevoke?: string
 }
 
-type CreateAuthClientOptions = {
+export type CreateAuthClientOptions = {
 	baseUrl?: string
 	csrf?: Omit<CsrfFetchConfig, 'fetch'>
-	endpoints?: PasskeyEndpoints
+	endpoints?: AuthClientEndpoints
 	fetcher?: typeof fetch
+	headers?: HeadersInit
+}
+
+export type AuthClientFailure = {
+	success: false
+	error: string
+	code?: string
+	status?: number
+}
+
+export type MfaEnrollmentResult =
+	| AuthClientFailure
+	| {
+			success: true
+			secret: string
+			otpauthUrl: string
+			backupCodes: string[]
+	  }
+
+export type MfaActionResult = AuthClientFailure | { success: true; mfaVerifiedAt?: string }
+
+export type MfaStatusResult =
+	| AuthClientFailure
+	| {
+			success: true
+			status: {
+				enabled: boolean
+				enabledAt: string | null
+				backupCodeCount: number
+			}
+	  }
+
+export type AuthSessionSummary = {
+	id: string
+	userId: string
+	expiresAt: string
+	createdAt: string | null
+	lastActiveAt: string | null
+	ip: string | null
+	userAgent: string | null
+	current: boolean
+}
+
+export type SessionListResult =
+	| { ok: false; error: string }
+	| { ok: true; sessions: AuthSessionSummary[] }
+
+export type SessionActionResult = { ok: false; error: string } | { ok: true }
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+async function readJsonRecord(response: Response): Promise<Record<string, unknown>> {
+	const value: unknown = await response.json()
+	if (!isRecord(value)) throw new Error('Invalid authentication response')
+	return value
+}
+
+function parseFailure(value: Record<string, unknown>): AuthClientFailure {
+	const result: AuthClientFailure = {
+		success: false,
+		error: typeof value['error'] === 'string' ? value['error'] : 'Authentication request failed'
+	}
+	if (typeof value['code'] === 'string') result.code = value['code']
+	if (typeof value['status'] === 'number') result.status = value['status']
+	return result
+}
+
+function requireSuccessFlag(value: Record<string, unknown>): boolean {
+	if (typeof value['success'] !== 'boolean') throw new Error('Invalid authentication response')
+	return value['success']
+}
+
+function parseMfaAction(value: Record<string, unknown>): MfaActionResult {
+	if (!requireSuccessFlag(value)) return parseFailure(value)
+	const verifiedAt = value['mfaVerifiedAt']
+	if (verifiedAt !== undefined && typeof verifiedAt !== 'string') {
+		throw new Error('Invalid authentication response')
+	}
+	return verifiedAt ? { success: true, mfaVerifiedAt: verifiedAt } : { success: true }
+}
+
+function parseSessionFailure(value: Record<string, unknown>): { ok: false; error: string } {
+	return {
+		ok: false,
+		error: typeof value['error'] === 'string' ? value['error'] : 'Session request failed'
+	}
+}
+
+function parseSessionSummary(value: unknown): AuthSessionSummary {
+	if (!isRecord(value)) throw new Error('Invalid authentication response')
+	const id = value['id']
+	const userId = value['userId']
+	const expiresAt = value['expiresAt']
+	const createdAt = value['createdAt']
+	const lastActiveAt = value['lastActiveAt']
+	const ip = value['ip']
+	const userAgent = value['userAgent']
+	const current = value['current']
+	if (
+		typeof id !== 'string' ||
+		typeof userId !== 'string' ||
+		typeof expiresAt !== 'string' ||
+		(createdAt !== null && typeof createdAt !== 'string') ||
+		(lastActiveAt !== null && typeof lastActiveAt !== 'string') ||
+		(ip !== null && typeof ip !== 'string') ||
+		(userAgent !== null && typeof userAgent !== 'string') ||
+		typeof current !== 'boolean'
+	) {
+		throw new Error('Invalid authentication response')
+	}
+	return {
+		id,
+		userId,
+		expiresAt,
+		createdAt,
+		lastActiveAt,
+		ip,
+		userAgent,
+		current
+	}
+}
+
+function mergeHeaders(
+	defaults: HeadersInit | undefined,
+	overrides: HeadersInit | undefined
+): Headers {
+	const headers = new Headers(defaults)
+	for (const [name, value] of new Headers(overrides)) headers.set(name, value)
+	return headers
 }
 
 function decodeBase64url(value: string): Uint8Array {
@@ -126,28 +261,39 @@ export function createAuthClient({
 	baseUrl = '',
 	csrf = {},
 	endpoints = {},
-	fetcher = fetch
+	fetcher = fetch,
+	headers
 }: CreateAuthClientOptions = {}) {
+	const defaultEndpoint = (path: string) => resolveAuthRoutePath('/auth', path)
 	const resolved = {
-		magicLinkRequest: endpoints.magicLinkRequest || '/auth/magic',
-		magicLinkVerify: endpoints.magicLinkVerify || '/auth/magic/verify',
-		passkeyRegisterOptions: endpoints.passkeyRegisterOptions || '/auth/passkey/register/options',
-		passkeyRegisterVerify: endpoints.passkeyRegisterVerify || '/auth/passkey/register/verify',
-		passkeyLoginOptions: endpoints.passkeyLoginOptions || '/auth/passkey/login/options',
-		passkeyLoginVerify: endpoints.passkeyLoginVerify || '/auth/passkey/login/verify',
-		mfaStatus: endpoints.mfaStatus || '/auth/mfa/status',
-		mfaEnroll: endpoints.mfaEnroll || '/auth/mfa/enroll',
-		mfaVerify: endpoints.mfaVerify || '/auth/mfa/verify',
-		mfaDisable: endpoints.mfaDisable || '/auth/mfa/disable',
-		mfaBackupCode: endpoints.mfaBackupCode || '/auth/mfa/backup-code',
-		sessions: endpoints.sessions || '/auth/sessions'
+		magicLinkRequest: endpoints.magicLinkRequest || defaultEndpoint(AUTH_ROUTE_PATHS.magicLink),
+		magicLinkVerify: endpoints.magicLinkVerify || defaultEndpoint(AUTH_ROUTE_PATHS.magicLinkVerify),
+		passkeyRegisterOptions:
+			endpoints.passkeyRegisterOptions || defaultEndpoint(AUTH_ROUTE_PATHS.passkeyRegisterOptions),
+		passkeyRegisterVerify:
+			endpoints.passkeyRegisterVerify || defaultEndpoint(AUTH_ROUTE_PATHS.passkeyRegisterVerify),
+		passkeyLoginOptions:
+			endpoints.passkeyLoginOptions || defaultEndpoint(AUTH_ROUTE_PATHS.passkeyLoginOptions),
+		passkeyLoginVerify:
+			endpoints.passkeyLoginVerify || defaultEndpoint(AUTH_ROUTE_PATHS.passkeyLoginVerify),
+		mfaStatus: endpoints.mfaStatus || defaultEndpoint(AUTH_ROUTE_PATHS.mfaStatus),
+		mfaEnroll: endpoints.mfaEnroll || defaultEndpoint(AUTH_ROUTE_PATHS.mfaEnroll),
+		mfaVerify: endpoints.mfaVerify || defaultEndpoint(AUTH_ROUTE_PATHS.mfaVerify),
+		mfaDisable: endpoints.mfaDisable || defaultEndpoint(AUTH_ROUTE_PATHS.mfaDisable),
+		mfaBackupCode: endpoints.mfaBackupCode || defaultEndpoint(AUTH_ROUTE_PATHS.mfaBackupCode),
+		mfaStepUp: endpoints.mfaStepUp || defaultEndpoint(AUTH_ROUTE_PATHS.mfaStepUp),
+		sessions: endpoints.sessions || defaultEndpoint(AUTH_ROUTE_PATHS.sessions),
+		sessionRevoke:
+			endpoints.sessionRevoke || endpoints.sessions || defaultEndpoint(AUTH_ROUTE_PATHS.sessions)
 	}
 
 	const jsonHeaders = { 'content-type': 'application/json' }
 	const withBase = (path: string) => `${baseUrl}${path}`
+	const configuredFetcher: typeof fetch = (input, init = {}) =>
+		fetcher(input, { ...init, headers: mergeHeaders(headers, init.headers) })
 	const authFetch = createCsrfFetch({
 		...csrf,
-		fetch: fetcher
+		fetch: configuredFetcher
 	})
 
 	return {
@@ -229,65 +375,126 @@ export function createAuthClient({
 			return verifyRes.json()
 		},
 
-		async getMfaStatus() {
+		async getMfaStatus(): Promise<MfaStatusResult> {
 			const response = await authFetch(withBase(resolved.mfaStatus), {
 				method: 'GET'
 			})
-			return response.json()
+			const value = await readJsonRecord(response)
+			if (!requireSuccessFlag(value)) return parseFailure(value)
+			const status = value['status']
+			if (
+				!isRecord(status) ||
+				typeof status['enabled'] !== 'boolean' ||
+				(status['enabledAt'] !== null && typeof status['enabledAt'] !== 'string') ||
+				typeof status['backupCodeCount'] !== 'number'
+			) {
+				throw new Error('Invalid authentication response')
+			}
+			return {
+				success: true,
+				status: {
+					enabled: status['enabled'],
+					enabledAt: status['enabledAt'],
+					backupCodeCount: status['backupCodeCount']
+				}
+			}
 		},
 
-		async enrollMfa() {
+		async enrollMfa(): Promise<MfaEnrollmentResult> {
 			const response = await authFetch(withBase(resolved.mfaEnroll), {
 				method: 'POST'
 			})
-			return response.json()
+			const value = await readJsonRecord(response)
+			if (!requireSuccessFlag(value)) return parseFailure(value)
+			const backupCodes = value['backupCodes']
+			if (
+				typeof value['secret'] !== 'string' ||
+				typeof value['otpauthUrl'] !== 'string' ||
+				!Array.isArray(backupCodes) ||
+				!backupCodes.every((code): code is string => typeof code === 'string')
+			) {
+				throw new Error('Invalid authentication response')
+			}
+			return {
+				success: true,
+				secret: value['secret'],
+				otpauthUrl: value['otpauthUrl'],
+				backupCodes
+			}
 		},
 
-		async verifyMfa({ token }: { token: string }) {
+		async verifyMfa({ token }: { token: string }): Promise<MfaActionResult> {
 			const form = new FormData()
 			form.set('token', token)
 			const response = await authFetch(withBase(resolved.mfaVerify), {
 				method: 'POST',
 				body: form
 			})
-			return response.json()
+			return parseMfaAction(await readJsonRecord(response))
 		},
 
-		async disableMfa() {
+		async disableMfa({
+			token,
+			backupCode
+		}: { token?: string; backupCode?: string } = {}): Promise<MfaActionResult> {
+			const form = new FormData()
+			if (token) form.set('token', token)
+			if (backupCode) form.set('backupCode', backupCode)
 			const response = await authFetch(withBase(resolved.mfaDisable), {
-				method: 'POST'
+				method: 'POST',
+				body: form
 			})
-			return response.json()
+			return parseMfaAction(await readJsonRecord(response))
 		},
 
-		async useMfaBackupCode({ code }: { code: string }) {
+		async stepUpMfa({
+			token,
+			backupCode
+		}: { token?: string; backupCode?: string } = {}): Promise<MfaActionResult> {
+			const form = new FormData()
+			if (token) form.set('token', token)
+			if (backupCode) form.set('backupCode', backupCode)
+			const response = await authFetch(withBase(resolved.mfaStepUp), {
+				method: 'POST',
+				body: form
+			})
+			return parseMfaAction(await readJsonRecord(response))
+		},
+
+		async useMfaBackupCode({ code }: { code: string }): Promise<MfaActionResult> {
 			const form = new FormData()
 			form.set('code', code)
 			const response = await authFetch(withBase(resolved.mfaBackupCode), {
 				method: 'POST',
 				body: form
 			})
-			return response.json()
+			return parseMfaAction(await readJsonRecord(response))
 		},
 
-		async listSessions() {
+		async listSessions(): Promise<SessionListResult> {
 			const response = await authFetch(withBase(resolved.sessions), {
 				method: 'GET'
 			})
-			return response.json()
+			const value = await readJsonRecord(response)
+			if (typeof value['ok'] !== 'boolean') throw new Error('Invalid authentication response')
+			if (!value['ok']) return parseSessionFailure(value)
+			if (!Array.isArray(value['sessions'])) throw new Error('Invalid authentication response')
+			return { ok: true, sessions: value['sessions'].map(parseSessionSummary) }
 		},
 
 		async revokeSession({
 			sessionId,
 			all,
 			others
-		}: { sessionId?: string; all?: boolean; others?: boolean } = {}) {
-			const response = await authFetch(withBase(resolved.sessions), {
+		}: { sessionId?: string; all?: boolean; others?: boolean } = {}): Promise<SessionActionResult> {
+			const response = await authFetch(withBase(resolved.sessionRevoke), {
 				method: 'POST',
 				headers: jsonHeaders,
 				body: JSON.stringify({ sessionId, all, others })
 			})
-			return response.json()
+			const value = await readJsonRecord(response)
+			if (typeof value['ok'] !== 'boolean') throw new Error('Invalid authentication response')
+			return value['ok'] ? { ok: true } : parseSessionFailure(value)
 		}
 	}
 }

@@ -181,6 +181,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			'mfa.verify': { csrf: merged.csrf?.mode ?? 'optional' },
 			'mfa.disable': { csrf: merged.csrf?.mode ?? 'optional' },
 			'mfa.backup_code': { csrf: merged.csrf?.mode ?? 'optional' },
+			'mfa.step_up': { csrf: merged.csrf?.mode ?? 'optional' },
 			'sessions.list': { csrf: 'off' },
 			'sessions.revoke': { csrf: merged.csrf?.mode ?? 'optional' }
 		}
@@ -273,6 +274,11 @@ export function applyPolicies(handlers: AuthHandlers, security: ResolvedSecurity
 			backupCode: applySecurityPolicy({
 				handler: handlers.mfa.backupCode,
 				routeId: 'mfa.backup_code',
+				settings: security
+			}),
+			stepUp: applySecurityPolicy({
+				handler: handlers.mfa.stepUp,
+				routeId: 'mfa.step_up',
 				settings: security
 			})
 		}

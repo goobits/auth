@@ -18,6 +18,7 @@ import {
 	createMfaEnrollHandler,
 	createMfaLoginVerifyHandler,
 	createMfaStatusHandler,
+	createMfaStepUpHandler,
 	createMfaVerifyHandler
 } from '../../src/handlers/mfa.ts'
 import type { MfaStore } from '../../src/handlers/mfa.ts'
@@ -342,5 +343,104 @@ describe('MFA handlers', () => {
 		)
 		expect(replay.success).toBe(false)
 		expect(sessionAdapter.createSession).toHaveBeenCalledTimes(1)
+	})
+
+	it('rotates the session after step-up while preserving primary-authentication time', async () => {
+		const primaryAuthenticatedAt = new Date('2026-07-15T10:00:00.000Z')
+		const store = createStore()
+		vi.mocked(totp.verifyTOTP).mockResolvedValue(true)
+		const sessionAdapter = {
+			createSession: vi.fn(async (userId: string, metadata = {}) => ({
+				id: 'replacement-session',
+				userId,
+				expiresAt: new Date(Date.now() + 60_000),
+				...metadata
+			})),
+			invalidateSession: vi.fn(async () => undefined),
+			setSessionCookie: vi.fn()
+		}
+		const handler = createMfaStepUpHandler({
+			getUserId: () => 'u1',
+			store,
+			sessionAdapter
+		})
+		const event = createEvent({
+			locals: {
+				user: { id: 'u1' },
+				session: {
+					id: 'original-session',
+					userId: 'u1',
+					expiresAt: new Date(Date.now() + 60_000),
+					createdAt: primaryAuthenticatedAt,
+					ip: '192.0.2.10'
+				}
+			},
+			form: { token: '123456' }
+		})
+
+		await expect(handler(event)).resolves.toMatchObject({
+			success: true,
+			mfaVerifiedAt: expect.any(Date)
+		})
+		expect(sessionAdapter.createSession).toHaveBeenCalledWith(
+			'u1',
+			expect.objectContaining({
+				createdAt: primaryAuthenticatedAt,
+				mfaVerifiedAt: expect.any(Date),
+				ip: '192.0.2.10'
+			})
+		)
+		expect(sessionAdapter.invalidateSession).toHaveBeenCalledWith('original-session')
+		expect(sessionAdapter.setSessionCookie).toHaveBeenCalledWith(
+			event.cookies,
+			expect.objectContaining({ id: 'replacement-session' })
+		)
+	})
+
+	it('rotates the session after enrollment activation', async () => {
+		const primaryAuthenticatedAt = new Date('2026-07-15T10:00:00.000Z')
+		const store = createStore()
+		vi.mocked(totp.verifyTOTP).mockResolvedValue(true)
+		const sessionAdapter = {
+			createSession: vi.fn(async (userId: string, metadata = {}) => ({
+				id: 'replacement-session',
+				userId,
+				expiresAt: new Date(Date.now() + 60_000),
+				...metadata
+			})),
+			invalidateSession: vi.fn(async () => undefined),
+			setSessionCookie: vi.fn()
+		}
+		const handler = createMfaVerifyHandler({
+			getUserId: () => 'u1',
+			store,
+			sessionAdapter
+		})
+		const event = createEvent({
+			locals: {
+				user: { id: 'u1' },
+				session: {
+					id: 'original-session',
+					userId: 'u1',
+					expiresAt: new Date(Date.now() + 60_000),
+					createdAt: primaryAuthenticatedAt
+				}
+			},
+			form: { token: '123456' }
+		})
+
+		await expect(handler(event)).resolves.toMatchObject({
+			success: true,
+			mfaVerifiedAt: expect.any(Date)
+		})
+		expect(store.activateEnrollment).toHaveBeenCalledWith('u1')
+		expect(sessionAdapter.createSession).toHaveBeenCalledWith(
+			'u1',
+			expect.objectContaining({
+				createdAt: primaryAuthenticatedAt,
+				mfaVerifiedAt: expect.any(Date)
+			})
+		)
+		expect(sessionAdapter.invalidateSession).toHaveBeenCalledWith('original-session')
 	})
 })

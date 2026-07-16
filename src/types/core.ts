@@ -18,6 +18,8 @@ export type Session = {
 
 /** Describes the auth domain record used for session metadata. */
 export type SessionMetadata = Record<string, unknown> & {
+	/** Trusted primary-authentication time preserved across session rotation. */
+	createdAt?: Date
 	rememberMe?: boolean
 	ip?: string
 	userAgent?: string

@@ -5,7 +5,7 @@ import { AuthAdapterCapabilityError } from '../../errors/AuthPrincipalResolution
 import type { Session, User } from '../../types/index.ts'
 import { generateRandomUUID } from '../../utils/crypto.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
-import { parseMfaVerifiedAt } from './sessionAssurance.ts'
+import { parseMfaVerifiedAt, parseSessionTimestamp } from './sessionAssurance.ts'
 
 type KVNamespaceLike = {
 	put: (key: string, value: string, options?: { expirationTtl?: number }) => Promise<void>
@@ -20,6 +20,7 @@ type KVNamespaceLike = {
 type KVSessionRecord = {
 	userId: string
 	expiresAt: string
+	createdAt?: string
 	mfaVerifiedAt?: string
 }
 
@@ -32,6 +33,7 @@ function isKVSessionRecord(
 		typeof value['userId'] === 'string' &&
 		'expiresAt' in value &&
 		typeof value['expiresAt'] === 'string' &&
+		(!('createdAt' in value) || typeof value['createdAt'] === 'string') &&
 		(!('mfaVerifiedAt' in value) || typeof value['mfaVerifiedAt'] === 'string')
 	)
 }
@@ -86,16 +88,18 @@ export class KVSessionAdapter extends SessionAdapter {
 	async createSession(userId: string, metadata: Record<string, unknown> = {}) {
 		const sessionId = await generateRandomUUID()
 		const expiresAt = new Date(Date.now() + this.sessionLifetime)
+		const createdAt = parseSessionTimestamp(metadata['createdAt']) ?? new Date()
 		const mfaVerifiedAt = parseMfaVerifiedAt(metadata['mfaVerifiedAt'])
 		const payload = {
 			userId,
 			expiresAt: expiresAt.toISOString(),
+			createdAt: createdAt.toISOString(),
 			...(mfaVerifiedAt ? { mfaVerifiedAt: mfaVerifiedAt.toISOString() } : {})
 		}
 		await this.namespace.put(this._key(sessionId), JSON.stringify(payload), {
 			expirationTtl: Math.ceil(this.sessionLifetime / 1000)
 		})
-		return { id: sessionId, userId, expiresAt, ...metadata, mfaVerifiedAt }
+		return { id: sessionId, userId, expiresAt, ...metadata, createdAt, mfaVerifiedAt }
 	}
 
 	async validateSession(sessionId: string): Promise<{
@@ -137,6 +141,7 @@ export class KVSessionAdapter extends SessionAdapter {
 					JSON.stringify({
 						userId: raw.userId,
 						expiresAt: newExpiresAt.toISOString(),
+						...(raw.createdAt ? { createdAt: raw.createdAt } : {}),
 						...(raw.mfaVerifiedAt ? { mfaVerifiedAt: raw.mfaVerifiedAt } : {})
 					}),
 					{ expirationTtl: Math.ceil(this.sessionLifetime / 1000) }
@@ -161,12 +166,14 @@ export class KVSessionAdapter extends SessionAdapter {
 			}
 		}
 
+		const createdAt = parseSessionTimestamp(raw.createdAt)
 		return {
 			session: {
 				id: sessionId,
 				userId: raw.userId,
 				expiresAt: newExpiresAt,
 				fresh,
+				...(createdAt ? { createdAt } : {}),
 				mfaVerifiedAt: parseMfaVerifiedAt(raw.mfaVerifiedAt)
 			},
 			user
@@ -209,10 +216,12 @@ export class KVSessionAdapter extends SessionAdapter {
 			const raw = isKVSessionRecord(rawValue) ? rawValue : null
 			if (!raw) continue
 			if (raw.userId !== userId) continue
+			const createdAt = parseSessionTimestamp(raw.createdAt)
 			sessions.push({
 				id: key.name.replace(`${this.keyPrefix}:`, ''),
 				userId: raw.userId,
 				expiresAt: new Date(raw.expiresAt),
+				...(createdAt ? { createdAt } : {}),
 				mfaVerifiedAt: parseMfaVerifiedAt(raw.mfaVerifiedAt)
 			})
 		}

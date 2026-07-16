@@ -17,7 +17,7 @@ import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateL
  * @param {import('../providers/CredentialsProvider.ts').CredentialsProvider} config.credentialsProvider - Credentials provider
  * @param {import('../adapters/database/UserAdapter.ts').UserAdapter} config.userAdapter - User adapter
  * @param {import('../adapters/session/SessionAdapter.ts').SessionAdapter} config.sessionAdapter - Session adapter
- * @param {Function} [config.onSignin] - Callback after successful signin (user) => Promise<void>
+ * @param {Function} [config.onSignin] - Callback after successful credential validation
  * @param {Object} [config.csrf] - CSRF validation config
  * @param {Function} [config.csrf.validate] - Async function (event) => boolean
  * @param {string} [config.csrf.errorMessage] - Error message for invalid CSRF
@@ -30,11 +30,34 @@ import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateL
  * @param {boolean} [config.allowBoth] - Allow email + identifier fallback
  * @returns {Function} SvelteKit request handler
  */
+export type SigninHookContext = {
+	event: RequestEventLike
+	formData: FormData
+	rememberMe: boolean
+	sessionMetadata: SessionMetadata
+}
+
+export type SigninDeniedResult = {
+	allowed: false
+	error: string
+	code?: string
+	status?: number
+}
+
+export type SigninHookResult = SigninDeniedResult | void
+
 export function createSigninHandler(config: {
 	credentialsProvider: Pick<CredentialsProvider, 'authenticate'>
 	passwordCredentialAdapter: PasswordCredentialAdapter
 	sessionAdapter: SessionAdapter
-	onSignin?: (user: User | null) => Promise<void> | void
+	onSignin?: (
+		user: User | null,
+		context: SigninHookContext
+	) => Promise<SigninHookResult> | SigninHookResult
+	authorizeSignin?: (
+		user: User,
+		context: SigninHookContext
+	) => Promise<SigninHookResult> | SigninHookResult
 	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
 	rateLimit?: HandlerRateLimitConfig
 	redirectTo?: string
@@ -55,6 +78,7 @@ export function createSigninHandler(config: {
 		passwordCredentialAdapter,
 		sessionAdapter,
 		onSignin,
+		authorizeSignin,
 		csrf,
 		rateLimit,
 		redirectTo = '/',
@@ -143,11 +167,27 @@ export function createSigninHandler(config: {
 				? { ...(await getSessionMetadata(event, user, remember)) }
 				: {}
 			delete sessionMetadata.mfaVerifiedAt
+			delete sessionMetadata.createdAt
 			sessionMetadata.rememberMe = remember
 			const ip = event.getClientAddress?.()
 			if (ip) sessionMetadata['ip'] = ip
 			const userAgent = event.request.headers.get('user-agent')
 			if (userAgent) sessionMetadata['userAgent'] = userAgent
+			const hookContext: SigninHookContext = {
+				event,
+				formData,
+				rememberMe: remember,
+				sessionMetadata: { ...sessionMetadata }
+			}
+			const authorization = await authorizeSignin?.(user, hookContext)
+			if (authorization?.allowed === false) {
+				return {
+					error: authorization.error,
+					success: false,
+					...(authorization.code ? { code: authorization.code } : {}),
+					...(authorization.status ? { status: authorization.status } : {})
+				}
+			}
 			if (mfa) {
 				const challenge = await beginMfaLoginChallenge({
 					event,
@@ -160,7 +200,15 @@ export function createSigninHandler(config: {
 
 			// Call onSignin hook if provided
 			if (onSignin) {
-				await onSignin(safeUser)
+				const hookResult = await onSignin(safeUser, hookContext)
+				if (hookResult?.allowed === false) {
+					return {
+						error: hookResult.error,
+						success: false,
+						...(hookResult.code ? { code: hookResult.code } : {}),
+						...(hookResult.status ? { status: hookResult.status } : {})
+					}
+				}
 			}
 
 			// Create session

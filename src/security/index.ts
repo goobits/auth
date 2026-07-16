@@ -7,8 +7,15 @@ export type {
 } from './alerts.ts'
 export { createSecurityAlertObserver } from './alerts.ts'
 export type { AuthAuditEvent } from './audit.ts'
-export { auditAuthEvent } from './audit.ts'
-export { requireAuthenticated, requireOwnership, requireAuthRole } from './authorize.ts'
+export { auditAuthEvent, createAuthEventAuditEmitter } from './audit.ts'
+export {
+	hasRecentMfaVerification,
+	hasRecentPrimaryAuthentication,
+	requireAuthenticated,
+	requireOwnership,
+	requireAuthRole,
+	type SessionAssuranceWindow
+} from './authorize.ts'
 export {
 	CSRF_COOKIE_NAME,
 	CSRF_HEADER_NAME,

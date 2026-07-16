@@ -141,13 +141,40 @@ export function createPasswordResetConfirmHandler(config: {
 		passwordHash: string
 	}) => Promise<{ userId: string } | null>
 	redirectTo?: string
+	csrf?: { validate?: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
+	rateLimit?: HandlerRateLimitConfig
 	logger?: Logger
 }) {
-	const { credentialsProvider, completePasswordReset, redirectTo = '/sign-in', logger } = config
+	const {
+		credentialsProvider,
+		completePasswordReset,
+		redirectTo = '/sign-in',
+		csrf,
+		rateLimit,
+		logger
+	} = config
 
 	const log = resolveLogger(logger)
 
 	return async (event: RequestEventLike) => {
+		if (csrf?.validate && !(await csrf.validate(event))) {
+			return {
+				error: csrf.errorMessage || 'Invalid CSRF token',
+				success: false
+			}
+		}
+
+		if (rateLimit?.check) {
+			const key = resolveHandlerRateLimitKey(event, rateLimit)
+			const result = await rateLimit.check(key)
+			if (!result?.allowed) {
+				return {
+					error: 'Too many attempts. Try again later.',
+					success: false
+				}
+			}
+		}
+
 		const formData = await event.request.formData()
 		const token = formData.get('token')?.toString()
 		const newPassword = formData.get('password')?.toString()

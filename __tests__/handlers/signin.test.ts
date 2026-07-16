@@ -66,6 +66,50 @@ describe('createSigninHandler', () => {
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
 
+	it('provides request context to the existing hook and honors a typed denial', async () => {
+		const user = { id: 'u1', email: 'a@b.com', emailVerified: false }
+		const onSignin = vi.fn().mockResolvedValue({
+			allowed: false,
+			error: 'Verify your email before signing in',
+			code: 'email_unverified',
+			status: 403
+		})
+		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
+		const handler = createSigninHandler({
+			credentialsProvider: {
+				authenticate: vi.fn().mockResolvedValue({ user, valid: true })
+			},
+			passwordCredentialAdapter: {},
+			sessionAdapter,
+			redirectTo: '',
+			onSignin
+		})
+		const event = createRequestEvent({
+			url: 'http://localhost/signin',
+			method: 'POST',
+			form: { email: 'a@b.com', password: 'pw', invite: 'invite-a', remember: 'on' }
+		})
+
+		const result = await handler(event)
+
+		expect(result).toEqual({
+			error: 'Verify your email before signing in',
+			success: false,
+			code: 'email_unverified',
+			status: 403
+		})
+		expect(onSignin).toHaveBeenCalledWith(
+			expect.objectContaining({ id: 'u1' }),
+			expect.objectContaining({
+				event,
+				rememberMe: true,
+				sessionMetadata: expect.objectContaining({ rememberMe: true })
+			})
+		)
+		expect(onSignin.mock.calls[0]?.[1].formData.get('invite')).toBe('invite-a')
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
+	})
+
 	it('keeps security-owned session metadata authoritative', async () => {
 		const credentialsProvider = {
 			authenticate: vi.fn().mockResolvedValue({ user: { id: 'u1' }, valid: true })
@@ -195,5 +239,73 @@ describe('createSigninHandler', () => {
 		expect(result).toEqual({ success: true, twoFactorRequired: true })
 		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
 		expect(event.cookies.get('goobits_mfa_login')).toBeTruthy()
+	})
+
+	it('runs application authorization before creating an MFA challenge', async () => {
+		const authorizeSignin = vi.fn().mockResolvedValue({
+			allowed: false,
+			error: 'Verify your email before signing in',
+			code: 'email_unverified',
+			status: 403
+		})
+		const verificationTokenAdapter = {
+			create: vi.fn(),
+			deleteByUserAndType: vi.fn(),
+			findByToken: vi.fn(),
+			deleteById: vi.fn()
+		}
+		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
+		const handler = createSigninHandler({
+			credentialsProvider: {
+				authenticate: vi.fn().mockResolvedValue({
+					user: {
+						id: 'u1',
+						email: 'a@b.com',
+						name: 'User',
+						avatar: null,
+						emailVerified: false
+					},
+					valid: true
+				})
+			},
+			passwordCredentialAdapter: {},
+			sessionAdapter,
+			redirectTo: '',
+			authorizeSignin,
+			mfa: {
+				store: {
+					activateEnrollment: vi.fn(),
+					beginEnrollment: vi.fn(),
+					consumeBackupCode: vi.fn(),
+					disableMfa: vi.fn(),
+					getBackupCodes: vi.fn(),
+					getSecret: vi.fn(),
+					getStatus: vi.fn(async () => ({
+						enabled: true,
+						enabledAt: new Date(),
+						backupCodeCount: 8
+					}))
+				},
+				verificationTokenAdapter
+			}
+		})
+
+		await expect(
+			handler(
+				createRequestEvent({
+					url: 'http://localhost/signin',
+					method: 'POST',
+					form: { email: 'a@b.com', password: 'pw' }
+				})
+			)
+		).resolves.toEqual({
+			error: 'Verify your email before signing in',
+			success: false,
+			code: 'email_unverified',
+			status: 403
+		})
+		expect(authorizeSignin).toHaveBeenCalledOnce()
+		expect(verificationTokenAdapter.create).not.toHaveBeenCalled()
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
 	})
 })

@@ -18,9 +18,9 @@ import type {
 } from '../database/PasswordCredentialAdapter.ts'
 import { UserAdapter } from '../database/UserAdapter.ts'
 import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
-import { MfaAdapter } from '../mfa/MfaAdapter.ts'
+import { MfaAdapter, type MfaSecretCodec } from '../mfa/MfaAdapter.ts'
 import { SessionAdapter } from '../session/SessionAdapter.ts'
-import { parseMfaVerifiedAt } from '../session/sessionAssurance.ts'
+import { parseMfaVerifiedAt, parseSessionTimestamp } from '../session/sessionAssurance.ts'
 import { generateSessionId } from '../session/sessionId.ts'
 import {
 	VerificationTokenAdapter,
@@ -36,11 +36,7 @@ export type PgPoolLike = {
 	): Promise<{ rows: T[] }>
 }
 
-/** Encrypts and decrypts PostgreSQL MFA secrets with application-owned key management. */
-export type MfaSecretCodec = {
-	encrypt(secret: string, userId: string): Promise<string>
-	decrypt(ciphertext: string, userId: string): Promise<string>
-}
+export type { MfaSecretCodec } from '../mfa/MfaAdapter.ts'
 
 type UserRow = {
 	avatar: string | null
@@ -337,12 +333,13 @@ export class PgSessionAdapter extends SessionAdapter {
 
 	async createSession(userId: string, metadata: Record<string, unknown> = {}): Promise<Session> {
 		const id = generateSessionId(24)
+		const createdAt = parseSessionTimestamp(metadata['createdAt']) ?? new Date()
 		const expiresAt = new Date(Date.now() + this.#sessionLifetimeMs)
 		const row = (
 			await this.#db.query<SessionRow>(
 				`
-			INSERT INTO auth_sessions (id, user_id, expires_at, ip, user_agent, fingerprint, mfa_verified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			INSERT INTO auth_sessions (id, user_id, expires_at, ip, user_agent, fingerprint, mfa_verified_at, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			RETURNING *
 		`,
 				[
@@ -352,7 +349,8 @@ export class PgSessionAdapter extends SessionAdapter {
 					stringValue(metadata['ip']),
 					stringValue(metadata['userAgent']),
 					stringValue(metadata['fingerprint']),
-					parseMfaVerifiedAt(metadata['mfaVerifiedAt'])
+					parseMfaVerifiedAt(metadata['mfaVerifiedAt']),
+					createdAt
 				]
 			)
 		).rows[0]

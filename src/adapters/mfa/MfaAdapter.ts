@@ -1,5 +1,11 @@
 import type { MfaStatus } from '../../types/core.ts'
 
+/** Application key-management boundary used by persistent MFA adapters. */
+export type MfaSecretCodec = {
+	encrypt(secret: string, userId: string): Promise<string>
+	decrypt(ciphertext: string, userId: string): Promise<string>
+}
+
 /**
  * Stores TOTP secrets and backup-code hashes for MFA enrollment.
  */

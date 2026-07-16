@@ -32,31 +32,49 @@
 	"exports": {
 		".": {
 			"types": "./dist/types/index.d.ts",
+			"workerd": "./dist/worker/index.js",
+			"worker": "./dist/worker/index.js",
+			"browser": "./dist/worker/index.js",
 			"node": "./dist/node/index.js",
 			"default": "./dist/worker/index.js"
 		},
 		"./adapters/database": {
 			"types": "./dist/types/adapters/database/index.d.ts",
+			"workerd": "./dist/worker/adapters/database/index.js",
+			"worker": "./dist/worker/adapters/database/index.js",
+			"browser": "./dist/worker/adapters/database/index.js",
 			"node": "./dist/node/adapters/database/index.js",
 			"default": "./dist/worker/adapters/database/index.js"
 		},
 		"./adapters/session": {
 			"types": "./dist/types/adapters/session/index.d.ts",
+			"workerd": "./dist/worker/adapters/session/index.js",
+			"worker": "./dist/worker/adapters/session/index.js",
+			"browser": "./dist/worker/adapters/session/index.js",
 			"node": "./dist/node/adapters/session/index.js",
 			"default": "./dist/worker/adapters/session/index.js"
 		},
 		"./adapters/oauth-token": {
 			"types": "./dist/types/adapters/oauth-token/index.d.ts",
+			"workerd": "./dist/worker/adapters/oauth-token/index.js",
+			"worker": "./dist/worker/adapters/oauth-token/index.js",
+			"browser": "./dist/worker/adapters/oauth-token/index.js",
 			"node": "./dist/node/adapters/oauth-token/index.js",
 			"default": "./dist/worker/adapters/oauth-token/index.js"
 		},
 		"./adapters/drizzle": {
 			"types": "./dist/types/adapters/drizzle/index.d.ts",
+			"workerd": "./dist/worker/adapters/drizzle/index.js",
+			"worker": "./dist/worker/adapters/drizzle/index.js",
+			"browser": "./dist/worker/adapters/drizzle/index.js",
 			"node": "./dist/node/adapters/drizzle/index.js",
 			"default": "./dist/worker/adapters/drizzle/index.js"
 		},
 		"./adapters/memory": {
 			"types": "./dist/types/adapters/memory/index.d.ts",
+			"workerd": "./dist/worker/adapters/memory/index.js",
+			"worker": "./dist/worker/adapters/memory/index.js",
+			"browser": "./dist/worker/adapters/memory/index.js",
 			"node": "./dist/node/adapters/memory/index.js",
 			"default": "./dist/worker/adapters/memory/index.js"
 		},
@@ -66,46 +84,73 @@
 		},
 		"./adapters/verification-token": {
 			"types": "./dist/types/adapters/verification-token/index.d.ts",
+			"workerd": "./dist/worker/adapters/verification-token/index.js",
+			"worker": "./dist/worker/adapters/verification-token/index.js",
+			"browser": "./dist/worker/adapters/verification-token/index.js",
 			"node": "./dist/node/adapters/verification-token/index.js",
 			"default": "./dist/worker/adapters/verification-token/index.js"
 		},
 		"./adapters/magic-link": {
 			"types": "./dist/types/adapters/magic-link/index.d.ts",
+			"workerd": "./dist/worker/adapters/magic-link/index.js",
+			"worker": "./dist/worker/adapters/magic-link/index.js",
+			"browser": "./dist/worker/adapters/magic-link/index.js",
 			"node": "./dist/node/adapters/magic-link/index.js",
 			"default": "./dist/worker/adapters/magic-link/index.js"
 		},
 		"./adapters/mfa": {
 			"types": "./dist/types/adapters/mfa/index.d.ts",
+			"workerd": "./dist/worker/adapters/mfa/index.js",
+			"worker": "./dist/worker/adapters/mfa/index.js",
+			"browser": "./dist/worker/adapters/mfa/index.js",
 			"node": "./dist/node/adapters/mfa/index.js",
 			"default": "./dist/worker/adapters/mfa/index.js"
 		},
 		"./adapters/webauthn": {
 			"types": "./dist/types/adapters/webauthn/index.d.ts",
+			"workerd": "./dist/worker/adapters/webauthn/index.js",
+			"worker": "./dist/worker/adapters/webauthn/index.js",
+			"browser": "./dist/worker/adapters/webauthn/index.js",
 			"node": "./dist/node/adapters/webauthn/index.js",
 			"default": "./dist/worker/adapters/webauthn/index.js"
 		},
 		"./providers": {
 			"types": "./dist/types/providers/index.d.ts",
+			"workerd": "./dist/worker/providers/index.js",
+			"worker": "./dist/worker/providers/index.js",
+			"browser": "./dist/worker/providers/index.js",
 			"node": "./dist/node/providers/index.js",
 			"default": "./dist/worker/providers/index.js"
 		},
 		"./password": {
 			"types": "./dist/types/password/index.d.ts",
+			"workerd": "./dist/worker/password/index.js",
+			"worker": "./dist/worker/password/index.js",
+			"browser": "./dist/worker/password/index.js",
 			"node": "./dist/node/password/index.js",
 			"default": "./dist/worker/password/index.js"
 		},
 		"./types": {
 			"types": "./dist/types/types/index.d.ts",
+			"workerd": "./dist/worker/types/index.js",
+			"worker": "./dist/worker/types/index.js",
+			"browser": "./dist/worker/types/index.js",
 			"node": "./dist/node/types/index.js",
 			"default": "./dist/worker/types/index.js"
 		},
 		"./mfa": {
 			"types": "./dist/types/mfa/index.d.ts",
+			"workerd": "./dist/worker/mfa/index.js",
+			"worker": "./dist/worker/mfa/index.js",
+			"browser": "./dist/worker/mfa/index.js",
 			"node": "./dist/node/mfa/index.js",
 			"default": "./dist/worker/mfa/index.js"
 		},
 		"./qr": {
 			"types": "./dist/types/qr/index.d.ts",
+			"workerd": "./dist/worker/qr/index.js",
+			"worker": "./dist/worker/qr/index.js",
+			"browser": "./dist/worker/qr/index.js",
 			"node": "./dist/node/qr/index.js",
 			"default": "./dist/worker/qr/index.js"
 		},
@@ -115,50 +160,80 @@
 		},
 		"./ui": {
 			"types": "./dist/types/ui/index.d.ts",
+			"workerd": "./dist/worker/ui/index.js",
+			"worker": "./dist/worker/ui/index.js",
+			"browser": "./dist/worker/ui/index.js",
 			"node": "./dist/node/ui/index.js",
 			"default": "./dist/worker/ui/index.js"
 		},
 		"./ui/theme.css": {
+			"workerd": "./dist/worker/ui/theme.css",
+			"worker": "./dist/worker/ui/theme.css",
+			"browser": "./dist/worker/ui/theme.css",
 			"node": "./dist/node/ui/theme.css",
 			"default": "./dist/worker/ui/theme.css"
 		},
 		"./security": {
 			"types": "./dist/types/security/index.d.ts",
+			"workerd": "./dist/worker/security/index.js",
+			"worker": "./dist/worker/security/index.js",
+			"browser": "./dist/worker/security/index.js",
 			"node": "./dist/node/security/index.js",
 			"default": "./dist/worker/security/index.js"
 		},
 		"./adapters": {
 			"types": "./dist/types/adapters/index.d.ts",
+			"workerd": "./dist/worker/adapters/index.js",
+			"worker": "./dist/worker/adapters/index.js",
+			"browser": "./dist/worker/adapters/index.js",
 			"node": "./dist/node/adapters/index.js",
 			"default": "./dist/worker/adapters/index.js"
 		},
 		"./handlers": {
 			"types": "./dist/types/handlers/index.d.ts",
+			"workerd": "./dist/worker/handlers/index.js",
+			"worker": "./dist/worker/handlers/index.js",
+			"browser": "./dist/worker/handlers/index.js",
 			"node": "./dist/node/handlers/index.js",
 			"default": "./dist/worker/handlers/index.js"
 		},
 		"./login-context": {
 			"types": "./dist/types/login-context/index.d.ts",
+			"workerd": "./dist/worker/login-context/index.js",
+			"worker": "./dist/worker/login-context/index.js",
+			"browser": "./dist/worker/login-context/index.js",
 			"node": "./dist/node/login-context/index.js",
 			"default": "./dist/worker/login-context/index.js"
 		},
 		"./client": {
 			"types": "./dist/types/client/index.d.ts",
+			"workerd": "./dist/worker/client/index.js",
+			"worker": "./dist/worker/client/index.js",
+			"browser": "./dist/worker/client/index.js",
 			"node": "./dist/node/client/index.js",
 			"default": "./dist/worker/client/index.js"
 		},
 		"./testing": {
 			"types": "./dist/types/testing/index.d.ts",
+			"workerd": "./dist/worker/testing/index.js",
+			"worker": "./dist/worker/testing/index.js",
+			"browser": "./dist/worker/testing/index.js",
 			"node": "./dist/node/testing/index.js",
 			"default": "./dist/worker/testing/index.js"
 		},
 		"./errors": {
 			"types": "./dist/types/errors/index.d.ts",
+			"workerd": "./dist/worker/errors/index.js",
+			"worker": "./dist/worker/errors/index.js",
+			"browser": "./dist/worker/errors/index.js",
 			"node": "./dist/node/errors/index.js",
 			"default": "./dist/worker/errors/index.js"
 		},
 		"./verification": {
 			"types": "./dist/types/verification/index.d.ts",
+			"workerd": "./dist/worker/verification/index.js",
+			"worker": "./dist/worker/verification/index.js",
+			"browser": "./dist/worker/verification/index.js",
 			"node": "./dist/node/verification/index.js",
 			"default": "./dist/worker/verification/index.js"
 		}

@@ -2,7 +2,7 @@ import type { Cookies } from '@sveltejs/kit'
 
 import type { Session, User } from '../../types/index.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
-import { parseMfaVerifiedAt } from './sessionAssurance.ts'
+import { parseMfaVerifiedAt, parseSessionTimestamp } from './sessionAssurance.ts'
 import { generateSessionId } from './sessionId.ts'
 
 type D1Value = string | number | boolean | null
@@ -25,6 +25,8 @@ type D1SessionOptions = {
 	sessionRefreshThreshold?: number
 	cookieName?: string
 	secureCookies?: boolean
+	/** Storage encoding for assurance and activity timestamps. Expiry remains ISO text. */
+	timestampFormat?: 'iso' | 'unix-seconds'
 	sanitizeUser?: (user: User | null) => User | null
 	columns?: Partial<{
 		sessionId: string
@@ -61,6 +63,7 @@ export class D1SessionAdapter extends SessionAdapter {
 	// Exposed for auth hook resolution (`createAuth` reads adapter.cookieName).
 	cookieName: string
 	private secureCookies: boolean
+	private timestampFormat: 'iso' | 'unix-seconds'
 	private sanitizeUser: (user: User | null) => User | null
 	private columns: {
 		sessionId: string
@@ -94,6 +97,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		this.sessionRefreshThreshold = options.sessionRefreshThreshold || this.sessionLifetime / 2
 		this.cookieName = options.cookieName || 'session'
 		this.secureCookies = options.secureCookies !== false
+		this.timestampFormat = options.timestampFormat ?? 'iso'
 		this.sanitizeUser = options.sanitizeUser || this._defaultSanitizeUser
 		this.columns = {
 			sessionId: options.columns?.sessionId || 'id',
@@ -101,10 +105,7 @@ export class D1SessionAdapter extends SessionAdapter {
 			expiresAt: options.columns?.expiresAt || 'expires_at',
 			createdAt: options.columns?.createdAt || null,
 			lastActiveAt: options.columns?.lastActiveAt || null,
-			mfaVerifiedAt:
-				options.columns?.mfaVerifiedAt === null
-					? null
-					: options.columns?.mfaVerifiedAt || 'mfa_verified_at',
+			mfaVerifiedAt: options.columns?.mfaVerifiedAt ?? null,
 			ip: options.columns?.ip || null,
 			userAgent: options.columns?.userAgent || null
 		}
@@ -130,29 +131,62 @@ export class D1SessionAdapter extends SessionAdapter {
 		return /^\d+$/.test(id) ? Number(id) : id
 	}
 
+	private _serializeTimestamp(value: Date): string | number {
+		return this.timestampFormat === 'unix-seconds'
+			? Math.floor(value.getTime() / 1000)
+			: value.toISOString()
+	}
+
 	async createSession(userId: string, metadata: Record<string, unknown> = {}) {
 		const sessionId = generateSessionId()
+		const createdAt = parseSessionTimestamp(metadata['createdAt']) ?? new Date()
 		const expiresAt = new Date(Date.now() + this.sessionLifetime)
 		const mfaVerifiedAt = parseMfaVerifiedAt(metadata['mfaVerifiedAt'])
 		const columns = [this.columns.sessionId, this.columns.userId, this.columns.expiresAt]
 		const values: D1Value[] = [sessionId, this._coerceDbId(userId), expiresAt.toISOString()]
 		if (this.columns.mfaVerifiedAt) {
 			columns.push(this.columns.mfaVerifiedAt)
-			values.push(mfaVerifiedAt?.toISOString() ?? null)
+			values.push(mfaVerifiedAt ? this._serializeTimestamp(mfaVerifiedAt) : null)
+		}
+		if (this.columns.createdAt) {
+			columns.push(this.columns.createdAt)
+			values.push(this._serializeTimestamp(createdAt))
+		}
+		if (this.columns.lastActiveAt) {
+			columns.push(this.columns.lastActiveAt)
+			values.push(this._serializeTimestamp(createdAt))
+		}
+		if (this.columns.ip) {
+			columns.push(this.columns.ip)
+			values.push(typeof metadata['ip'] === 'string' ? metadata['ip'] : null)
+		}
+		if (this.columns.userAgent) {
+			columns.push(this.columns.userAgent)
+			values.push(typeof metadata['userAgent'] === 'string' ? metadata['userAgent'] : null)
 		}
 		const placeholders = columns.map(() => '?').join(', ')
 		await this.db
 			.prepare(`INSERT INTO ${this.sessionsTable} (${columns.join(', ')}) VALUES (${placeholders})`)
 			.bind(...values)
 			.run()
-		return { id: sessionId, userId, expiresAt, ...metadata, mfaVerifiedAt }
+		return {
+			id: sessionId,
+			userId,
+			expiresAt,
+			...metadata,
+			createdAt,
+			lastActiveAt: createdAt,
+			mfaVerifiedAt
+		}
 	}
 
 	async validateSession(sessionId: string) {
+		const optionalSelection = (column: string | null, alias: string) =>
+			column ? `s.${column} as ${alias}` : `NULL as ${alias}`
 		const assuranceSelection = this.columns.mfaVerifiedAt
 			? `s.${this.columns.mfaVerifiedAt} as mfa_verified_at`
 			: 'NULL as mfa_verified_at'
-		const sql = `SELECT s.${this.columns.sessionId} as session_id, s.${this.columns.userId} as user_id, s.${this.columns.expiresAt} as expires_at, ${assuranceSelection}, u.*
+		const sql = `SELECT s.${this.columns.sessionId} as session_id, s.${this.columns.userId} as user_id, s.${this.columns.expiresAt} as expires_at, ${optionalSelection(this.columns.createdAt, 'session_created_at')}, ${optionalSelection(this.columns.lastActiveAt, 'last_active_at')}, ${optionalSelection(this.columns.ip, 'session_ip')}, ${optionalSelection(this.columns.userAgent, 'session_user_agent')}, ${assuranceSelection}, u.*
 		FROM ${this.sessionsTable} s
 		JOIN ${this.usersTable} u ON s.${this.columns.userId} = u.${this.userColumns.id}
 		WHERE s.${this.columns.sessionId} = ? LIMIT 1`
@@ -174,14 +208,22 @@ export class D1SessionAdapter extends SessionAdapter {
 		const shouldRefresh = Date.now() >= expiresAt.getTime() - this.sessionRefreshThreshold
 		let fresh = false
 		let newExpiresAt = expiresAt
+		let lastActiveAt = parseSessionTimestamp(row['last_active_at'])
 
 		if (shouldRefresh) {
 			newExpiresAt = new Date(Date.now() + this.sessionLifetime)
+			const activityUpdate = this.columns.lastActiveAt ? `, ${this.columns.lastActiveAt} = ?` : ''
+			const values: D1Value[] = [newExpiresAt.toISOString()]
+			if (this.columns.lastActiveAt) {
+				lastActiveAt = new Date()
+				values.push(this._serializeTimestamp(lastActiveAt))
+			}
+			values.push(sessionId)
 			await this.db
 				.prepare(
-					`UPDATE ${this.sessionsTable} SET ${this.columns.expiresAt} = ? WHERE ${this.columns.sessionId} = ?`
+					`UPDATE ${this.sessionsTable} SET ${this.columns.expiresAt} = ?${activityUpdate} WHERE ${this.columns.sessionId} = ?`
 				)
-				.bind(newExpiresAt.toISOString(), sessionId)
+				.bind(...values)
 				.run()
 			fresh = true
 		}
@@ -191,13 +233,18 @@ export class D1SessionAdapter extends SessionAdapter {
 		if (typeof userIdRaw !== 'string' && typeof userIdRaw !== 'number') {
 			return { session: null, user: null }
 		}
+		const createdAt = parseSessionTimestamp(row['session_created_at'])
 		return {
 			session: {
 				id: sessionId,
 				userId: String(userIdRaw),
 				expiresAt: newExpiresAt,
 				fresh,
-				mfaVerifiedAt: parseMfaVerifiedAt(row['mfa_verified_at'])
+				...(createdAt ? { createdAt } : {}),
+				lastActiveAt,
+				mfaVerifiedAt: parseMfaVerifiedAt(row['mfa_verified_at']),
+				ip: typeof row['session_ip'] === 'string' ? row['session_ip'] : null,
+				userAgent: typeof row['session_user_agent'] === 'string' ? row['session_user_agent'] : null
 			},
 			user
 		}
@@ -336,11 +383,20 @@ export class D1SessionAdapter extends SessionAdapter {
 			const expiresAt = new Date(expiresRaw)
 			if (Number.isNaN(expiresAt.getTime())) continue
 			const mfaVerifiedAtRaw = this.columns.mfaVerifiedAt ? row[this.columns.mfaVerifiedAt] : null
+			const createdAtRaw = this.columns.createdAt ? row[this.columns.createdAt] : null
+			const lastActiveAtRaw = this.columns.lastActiveAt ? row[this.columns.lastActiveAt] : null
+			const ipRaw = this.columns.ip ? row[this.columns.ip] : null
+			const userAgentRaw = this.columns.userAgent ? row[this.columns.userAgent] : null
+			const createdAt = parseSessionTimestamp(createdAtRaw)
 			sessions.push({
 				id: String(id),
 				userId: String(uid),
 				expiresAt,
-				mfaVerifiedAt: parseMfaVerifiedAt(mfaVerifiedAtRaw)
+				...(createdAt ? { createdAt } : {}),
+				lastActiveAt: parseSessionTimestamp(lastActiveAtRaw),
+				mfaVerifiedAt: parseMfaVerifiedAt(mfaVerifiedAtRaw),
+				ip: typeof ipRaw === 'string' ? ipRaw : null,
+				userAgent: typeof userAgentRaw === 'string' ? userAgentRaw : null
 			})
 		}
 		return sessions

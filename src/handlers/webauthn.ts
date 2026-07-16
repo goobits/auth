@@ -79,7 +79,8 @@ export function createWebAuthnRegisterOptionsHandler(
 			!(await authorizeSecurityChange({
 				action: 'webauthn.register',
 				request: event.request.clone(),
-				userId: user.id
+				userId: user.id,
+				session: event.locals.session ?? null
 			}))
 		) {
 			return jsonResponse({ ok: false, error: 'Reauthentication required' }, 403)

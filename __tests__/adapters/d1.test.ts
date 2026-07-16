@@ -92,8 +92,17 @@ function createMockDb() {
 						return { meta: insert('oauth_accounts', { user_id, provider, provider_account_id }) }
 					}
 					if (sql.startsWith('INSERT INTO sessions')) {
-						const [id, user_id, expires_at, mfa_verified_at] = bound
-						return { meta: insert('sessions', { id, user_id, expires_at, mfa_verified_at }) }
+						const columns = /INSERT INTO sessions \(([^)]+)\)/
+							.exec(sql)?.[1]
+							?.split(',')
+							.map((value) => value.trim())
+						if (!columns) throw new Error(`Unable to parse session insert: ${sql}`)
+						return {
+							meta: insert(
+								'sessions',
+								Object.fromEntries(columns.map((column, i) => [column, bound[i]]))
+							)
+						}
 					}
 					if (sql.startsWith('UPDATE sessions SET')) {
 						const [expires_at, id] = bound
@@ -174,7 +183,11 @@ function createMockDb() {
 							session_id: session.id,
 							user_id: session.user_id,
 							expires_at: session.expires_at,
-							mfa_verified_at: session.mfa_verified_at
+							mfa_verified_at: session.mfa_verified_at,
+							session_created_at: session.created_at,
+							last_active_at: session.last_active_at,
+							session_ip: session.ip,
+							session_user_agent: session.user_agent
 						}
 					}
 					if (sql.includes('FROM oauth_tokens')) {
@@ -231,7 +244,8 @@ describe('D1 adapters', () => {
 		const userAdapter = new D1UserAdapter(db)
 		const sessionAdapter = new D1SessionAdapter(db, {
 			sessionLifetime: 1000,
-			sessionRefreshThreshold: 500
+			sessionRefreshThreshold: 500,
+			columns: { mfaVerifiedAt: 'mfa_verified_at' }
 		})
 
 		const user = await userAdapter.createUser({ email: 'a@b.com', name: 'A', verified_email: true })
@@ -242,6 +256,40 @@ describe('D1 adapters', () => {
 		expect(result.session?.id).toBe(session.id)
 		expect(result.session?.mfaVerifiedAt).toEqual(mfaVerifiedAt)
 		expect((await sessionAdapter.listSessions(user.id))[0]?.mfaVerifiedAt).toEqual(mfaVerifiedAt)
+	})
+
+	it('round-trips D1 session timestamps and request metadata when configured', async () => {
+		const db = createMockDb()
+		const userAdapter = new D1UserAdapter(db)
+		const sessionAdapter = new D1SessionAdapter(db, {
+			columns: {
+				createdAt: 'created_at',
+				lastActiveAt: 'last_active_at',
+				ip: 'ip',
+				userAgent: 'user_agent'
+			}
+		})
+		const user = await userAdapter.createUser({
+			email: 'session@example.com',
+			name: 'Session User'
+		})
+		const createdAt = new Date('2026-07-15T10:00:00.000Z')
+		const session = await sessionAdapter.createSession(user.id, {
+			createdAt,
+			ip: '192.0.2.10',
+			userAgent: 'Test Browser'
+		})
+		const validated = await sessionAdapter.validateSession(session.id)
+
+		expect(validated.session).toMatchObject({
+			createdAt,
+			lastActiveAt: createdAt,
+			ip: '192.0.2.10',
+			userAgent: 'Test Browser'
+		})
+		expect(await sessionAdapter.listSessions(user.id)).toEqual([
+			expect.objectContaining({ createdAt, ip: '192.0.2.10', userAgent: 'Test Browser' })
+		])
 	})
 
 	it('keeps D1 password hashes behind the credential capability', async () => {

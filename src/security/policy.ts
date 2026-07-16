@@ -22,6 +22,7 @@ export type SecurityRouteId =
 	| 'mfa.verify'
 	| 'mfa.disable'
 	| 'mfa.backup_code'
+	| 'mfa.step_up'
 	| 'sessions.list'
 	| 'sessions.revoke'
 

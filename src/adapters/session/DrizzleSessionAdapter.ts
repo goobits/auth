@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm'
 import type { Session, User } from '../../types/index.ts'
 import type { DrizzleDbLike, DrizzleJson, DrizzleRow, DrizzleTable } from '../drizzleTypes.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
-import { parseMfaVerifiedAt } from './sessionAssurance.ts'
+import { parseMfaVerifiedAt, parseSessionTimestamp } from './sessionAssurance.ts'
 import { generateSessionId } from './sessionId.ts'
 
 type SessionsTable = DrizzleTable & {
@@ -60,10 +60,18 @@ function toSession(row: DrizzleRow | null): Session | null {
 	const expiresDate = expiresAt instanceof Date ? expiresAt : new Date(expiresAt)
 	if (Number.isNaN(expiresDate.getTime())) return null
 	const mfaVerifiedAt = parseMfaVerifiedAt(row['mfaVerifiedAt'] ?? row['mfa_verified_at'])
+	const createdAt = parseSessionTimestamp(row['createdAt'] ?? row['created_at'])
 	return {
 		id,
 		userId: String(userId),
 		expiresAt: expiresDate,
+		...(createdAt ? { createdAt } : {}),
+		lastActiveAt: parseSessionTimestamp(row['lastActiveAt'] ?? row['last_active_at']),
+		ip: typeof row['ip'] === 'string' ? row['ip'] : null,
+		userAgent:
+			typeof (row['userAgent'] ?? row['user_agent']) === 'string'
+				? String(row['userAgent'] ?? row['user_agent'])
+				: null,
 		mfaVerifiedAt
 	}
 }
@@ -124,17 +132,20 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		metadata: Record<string, DrizzleJson> = {}
 	): Promise<Session> {
 		const sessionId = generateSessionId()
+		const createdAt = parseSessionTimestamp(metadata['createdAt']) ?? new Date()
 		const expiresAt = new Date(Date.now() + this.sessionLifetime)
 		await this.db.insert(this.sessionsTable).values({
 			id: sessionId,
 			userId,
 			expiresAt,
-			...pickSessionMetadata(metadata)
+			...pickSessionMetadata(metadata),
+			...(this.sessionsTable.createdAt ? { createdAt } : {})
 		})
 		return {
 			id: sessionId,
 			userId,
 			expiresAt,
+			createdAt,
 			mfaVerifiedAt: parseMfaVerifiedAt(metadata['mfaVerifiedAt'])
 		}
 	}

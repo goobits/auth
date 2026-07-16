@@ -1,6 +1,7 @@
 import { error, type Handle, redirect, type RequestHandler } from '@sveltejs/kit'
 
 import { createAuth } from './createAuth.ts'
+import { AUTH_ROUTE_PATHS, matchesAuthRoute } from './_routePaths.ts'
 import { createAuthEvent, type AuthEvent } from './security/events.ts'
 import type { AuthConfig, AuthLocals, RequestEventLike } from './types/auth.ts'
 import type { Session, User } from './types/index.ts'
@@ -290,51 +291,55 @@ export class GoobitsAuth {
 		if (segments.length === 1 && (segments[0] === 'signout' || segments[0] === 'logout')) {
 			return { method: 'POST', handler: handlers.logout }
 		}
-		if (segments.length === 1 && segments[0] === 'magic-link') {
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.magicLink)) {
 			if (!handlers.magicLink) return null
 			return { method: 'POST', handler: handlers.magicLink.request }
 		}
-		if (segments.length === 2 && segments[0] === 'magic-link' && segments[1] === 'verify') {
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.magicLinkVerify)) {
 			if (!handlers.magicLink) return null
 			return { method, handler: handlers.magicLink.verify }
 		}
-		if (segments.length === 3 && segments[0] === 'passkey' && segments[1] === 'register') {
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.passkeyRegisterOptions)) {
 			if (!handlers.webauthn) return null
-			if (segments[2] === 'options') {
-				return { method: 'POST', handler: handlers.webauthn.registerOptions }
-			}
-			if (segments[2] === 'verify') {
-				return { method: 'POST', handler: handlers.webauthn.registerVerify }
-			}
+			return { method: 'POST', handler: handlers.webauthn.registerOptions }
 		}
-		if (segments.length === 3 && segments[0] === 'passkey' && segments[1] === 'login') {
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.passkeyRegisterVerify)) {
 			if (!handlers.webauthn) return null
-			if (segments[2] === 'options') {
-				return { method: 'POST', handler: handlers.webauthn.loginOptions }
-			}
-			if (segments[2] === 'verify') {
-				return { method: 'POST', handler: handlers.webauthn.loginVerify }
-			}
+			return { method: 'POST', handler: handlers.webauthn.registerVerify }
 		}
-		if (segments.length === 2 && segments[0] === 'mfa') {
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.passkeyLoginOptions)) {
+			if (!handlers.webauthn) return null
+			return { method: 'POST', handler: handlers.webauthn.loginOptions }
+		}
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.passkeyLoginVerify)) {
+			if (!handlers.webauthn) return null
+			return { method: 'POST', handler: handlers.webauthn.loginVerify }
+		}
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.mfaStatus)) {
 			if (!handlers.mfa) return null
-			if (segments[1] === 'status') {
-				return { method: 'GET', handler: handlers.mfa.status }
-			}
-			if (segments[1] === 'enroll') {
-				return { method: 'POST', handler: handlers.mfa.enroll }
-			}
-			if (segments[1] === 'verify') {
-				return { method: 'POST', handler: handlers.mfa.verify }
-			}
-			if (segments[1] === 'disable') {
-				return { method: 'POST', handler: handlers.mfa.disable }
-			}
-			if (segments[1] === 'backup-code') {
-				return { method: 'POST', handler: handlers.mfa.backupCode }
-			}
+			return { method: 'GET', handler: handlers.mfa.status }
 		}
-		if (segments.length === 1 && segments[0] === 'sessions') {
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.mfaEnroll)) {
+			if (!handlers.mfa) return null
+			return { method: 'POST', handler: handlers.mfa.enroll }
+		}
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.mfaVerify)) {
+			if (!handlers.mfa) return null
+			return { method: 'POST', handler: handlers.mfa.verify }
+		}
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.mfaDisable)) {
+			if (!handlers.mfa) return null
+			return { method: 'POST', handler: handlers.mfa.disable }
+		}
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.mfaBackupCode)) {
+			if (!handlers.mfa) return null
+			return { method: 'POST', handler: handlers.mfa.backupCode }
+		}
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.mfaStepUp)) {
+			if (!handlers.mfa) return null
+			return { method: 'POST', handler: handlers.mfa.stepUp }
+		}
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.sessions)) {
 			if (!handlers.sessions) return null
 			return method === 'GET'
 				? { method: 'GET', handler: handlers.sessions.list }

@@ -8,7 +8,12 @@ export {
 	createPasswordResetConfirmHandler,
 	createPasswordResetRequestHandler
 } from './passwordReset.ts'
-export { createSigninHandler } from './signin.ts'
+export {
+	createSigninHandler,
+	type SigninDeniedResult,
+	type SigninHookContext,
+	type SigninHookResult
+} from './signin.ts'
 export { createSignupHandler } from './signup.ts'
 
 // MFA handlers
@@ -18,6 +23,7 @@ export {
 	createMfaEnrollHandler,
 	createMfaLoginVerifyHandler,
 	createMfaStatusHandler,
+	createMfaStepUpHandler,
 	createMfaVerifyHandler,
 	beginMfaLoginChallenge,
 	type MfaConfig,

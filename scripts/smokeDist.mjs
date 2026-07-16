@@ -27,10 +27,10 @@ async function assertExportMap() {
 		assert.equal(typeof conditions, 'object', `${subpath} must use conditional exports`)
 		const expectedConditions =
 			subpath === './ui/theme.css'
-				? ['node', 'default']
+				? ['workerd', 'worker', 'browser', 'node', 'default']
 				: nodeOnlySubpaths.has(subpath)
 					? ['types', 'node']
-					: ['types', 'node', 'default']
+					: ['types', 'workerd', 'worker', 'browser', 'node', 'default']
 
 		assert.deepEqual(
 			Object.keys(conditions),

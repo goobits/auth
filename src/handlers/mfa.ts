@@ -10,6 +10,9 @@ import {
 	getVerificationTokenRecord,
 	VERIFICATION_TOKEN_TYPES
 } from '../verification/index.ts'
+import { consumeMfaCredentialProof, verifyMfaCredential } from './_mfaCredential.ts'
+import { type MfaSessionAdapter, rotateSessionAfterMfa } from './_mfaSession.ts'
+import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
 
 const DEFAULT_LOGIN_CHALLENGE_COOKIE = 'goobits_mfa_login'
 const DEFAULT_LOGIN_CHALLENGE_TTL_MS = 5 * 60 * 1000
@@ -54,6 +57,19 @@ export type MfaLoginConfig = {
 	challengeCookieName?: string
 	challengeExpiresInMs?: number
 	secureCookies?: boolean
+	csrf?: { validate: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
+	rateLimit?: HandlerRateLimitConfig
+	onVerified?: (
+		user: Record<string, unknown>,
+		context: {
+			event: RequestEventLike
+			formData: FormData
+			sessionMetadata: SessionMetadata
+		}
+	) =>
+		| { allowed: false; error: string; code?: string; status?: number }
+		| void
+		| Promise<{ allowed: false; error: string; code?: string; status?: number } | void>
 }
 
 type MfaLoginSessionAdapter = {
@@ -151,6 +167,17 @@ export function createMfaLoginVerifyHandler(
 	}
 ) {
 	return async (event: RequestEventLike) => {
+		if (config.csrf && !(await config.csrf.validate(event))) {
+			return { success: false, error: config.csrf.errorMessage ?? 'Invalid CSRF token' }
+		}
+		if (config.rateLimit?.check) {
+			const verdict = await config.rateLimit.check(
+				resolveHandlerRateLimitKey(event, config.rateLimit)
+			)
+			if (!verdict.allowed) {
+				return { success: false, error: 'Too many attempts. Try again later.' }
+			}
+		}
 		const cookieName = challengeCookieName(config)
 		const challenge = event.cookies.get(cookieName)
 		if (!challenge) return { success: false, error: 'Invalid or expired login challenge' }
@@ -164,27 +191,16 @@ export function createMfaLoginVerifyHandler(
 
 		const userId = userIdFromRecord(inspected.user)
 		if (!userId) return { success: false, error: 'Invalid or expired login challenge' }
-		const status = await config.store.getStatus(userId)
-		const secret = status.enabled ? await config.store.getSecret(userId) : null
-		if (!secret) return { success: false, error: 'Invalid or expired login challenge' }
-
 		const formData = await event.request.formData()
 		const token = formData.get('token')?.toString() ?? ''
 		const backupCode = formData.get('backupCode')?.toString() ?? ''
-		let backupHash: string | null = null
-		let valid = false
-
-		if (token) {
-			valid = await verifyTOTP({ secret, token })
-		} else if (backupCode) {
-			const backup = await verifyBackupCode({
-				code: backupCode,
-				hashedCodes: await config.store.getBackupCodes(userId)
-			})
-			valid = backup.valid
-			backupHash = backup.hash ?? null
-		}
-		if (!valid) return { success: false, error: 'Invalid authentication code' }
+		const proof = await verifyMfaCredential({
+			store: config.store,
+			userId,
+			token,
+			backupCode
+		})
+		if (!proof) return { success: false, error: 'Invalid authentication code' }
 
 		const consumed = await consumeVerificationTokenRecord({
 			adapter: config.verificationTokenAdapter,
@@ -195,11 +211,25 @@ export function createMfaLoginVerifyHandler(
 			return { success: false, error: 'Invalid or expired login challenge' }
 		}
 
-		if (backupHash && !(await config.store.consumeBackupCode(userId, backupHash))) {
+		if (!(await consumeMfaCredentialProof(config.store, userId, proof))) {
 			return { success: false, error: 'Invalid authentication code' }
 		}
+		const sessionMetadata = challengeMetadata(consumed.token.metadata)
+		const hookResult = await config.onVerified?.(consumed.user, {
+			event,
+			formData,
+			sessionMetadata: { ...sessionMetadata }
+		})
+		if (hookResult?.allowed === false) {
+			return {
+				success: false,
+				error: hookResult.error,
+				...(hookResult.code ? { code: hookResult.code } : {}),
+				...(hookResult.status ? { status: hookResult.status } : {})
+			}
+		}
 		const session = await config.sessionAdapter.createSession(userId, {
-			...challengeMetadata(consumed.token.metadata),
+			...sessionMetadata,
 			mfaVerifiedAt: new Date()
 		})
 		config.sessionAdapter.setSessionCookie(event.cookies, session)
@@ -237,7 +267,8 @@ export function createMfaEnrollHandler(config: MfaSecurityChangeConfig) {
 			!(await authorizeSecurityChange({
 				action: 'mfa.enroll',
 				request: event.request.clone(),
-				userId
+				userId,
+				session: event.locals.session ?? null
 			}))
 		) {
 			return { success: false, error: 'Reauthentication required' }
@@ -267,11 +298,15 @@ export function createMfaEnrollHandler(config: MfaSecurityChangeConfig) {
  *
  * @param config - Configuration for this operation.
  */
-export function createMfaVerifyHandler(config: MfaConfig) {
+export function createMfaVerifyHandler(config: MfaConfig & { sessionAdapter?: MfaSessionAdapter }) {
 	const { getUserId, store } = config
 	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
 		if (!userId) return { success: false, error: 'Unauthorized' }
+		const currentSession = event.locals.session
+		if (config.sessionAdapter && (!currentSession || currentSession.userId !== userId)) {
+			return { success: false, error: 'Unauthorized' }
+		}
 		const formData = await event.request.formData()
 		const token = formData.get('token')?.toString()
 		const secret = await store.getSecret(userId)
@@ -283,7 +318,14 @@ export function createMfaVerifyHandler(config: MfaConfig) {
 		if (!(await store.activateEnrollment(userId))) {
 			return { success: false, error: 'MFA enrollment not started' }
 		}
-		return { success: true }
+		if (!config.sessionAdapter || !currentSession) return { success: true }
+		const replacement = await rotateSessionAfterMfa({
+			sessionAdapter: config.sessionAdapter,
+			cookies: event.cookies,
+			currentSession,
+			userId
+		})
+		return { success: true, mfaVerifiedAt: replacement.mfaVerifiedAt }
 	}
 }
 
@@ -297,32 +339,53 @@ export function createMfaDisableHandler(config: MfaSecurityChangeConfig) {
 			!(await authorizeSecurityChange({
 				action: 'mfa.disable',
 				request: event.request.clone(),
-				userId
+				userId,
+				session: event.locals.session ?? null
 			}))
 		) {
 			return { success: false, error: 'Reauthentication required' }
 		}
 
-		const secret = await store.getSecret(userId)
-		if (!secret) return { success: false, error: 'Multi-factor authentication is not enabled' }
 		const formData = await event.request.formData()
 		const token = formData.get('token')?.toString() ?? ''
 		const backupCode = formData.get('backupCode')?.toString() ?? ''
-		let valid = token ? await verifyTOTP({ secret, token }) : false
-		if (!valid && backupCode) {
-			const backup = await verifyBackupCode({
-				code: backupCode,
-				hashedCodes: await store.getBackupCodes(userId)
-			})
-			if (backup.valid && backup.hash) {
-				valid = await store.consumeBackupCode(userId, backup.hash)
-			}
+		const proof = await verifyMfaCredential({ store, userId, token, backupCode })
+		if (!proof || !(await consumeMfaCredentialProof(store, userId, proof))) {
+			return { success: false, error: 'Invalid authentication code' }
 		}
-		if (!valid) return { success: false, error: 'Invalid authentication code' }
 		if (!(await store.disableMfa(userId))) {
 			return { success: false, error: 'Multi-factor authentication is not enabled' }
 		}
 		return { success: true }
+	}
+}
+
+/** Verifies a second factor and rotates the current session with fresh MFA assurance. */
+export function createMfaStepUpHandler(config: MfaConfig & { sessionAdapter: MfaSessionAdapter }) {
+	return async (event: RequestEventLike) => {
+		const userId = config.getUserId(event.locals)
+		const currentSession = event.locals.session
+		if (!userId || !currentSession || currentSession.userId !== userId) {
+			return { success: false, error: 'Unauthorized' }
+		}
+		const formData = await event.request.formData()
+		const proof = await verifyMfaCredential({
+			store: config.store,
+			userId,
+			token: formData.get('token')?.toString() ?? '',
+			backupCode: formData.get('backupCode')?.toString() ?? ''
+		})
+		if (!proof || !(await consumeMfaCredentialProof(config.store, userId, proof))) {
+			return { success: false, error: 'Invalid authentication code' }
+		}
+
+		const replacement = await rotateSessionAfterMfa({
+			sessionAdapter: config.sessionAdapter,
+			cookies: event.cookies,
+			currentSession,
+			userId
+		})
+		return { success: true, mfaVerifiedAt: replacement.mfaVerifiedAt }
 	}
 }
 
