@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### UI
+
+- Added `@goobits/auth/ui/qr-code` so QR-only consumers do not initialize the auth session store.
+
 ### 🔒 Security
 
 - 🔐 Password hashes now cross only the dedicated `PasswordCredentialAdapter`

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 const root = new URL('../', import.meta.url)
 const packageJson = JSON.parse(await readFile(new URL('package.json', root), 'utf8'))
 const nodeOnlySubpaths = new Set(['./adapters/pg', './node'])
-const uiSubpaths = new Set(['./ui', './ui/theme.css'])
+const uiSubpaths = new Set(['./ui', './ui/qr-code', './ui/theme.css'])
 
 function packageSpecifier(subpath) {
 	return subpath === '.' ? packageJson.name : `${packageJson.name}${subpath.slice(1)}`
@@ -42,7 +42,7 @@ async function assertExportMap() {
 			assert.equal(typeof target, 'string', `${subpath} ${condition} target must be a string`)
 			await assertFileExists(target)
 			if (condition === 'types') {
-				assert.match(target, /^\.\/dist\/types\/.+\.d\.ts$/)
+				assert.match(target, /^\.\/dist\/types\/.+(?:\.d\.ts|\.svelte)$/)
 			} else if (condition === 'node') {
 				assert.match(target, /^\.\/dist\/node\//)
 			} else {
