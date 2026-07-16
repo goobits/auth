@@ -26,7 +26,7 @@ import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateL
  * @param {Function} [config.rateLimit.check] - Async function (key) => { allowed }
  * @param {Function} [config.rateLimit.key] - Function (event) => string for rate limit key
  * @param {string} [config.redirectTo] - Redirect URL after signup (default: '/')
- * @param {boolean} [config.autoLogin] - Automatically log in user after signup (default: true)
+ * @param {boolean} [config.autoLogin] - Automatically log in after signup. Defaults to false when email verification is configured.
  * @param {Object} [config.fields] - Form field names (email, password, name)
  * @param {string[]} [config.metadataFields] - Form fields to pass as metadata to createUser
  * @param {Function} [config.getSignupMetadata] - Compute additional metadata from FormData
@@ -77,7 +77,7 @@ export function createSignupHandler(config: {
 		csrf,
 		rateLimit,
 		redirectTo = '/',
-		autoLogin = true,
+		autoLogin,
 		sanitizeUser = defaultSanitizeUser,
 		fields,
 		metadataFields,
@@ -86,6 +86,8 @@ export function createSignupHandler(config: {
 	} = config
 
 	const log = resolveLogger(logger)
+	const shouldAutoLogin =
+		autoLogin ?? !(verificationTokenAdapter !== undefined && sendVerificationEmail !== undefined)
 
 	return async (event: RequestEventLike) => {
 		if (csrf?.validate) {
@@ -191,7 +193,7 @@ export function createSignupHandler(config: {
 			}
 
 			// Auto-login if enabled
-			if (autoLogin && sessionAdapter) {
+			if (shouldAutoLogin && sessionAdapter) {
 				const session = await sessionAdapter.createSession(user.id)
 				sessionAdapter.setSessionCookie(event.cookies, session)
 			}

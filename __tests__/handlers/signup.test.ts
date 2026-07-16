@@ -45,8 +45,10 @@ describe('createSignupHandler', () => {
 		const verificationTokenAdapter = {
 			deleteByUserAndType: vi.fn(),
 			create: vi.fn(),
+			replaceForUserAndType: vi.fn(),
 			findByToken: vi.fn(),
-			deleteById: vi.fn()
+			deleteById: vi.fn(),
+			consumeByToken: vi.fn()
 		}
 
 		const handler = createSignupHandler({
@@ -71,6 +73,7 @@ describe('createSignupHandler', () => {
 		expect(error.status).toBe(303)
 		expect(getRedirectLocation(error)).toBe('/welcome')
 
-		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
+		expect(verificationTokenAdapter.replaceForUserAndType).toHaveBeenCalledOnce()
+		expect(sessionAdapter.setSessionCookie).not.toHaveBeenCalled()
 	})
 })
