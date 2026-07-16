@@ -1,5 +1,10 @@
 import { isHttpError, isRedirect, type RequestHandler } from '@sveltejs/kit'
-import { createRateLimiter, type RateLimitStore } from '@goobits/security/rate-limit'
+import {
+	createRateLimiter,
+	getClientIP,
+	type RateLimitStore,
+	type RateLimitWindow
+} from '@goobits/security/rate-limit'
 import type { Logger } from '@goobits/security/logger'
 import type { RequestEventLike, TrustedProxyHeader } from '../types/auth.ts'
 import { validateCsrfRequest, type CsrfStore } from './csrf.ts'
@@ -44,8 +49,7 @@ export type SecurityPolicySettings = {
 	}
 	rateLimit: {
 		mode: PolicyMode
-		max: number
-		windowMs: number
+		windows: readonly RateLimitWindow[]
 		keyPrefix: string
 		trustedProxyHeaders: readonly TrustedProxyHeader[]
 		store?: RateLimitStore
@@ -71,25 +75,12 @@ function jsonError(status: number, message: string): Response {
 	})
 }
 
-function getFirstHeaderIp(value: string | null): string | null {
-	const firstIp = value?.split(',')[0]?.trim()
-	return firstIp || null
-}
-
 function getClientIp(
 	event: RequestEventLike,
 	trustedProxyHeaders: readonly TrustedProxyHeader[]
 ): string {
-	for (const header of trustedProxyHeaders) {
-		if (header === 'cf-connecting-ip') {
-			const cloudflareIp = event.request.headers.get('cf-connecting-ip')?.trim()
-			if (cloudflareIp) return cloudflareIp
-		}
-		if (header === 'x-forwarded-for') {
-			const forwardedIp = getFirstHeaderIp(event.request.headers.get('x-forwarded-for'))
-			if (forwardedIp) return forwardedIp
-		}
-	}
+	const proxyIp = getClientIP(event.request, { trustHeaders: trustedProxyHeaders })
+	if (proxyIp !== 'unknown') return proxyIp
 	if (event.getClientAddress) return event.getClientAddress()
 	return 'unknown'
 }
@@ -97,13 +88,10 @@ function getClientIp(
 /** Processes security policy for auth security checks. */
 export function applySecurityPolicy({ handler, routeId, settings }: ApplyPolicyInput) {
 	const limiter = createRateLimiter({
-		windows: [
-			{
-				name: routeId,
-				windowMs: settings.rateLimit.windowMs,
-				maxEvents: settings.rateLimit.max
-			}
-		],
+		windows: settings.rateLimit.windows.map((window) => ({
+			...window,
+			name: `${routeId}:${window.name}`
+		})),
 		keyPrefix: settings.rateLimit.keyPrefix,
 		...(settings.rateLimit.logger ? { logger: settings.rateLimit.logger } : {}),
 		...(settings.rateLimit.store ? { store: settings.rateLimit.store } : {})

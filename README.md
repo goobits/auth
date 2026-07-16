@@ -128,8 +128,19 @@ import {
 - Auth event auditing, authorization guards, CSRF cookie helpers, and security
   policy composition.
 
-Generic HTTP credentials, redaction, cryptography, logging, and rate limiting
-belong to `@goobits/security` and are not re-exported by Auth:
+Generic HTTP credentials, redaction, cryptography, logging, and rate-limit
+counters belong to `@goobits/security`. Authentication policy presets belong to
+Auth so applications and managed routes use the same limits:
+
+```ts
+import {
+	createLoginRateLimiter,
+	createPasswordResetRateLimiter,
+	createRegistrationRateLimiter
+} from '@goobits/auth/security'
+```
+
+Generic mechanisms are not re-exported by Auth:
 
 ```ts
 import {

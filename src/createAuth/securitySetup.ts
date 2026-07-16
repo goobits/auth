@@ -3,6 +3,7 @@ import { createSecurityAlertObserver } from '../security/alerts.ts'
 import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME, MemoryCsrfStore } from '../security/csrf.ts'
 import { createAuthEvent } from '../security/events.ts'
 import { applySecurityPolicy, type SecurityPolicySettings } from '../security/policy.ts'
+import { getAuthRateLimitWindows } from '../security/rateLimit.ts'
 import type {
 	AuthConfig,
 	AuthHandlers,
@@ -18,28 +19,22 @@ export type ResolvedSecurity = SecurityPolicySettings & {
 const PROFILE_DEFAULTS: Record<SecurityProfile, AuthSecurityConfig> = {
 	basic: {
 		csrf: { mode: 'off' },
-		rateLimit: { mode: 'optional', max: 20, windowMs: 60_000, keyPrefix: 'auth' },
+		rateLimit: {
+			mode: 'optional',
+			windows: getAuthRateLimitWindows('default'),
+			keyPrefix: 'auth'
+		},
 		audit: { mode: 'optional' }
 	},
 	secure: {
 		csrf: { mode: 'required', checkExpiry: false },
-		rateLimit: {
-			mode: 'required',
-			max: 20,
-			windowMs: 60_000,
-			keyPrefix: 'auth'
-		},
+		rateLimit: { mode: 'required', windows: getAuthRateLimitWindows('login'), keyPrefix: 'auth' },
 		audit: { mode: 'required' },
 		alerts: { enabled: true }
 	},
 	strict: {
 		csrf: { mode: 'required', checkExpiry: true },
-		rateLimit: {
-			mode: 'required',
-			max: 10,
-			windowMs: 60_000,
-			keyPrefix: 'auth'
-		},
+		rateLimit: { mode: 'required', windows: getAuthRateLimitWindows('login'), keyPrefix: 'auth' },
 		audit: { mode: 'required' },
 		alerts: { enabled: true }
 	}
@@ -59,6 +54,25 @@ function resolveTrustedProxyHeaders(
 
 function isProductionRuntime(): boolean {
 	return typeof process !== 'undefined' && process.env['NODE_ENV'] === 'production'
+}
+
+function resolveRateLimitWindows(
+	base: AuthSecurityConfig['rateLimit'],
+	override: AuthSecurityConfig['rateLimit']
+) {
+	if (override?.windows) return override.windows.map((window) => ({ ...window }))
+	if (override?.max !== undefined || override?.windowMs !== undefined) {
+		const fallback = base?.windows?.[0] ?? getAuthRateLimitWindows('login')[0]
+		if (!fallback) throw new Error('Auth rate-limit policy requires at least one window')
+		return [
+			{
+				name: 'auth:custom',
+				maxEvents: override.max ?? fallback.maxEvents,
+				windowMs: override.windowMs ?? fallback.windowMs
+			}
+		]
+	}
+	return (base?.windows ?? getAuthRateLimitWindows('login')).map((window) => ({ ...window }))
 }
 
 function assertProfileRequirements(profile: SecurityProfile, security: AuthSecurityConfig): void {
@@ -100,6 +114,7 @@ function assertProfileRequirements(profile: SecurityProfile, security: AuthSecur
 export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 	const profile = config.profile ?? 'secure'
 	const base = PROFILE_DEFAULTS[profile]
+	const rateLimitWindows = resolveRateLimitWindows(base.rateLimit, config.security?.rateLimit)
 	const merged: AuthSecurityConfig = {
 		csrf: { ...base.csrf, ...config.security?.csrf },
 		rateLimit: { ...base.rateLimit, ...config.security?.rateLimit },
@@ -128,7 +143,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			await merged.alerts?.onAlert?.(alert)
 			if (alertChannel) {
 				await alertChannel.send({
-					severity: alert.severity === 'error' ? 'critical' : 'warning',
+					severity: alert.severity,
 					title: 'Auth threshold exceeded',
 					message: `${alert.eventName} exceeded ${alert.count} events`,
 					source: 'goobits/auth',
@@ -155,8 +170,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 		},
 		rateLimit: {
 			mode: merged.rateLimit?.mode ?? 'optional',
-			max: merged.rateLimit?.max ?? 20,
-			windowMs: merged.rateLimit?.windowMs ?? 60_000,
+			windows: rateLimitWindows,
 			keyPrefix: merged.rateLimit?.keyPrefix ?? 'auth',
 			trustedProxyHeaders: resolveTrustedProxyHeaders(merged.rateLimit),
 			...(config.logger ? { logger: config.logger } : {}),

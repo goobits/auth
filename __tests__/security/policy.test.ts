@@ -39,8 +39,7 @@ function createAuditSettings(emitter: ReturnType<typeof vi.fn>) {
 		},
 		rateLimit: {
 			mode: 'off' as const,
-			max: 10,
-			windowMs: 60_000,
+			windows: [{ name: 'audit', maxEvents: 10, windowMs: 60_000 }],
 			keyPrefix: 'test-audit',
 			trustedProxyHeaders: []
 		},
@@ -64,8 +63,7 @@ describe('security policy wrapper', () => {
 				},
 				rateLimit: {
 					mode: 'off',
-					max: 10,
-					windowMs: 60_000,
+					windows: [{ name: 'test', maxEvents: 10, windowMs: 60_000 }],
 					keyPrefix: 'test',
 					trustedProxyHeaders: []
 				},
@@ -94,8 +92,7 @@ describe('security policy wrapper', () => {
 				},
 				rateLimit: {
 					mode: 'required',
-					max: 1,
-					windowMs: 60_000,
+					windows: [{ name: 'test', maxEvents: 1, windowMs: 60_000 }],
 					keyPrefix: 'test',
 					trustedProxyHeaders: []
 				},
@@ -132,8 +129,7 @@ describe('security policy wrapper', () => {
 				},
 				rateLimit: {
 					mode: 'required',
-					max: 1,
-					windowMs: 60_000,
+					windows: [{ name: 'test', maxEvents: 1, windowMs: 60_000 }],
 					keyPrefix: 'test-forwarded',
 					trustedProxyHeaders: ['x-forwarded-for']
 				},
@@ -178,8 +174,7 @@ describe('security policy wrapper', () => {
 				},
 				rateLimit: {
 					mode: 'required',
-					max: 1,
-					windowMs: 60_000,
+					windows: [{ name: 'test', maxEvents: 1, windowMs: 60_000 }],
 					keyPrefix: 'test-cloudflare',
 					trustedProxyHeaders: ['cf-connecting-ip']
 				},
@@ -233,8 +228,7 @@ describe('security policy wrapper', () => {
 				},
 				rateLimit: {
 					mode: 'required',
-					max: 1,
-					windowMs: 60_000,
+					windows: [{ name: 'test', maxEvents: 1, windowMs: 60_000 }],
 					keyPrefix: 'test-untrusted-forwarded',
 					trustedProxyHeaders: ['cf-connecting-ip']
 				},

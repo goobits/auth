@@ -2,6 +2,8 @@ import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { writeSourceFingerprint } from './sourceFingerprint.mjs'
+
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
 const runtimeDirs = [join(root, 'dist', 'node'), join(root, 'dist', 'worker')]
@@ -65,3 +67,4 @@ async function rewriteDeclarations(directory) {
 await copyUiAssets()
 await writeRuntimeUiBarrels()
 await rewriteDeclarations(join(root, 'dist', 'types'))
+await writeSourceFingerprint()

@@ -230,3 +230,18 @@ rate-limit callbacks. If an outer application policy always runs first, pass
 could not resolve users, so it was neither stateless nor safe for multi-instance
 or serverless deployment. Use D1, Drizzle, KV, PostgreSQL, or a custom durable
 `SessionAdapter` instead.
+
+## Rate-limit and alert policy ownership
+
+Import `createLoginRateLimiter`, `createRegistrationRateLimiter`, and
+`createPasswordResetRateLimiter` from `@goobits/auth/security` instead of
+`@goobits/security/rate-limit/auth`. Security owns the generic counter; Auth
+owns authentication-specific windows. Managed secure and strict routes now use
+the canonical login policy (5/minute and 15/15 minutes).
+
+Prefer `security.rateLimit.windows` for custom policy. The legacy `max` and
+`windowMs` pair remains temporarily as a one-window migration bridge.
+
+Auth threshold-rule severities now use the shared Security vocabulary:
+`warning` replaces `warn`, and `critical` replaces `error`. Auth event severities
+remain `info | warn | error`; only alert-notification policy changed.

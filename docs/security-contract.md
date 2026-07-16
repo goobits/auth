@@ -70,8 +70,9 @@ them. Every value here is configurable on the matching config block.
 
 | Concern                           | Default                                      | Override                                                          |
 | --------------------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
-| Rate limit (general auth routes)  | 20 requests / 60 s                           | `security.rateLimit.{max,windowMs}`                               |
-| Rate limit (`strict` profile)     | 10 requests / 60 s                           | `security.rateLimit.{max,windowMs}`                               |
+| Managed auth route rate limit     | 5 / minute and 15 / 15 minutes               | `security.rateLimit.windows`                                      |
+| Registration policy preset        | 3 / 10 minutes and 5 / hour                  | app-supplied limiter config                                       |
+| Password-reset policy preset      | 3 / 15 minutes and 5 / hour                  | app-supplied limiter config                                       |
 | Magic link expiry                 | 15 minutes                                   | `magicLink.settings.expiresInMs`                                  |
 | Magic link OTP length             | 6 digits                                     | `magicLink.settings.otpDigits`                                    |
 | Magic link verify rate limit      | 5 attempts / 10 minutes                      | `magicLink.limits.{verifyMax,verifyWindowMs}`                     |
@@ -96,6 +97,10 @@ rate-limit their login/signup routes aggressively to compensate.
 4. Validate secrets at deploy-time (`TOKEN_ENCRYPTION_KEY`, OAuth secrets).
 5. Keep dependency and secret scanning enabled in CI.
 6. Configure shared rate-limit state before using `secure` or `strict` in production.
+
+`security.rateLimit.{max,windowMs}` remains a deprecated one-window migration
+bridge. New integrations should supply `windows` or use the named factories
+from `@goobits/auth/security`.
 
 Password-length enforcement runs before built-in or application-supplied
 hash/verify functions. TOTP verification accepts integer windows from 0 through

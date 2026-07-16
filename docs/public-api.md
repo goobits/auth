@@ -147,6 +147,19 @@ already enforces equivalent checks before the handler, acknowledge that
 boundary explicitly with `externalSecurityBoundary: true`; omission is never a
 silent opt-out.
 
+Authentication limiter presets are exported from `@goobits/auth/security`:
+
+```ts
+import {
+	createLoginRateLimiter,
+	createPasswordResetRateLimiter,
+	createRegistrationRateLimiter
+} from '@goobits/auth/security'
+```
+
+They share the same package-owned multi-window policy as managed Auth routes and
+delegate storage/counter mechanics to `@goobits/security/rate-limit`.
+
 `verifyPassword` may return either a boolean or
 `{ valid, needsRehash }`. When `needsRehash` is true, the provider replaces the
 stored hash through the configured `PasswordCredentialAdapter` after successful

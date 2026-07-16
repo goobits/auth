@@ -13,7 +13,7 @@ import type { WebhookChannelOptions } from '@goobits/security/alerting'
 import type { CsrfTokenStore } from '@goobits/security/csrf'
 import type { SecurityAlertHandler, ThresholdRule } from '../security/alerts.ts'
 import type { AuthEventEmitter } from '../security/events.ts'
-import type { RateLimitStore } from '@goobits/security/rate-limit'
+import type { RateLimitStore, RateLimitWindow } from '@goobits/security/rate-limit'
 import type { Logger } from '@goobits/security/logger'
 import type { OAuthProfile, OAuthTokens, Session, SessionSummary, User } from './core.ts'
 
@@ -184,7 +184,11 @@ export type AuthSecurityConfig = {
 	}
 	rateLimit?: {
 		mode?: SecurityMode
+		/** Multi-window policy. Defaults to the canonical login policy for secure profiles. */
+		windows?: RateLimitWindow[]
+		/** @deprecated Prefer `windows`; retained as a one-window migration bridge. */
 		max?: number
+		/** @deprecated Prefer `windows`; retained as a one-window migration bridge. */
 		windowMs?: number
 		keyPrefix?: string
 		trustedProxyHeaders?: TrustedProxyHeader[]

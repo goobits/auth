@@ -28,6 +28,18 @@ describe('auth security profiles', () => {
 		expect(resolved.csrf.mode).toBe('required')
 		expect(resolved.csrf.externalBoundary).toBe(false)
 		expect(resolved.rateLimit.mode).toBe('required')
+		expect(resolved.rateLimit.windows).toEqual([
+			{ name: 'login:burst', windowMs: 60_000, maxEvents: 5 },
+			{ name: 'login:15-min', windowMs: 15 * 60_000, maxEvents: 15 }
+		])
+	})
+
+	it('supports the legacy one-window override without parallel defaults', () => {
+		const resolved = resolveSecurity(config('secure', { rateLimit: { max: 7, windowMs: 30_000 } }))
+
+		expect(resolved.rateLimit.windows).toEqual([
+			{ name: 'auth:custom', maxEvents: 7, windowMs: 30_000 }
+		])
 	})
 
 	it('requires an explicit external boundary when secure CSRF is disabled', () => {
@@ -132,7 +144,7 @@ describe('auth security profiles', () => {
 		const observer = createSecurityAlertObserver({
 			store,
 			onAlert,
-			rules: [{ eventName: 'auth.failure', max: 10, windowMs: 60_000, severity: 'warn' }]
+			rules: [{ eventName: 'auth.failure', max: 10, windowMs: 60_000, severity: 'warning' }]
 		})
 		const event = {
 			name: 'auth.failure' as const,

@@ -245,6 +245,8 @@
 		"test:ui": "vitest --ui",
 		"test:integration": "vitest run __tests__/integration",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"check:dist-fresh": "node scripts/checkDistFresh.mjs",
+		"ensure:dist": "node scripts/ensureDistFresh.mjs",
 		"build": "rm -rf dist && tsup && pnpm run build:types && node scripts/finalizeDist.mjs",
 		"postbuild": "pnpm run test:dist",
 		"build:types": "tsc -p tsconfig.build.json",

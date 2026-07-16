@@ -37,6 +37,12 @@
 - 👤 OAuth routes no longer use the global OAuth POST fallback, and redirect endpoints enforce safer request paths.
 - 👤 Auth error logging now avoids raw exception objects so sensitive provider, password, and token details are not emitted.
 - 👤 Auth crypto-sensitive helpers for API keys, CSRF tokens, signed session tokens, token encryption, random bytes, and SHA-256 now use `@goobits/security/crypto` while preserving the auth-facing helper APIs.
+- 🧱 Authentication-specific login, registration, and password-reset limiter
+  presets now have one owner in `@goobits/auth/security`; managed Auth policy and
+  custom app routes consume the same multi-window limits.
+- 🔔 Threshold alerts now use the shared Security mechanism and
+  `warning | critical` vocabulary instead of maintaining a second counter and
+  `warn | error` severity model in Auth.
 
 ### 🏠 Internal
 
@@ -55,7 +61,8 @@
 - Removed Auth-owned Basic-auth and API-key helpers; generic HTTP credentials now
   live exclusively in `@goobits/security/http-credentials`.
 - Removed auth-side reCAPTCHA verification. Use `@goobits/security/recaptcha` directly for structured CAPTCHA verification.
-- Removed auth-side rate-limit primitives. Auth route policy now uses `@goobits/security/rate-limit` directly.
+- Removed auth-side rate-limit mechanisms. Auth owns only authentication policy
+  presets and delegates counters to `@goobits/security/rate-limit`.
 - Routed auth-side CSRF issuance and validation through `@goobits/security/csrf`; auth keeps only SvelteKit cookie ergonomics.
 - Removed auth-side webhook alert transport. Auth threshold alerts now dispatch through `@goobits/security/alerting`.
 - Removed the unused migration notification UI export.

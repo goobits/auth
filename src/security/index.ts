@@ -26,6 +26,16 @@ export {
 export type { AuthEvent, AuthEventEmitter, AuthEventName, AuthEventSeverity } from './events.ts'
 export { createAuthEvent } from './events.ts'
 export { applySecurityPolicy } from './policy.ts'
+export {
+	AUTH_RATE_LIMIT_WINDOWS,
+	type AuthRateLimitConfig,
+	type AuthRateLimitFlow,
+	createAuthRateLimiter,
+	createLoginRateLimiter,
+	createPasswordResetRateLimiter,
+	createRegistrationRateLimiter,
+	getAuthRateLimitWindows
+} from './rateLimit.ts'
 export type {
 	CreateSignedSessionTokenOptions,
 	SignedSessionTokenClaims,
