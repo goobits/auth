@@ -11,7 +11,7 @@ describe('createSignupHandler', () => {
 		const passwordCredentialAdapter = {}
 
 		const handler = createSignupHandler({
-			externalSecurityBoundary: true,
+			validateExternalSecurityBoundary: async () => true,
 			credentialsProvider,
 			passwordCredentialAdapter,
 			userAdapter,
@@ -53,7 +53,7 @@ describe('createSignupHandler', () => {
 		}
 
 		const handler = createSignupHandler({
-			externalSecurityBoundary: true,
+			validateExternalSecurityBoundary: async () => true,
 			credentialsProvider,
 			passwordCredentialAdapter,
 			userAdapter,

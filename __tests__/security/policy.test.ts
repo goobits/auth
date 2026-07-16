@@ -1,7 +1,7 @@
 import { error as httpError, redirect } from '@sveltejs/kit'
 import { describe, expect, it, vi } from 'vitest'
 
-import { MemoryCsrfStore } from '../../src/security/csrf.ts'
+import { MemoryCsrfStore } from '@goobits/security/csrf'
 import { applySecurityPolicy } from '../../src/security/policy.ts'
 import type { RequestEventLike } from '../../src/types/auth.ts'
 import { createCookies, createRequestEvent } from '../testKit.ts'
@@ -114,6 +114,29 @@ describe('security policy wrapper', () => {
 		)
 		expect(first.status).toBe(200)
 		expect(second.status).toBe(429)
+		expect(second.headers.get('retry-after')).toMatch(/^\d+$/)
+	})
+
+	it('executes an external boundary before delegated state changes', async () => {
+		const inner = vi.fn(async () => new Response('ok'))
+		const validateExternalSecurityBoundary = vi.fn(async () => false)
+		const handler = applySecurityPolicy({
+			handler: inner,
+			routeId: 'auth.logout',
+			settings: {
+				...createAuditSettings(vi.fn()),
+				csrf: {
+					...createAuditSettings(vi.fn()).csrf,
+					validateExternalSecurityBoundary
+				}
+			}
+		})
+		const event = createEvent()
+
+		const response = await handler(event as Parameters<typeof handler>[0])
+		expect(response.status).toBe(403)
+		expect(validateExternalSecurityBoundary).toHaveBeenCalledWith(event)
+		expect(inner).not.toHaveBeenCalled()
 	})
 
 	it('uses the first forwarded ip when proxy headers are trusted', async () => {

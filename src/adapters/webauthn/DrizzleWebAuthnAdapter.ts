@@ -1,14 +1,18 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import type { WebAuthnCredential } from '../../types/index.ts'
 import {
 	type DrizzleDbLike,
-	type DrizzleJson,
+	type InsertConflictQuery,
 	type DrizzleRow,
 	type DrizzleTable,
 	requireColumn
 } from '../drizzleTypes.ts'
 import { WebAuthnAdapter } from './WebAuthnAdapter.ts'
+import {
+	assertCredentialCounterTransition,
+	isValidCredentialCounter
+} from './_credentialCounter.ts'
 
 type CredentialsTable = DrizzleTable
 type ChallengesTable = DrizzleTable
@@ -78,7 +82,7 @@ function mapCredentialRow(
 	if (typeof credentialId !== 'string') return null
 	if (typeof userId !== 'string' && typeof userId !== 'number') return null
 	if (typeof publicKey !== 'string') return null
-	if (typeof counter !== 'number') return null
+	if (!isValidCredentialCounter(counter)) return null
 	if (transportsRaw !== null && typeof transportsRaw !== 'string') return null
 	if (name !== null && typeof name !== 'string') return null
 	let transports: string[] | null = null
@@ -219,8 +223,11 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		counter: number
 		transports?: string[] | null
 		name?: string | null
-	}): Promise<void> {
-		await this.db.insert(this.credentialsTable).values({
+	}): Promise<boolean> {
+		if (!isValidCredentialCounter(counter)) {
+			throw new RangeError('WebAuthn counter must be a non-negative safe integer')
+		}
+		const insert = this.db.insert(this.credentialsTable).values({
 			[this.columns.userId]: userId,
 			[this.columns.credentialId]: credentialId,
 			[this.columns.publicKey]: publicKey,
@@ -228,6 +235,15 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 			[this.columns.transports]: transports ? JSON.stringify(transports) : null,
 			[this.columns.name]: name ?? null
 		})
+		if (!('onConflictDoNothing' in insert)) {
+			throw new Error('Drizzle WebAuthn credential inserts require onConflictDoNothing support')
+		}
+		const rows = await (insert as InsertConflictQuery)
+			.onConflictDoNothing({
+				target: requireColumn(this.credentialsTable, this.columns.credentialId)
+			})
+			.returning()
+		return rows.length === 1
 	}
 
 	async getCredential(credentialId: string): Promise<WebAuthnCredential | null> {
@@ -251,27 +267,35 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		return credentials
 	}
 
-	async updateCredential(
-		credentialId: string,
-		updates: Record<string, DrizzleJson>
-	): Promise<void> {
-		const payload: DrizzleRow = {}
-		const columnLookup: Record<string, string> = this.columns
-		for (const [key, value] of Object.entries(updates)) {
-			const mappedColumn = columnLookup[key] || key
-			if (mappedColumn === this.columns.transports && Array.isArray(value)) {
-				if (value.every((entry) => typeof entry === 'string')) {
-					payload[mappedColumn] = JSON.stringify(value)
-				}
-				continue
-			}
-			payload[mappedColumn] = value
-		}
-		if (Object.keys(payload).length === 0) return
-		await this.db
+	async advanceCredentialCounter({
+		credentialId,
+		userId,
+		expectedCounter,
+		newCounter
+	}: {
+		credentialId: string
+		userId: string
+		expectedCounter: number
+		newCounter: number
+	}): Promise<boolean> {
+		assertCredentialCounterTransition(expectedCounter, newCounter)
+		const result = this.db
 			.update(this.credentialsTable)
-			.set(payload)
-			.where(eq(requireColumn(this.credentialsTable, this.columns.credentialId), credentialId))
+			.set({
+				[this.columns.counter]: newCounter,
+				[this.columns.updatedAt]: new Date()
+			})
+			.where(
+				and(
+					eq(requireColumn(this.credentialsTable, this.columns.credentialId), credentialId),
+					eq(requireColumn(this.credentialsTable, this.columns.userId), userId),
+					eq(requireColumn(this.credentialsTable, this.columns.counter), expectedCounter)
+				)!
+			)
+		if (typeof result.returning !== 'function') {
+			throw new Error('Drizzle WebAuthn counter updates require returning support')
+		}
+		return (await result.returning()).length === 1
 	}
 
 	async deleteCredential(credentialId: string): Promise<void> {

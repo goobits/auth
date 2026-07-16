@@ -4,7 +4,8 @@ import {
 	createMemoryAuthAdapters,
 	MemoryMagicLinkAdapter,
 	MemoryMfaAdapter,
-	MemoryUserAdapter
+	MemoryUserAdapter,
+	MemoryWebAuthnAdapter
 } from '../../src/adapters/memory/index.ts'
 
 describe('memory auth adapters', () => {
@@ -35,6 +36,19 @@ describe('memory auth adapters', () => {
 		expect(credentialCapabilityHasProfileReader).toBe(false)
 		expect(result.user?.id).toBe('dev-user')
 		expect(result.session?.ip).toBe('127.0.0.1')
+		await expect(adapters.session.validateSession(session.id)).resolves.toMatchObject({
+			session: { id: session.id }
+		})
+	})
+
+	it('rejects unknown and oversized session metadata', async () => {
+		const adapters = createMemoryAuthAdapters({ cookieName: 'auth', secureCookies: false })
+		await expect(
+			adapters.session.createSession('user-1', { id: 'override' } as never)
+		).rejects.toThrow('Unsupported session metadata field')
+		await expect(
+			adapters.session.createSession('user-1', { userAgent: 'x'.repeat(513) })
+		).rejects.toThrow('at most 512')
 	})
 
 	it('stores explicit test users without password leakage', async () => {
@@ -105,6 +119,50 @@ describe('memory auth adapters', () => {
 		await expect(adapter.consumeByTokenHash('token-hash')).resolves.toBeNull()
 	})
 
+	it('rejects invalid and regressing WebAuthn counters', async () => {
+		const adapter = new MemoryWebAuthnAdapter()
+		await expect(
+			adapter.createCredential({
+				userId: 'user-1',
+				credentialId: 'credential-invalid',
+				publicKey: 'public-key',
+				counter: -1
+			})
+		).rejects.toThrow('non-negative safe integer')
+
+		await expect(
+			adapter.createCredential({
+				userId: 'user-1',
+				credentialId: 'credential-1',
+				publicKey: 'public-key',
+				counter: 0
+			})
+		).resolves.toBe(true)
+		await expect(
+			adapter.advanceCredentialCounter({
+				credentialId: 'credential-1',
+				userId: 'user-1',
+				expectedCounter: 0,
+				newCounter: 0
+			})
+		).resolves.toBe(true)
+		await expect(
+			adapter.advanceCredentialCounter({
+				credentialId: 'credential-1',
+				userId: 'user-1',
+				expectedCounter: 0,
+				newCounter: 1
+			})
+		).resolves.toBe(true)
+		await expect(
+			adapter.advanceCredentialCounter({
+				credentialId: 'credential-1',
+				userId: 'user-1',
+				expectedCounter: 1,
+				newCounter: 1
+			})
+		).rejects.toThrow('advance monotonically')
+	})
 	it('keeps active MFA factors immutable and backup codes single-use', async () => {
 		const adapter = new MemoryMfaAdapter()
 

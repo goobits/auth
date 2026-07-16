@@ -5,6 +5,7 @@ import type {
 	MfaStatus,
 	OAuthProfile,
 	Session,
+	SessionMetadata,
 	User,
 	VerificationToken,
 	WebAuthnCredential
@@ -20,13 +21,18 @@ import { UserAdapter } from '../database/UserAdapter.ts'
 import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
 import { MfaAdapter, type MfaSecretCodec } from '../mfa/MfaAdapter.ts'
 import { SessionAdapter } from '../session/SessionAdapter.ts'
+import { normalizeSessionMetadata } from '../session/_sessionMetadata.ts'
 import { parseMfaVerifiedAt, parseSessionTimestamp } from '../session/sessionAssurance.ts'
-import { generateSessionId } from '../session/sessionId.ts'
+import { createSessionToken, hashSessionToken } from '../session/sessionId.ts'
 import {
 	VerificationTokenAdapter,
 	type VerificationTokenRecord
 } from '../verification-token/VerificationTokenAdapter.ts'
 import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.ts'
+import {
+	assertCredentialCounterTransition,
+	isValidCredentialCounter
+} from '../webauthn/_credentialCounter.ts'
 
 /** Pg Pool Like typed model for runtime integration. */
 export type PgPoolLike = {
@@ -335,9 +341,11 @@ export class PgSessionAdapter extends SessionAdapter {
 		return this.#cookieName
 	}
 
-	async createSession(userId: string, metadata: Record<string, unknown> = {}): Promise<Session> {
-		const id = generateSessionId(24)
-		const createdAt = parseSessionTimestamp(metadata['createdAt']) ?? new Date()
+	async createSession(userId: string, metadata: SessionMetadata = {}): Promise<Session> {
+		const normalized = normalizeSessionMetadata(metadata)
+		const token = createSessionToken()
+		const verifier = await hashSessionToken(token)
+		const createdAt = normalized.createdAt ?? new Date()
 		const expiresAt = new Date(Date.now() + this.#sessionLifetimeMs)
 		const row = (
 			await this.#db.query<SessionRow>(
@@ -347,23 +355,28 @@ export class PgSessionAdapter extends SessionAdapter {
 			RETURNING *
 		`,
 				[
-					id,
+					verifier,
 					userId,
 					expiresAt,
-					stringValue(metadata['ip']),
-					stringValue(metadata['userAgent']),
-					stringValue(metadata['fingerprint']),
-					parseMfaVerifiedAt(metadata['mfaVerifiedAt']),
+					normalized.ip ?? null,
+					normalized.userAgent ?? null,
+					normalized.fingerprint ?? null,
+					normalized.mfaVerifiedAt ?? null,
 					createdAt
 				]
 			)
 		).rows[0]
-		return toSession(requireRow(row))
+		return {
+			...toSession(requireRow(row)),
+			id: token,
+			...(normalized.rememberMe !== undefined ? { rememberMe: normalized.rememberMe } : {})
+		}
 	}
 
 	async validateSession(
 		sessionId: string
 	): Promise<{ session: Session | null; user: User | null }> {
+		const verifier = await hashSessionToken(sessionId)
 		const row = (
 			await this.#db.query<
 				SessionRow & UserRow & { user_created_at: Date; user_id_for_user: string }
@@ -393,7 +406,7 @@ export class PgSessionAdapter extends SessionAdapter {
 			JOIN auth_users u ON u.id = s.user_id
 			WHERE s.id = $1
 		`,
-				[sessionId]
+				[verifier]
 			)
 		).rows[0]
 		if (!row) {
@@ -404,10 +417,10 @@ export class PgSessionAdapter extends SessionAdapter {
 			return { session: null, user: null }
 		}
 		await this.#db.query('UPDATE auth_sessions SET last_active_at = now() WHERE id = $1', [
-			sessionId
+			verifier
 		])
 		return {
-			session: toSession(row),
+			session: { ...toSession(row), id: sessionId },
 			user: toUser({
 				...row,
 				created_at: row.user_created_at,
@@ -417,21 +430,13 @@ export class PgSessionAdapter extends SessionAdapter {
 	}
 
 	async invalidateSession(sessionId: string): Promise<void> {
-		await this.#db.query('DELETE FROM auth_sessions WHERE id = $1', [sessionId])
+		await this.#db.query('DELETE FROM auth_sessions WHERE id = $1', [
+			await hashSessionToken(sessionId)
+		])
 	}
 
 	async invalidateUserSessions(userId: string): Promise<void> {
 		await this.#db.query('DELETE FROM auth_sessions WHERE user_id = $1', [userId])
-	}
-
-	async listSessions(userId: string): Promise<Session[]> {
-		const rows = (
-			await this.#db.query<SessionRow>(
-				'SELECT * FROM auth_sessions WHERE user_id = $1 ORDER BY created_at DESC',
-				[userId]
-			)
-		).rows
-		return rows.map(toSession)
 	}
 
 	setSessionCookie(cookies: Cookies, session: Session): void {
@@ -527,22 +532,21 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		counter: number
 		transports?: string[] | null
 		name?: string | null
-	}): Promise<void> {
-		await this.#db.query(
+	}): Promise<boolean> {
+		if (!isValidCredentialCounter(counter)) {
+			throw new RangeError('WebAuthn counter must be a non-negative safe integer')
+		}
+		const result = await this.#db.query<{ credential_id: string }>(
 			`
 			INSERT INTO auth_webauthn_credentials
 				(user_id, credential_id, public_key, counter, transports, name)
 			VALUES ($1, $2, $3, $4, $5::jsonb, $6)
-			ON CONFLICT (credential_id) DO UPDATE SET
-				user_id = EXCLUDED.user_id,
-				public_key = EXCLUDED.public_key,
-				counter = EXCLUDED.counter,
-				transports = EXCLUDED.transports,
-				name = EXCLUDED.name,
-				updated_at = now()
+			ON CONFLICT (credential_id) DO NOTHING
+			RETURNING credential_id
 		`,
 			[userId, credentialId, publicKey, counter, JSON.stringify(transports ?? null), name ?? null]
 		)
+		return result.rows.length === 1
 	}
 
 	async getCredential(credentialId: string): Promise<WebAuthnCredential | null> {
@@ -565,44 +569,26 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		return rows.map(toWebAuthnCredential)
 	}
 
-	async updateCredential(credentialId: string, updates: Record<string, unknown>): Promise<void> {
-		const allowed = new Map([
-			['counter', updates['counter']],
-			['name', updates['name']],
-			['transports', updates['transports']]
-		])
-		const fields: string[] = []
-		const values: unknown[] = []
-		for (const [key, value] of allowed.entries()) {
-			if (value === undefined) continue
-			if (key === 'counter' && typeof value !== 'number') continue
-			if (key === 'name' && value !== null && typeof value !== 'string') continue
-			if (key === 'transports') {
-				if (
-					value !== null &&
-					(!Array.isArray(value) || value.some((entry) => typeof entry !== 'string'))
-				) {
-					continue
-				}
-				fields.push(`transports = $${fields.length + 1}::jsonb`)
-				values.push(JSON.stringify(value))
-				continue
-			}
-			fields.push(`${key} = $${fields.length + 1}`)
-			values.push(value)
-		}
-		if (fields.length === 0) {
-			return
-		}
-		values.push(credentialId)
-		await this.#db.query(
-			`
-			UPDATE auth_webauthn_credentials
-			SET ${fields.join(', ')}, updated_at = now()
-			WHERE credential_id = $${values.length}
-		`,
-			values
+	async advanceCredentialCounter({
+		credentialId,
+		userId,
+		expectedCounter,
+		newCounter
+	}: {
+		credentialId: string
+		userId: string
+		expectedCounter: number
+		newCounter: number
+	}): Promise<boolean> {
+		assertCredentialCounterTransition(expectedCounter, newCounter)
+		const result = await this.#db.query<{ credential_id: string }>(
+			`UPDATE auth_webauthn_credentials
+			 SET counter = $1, updated_at = now()
+			 WHERE credential_id = $2 AND user_id = $3 AND counter = $4
+			 RETURNING credential_id`,
+			[newCounter, credentialId, userId, expectedCounter]
 		)
+		return result.rows.length === 1
 	}
 
 	async deleteCredential(credentialId: string): Promise<void> {

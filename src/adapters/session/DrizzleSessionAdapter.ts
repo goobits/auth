@@ -1,11 +1,12 @@
 import type { Cookies } from '@sveltejs/kit'
 import { eq } from 'drizzle-orm'
 
-import type { Session, User } from '../../types/index.ts'
-import type { DrizzleDbLike, DrizzleJson, DrizzleRow, DrizzleTable } from '../drizzleTypes.ts'
+import type { Session, SessionMetadata, User } from '../../types/index.ts'
+import type { DrizzleDbLike, DrizzleRow, DrizzleTable } from '../drizzleTypes.ts'
+import { normalizeSessionMetadata } from './_sessionMetadata.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
 import { parseMfaVerifiedAt, parseSessionTimestamp } from './sessionAssurance.ts'
-import { generateSessionId } from './sessionId.ts'
+import { createSessionToken, hashSessionToken } from './sessionId.ts'
 
 type SessionsTable = DrizzleTable & {
 	id: DrizzleTable[string]
@@ -16,6 +17,7 @@ type SessionsTable = DrizzleTable & {
 	mfaVerifiedAt?: DrizzleTable[string]
 	ip?: DrizzleTable[string]
 	userAgent?: DrizzleTable[string]
+	fingerprint?: DrizzleTable[string]
 }
 
 type UsersTable = DrizzleTable & {
@@ -76,14 +78,6 @@ function toSession(row: DrizzleRow | null): Session | null {
 	}
 }
 
-function pickSessionMetadata(metadata: Record<string, DrizzleJson>): DrizzleRow {
-	const values: DrizzleRow = {}
-	for (const [key, value] of Object.entries(metadata)) {
-		values[key] = value
-	}
-	return values
-}
-
 /** Drizzle session adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class DrizzleSessionAdapter extends SessionAdapter {
 	private db: DrizzleDbLike
@@ -127,32 +121,43 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		return user
 	}
 
-	async createSession(
-		userId: string,
-		metadata: Record<string, DrizzleJson> = {}
-	): Promise<Session> {
-		const sessionId = generateSessionId()
-		const createdAt = parseSessionTimestamp(metadata['createdAt']) ?? new Date()
+	async createSession(userId: string, metadata: SessionMetadata = {}): Promise<Session> {
+		const normalized = normalizeSessionMetadata(metadata)
+		const token = createSessionToken()
+		const verifier = await hashSessionToken(token)
+		const createdAt = normalized.createdAt ?? new Date()
 		const expiresAt = new Date(Date.now() + this.sessionLifetime)
 		await this.db.insert(this.sessionsTable).values({
-			id: sessionId,
+			id: verifier,
 			userId,
 			expiresAt,
-			...pickSessionMetadata(metadata),
-			...(this.sessionsTable.createdAt ? { createdAt } : {})
+			...(this.sessionsTable.createdAt ? { createdAt } : {}),
+			...(this.sessionsTable.lastActiveAt ? { lastActiveAt: createdAt } : {}),
+			...(this.sessionsTable.mfaVerifiedAt
+				? { mfaVerifiedAt: normalized.mfaVerifiedAt ?? null }
+				: {}),
+			...(this.sessionsTable.ip ? { ip: normalized.ip ?? null } : {}),
+			...(this.sessionsTable.userAgent ? { userAgent: normalized.userAgent ?? null } : {}),
+			...(this.sessionsTable.fingerprint ? { fingerprint: normalized.fingerprint ?? null } : {})
 		})
 		return {
-			id: sessionId,
+			id: token,
 			userId,
 			expiresAt,
 			createdAt,
-			mfaVerifiedAt: parseMfaVerifiedAt(metadata['mfaVerifiedAt'])
+			lastActiveAt: createdAt,
+			mfaVerifiedAt: normalized.mfaVerifiedAt ?? null,
+			ip: normalized.ip ?? null,
+			userAgent: normalized.userAgent ?? null,
+			fingerprint: normalized.fingerprint ?? null,
+			...(normalized.rememberMe !== undefined ? { rememberMe: normalized.rememberMe } : {})
 		}
 	}
 
 	async validateSession(
 		sessionId: string
 	): Promise<{ session: Session | null; user: User | null }> {
+		const verifier = await hashSessionToken(sessionId)
 		const [result] = await this.db
 			.select({
 				user: this.usersTable,
@@ -160,13 +165,13 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 			})
 			.from(this.sessionsTable)
 			.innerJoin(this.usersTable, eq(this.sessionsTable.userId, this.usersTable.id))
-			.where(eq(this.sessionsTable.id, sessionId))
+			.where(eq(this.sessionsTable.id, verifier))
 
 		if (!result) return { session: null, user: null }
 		const session = toSession(result['session'] ?? null)
 		if (!session) return { session: null, user: null }
 		if (Date.now() >= session.expiresAt.getTime()) {
-			await this.db.delete(this.sessionsTable).where(eq(this.sessionsTable.id, sessionId))
+			await this.db.delete(this.sessionsTable).where(eq(this.sessionsTable.id, verifier))
 			return { session: null, user: null }
 		}
 		const shouldRefresh = Date.now() >= session.expiresAt.getTime() - this.sessionRefreshThreshold
@@ -176,33 +181,22 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 			await this.db
 				.update(this.sessionsTable)
 				.set({ expiresAt: session.expiresAt })
-				.where(eq(this.sessionsTable.id, sessionId))
+				.where(eq(this.sessionsTable.id, verifier))
 		}
 		return {
-			session,
+			session: { ...session, id: sessionId },
 			user: this.sanitizeUser(toUser(result['user'] ?? null))
 		}
 	}
 
 	async invalidateSession(sessionId: string): Promise<void> {
-		await this.db.delete(this.sessionsTable).where(eq(this.sessionsTable.id, sessionId))
+		await this.db
+			.delete(this.sessionsTable)
+			.where(eq(this.sessionsTable.id, await hashSessionToken(sessionId)))
 	}
 
 	async invalidateUserSessions(userId: string): Promise<void> {
 		await this.db.delete(this.sessionsTable).where(eq(this.sessionsTable.userId, userId))
-	}
-
-	async listSessions(userId: string): Promise<Session[]> {
-		const rows = await this.db
-			.select()
-			.from(this.sessionsTable)
-			.where(eq(this.sessionsTable.userId, userId))
-		const sessions: Session[] = []
-		for (const row of rows) {
-			const session = toSession(row)
-			if (session) sessions.push(session)
-		}
-		return sessions
 	}
 
 	setSessionCookie(cookies: Cookies, session: Session): void {

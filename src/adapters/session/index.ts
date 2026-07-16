@@ -1,4 +1,5 @@
-export { SessionAdapter } from './SessionAdapter.ts'
+export { SessionAdapter, type ManagedSessionAdapter } from './SessionAdapter.ts'
 export { D1SessionAdapter } from './D1SessionAdapter.ts'
 export { DrizzleSessionAdapter } from './DrizzleSessionAdapter.ts'
 export { KVSessionAdapter } from './KVSessionAdapter.ts'
+export { createSessionToken, hashSessionToken } from './sessionId.ts'

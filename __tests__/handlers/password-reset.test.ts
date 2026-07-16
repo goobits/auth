@@ -21,7 +21,7 @@ function createEventWithForm(data: Record<string, string>) {
 describe('password reset handlers', () => {
 	it('blocks request on invalid CSRF', async () => {
 		const handler = createPasswordResetRequestHandler({
-			externalSecurityBoundary: true,
+			validateExternalSecurityBoundary: async () => true,
 			userAdapter: { getUserByEmail: vi.fn() },
 			verificationTokenAdapter: {},
 			sendPasswordResetEmail: vi.fn(),
@@ -36,7 +36,7 @@ describe('password reset handlers', () => {
 	it('does not reveal if user is missing', async () => {
 		const sendPasswordResetEmail = vi.fn()
 		const handler = createPasswordResetRequestHandler({
-			externalSecurityBoundary: true,
+			validateExternalSecurityBoundary: async () => true,
 			userAdapter: { getUserByEmail: vi.fn().mockResolvedValue(null) },
 			verificationTokenAdapter: {},
 			sendPasswordResetEmail
@@ -50,7 +50,7 @@ describe('password reset handlers', () => {
 	it('supports an application identity resolver without changing the public response', async () => {
 		const resolveUser = vi.fn().mockResolvedValue(null)
 		const handler = createPasswordResetRequestHandler({
-			externalSecurityBoundary: true,
+			validateExternalSecurityBoundary: async () => true,
 			userAdapter: { getUserByEmail: vi.fn() },
 			verificationTokenAdapter: {},
 			sendPasswordResetEmail: vi.fn(),
@@ -75,7 +75,7 @@ describe('password reset handlers', () => {
 
 	it('rejects invalid or expired reset token', async () => {
 		const handler = createPasswordResetConfirmHandler({
-			externalSecurityBoundary: true,
+			validateExternalSecurityBoundary: async () => true,
 			credentialsProvider: { createPasswordHash: vi.fn(async () => 'encoded-hash') },
 			completePasswordReset: vi.fn().mockResolvedValue(null)
 		})
@@ -88,7 +88,7 @@ describe('password reset handlers', () => {
 	it('protects reset confirmation with CSRF and rate limiting', async () => {
 		const completePasswordReset = vi.fn()
 		const csrfBlocked = createPasswordResetConfirmHandler({
-			externalSecurityBoundary: true,
+			validateExternalSecurityBoundary: async () => true,
 			credentialsProvider: { createPasswordHash: vi.fn() },
 			completePasswordReset,
 			csrf: { validate: vi.fn().mockResolvedValue(false) }
@@ -98,7 +98,7 @@ describe('password reset handlers', () => {
 		).resolves.toEqual({ error: 'Invalid CSRF token', success: false })
 
 		const rateBlocked = createPasswordResetConfirmHandler({
-			externalSecurityBoundary: true,
+			validateExternalSecurityBoundary: async () => true,
 			credentialsProvider: { createPasswordHash: vi.fn() },
 			completePasswordReset,
 			rateLimit: { check: vi.fn().mockResolvedValue({ allowed: false }) }
@@ -115,7 +115,7 @@ describe('password reset handlers', () => {
 			createPasswordHash: vi.fn(async () => 'encoded-hash')
 		}
 		const handler = createPasswordResetConfirmHandler({
-			externalSecurityBoundary: true,
+			validateExternalSecurityBoundary: async () => true,
 			credentialsProvider,
 			completePasswordReset,
 			redirectTo: '/sign-in'
@@ -134,7 +134,7 @@ describe('password reset handlers', () => {
 	it('never exposes storage errors in the public response', async () => {
 		const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 		const handler = createPasswordResetConfirmHandler({
-			externalSecurityBoundary: true,
+			validateExternalSecurityBoundary: async () => true,
 			credentialsProvider: { createPasswordHash: vi.fn(async () => 'encoded-hash') },
 			completePasswordReset: vi.fn().mockRejectedValue(new Error('database secret detail')),
 			logger

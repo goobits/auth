@@ -233,9 +233,11 @@ describe('pg auth adapters', () => {
 	})
 
 	it('creates sessions through a node-postgres compatible pool', async () => {
+		let storedSessionId = ''
 		const db: PgPoolLike = {
 			async query(text, values = []) {
 				if (text.includes('INSERT INTO auth_sessions')) {
+					storedSessionId = String(values[0])
 					return {
 						rows: [
 							{
@@ -273,6 +275,7 @@ describe('pg auth adapters', () => {
 		expect(session.userId).toBe('user-1')
 		expect(session.fingerprint).toBe('fingerprint')
 		expect(session.mfaVerifiedAt).toEqual(mfaVerifiedAt)
+		expect(storedSessionId).not.toBe(session.id)
 	})
 
 	it('creates WebAuthn challenges and credentials through the postgres bundle', async () => {
@@ -280,6 +283,9 @@ describe('pg auth adapters', () => {
 		const db: PgPoolLike = {
 			async query(text, values = []) {
 				queries.push({ text, values })
+				if (text.includes('INSERT INTO auth_webauthn_credentials')) {
+					return { rows: [{ credential_id: values[1] }] }
+				}
 				if (text.includes('SELECT * FROM auth_webauthn_challenges')) {
 					return {
 						rows: [
@@ -326,14 +332,16 @@ describe('pg auth adapters', () => {
 			type: 'registration',
 			userId: 'user-1'
 		})
-		await adapters.webauthn.createCredential({
-			counter: 0,
-			credentialId: 'credential-1',
-			name: 'Work laptop',
-			publicKey: 'public-key',
-			transports: ['internal'],
-			userId: 'user-1'
-		})
+		await expect(
+			adapters.webauthn.createCredential({
+				counter: 0,
+				credentialId: 'credential-1',
+				name: 'Work laptop',
+				publicKey: 'public-key',
+				transports: ['internal'],
+				userId: 'user-1'
+			})
+		).resolves.toBe(true)
 		const challenge = await adapters.webauthn.getChallenge('challenge-1')
 		const credential = await adapters.webauthn.getCredential('credential-1')
 
@@ -345,6 +353,74 @@ describe('pg auth adapters', () => {
 		expect(
 			queries.some((query) => query.text.includes('INSERT INTO auth_webauthn_credentials'))
 		).toBe(true)
+	})
+
+	it('keeps postgres WebAuthn owners immutable and advances counters with compare-and-swap', async () => {
+		const credential = { counter: 0, owner: 'user-1' }
+		let inserted = false
+		const db: PgPoolLike = {
+			async query(text, values = []) {
+				if (text.includes('INSERT INTO auth_webauthn_credentials')) {
+					if (inserted) return { rows: [] }
+					inserted = true
+					credential.owner = String(values[0])
+					credential.counter = Number(values[3])
+					return { rows: [{ credential_id: values[1] }] }
+				}
+				if (text.includes('UPDATE auth_webauthn_credentials')) {
+					const [newCounter, , owner, expectedCounter] = values
+					if (credential.owner !== owner || credential.counter !== expectedCounter) {
+						return { rows: [] }
+					}
+					credential.counter = Number(newCounter)
+					return { rows: [{ credential_id: 'credential-1' }] }
+				}
+				throw new Error(`Unexpected query: ${text}`)
+			}
+		}
+		const adapters = createPgAuthAdapters({
+			cookieName: 'auth',
+			db,
+			mfaSecretCodec,
+			secureCookies: true
+		})
+		const registration = {
+			counter: 0,
+			credentialId: 'credential-1',
+			publicKey: 'public-key',
+			userId: 'user-1'
+		}
+
+		await expect(adapters.webauthn.createCredential(registration)).resolves.toBe(true)
+		await expect(
+			adapters.webauthn.createCredential({ ...registration, userId: 'attacker' })
+		).resolves.toBe(false)
+		expect(credential.owner).toBe('user-1')
+		await expect(
+			adapters.webauthn.advanceCredentialCounter({
+				credentialId: 'credential-1',
+				userId: 'user-1',
+				expectedCounter: 0,
+				newCounter: 1
+			})
+		).resolves.toBe(true)
+		await expect(
+			adapters.webauthn.advanceCredentialCounter({
+				credentialId: 'credential-1',
+				userId: 'user-1',
+				expectedCounter: 0,
+				newCounter: 2
+			})
+		).resolves.toBe(false)
+		await expect(
+			adapters.webauthn.advanceCredentialCounter({
+				credentialId: 'credential-1',
+				userId: 'attacker',
+				expectedCounter: 1,
+				newCounter: 2
+			})
+		).resolves.toBe(false)
+		expect(credential).toEqual({ counter: 1, owner: 'user-1' })
 	})
 
 	it('stores MFA secrets and backup codes through the postgres bundle', async () => {

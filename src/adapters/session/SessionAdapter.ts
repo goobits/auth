@@ -7,6 +7,9 @@ import type { Session, SessionMetadata, SessionSummary, User } from '../../types
  * All session adapters must implement these methods
  */
 export abstract class SessionAdapter {
+	/** Cookie read and written by this adapter. */
+	abstract readonly cookieName: string
+
 	/**
 	 * Create a new session for a user
 	 * @param {string} userId - User ID to create session for
@@ -39,13 +42,6 @@ export abstract class SessionAdapter {
 	abstract invalidateUserSessions(userId: string): Promise<void>
 
 	/**
-	 * List sessions for a user
-	 * @param {string} userId - User ID
-	 * @returns {Promise<Array<import('../../types/core.ts').Session>>}
-	 */
-	abstract listSessions(userId: string): Promise<Session[]>
-
-	/**
 	 * List non-secret session-management records for a user.
 	 * Adapters must not expose bearer session IDs through this capability.
 	 */
@@ -68,4 +64,10 @@ export abstract class SessionAdapter {
 	 * @returns {void}
 	 */
 	abstract deleteSessionCookie(cookies: Cookies): void
+}
+
+/** Optional session-management capability that never exposes bearer tokens. */
+export interface ManagedSessionAdapter {
+	listManagedSessions(userId: string): Promise<SessionSummary[]>
+	revokeManagedSession(userId: string, managementId: string): Promise<void>
 }

@@ -91,7 +91,11 @@ export type MagicLinkConfig = {
 			secureCookies: boolean
 		}) => Promise<void> | void
 	}
-	settings?: {
+	settings: {
+		/** Canonical public HTTPS origin used in emailed links. */
+		baseUrl: string
+		/** Secret with at least 32 bytes; required when OTP delivery is enabled. */
+		otpPepper?: string | Uint8Array
 		allowSignup?: boolean
 		expiresInMs?: number
 		magicLinkPath?: string
@@ -100,18 +104,14 @@ export type MagicLinkConfig = {
 		singleUsePerEmail?: boolean
 		secureCookies?: boolean
 		normalizeEmail?: (email: string) => string
-		exposeToken?: boolean
 		requireUserConfirmation?: boolean
 		confirmationCookieName?: string
 		confirmationTtlSeconds?: number
-		baseUrl?: string
 		key?: (event: RequestEventLike) => string
 	}
 	limits?: {
 		request?: (event: RequestEventLike) => Promise<void> | void
 		verify?: (key: string) => Promise<{ allowed: boolean }>
-		verifyMax?: number
-		verifyWindowMs?: number
 	}
 	hooks?: {
 		onLogin?: AuthHooks['onLogin']
@@ -174,8 +174,8 @@ export type AuthAlertWebhookConfig = Omit<WebhookChannelOptions, 'url'> & {
 export type AuthSecurityConfig = {
 	csrf?: {
 		mode?: SecurityMode
-		/** Set only when the application enforces an equivalent request boundary before auth routes. */
-		externalBoundary?: boolean
+		/** Executable application-owned request boundary used only when built-in CSRF is off. */
+		validateExternalSecurityBoundary?: (event: RequestEventLike) => boolean | Promise<boolean>
 		cookieName?: string
 		headerName?: string
 		checkExpiry?: boolean

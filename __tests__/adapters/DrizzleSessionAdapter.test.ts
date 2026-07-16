@@ -129,16 +129,16 @@ describe('DrizzleSessionAdapter', () => {
 		expect(cookies.delete).toHaveBeenCalledWith('session', expect.objectContaining({ path: '/' }))
 	})
 
-	it('lists sessions for a user', async () => {
-		mockDb.select = () => ({
-			from: () => ({
-				where: () =>
-					Promise.resolve([{ id: 's1', userId: 'u1', expiresAt: new Date(Date.now() + 60_000) }])
-			})
+	it('persists a verifier instead of the returned bearer token', async () => {
+		let inserted: Record<string, unknown> | undefined
+		mockDb.insert = () => ({
+			values: (values: Record<string, unknown>) => {
+				inserted = values
+				return Promise.resolve()
+			}
 		})
-
-		const sessions = await adapter.listSessions('u1')
-		expect(sessions).toHaveLength(1)
-		expect(sessions[0]?.userId).toBe('u1')
+		const session = await adapter.createSession('u1')
+		expect(inserted?.['id']).toEqual(expect.any(String))
+		expect(inserted?.['id']).not.toBe(session.id)
 	})
 })

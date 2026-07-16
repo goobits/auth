@@ -1,5 +1,6 @@
 import type { OAuthTokens } from '../../types/index.ts'
 import { resolveLogger, type Logger } from '../../_internal/logger.ts'
+import { assertD1Identifier } from '../_d1Sql.ts'
 import type { OAuthTokenCodec, OAuthTokenEncryptionOptions } from './OAuthTokenCodec.ts'
 import { resolveOAuthTokenCodec } from './_tokenEncryption.ts'
 import { openOAuthTokens, serializeOAuthTokens } from './_tokenPayload.ts'
@@ -15,13 +16,6 @@ type D1DatabaseLike = {
 			first: () => Promise<D1Row | null>
 		}
 	}
-}
-
-function quoteIdentifier(value: string): string {
-	if (!/^[A-Za-z_][A-Za-z0-9_]*$/u.test(value)) {
-		throw new Error('D1TokenAdapter received an invalid SQL identifier')
-	}
-	return `"${value}"`
 }
 
 /** Cloudflare D1 token adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
@@ -42,13 +36,16 @@ export class D1TokenAdapter extends TokenAdapter {
 	) {
 		super()
 		this.db = db
-		this.tokensTable = quoteIdentifier(options.tokensTable || 'oauth_tokens')
+		this.tokensTable = assertD1Identifier(options.tokensTable || 'oauth_tokens', 'tokensTable')
 		this.tokenCodec = resolveOAuthTokenCodec(options, 'D1TokenAdapter')
 		this.logger = resolveLogger(options.logger)
 		this.columns = {
-			userId: quoteIdentifier(options.columns?.['userId'] || 'user_id'),
-			provider: quoteIdentifier(options.columns?.['provider'] || 'provider'),
-			tokens: quoteIdentifier(options.columns?.['tokens'] || 'tokens')
+			userId: assertD1Identifier(options.columns?.['userId'] || 'user_id', 'oauthTokens.userId'),
+			provider: assertD1Identifier(
+				options.columns?.['provider'] || 'provider',
+				'oauthTokens.provider'
+			),
+			tokens: assertD1Identifier(options.columns?.['tokens'] || 'tokens', 'oauthTokens.tokens')
 		}
 	}
 

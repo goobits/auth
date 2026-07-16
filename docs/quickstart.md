@@ -30,13 +30,17 @@ export const auth = new GoobitsAuth({
 			})
 		}
 	},
-	security: { rateLimit: { store: sharedRateLimitStore } }
+	security: {
+		rateLimit: { store: sharedRateLimitStore },
+		audit: { emitter: auditEmitter }
+	}
 })
 ```
 
-Use one durable rate-limit store across production instances. The secure
-profile issues CSRF tokens on safe requests, and `createAuthClient()` echoes
-them on unsafe same-origin requests automatically.
+Use one durable rate-limit store across production instances and bridge an
+awaited `@goobits/security/audit` logger with `createAuthEventAuditEmitter`.
+The secure profile issues CSRF tokens on safe requests, and
+`createAuthClient()` echoes them on unsafe same-origin requests automatically.
 
 ## Runtime Notes
 

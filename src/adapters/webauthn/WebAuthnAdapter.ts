@@ -38,7 +38,7 @@ export abstract class WebAuthnAdapter {
 	 * Delete challenge by ID
 	 *
 	 * @param {string} challengeId - Identifier to use.
-	 * @returns {Promise<void>}
+	 * @returns Whether the credential was inserted without replacing an existing owner.
 	 */
 	abstract deleteChallenge(challengeId: string): Promise<void>
 
@@ -67,7 +67,7 @@ export abstract class WebAuthnAdapter {
 		counter: number
 		transports?: string[] | null
 		name?: string | null
-	}): Promise<void>
+	}): Promise<boolean>
 
 	/**
 	 * Get a credential by ID
@@ -85,14 +85,13 @@ export abstract class WebAuthnAdapter {
 	 */
 	abstract listCredentials(userId: string): Promise<Record<string, unknown>[]>
 
-	/**
-	 * Update a credential (e.g., counter)
-	 *
-	 * @param {string} credentialId - Identifier to use.
-	 * @param {Object} updates - Updates to apply.
-	 * @returns {Promise<void>}
-	 */
-	abstract updateCredential(credentialId: string, updates: Record<string, unknown>): Promise<void>
+	/** Atomically advances a credential counter for its immutable owner. */
+	abstract advanceCredentialCounter(input: {
+		credentialId: string
+		userId: string
+		expectedCounter: number
+		newCounter: number
+	}): Promise<boolean>
 
 	/**
 	 * Delete a credential

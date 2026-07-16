@@ -26,6 +26,7 @@ function createSessionAdapter(validateResult: {
 	user: User | null
 }): SessionAdapter {
 	return {
+		cookieName: 'session',
 		createSession: vi.fn(async (userId: string) => ({
 			id: `s:${userId}`,
 			userId,
@@ -34,7 +35,6 @@ function createSessionAdapter(validateResult: {
 		validateSession: vi.fn(async () => validateResult),
 		invalidateSession: vi.fn(async () => {}),
 		invalidateUserSessions: vi.fn(async () => {}),
-		listSessions: vi.fn(async () => []),
 		setSessionCookie: vi.fn(),
 		deleteSessionCookie: vi.fn()
 	}
@@ -140,6 +140,36 @@ describe('GoobitsAuth', () => {
 		event.locals.session = session
 		event.locals.user = user
 		await expect(auth.requireAuthRole(event, 'admin')).rejects.toMatchObject({ status: 403 })
+	})
+
+	it('never infers trusted roles from user-controlled settings', async () => {
+		const user: User = {
+			id: 'u3',
+			email: 'u3@example.com',
+			name: 'User Three',
+			avatar: null,
+			emailVerified: true,
+			settings: { roles: ['admin'] }
+		}
+		const session: Session = {
+			id: 's3',
+			userId: user.id,
+			expiresAt: new Date(Date.now() + 60_000)
+		}
+		const event = createRequestEvent({ url: 'http://localhost/protected' })
+		event.locals.session = session
+		event.locals.user = user
+
+		const defaultAuth = new GoobitsAuth({
+			adapter: { session: createSessionAdapter({ session, user }) }
+		})
+		await expect(defaultAuth.requireAuthRole(event, 'admin')).rejects.toMatchObject({ status: 403 })
+
+		const resolvedAuth = new GoobitsAuth({
+			adapter: { session: createSessionAdapter({ session, user }) },
+			resolveAuthRoles: async (candidate) => (candidate.id === user.id ? ['admin'] : [])
+		})
+		await expect(resolvedAuth.requireAuthRole(event, 'admin')).resolves.toBe(user)
 	})
 
 	it('emits application-owned events through the configured security pipeline', async () => {

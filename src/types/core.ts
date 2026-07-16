@@ -14,10 +14,11 @@ export type Session = {
 	ip?: string | null
 	userAgent?: string | null
 	fingerprint?: string | null
+	rememberMe?: boolean
 }
 
 /** Describes the auth domain record used for session metadata. */
-export type SessionMetadata = Record<string, unknown> & {
+export type SessionMetadata = {
 	/** Trusted primary-authentication time preserved across session rotation. */
 	createdAt?: Date
 	rememberMe?: boolean

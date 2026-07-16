@@ -69,14 +69,20 @@ export const auth = new GoobitsAuth({
 			})
 		}
 	},
-	security: { rateLimit: { store: sharedRateLimitStore } }
+	security: {
+		rateLimit: { store: sharedRateLimitStore },
+		audit: { emitter: auditEmitter }
+	}
 })
 ```
 
 The `secure` profile requires CSRF and rate limiting. Production deployments
-must provide a shared rate-limit store. If an application-wide origin guard
+must provide a shared rate-limit store and an awaited audit emitter. Build the
+emitter with `createAuthEventAuditEmitter` to bridge a
+`@goobits/security/audit` logger. If an application-wide origin guard
 already protects every auth route, declare that boundary explicitly with
-`csrf: { mode: 'off', externalBoundary: true }`. The Auth client echoes
+`csrf: { mode: 'off', validateExternalSecurityBoundary: verifyOrigin }`, where
+the callback validates every request at runtime. The Auth client echoes
 same-origin CSRF cookies through `@goobits/security/csrf-client`.
 
 ## Runtime Targets
@@ -116,20 +122,21 @@ through the product access system.
 ## Security Primitives
 
 `@goobits/auth/security` exports auth-specific policy, authorization, audit,
-CSRF ergonomics, alerting, and signed-session helpers:
+alerting, and authentication rate-limit presets:
 
 ```ts
 import {
-	createSignedSessionToken,
+	createLoginRateLimiter,
 	requireAuthenticated,
-	requireOwnership,
-	verifySignedSessionToken
+	requireOwnership
 } from '@goobits/auth/security'
 ```
 
-- Signed, expiring session-token claims for custom session stores.
-- Auth event auditing, authorization guards, CSRF cookie helpers, and security
-  policy composition.
+- Auth event auditing, authorization guards, authentication policy, and alert
+  composition.
+- Session bearer generation and hashing live at
+  `@goobits/auth/adapters/session`; generic CSRF primitives live at
+  `@goobits/security/csrf` and `@goobits/security/csrf/sveltekit`.
 
 Generic HTTP credentials, redaction, cryptography, logging, and rate-limit
 counters belong to `@goobits/security`. Authentication policy presets belong to

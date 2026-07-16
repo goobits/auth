@@ -1,10 +1,12 @@
 import type { Cookies } from '@sveltejs/kit'
 
-import type { Session, SessionSummary, User } from '../../types/index.ts'
+import type { Session, SessionMetadata, SessionSummary, User } from '../../types/index.ts'
 import { AuthAdapterCapabilityError } from '../../errors/AuthPrincipalResolutionError.ts'
+import { assertD1Identifiers } from '../_d1Sql.ts'
+import { normalizeSessionMetadata } from './_sessionMetadata.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
 import { parseMfaVerifiedAt, parseSessionTimestamp } from './sessionAssurance.ts'
-import { generateSessionId } from './sessionId.ts'
+import { createSessionToken, generateSessionId, hashSessionToken } from './sessionId.ts'
 
 type D1Value = string | number | boolean | null
 type D1Row = Record<string, D1Value>
@@ -125,6 +127,16 @@ export class D1SessionAdapter extends SessionAdapter {
 			createdAt: options.userColumns?.createdAt || 'created_at',
 			updatedAt: options.userColumns?.updatedAt || 'updated_at'
 		}
+		assertD1Identifiers({
+			sessionsTable: this.sessionsTable,
+			usersTable: this.usersTable,
+			...Object.fromEntries(
+				Object.entries(this.columns).map(([key, value]) => [`sessions.${key}`, value])
+			),
+			...Object.fromEntries(
+				Object.entries(this.userColumns).map(([key, value]) => [`users.${key}`, value])
+			)
+		})
 	}
 
 	_defaultSanitizeUser(user: User | null): User | null {
@@ -155,14 +167,16 @@ export class D1SessionAdapter extends SessionAdapter {
 		)
 	}
 
-	async createSession(userId: string, metadata: Record<string, unknown> = {}) {
-		const sessionId = generateSessionId()
+	async createSession(userId: string, metadata: SessionMetadata = {}) {
+		const normalized = normalizeSessionMetadata(metadata)
+		const token = createSessionToken()
+		const verifier = await hashSessionToken(token)
 		const managementId = this.columns.managementId ? generateSessionId() : null
-		const createdAt = parseSessionTimestamp(metadata['createdAt']) ?? new Date()
+		const createdAt = normalized.createdAt ?? new Date()
 		const expiresAt = new Date(Date.now() + this.sessionLifetime)
-		const mfaVerifiedAt = parseMfaVerifiedAt(metadata['mfaVerifiedAt'])
+		const mfaVerifiedAt = normalized.mfaVerifiedAt
 		const columns = [this.columns.sessionId, this.columns.userId, this.columns.expiresAt]
-		const values: D1Value[] = [sessionId, this._coerceDbId(userId), expiresAt.toISOString()]
+		const values: D1Value[] = [verifier, this._coerceDbId(userId), expiresAt.toISOString()]
 		if (this.columns.managementId) {
 			columns.push(this.columns.managementId)
 			values.push(managementId)
@@ -181,11 +195,11 @@ export class D1SessionAdapter extends SessionAdapter {
 		}
 		if (this.columns.ip) {
 			columns.push(this.columns.ip)
-			values.push(typeof metadata['ip'] === 'string' ? metadata['ip'] : null)
+			values.push(normalized.ip ?? null)
 		}
 		if (this.columns.userAgent) {
 			columns.push(this.columns.userAgent)
-			values.push(typeof metadata['userAgent'] === 'string' ? metadata['userAgent'] : null)
+			values.push(normalized.userAgent ?? null)
 		}
 		const placeholders = columns.map(() => '?').join(', ')
 		await this.db
@@ -193,18 +207,22 @@ export class D1SessionAdapter extends SessionAdapter {
 			.bind(...values)
 			.run()
 		return {
-			id: sessionId,
+			id: token,
 			...(managementId ? { managementId } : {}),
 			userId,
 			expiresAt,
-			...metadata,
 			createdAt,
 			lastActiveAt: createdAt,
-			mfaVerifiedAt
+			mfaVerifiedAt: mfaVerifiedAt ?? null,
+			ip: normalized.ip ?? null,
+			userAgent: normalized.userAgent ?? null,
+			fingerprint: normalized.fingerprint ?? null,
+			...(normalized.rememberMe !== undefined ? { rememberMe: normalized.rememberMe } : {})
 		}
 	}
 
 	async validateSession(sessionId: string) {
+		const verifier = await hashSessionToken(sessionId)
 		const optionalSelection = (column: string | null, alias: string) =>
 			column ? `s.${column} as ${alias}` : `NULL as ${alias}`
 		const assuranceSelection = this.columns.mfaVerifiedAt
@@ -214,7 +232,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		FROM ${this.sessionsTable} s
 		JOIN ${this.usersTable} u ON s.${this.columns.userId} = u.${this.userColumns.id}
 		WHERE s.${this.columns.sessionId} = ? LIMIT 1`
-		const row = await this.db.prepare(sql).bind(sessionId).first()
+		const row = await this.db.prepare(sql).bind(verifier).first()
 		if (!row) return { session: null, user: null }
 
 		const expiresAtRaw = row['expires_at']
@@ -224,7 +242,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		if (Date.now() >= expiresAt.getTime()) {
 			await this.db
 				.prepare(`DELETE FROM ${this.sessionsTable} WHERE ${this.columns.sessionId} = ?`)
-				.bind(sessionId)
+				.bind(verifier)
 				.run()
 			return { session: null, user: null }
 		}
@@ -242,7 +260,7 @@ export class D1SessionAdapter extends SessionAdapter {
 				lastActiveAt = new Date()
 				values.push(this._serializeTimestamp(lastActiveAt))
 			}
-			values.push(sessionId)
+			values.push(verifier)
 			await this.db
 				.prepare(
 					`UPDATE ${this.sessionsTable} SET ${this.columns.expiresAt} = ?${activityUpdate} WHERE ${this.columns.sessionId} = ?`
@@ -369,7 +387,7 @@ export class D1SessionAdapter extends SessionAdapter {
 	async invalidateSession(sessionId: string) {
 		await this.db
 			.prepare(`DELETE FROM ${this.sessionsTable} WHERE ${this.columns.sessionId} = ?`)
-			.bind(sessionId)
+			.bind(await hashSessionToken(sessionId))
 			.run()
 	}
 
@@ -380,78 +398,42 @@ export class D1SessionAdapter extends SessionAdapter {
 			.run()
 	}
 
-	async listSessions(userId: string): Promise<Session[]> {
-		const columns = [
-			this.columns.sessionId,
-			this.columns.managementId,
-			this.columns.userId,
-			this.columns.expiresAt,
-			this.columns.createdAt,
-			this.columns.lastActiveAt,
-			this.columns.mfaVerifiedAt,
-			this.columns.ip,
-			this.columns.userAgent
-		]
-		const unique = [...new Set(columns.filter(Boolean))]
-		const sql = `SELECT ${unique.join(', ')} FROM ${this.sessionsTable} WHERE ${this.columns.userId} = ?`
-		const result = await this.db.prepare(sql).bind(this._coerceDbId(userId)).all()
-		const sessions: Session[] = []
-		for (const row of result?.results ?? []) {
-			const id = row[this.columns.sessionId] ?? row['id']
-			const managementIdRaw = this.columns.managementId ? row[this.columns.managementId] : null
-			const uid = row[this.columns.userId] ?? row['user_id']
-			const expiresRaw = row[this.columns['expiresAt']] ?? row['expires_at'] ?? row['expiresAt']
-			if (
-				(typeof id !== 'string' && typeof id !== 'number') ||
-				(typeof uid !== 'string' && typeof uid !== 'number') ||
-				typeof expiresRaw !== 'string'
-			) {
-				continue
-			}
-			const expiresAt = new Date(expiresRaw)
-			if (Number.isNaN(expiresAt.getTime())) continue
-			const mfaVerifiedAtRaw = this.columns.mfaVerifiedAt ? row[this.columns.mfaVerifiedAt] : null
-			const createdAtRaw = this.columns.createdAt ? row[this.columns.createdAt] : null
-			const lastActiveAtRaw = this.columns.lastActiveAt ? row[this.columns.lastActiveAt] : null
-			const ipRaw = this.columns.ip ? row[this.columns.ip] : null
-			const userAgentRaw = this.columns.userAgent ? row[this.columns.userAgent] : null
-			const createdAt = this._parseStoredTimestamp(createdAtRaw)
-			sessions.push({
-				id: String(id),
-				...(typeof managementIdRaw === 'string' ? { managementId: managementIdRaw } : {}),
-				userId: String(uid),
-				expiresAt,
-				...(createdAt ? { createdAt } : {}),
-				lastActiveAt: this._parseStoredTimestamp(lastActiveAtRaw),
-				mfaVerifiedAt: this._parseStoredMfaTimestamp(mfaVerifiedAtRaw),
-				ip: typeof ipRaw === 'string' ? ipRaw : null,
-				userAgent: typeof userAgentRaw === 'string' ? userAgentRaw : null
-			})
-		}
-		return sessions
-	}
-
 	async listManagedSessions(userId: string): Promise<SessionSummary[]> {
 		if (!this.columns.managementId) {
 			throw new AuthAdapterCapabilityError(
 				'D1SessionAdapter requires a managementId column for session management'
 			)
 		}
-		return (await this.listSessions(userId)).flatMap((session) =>
-			session.managementId
-				? [
-						{
-							id: session.managementId,
-							userId: session.userId,
-							expiresAt: session.expiresAt,
-							createdAt: session.createdAt ?? null,
-							lastActiveAt: session.lastActiveAt ?? null,
-							ip: session.ip ?? null,
-							userAgent: session.userAgent ?? null
-						}
-					]
-				: []
-		)
+		const optionalSelection = (column: string | null, alias: string) =>
+			column ? `${column} as ${alias}` : `NULL as ${alias}`
+		const sql = `SELECT ${this.columns.managementId} as management_id, ${this.columns.userId} as user_id, ${this.columns.expiresAt} as expires_at, ${optionalSelection(this.columns.createdAt, 'created_at')}, ${optionalSelection(this.columns.lastActiveAt, 'last_active_at')}, ${optionalSelection(this.columns.ip, 'session_ip')}, ${optionalSelection(this.columns.userAgent, 'session_user_agent')} FROM ${this.sessionsTable} WHERE ${this.columns.userId} = ?`
+		const result = await this.db.prepare(sql).bind(this._coerceDbId(userId)).all()
+		return (result.results ?? []).flatMap((row) => {
+			const managementId = row['management_id']
+			const storedUserId = row['user_id']
+			const expiresAtRaw = row['expires_at']
+			if (
+				typeof managementId !== 'string' ||
+				(typeof storedUserId !== 'string' && typeof storedUserId !== 'number') ||
+				typeof expiresAtRaw !== 'string'
+			) {
+				return []
+			}
+			const expiresAt = new Date(expiresAtRaw)
+			if (Number.isNaN(expiresAt.getTime())) return []
+			return [
+				{
+					id: managementId,
+					userId: String(storedUserId),
+					expiresAt,
+					createdAt: this._parseStoredTimestamp(row['created_at']),
+					lastActiveAt: this._parseStoredTimestamp(row['last_active_at']),
+					ip: typeof row['session_ip'] === 'string' ? row['session_ip'] : null,
+					userAgent:
+						typeof row['session_user_agent'] === 'string' ? row['session_user_agent'] : null
+				}
+			]
+		})
 	}
 
 	async revokeManagedSession(userId: string, managementId: string): Promise<void> {

@@ -5,6 +5,8 @@ import type {
 	OAuthProfile,
 	OAuthTokens,
 	Session,
+	SessionMetadata,
+	SessionSummary,
 	User,
 	WebAuthnCredential
 } from '../../types/index.ts'
@@ -20,8 +22,13 @@ import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
 import { MfaAdapter } from '../mfa/MfaAdapter.ts'
 import { TokenAdapter } from '../oauth-token/TokenAdapter.ts'
 import { SessionAdapter } from '../session/SessionAdapter.ts'
-import { generateSessionId } from '../session/sessionId.ts'
+import { normalizeSessionMetadata } from '../session/_sessionMetadata.ts'
+import { createSessionToken, generateSessionId, hashSessionToken } from '../session/sessionId.ts'
 import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.ts'
+import {
+	assertCredentialCounterTransition,
+	isValidCredentialCounter
+} from '../webauthn/_credentialCounter.ts'
 
 type StoredUser = User & { password?: string | null }
 type StoredMagicLinkToken = {
@@ -287,38 +294,47 @@ export class MemorySessionAdapter extends SessionAdapter {
 		return this.#cookieName
 	}
 
-	async createSession(userId: string, metadata: Record<string, unknown> = {}): Promise<Session> {
+	async createSession(userId: string, metadata: SessionMetadata = {}): Promise<Session> {
+		const normalized = normalizeSessionMetadata(metadata)
+		const token = createSessionToken()
+		const verifier = await hashSessionToken(token)
+		const createdAt = normalized.createdAt ?? new Date()
 		const session: Session = {
+			createdAt,
 			expiresAt: new Date(Date.now() + this.#sessionLifetimeMs),
-			fingerprint: stringValue(metadata['fingerprint']) ?? null,
-			id: generateSessionId(24),
-			ip: stringValue(metadata['ip']) ?? null,
-			userAgent: stringValue(metadata['userAgent']) ?? null,
+			fingerprint: normalized.fingerprint ?? null,
+			id: verifier,
+			ip: normalized.ip ?? null,
+			managementId: generateSessionId(),
+			mfaVerifiedAt: normalized.mfaVerifiedAt ?? null,
+			...(normalized.rememberMe !== undefined ? { rememberMe: normalized.rememberMe } : {}),
+			userAgent: normalized.userAgent ?? null,
 			userId
 		}
-		this.#sessions.set(session.id, session)
-		return session
+		this.#sessions.set(verifier, session)
+		return { ...session, id: token }
 	}
 
 	async validateSession(
 		sessionId: string
 	): Promise<{ session: Session | null; user: User | null }> {
-		const session = this.#sessions.get(sessionId)
+		const verifier = await hashSessionToken(sessionId)
+		const session = this.#sessions.get(verifier)
 		if (!session) {
 			return { session: null, user: null }
 		}
 		if (session.expiresAt.getTime() <= Date.now()) {
-			this.#sessions.delete(sessionId)
+			this.#sessions.delete(verifier)
 			return { session: null, user: null }
 		}
 		return {
-			session,
+			session: { ...session, id: sessionId },
 			user: await this.#users.getUserById(session.userId)
 		}
 	}
 
 	async invalidateSession(sessionId: string): Promise<void> {
-		this.#sessions.delete(sessionId)
+		this.#sessions.delete(await hashSessionToken(sessionId))
 	}
 
 	async invalidateUserSessions(userId: string): Promise<void> {
@@ -329,8 +345,30 @@ export class MemorySessionAdapter extends SessionAdapter {
 		}
 	}
 
-	async listSessions(userId: string): Promise<Session[]> {
-		return [...this.#sessions.values()].filter((session) => session.userId === userId)
+	async listManagedSessions(userId: string): Promise<SessionSummary[]> {
+		return [...this.#sessions.values()].flatMap((session) =>
+			session.userId === userId && session.managementId
+				? [
+						{
+							id: session.managementId,
+							userId,
+							expiresAt: session.expiresAt,
+							createdAt: session.createdAt ?? null,
+							ip: session.ip ?? null,
+							userAgent: session.userAgent ?? null
+						}
+					]
+				: []
+		)
+	}
+
+	async revokeManagedSession(userId: string, managementId: string): Promise<void> {
+		for (const [verifier, session] of this.#sessions.entries()) {
+			if (session.userId === userId && session.managementId === managementId) {
+				this.#sessions.delete(verifier)
+				return
+			}
+		}
 	}
 
 	setSessionCookie(cookies: Cookies, session: Session): void {
@@ -407,7 +445,11 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 		counter: number
 		transports?: string[] | null
 		name?: string | null
-	}): Promise<void> {
+	}): Promise<boolean> {
+		if (!isValidCredentialCounter(counter)) {
+			throw new RangeError('WebAuthn counter must be a non-negative safe integer')
+		}
+		if (this.#credentials.has(credentialId)) return false
 		const now = new Date()
 		this.#credentials.set(credentialId, {
 			counter,
@@ -420,6 +462,7 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 			updatedAt: now,
 			userId
 		})
+		return true
 	}
 
 	async getCredential(credentialId: string): Promise<WebAuthnCredential | null> {
@@ -430,29 +473,27 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 		return [...this.#credentials.values()].filter((credential) => credential.userId === userId)
 	}
 
-	async updateCredential(credentialId: string, updates: Record<string, unknown>): Promise<void> {
+	async advanceCredentialCounter({
+		credentialId,
+		userId,
+		expectedCounter,
+		newCounter
+	}: {
+		credentialId: string
+		userId: string
+		expectedCounter: number
+		newCounter: number
+	}): Promise<boolean> {
+		assertCredentialCounterTransition(expectedCounter, newCounter)
 		const existing = this.#credentials.get(credentialId)
-		if (!existing) {
-			return
-		}
-		const next: WebAuthnCredential = {
+		if (!existing || existing.userId !== userId || existing.counter !== expectedCounter)
+			return false
+		this.#credentials.set(credentialId, {
 			...existing,
+			counter: newCounter,
 			updatedAt: new Date()
-		}
-		if (typeof updates['counter'] === 'number') {
-			next.counter = updates['counter']
-		}
-		if (updates['name'] === null || typeof updates['name'] === 'string') {
-			next.name = updates['name']
-		}
-		if (
-			updates['transports'] === null ||
-			(Array.isArray(updates['transports']) &&
-				updates['transports'].every((entry) => typeof entry === 'string'))
-		) {
-			next.transports = updates['transports']
-		}
-		this.#credentials.set(credentialId, next)
+		})
+		return true
 	}
 
 	async deleteCredential(credentialId: string): Promise<void> {

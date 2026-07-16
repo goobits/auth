@@ -16,6 +16,8 @@
   `@goobits/auth/verification`.
 - Generic HTTP credentials, cryptography, logging, and redaction are imported
   directly from `@goobits/security`; Auth no longer re-exports them.
+- Session stores persist SHA-256 verifiers, never bearer cookie values, and
+  session-management APIs use separate non-secret handles.
 
 ## Before/After
 
@@ -157,6 +159,48 @@ idempotent `ALTER TABLE`; KV records need no migration. D1 applications must
 explicitly set `columns.mfaVerifiedAt` to the migrated column when they use
 session assurance; the compatibility default is `null`.
 
+## Session bearer cutover
+
+Built-in adapters now return a 256-bit bearer token to the cookie layer and
+persist only its SHA-256 verifier. Existing rows that stored raw session IDs no
+longer authenticate after deployment, so this upgrade intentionally signs out
+all existing sessions. Do not add a raw-token fallback. Clear old session rows
+as part of the deployment and retain only application data needed for audit or
+retention policy.
+
+`SessionAdapter.listSessions()` was removed because it exposed persisted bearer
+identifiers. Applications that offer session management must implement
+`listManagedSessions()` and `revokeManagedSession()` with a distinct opaque
+management ID. `SessionMetadata` accepts only the documented bounded fields;
+unknown fields are rejected at runtime.
+
+Every `SessionAdapter` now declares its public `cookieName`. Remove application
+fallback casts and configure the cookie name on the adapter itself.
+
+## Magic-link origin and OTP secret
+
+`magicLink.settings` is required and must include a credential-free HTTPS
+`baseUrl` origin. When OTP delivery is enabled (the default), also provide an
+`otpPepper` containing at least 32 bytes. Auth stores only an HMAC bound to the
+normalized email; the raw link token and OTP are supplied only to `send.email`.
+Production magic-link deployments require the configured shared rate-limit
+store and audit emitter used by the rest of the Auth pipeline.
+
+## WebAuthn credential ownership and counters
+
+Custom WebAuthn adapters must make `createCredential()` insert-only and return
+whether the row was created. Replace generic credential updates with
+`advanceCredentialCounter({ credentialId, userId, expectedCounter, newCounter })`,
+implemented as one compare-and-swap statement. Do not overwrite an existing
+credential owner or update a counter after a stale read.
+
+## Trusted role resolution
+
+Auth no longer reads roles from `user.settings.roles`. Keep one authoritative
+role field on the user record or configure `resolveAuthRoles(user)` to read a
+trusted application-owned capability. Request-time callers cannot substitute a
+different resolver.
+
 ## PostgreSQL MFA encryption
 
 `PgMfaAdapter` and `createPgAuthAdapters` now require an `mfaSecretCodec`.
@@ -171,7 +215,8 @@ authenticated context and retain old decryption keys for controlled rotation.
 The `secure` profile now requires built-in CSRF by default. If an application
 already enforces an equivalent origin boundary before every auth route, disable
 the built-in check only with
-`csrf: { mode: 'off', externalBoundary: true }`. Production `secure` and
+`csrf: { mode: 'off', validateExternalSecurityBoundary: verifyOrigin }`. The
+callback runs for every unsafe request and must fail closed. Production `secure` and
 `strict` profiles also require an explicit shared rate-limit store; `strict`
 requires a shared CSRF store because it validates token expiry. The browser
 client now echoes same-origin CSRF cookies through
@@ -224,7 +269,12 @@ outside the central policy.
 `createPasswordResetRequestHandler`, and
 `createPasswordResetConfirmHandler` now require handler-owned CSRF and
 rate-limit callbacks. If an outer application policy always runs first, pass
-`externalSecurityBoundary: true` explicitly.
+`validateExternalSecurityBoundary(event)` explicitly. Construction fails when
+neither owned checks nor an executable outer-boundary validator is present.
+
+Auth no longer re-exports CSRF issuance or validation. Import generic CSRF
+state from `@goobits/security/csrf` and SvelteKit request integration from
+`@goobits/security/csrf/sveltekit`.
 
 `CookieSessionAdapter` has been removed. It stored sessions in one process and
 could not resolve users, so it was neither stateless nor safe for multi-instance

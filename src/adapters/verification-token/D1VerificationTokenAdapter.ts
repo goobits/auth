@@ -1,4 +1,5 @@
 import type { User, VerificationToken } from '../../types/index.ts'
+import { assertD1Identifiers } from '../_d1Sql.ts'
 import { generateRandomUUID } from '../../utils/crypto.ts'
 import { VerificationTokenAdapter } from './VerificationTokenAdapter.ts'
 
@@ -87,6 +88,13 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		}
 		if (options.columns?.['createdAt']) this.columns.createdAt = options.columns['createdAt']
 		if (options.columns?.['metadata']) this.columns.metadata = options.columns['metadata']
+		assertD1Identifiers({
+			tokensTable: this.tokensTable,
+			usersTable: this.usersTable,
+			...Object.fromEntries(
+				Object.entries(this.columns).map(([key, value]) => [`verificationTokens.${key}`, value])
+			)
+		})
 		this.userColumns = {
 			id: options.userColumns?.['id'] || 'id',
 			email: options.userColumns?.['email'] || 'email',

@@ -10,6 +10,9 @@
 
 ### 🔒 Security
 
+- 🍪 Built-in session adapters now persist only SHA-256 verifiers, return bearer
+  values solely to the cookie layer, reject open-ended metadata, and expose
+  session management only through distinct non-secret handles.
 - 🔐 Password hashes now cross only the dedicated `PasswordCredentialAdapter`
   capability; general user/profile adapters remain sanitized and password-blind.
 - 🔁 Password-reset completion is application-owned and atomic: consume the
@@ -23,6 +26,12 @@
   and backup-code use fails closed on concurrent consumption.
 - 🔑 Passkey registration now requires application-owned fresh
   reauthentication and rejects challenge verification under a different principal.
+- 🔑 Passkey credentials are insert-only by credential ID, signature counters
+  advance through owner-bound compare-and-swap operations, and invalid or
+  regressing counters fail before session creation.
+- ✉️ Magic-link URLs require a canonical HTTPS origin; optional numeric codes
+  are HMAC-bound to their normalized email with a deployment secret, and raw
+  credentials reach only the configured delivery callback.
 - 🛡️ Drizzle, D1, KV, and PostgreSQL session adapters now persist MFA assurance
   across validation, refresh, and session-listing round trips.
 - 🔐 PostgreSQL MFA storage now requires an application-owned encryption codec;
@@ -40,7 +49,9 @@
   `trustedProxyHeaders` or an application-owned `rateLimit.key` callback.
 - 👤 OAuth routes no longer use the global OAuth POST fallback, and redirect endpoints enforce safer request paths.
 - 👤 Auth error logging now avoids raw exception objects so sensitive provider, password, and token details are not emitted.
-- 👤 Auth crypto-sensitive helpers for API keys, CSRF tokens, signed session tokens, token encryption, random bytes, and SHA-256 now use `@goobits/security/crypto` while preserving the auth-facing helper APIs.
+- 👤 Auth cryptographic operations delegate to `@goobits/security/crypto`;
+  generic API-key and CSRF APIs are consumed directly from Security while
+  Auth retains only authentication-specific session and token orchestration.
 - 🧱 Authentication-specific login, registration, and password-reset limiter
   presets now have one owner in `@goobits/auth/security`; managed Auth policy and
   custom app routes consume the same multi-window limits.
@@ -53,6 +64,13 @@
 - 🧱 D1 and Drizzle OAuth token writes now require atomic `(user, provider)`
   upserts, preventing read-time resealing or concurrent login from deleting a
   valid token row.
+- 🧱 Every configurable D1 table and column name now passes one strict
+  identifier validator before SQL construction.
+- 👥 Role resolution no longer trusts arbitrary `user.settings`; applications
+  may provide one explicit `resolveAuthRoles` callback for trusted role data.
+- 📜 The Auth-to-Security audit bridge omits free-form event messages and
+  redacts structured detail before durable storage, preventing backend error
+  text from becoming an accidental secret channel.
 
 ### 🏠 Internal
 
@@ -66,14 +84,20 @@
 - 📦 Published entrypoints now resolve compiled Node/Worker JavaScript and declarations; the source-only security runtime is bundled at this distribution boundary, and smoke checks cover every export and the packed file list.
 - 🧭 Removed the auth type cycle, stale source-entrypoint map, undeclared TypeScript script runner, unpinned API-map commands, unused `pg-server` fixture dependency, and accidental exports from private helpers.
 - 📚 Public API docs now describe the curated package entrypoints and low-level subpaths.
+- 📌 Runtime exports for every supported non-UI subpath are snapshot-pinned so
+  accidental public/private API drift fails tests.
 - 📦 Development dependencies refreshed for the current package toolchain.
-- Removed generic `auditLog` and `withAuditLogging` exports from `@goobits/auth/security`; generic audit logging now belongs to `@goobits/security/audit`, while auth keeps `auditAuthEvent` for auth-specific event names.
+- Removed generic `auditLog` and `withAuditLogging` exports from
+  `@goobits/auth/security`; one awaited auth-event emitter now bridges all
+  managed handlers to `@goobits/security/audit`.
 - Removed Auth-owned Basic-auth and API-key helpers; generic HTTP credentials now
   live exclusively in `@goobits/security/http-credentials`.
 - Removed auth-side reCAPTCHA verification. Use `@goobits/security/recaptcha` directly for structured CAPTCHA verification.
 - Removed auth-side rate-limit mechanisms. Auth owns only authentication policy
   presets and delegates counters to `@goobits/security/rate-limit`.
-- Routed auth-side CSRF issuance and validation through `@goobits/security/csrf`; auth keeps only SvelteKit cookie ergonomics.
+- Removed the duplicate public Auth CSRF surface. Managed routes consume
+  `@goobits/security/csrf/sveltekit` internally and applications import
+  Security's CSRF APIs directly.
 - Removed auth-side webhook alert transport. Auth threshold alerts now dispatch through `@goobits/security/alerting`.
 - Removed the unused migration notification UI export.
 

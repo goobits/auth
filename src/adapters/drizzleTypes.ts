@@ -23,6 +23,9 @@ export type InsertConflictQuery = {
 		target: SQLWrapper | SQLWrapper[]
 		set: DrizzleRow
 	}) => Promise<void>
+	onConflictDoNothing: (options: { target: SQLWrapper }) => {
+		returning: () => Promise<DrizzleRow[]>
+	}
 }
 
 export type InsertQuery = {
@@ -31,7 +34,9 @@ export type InsertQuery = {
 
 export type UpdateQuery = {
 	set: (values: DrizzleRow) => {
-		where: (condition: SQLWrapper) => Promise<void>
+		where: (condition: SQLWrapper) => Promise<void> & {
+			returning: () => Promise<DrizzleRow[]>
+		}
 	}
 }
 

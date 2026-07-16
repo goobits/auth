@@ -187,7 +187,7 @@ describe('D1MfaAdapter', () => {
 		const d1 = createMockD1()
 		expect(
 			() => new D1MfaAdapter(d1.db, { secretCodec, factorsTable: 'factors; DROP TABLE users' })
-		).toThrow(/invalid D1 MFA/)
+		).toThrow(/invalid D1 SQL identifier/)
 	})
 })
 

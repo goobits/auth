@@ -11,8 +11,12 @@ import { redirect, type RequestHandler } from '@sveltejs/kit'
 
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
+import {
+	assertCredentialCounterTransition,
+	isValidCredentialCounter
+} from '../adapters/webauthn/_credentialCounter.ts'
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
-import { auditAuthEvent } from '../security/audit.ts'
+import { emitRequestAuthEvent, type AuthEventEmitter } from '../security/events.ts'
 import type {
 	AuthorizeSecurityChange,
 	AuthHooks,
@@ -213,10 +217,13 @@ export function createWebAuthnRegisterVerifyHandler(
 		const credentialId =
 			typeof credentialIdRaw === 'string' ? credentialIdRaw : encodeCredential(credentialIdRaw)
 		const publicKey = encodeCredential(publicKeyRaw)
-		const counter = typeof counterRaw === 'number' ? counterRaw : 0
+		const counter = counterRaw === undefined ? 0 : counterRaw
+		if (!isValidCredentialCounter(counter)) {
+			return jsonResponse({ ok: false, error: 'Invalid credential counter' }, 400)
+		}
 		const userId = user.id
 
-		await webauthnAdapter.createCredential({
+		const created = await webauthnAdapter.createCredential({
 			userId,
 			credentialId,
 			publicKey,
@@ -227,6 +234,9 @@ export function createWebAuthnRegisterVerifyHandler(
 					: null,
 			name: name ?? null
 		})
+		if (!created) {
+			return jsonResponse({ ok: false, error: 'Credential is already registered' }, 409)
+		}
 
 		// Challenge was atomically consumed at the top of the handler.
 
@@ -311,7 +321,10 @@ export function createWebAuthnLoginOptionsHandler(
 }
 
 export type WebAuthnLoginVerifyHandlerConfig = {
-	webauthnAdapter: Pick<WebAuthnAdapter, 'consumeChallenge' | 'getCredential' | 'updateCredential'>
+	webauthnAdapter: Pick<
+		WebAuthnAdapter,
+		'consumeChallenge' | 'getCredential' | 'advanceCredentialCounter'
+	>
 	userAdapter?: { getUserById: (id: string) => Promise<User | null> }
 	sessionAdapter: Pick<SessionAdapter, 'createSession' | 'setSessionCookie'>
 	rpID: string
@@ -322,6 +335,7 @@ export type WebAuthnLoginVerifyHandlerConfig = {
 	sanitizeUser?: (user: User | null) => User | null
 	autoCreateSession?: boolean
 	onLoginMode?: OnLoginMode
+	emitSecurityEvent?: AuthEventEmitter
 }
 
 /** Creates web authn login verify handler for auth HTTP handlers. */
@@ -339,7 +353,8 @@ export function createWebAuthnLoginVerifyHandler(
 		onLogin,
 		sanitizeUser = defaultSanitizeUser,
 		autoCreateSession = true,
-		onLoginMode = 'augment'
+		onLoginMode = 'augment',
+		emitSecurityEvent
 	} = config
 
 	if (!rpID || !origin) {
@@ -359,24 +374,42 @@ export function createWebAuthnLoginVerifyHandler(
 		const challengeRaw = await webauthnAdapter.consumeChallenge(challengeId)
 		const challenge = toChallengeRecord(challengeRaw)
 		if (!challenge) {
-			auditAuthEvent('webauthn.challenge_missing', { challengeId })
+			await emitRequestAuthEvent(emitSecurityEvent, event, {
+				name: 'webauthn.challenge_missing',
+				severity: 'warn',
+				status: 400,
+				details: { challengeId }
+			})
 			return jsonResponse({ ok: false, error: 'Challenge not found' }, 400)
 		}
 		if (challenge.type !== 'authentication') {
-			auditAuthEvent('webauthn.challenge_invalid_type', { challengeId })
+			await emitRequestAuthEvent(emitSecurityEvent, event, {
+				name: 'webauthn.challenge_invalid_type',
+				severity: 'warn',
+				status: 400,
+				details: { challengeId }
+			})
 			return jsonResponse({ ok: false, error: 'Invalid challenge' }, 400)
 		}
 		if (new Date(challenge.expiresAt) < new Date()) {
 			// Already removed by consumeChallenge above.
-			auditAuthEvent('webauthn.challenge_expired', { challengeId })
+			await emitRequestAuthEvent(emitSecurityEvent, event, {
+				name: 'webauthn.challenge_expired',
+				severity: 'warn',
+				status: 400,
+				details: { challengeId }
+			})
 			return jsonResponse({ ok: false, error: 'Challenge expired' }, 400)
 		}
 
 		const storedCredentialRaw = await webauthnAdapter.getCredential(credential.id)
 		const storedCredential = toCredentialRecord(storedCredentialRaw)
 		if (!storedCredential) {
-			auditAuthEvent('webauthn.credential_missing', {
-				credentialId: credential.id
+			await emitRequestAuthEvent(emitSecurityEvent, event, {
+				name: 'webauthn.credential_missing',
+				severity: 'warn',
+				status: 400,
+				details: { credentialId: credential.id }
 			})
 			return jsonResponse({ ok: false, error: 'Credential not found' }, 400)
 		}
@@ -397,15 +430,42 @@ export function createWebAuthnLoginVerifyHandler(
 		})
 
 		if (!verification.verified) {
-			auditAuthEvent('webauthn.authentication_failed', {
-				credentialId: credential.id
+			await emitRequestAuthEvent(emitSecurityEvent, event, {
+				name: 'webauthn.authentication_failed',
+				severity: 'warn',
+				status: 400,
+				details: { credentialId: credential.id }
 			})
 			return jsonResponse({ ok: false, error: 'Authentication failed' }, 400)
 		}
 
-		await webauthnAdapter.updateCredential(storedCredential.credentialId, {
-			counter: verification.authenticationInfo.newCounter ?? storedCredential.counter
+		const newCounter = verification.authenticationInfo.newCounter
+		try {
+			assertCredentialCounterTransition(storedCredential.counter, newCounter)
+		} catch {
+			await emitRequestAuthEvent(emitSecurityEvent, event, {
+				name: 'webauthn.authentication_failed',
+				severity: 'warn',
+				status: 409,
+				details: { reason: 'credential-counter-regression' }
+			})
+			return jsonResponse({ ok: false, error: 'Credential counter validation failed' }, 409)
+		}
+		const counterAdvanced = await webauthnAdapter.advanceCredentialCounter({
+			credentialId: storedCredential.credentialId,
+			userId: storedCredential.userId,
+			expectedCounter: storedCredential.counter,
+			newCounter
 		})
+		if (!counterAdvanced) {
+			await emitRequestAuthEvent(emitSecurityEvent, event, {
+				name: 'webauthn.authentication_failed',
+				severity: 'warn',
+				status: 409,
+				details: { reason: 'credential-counter-conflict' }
+			})
+			return jsonResponse({ ok: false, error: 'Credential state changed; try again' }, 409)
+		}
 
 		// Challenge was atomically consumed at the top of the handler.
 

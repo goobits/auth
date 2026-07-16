@@ -1,4 +1,5 @@
 import type { User } from '../../types/index.ts'
+import { assertD1Identifiers } from '../_d1Sql.ts'
 import { assertPublicUserData } from './publicUserData.ts'
 import type { PasswordCredential, PasswordCredentialAdapter } from './PasswordCredentialAdapter.ts'
 import { UserAdapter } from './UserAdapter.ts'
@@ -72,6 +73,16 @@ export class D1UserAdapter extends UserAdapter implements PasswordCredentialAdap
 			provider: options.oauthColumns?.['provider'] || 'provider',
 			providerAccountId: options.oauthColumns?.['providerAccountId'] || 'provider_account_id'
 		}
+		assertD1Identifiers({
+			usersTable: this.usersTable,
+			oauthAccountsTable: this.oauthAccountsTable,
+			...Object.fromEntries(
+				Object.entries(this.columns).map(([key, value]) => [`users.${key}`, value])
+			),
+			...Object.fromEntries(
+				Object.entries(this.oauthColumns).map(([key, value]) => [`oauthAccounts.${key}`, value])
+			)
+		})
 		this.allowedFields = options.allowedFields || [
 			'email',
 			'name',

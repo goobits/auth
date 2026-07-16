@@ -18,7 +18,7 @@ type AuthHandlersBundle = {
 	POST: RequestHandler
 }
 
-type AuthRoleResolver = (user: User) => string[]
+export type AuthRoleResolver = (user: User) => string[] | Promise<string[]>
 
 /** Route paths used by the SvelteKit auth integration. */
 export type GoobitsAuthRoutingConfig = {
@@ -30,6 +30,8 @@ export type GoobitsAuthRoutingConfig = {
 /** Configuration for the high-level Goobits auth facade. */
 export type GoobitsAuthConfig = Omit<AuthConfig, 'adapters'> & {
 	adapter: AuthConfig['adapters']
+	/** Trusted application resolver for website/session authorization roles. */
+	resolveAuthRoles?: AuthRoleResolver
 	routing?: GoobitsAuthRoutingConfig
 }
 
@@ -54,7 +56,7 @@ function normalizeBasePath(input: string | undefined): string {
 }
 
 function splitRoutedPath(pathname: string, basePath: string): string[] {
-	if (!pathname.startsWith(basePath)) return []
+	if (pathname !== basePath && !pathname.startsWith(`${basePath}/`)) return []
 	const rest = pathname.slice(basePath.length)
 	const normalized = rest.startsWith('/') ? rest.slice(1) : rest
 	if (!normalized) return []
@@ -69,22 +71,7 @@ function hasSessionPrincipal(locals: AuthLocals): locals is AuthLocals & {
 }
 
 function resolveUserAuthRoles(user: User): string[] {
-	const authRoles: string[] = []
-	if (typeof user.role === 'string' && user.role.length > 0) {
-		authRoles.push(user.role)
-	}
-	const settings = user.settings
-	if (settings && typeof settings === 'object' && !Array.isArray(settings)) {
-		const maybeRoles = settings['roles']
-		if (Array.isArray(maybeRoles)) {
-			for (const entry of maybeRoles) {
-				if (typeof entry === 'string' && entry.length > 0) {
-					authRoles.push(entry)
-				}
-			}
-		}
-	}
-	return Array.from(new Set(authRoles))
+	return typeof user.role === 'string' && user.role.length > 0 ? [user.role] : []
 }
 
 /** High-level SvelteKit auth facade with handlers, hooks, and role guards. */
@@ -92,14 +79,16 @@ export class GoobitsAuth {
 	private readonly core: CoreAuth
 	private readonly routing: Required<GoobitsAuthRoutingConfig>
 	private readonly defaultHandlers: AuthHandlersBundle
+	private readonly resolveAuthRoles: AuthRoleResolver
 
 	constructor(config: GoobitsAuthConfig) {
-		const { routing, adapter, ...rest } = config
+		const { routing, adapter, resolveAuthRoles, ...rest } = config
 		const authConfig = {
 			...rest,
 			adapters: adapter
 		} as AuthConfig
 		this.core = createAuth(authConfig)
+		this.resolveAuthRoles = resolveAuthRoles ?? resolveUserAuthRoles
 		const basePath = normalizeBasePath(routing?.basePath)
 		this.routing = {
 			basePath,
@@ -200,8 +189,7 @@ export class GoobitsAuth {
 			}
 		}
 		const sessionAdapter = this.core.adapters.session
-		const cookieName = (sessionAdapter as { cookieName?: string })['cookieName'] ?? 'session'
-		const sessionId = event.cookies.get(cookieName)
+		const sessionId = event.cookies.get(sessionAdapter.cookieName)
 		if (!sessionId) {
 			return null
 		}
@@ -231,17 +219,10 @@ export class GoobitsAuth {
 	 *
 	 * @param event - Event payload.
 	 * @param authRole - route-auth role value.
-	 * @param options - Options for this operation.
 	 */
-	async requireAuthRole(
-		event: RequestEventLike,
-		authRole: string | string[],
-		options?: { resolveAuthRoles?: AuthRoleResolver }
-	): Promise<User> {
+	async requireAuthRole(event: RequestEventLike, authRole: string | string[]): Promise<User> {
 		const user = await this.requireUser(event)
-		const authRoles = options?.resolveAuthRoles
-			? options.resolveAuthRoles(user)
-			: resolveUserAuthRoles(user)
+		const authRoles = Array.from(new Set(await this.resolveAuthRoles(user)))
 		const required = Array.isArray(authRole) ? authRole : [authRole]
 		const allowed = required.some((entry) => authRoles.includes(entry))
 		if (!allowed) {

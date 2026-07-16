@@ -6,6 +6,8 @@ import {
 } from '@simplewebauthn/server'
 import { z } from 'zod'
 
+import { isValidCredentialCounter } from '../adapters/webauthn/_credentialCounter.ts'
+
 type ChallengeRecord = {
 	id: string
 	userId: string | null
@@ -122,7 +124,7 @@ export function toCredentialRecord(value: Record<string, unknown> | null): Crede
 	if (typeof credentialId !== 'string') return null
 	if (typeof userId !== 'string') return null
 	if (typeof publicKey !== 'string') return null
-	if (typeof counter !== 'number') return null
+	if (!isValidCredentialCounter(counter)) return null
 	if (
 		transports !== undefined &&
 		transports !== null &&

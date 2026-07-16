@@ -16,6 +16,7 @@ import {
 import { ensureSessionAfterLogin } from '../handlers/sessionLifecycle.ts'
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
 import { createSessionListHandler, createSessionRevokeHandler } from '../handlers/sessions.ts'
+import { createSvelteKitCsrf } from '@goobits/security/csrf/sveltekit'
 import {
 	createWebAuthnLoginOptionsHandler,
 	createWebAuthnLoginVerifyHandler,
@@ -26,7 +27,7 @@ import {
 	type WebAuthnRegisterOptionsHandlerConfig,
 	type WebAuthnRegisterVerifyHandlerConfig
 } from '../handlers/webauthn.ts'
-import { issueCsrfToken } from '../security/csrf.ts'
+import { createAuthRateLimiter } from '../security/rateLimit.ts'
 import type {
 	AuthConfig,
 	AuthHandlers,
@@ -64,6 +65,7 @@ function normalizeMagicLinkConfig(
 	const normalized = {
 		sendEmail: magicLink.send.email,
 		secureCookies: settings.secureCookies ?? defaultSecureCookies,
+		baseUrl: settings.baseUrl,
 		...(settings.allowSignup !== undefined ? { allowSignup: settings.allowSignup } : {}),
 		...(settings.expiresInMs !== undefined ? { expiresInMs: settings.expiresInMs } : {}),
 		...(settings.magicLinkPath !== undefined ? { magicLinkPath: settings.magicLinkPath } : {}),
@@ -73,7 +75,7 @@ function normalizeMagicLinkConfig(
 			? { singleUsePerEmail: settings.singleUsePerEmail }
 			: {}),
 		...(settings.normalizeEmail !== undefined ? { normalizeEmail: settings.normalizeEmail } : {}),
-		...(settings.exposeToken !== undefined ? { exposeToken: settings.exposeToken } : {}),
+		...(settings.otpPepper !== undefined ? { otpPepper: settings.otpPepper } : {}),
 		...(settings.requireUserConfirmation !== undefined
 			? { requireUserConfirmation: settings.requireUserConfirmation }
 			: {}),
@@ -83,13 +85,8 @@ function normalizeMagicLinkConfig(
 		...(settings.confirmationTtlSeconds !== undefined
 			? { confirmationTtlSeconds: settings.confirmationTtlSeconds }
 			: {}),
-		...(settings.baseUrl !== undefined ? { baseUrl: settings.baseUrl } : {}),
 		...(limits.request !== undefined ? { rateLimit: limits.request } : {}),
 		...(limits.verify !== undefined ? { verifyRateLimit: limits.verify } : {}),
-		...(limits.verifyMax !== undefined ? { verifyRateLimitMax: limits.verifyMax } : {}),
-		...(limits.verifyWindowMs !== undefined
-			? { verifyRateLimitWindowMs: limits.verifyWindowMs }
-			: {}),
 		...(hooks.getMetadata !== undefined ? { getMetadata: hooks.getMetadata } : {}),
 		...(hooks.createUser !== undefined ? { createUser: hooks.createUser } : {}),
 		...(hooks.sanitizeUser !== undefined ? { sanitizeUser: hooks.sanitizeUser } : {}),
@@ -129,6 +126,21 @@ export function createHandlers(
 	} = defaults
 	const onLoginMode: OnLoginMode = hooks.onLoginMode ?? 'augment'
 	const hasProviders = Object.keys(providers).length > 0
+	const csrf = createSvelteKitCsrf({
+		cookieName: security.csrf.cookieName,
+		headerName: security.csrf.headerName,
+		tokenFieldName: '_csrf',
+		checkExpiry: security.csrf.checkExpiry,
+		trackExpiry: security.csrf.checkExpiry,
+		cookieOptions: {
+			httpOnly: security.csrf.httpOnly ?? false,
+			secure: defaults.cookieConfig.secure,
+			sameSite: 'lax',
+			path: '/',
+			maxAge: 60 * 60
+		},
+		...(security.csrf.store ? { tokenStore: security.csrf.store } : {})
+	})
 	let loginHandler: AuthHandlers['login']
 	let callbackHandler: AuthHandlers['callback']
 
@@ -235,18 +247,10 @@ export function createHandlers(
 		if (safeMethod && security.csrf.mode !== 'off') {
 			const existingToken = event.cookies.get(security.csrf.cookieName)
 			if (!existingToken) {
-				await issueCsrfToken({
-					cookies: event.cookies,
-					cookieName: security.csrf.cookieName,
-					secure: defaults.cookieConfig.secure,
-					...(security.csrf.httpOnly !== undefined ? { httpOnly: security.csrf.httpOnly } : {}),
-					...(security.csrf.store ? { store: security.csrf.store } : {})
-				})
+				await csrf.issue(event.cookies)
 			}
 		}
-		const sessionCookieName =
-			(adapters.session as { cookieName?: string })['cookieName'] ?? 'session'
-		const sessionId = event.cookies.get(sessionCookieName)
+		const sessionId = event.cookies.get(adapters.session.cookieName)
 		if (!sessionId) {
 			event.locals.session = null
 			event.locals.user = null
@@ -277,9 +281,15 @@ export function createHandlers(
 
 	if (magicLink) {
 		const normalizedMagicLink = normalizeMagicLinkConfig(magicLink, hooks, cookieConfig.secure)
+		const sharedMagicVerifyLimiter = createAuthRateLimiter('login', {
+			keyPrefix: `${security.rateLimit.keyPrefix}:magic-verify`,
+			...(security.rateLimit.store ? { store: security.rateLimit.store } : {}),
+			...(security.rateLimit.logger ? { logger: security.rateLimit.logger } : {})
+		})
 		const requestConfig: Parameters<typeof createMagicLinkRequestHandler>[0] = {
 			...normalizedMagicLink,
 			magicLinkAdapter: adapters.magicLink!,
+			...(security.audit.emitter ? { emitSecurityEvent: security.audit.emitter } : {}),
 			...(config.logger ? { logger: config.logger } : {}),
 			...(adapters.user ? { userAdapter: adapters.user } : {})
 		}
@@ -291,7 +301,9 @@ export function createHandlers(
 			onLoginMode,
 			redirectAfterLogin: urlConfig.afterLogin,
 			isAuthenticated,
+			verifyRateLimit: normalizedMagicLink.verifyRateLimit ?? sharedMagicVerifyLimiter.check,
 			csrfCookieName: security.csrf.cookieName,
+			...(security.audit.emitter ? { emitSecurityEvent: security.audit.emitter } : {}),
 			...(config.logger ? { logger: config.logger } : {}),
 			...(normalizedMagicLink['sanitizeUser'] === undefined ? { sanitizeUser } : {}),
 			...(adapters.user ? { userAdapter: adapters.user } : {})
@@ -336,6 +348,7 @@ export function createHandlers(
 			autoCreateSession,
 			onLoginMode,
 			sanitizeUser,
+			...(security.audit.emitter ? { emitSecurityEvent: security.audit.emitter } : {}),
 			...(adapters.user ? { userAdapter: adapters.user } : {})
 		}
 		const webauthnOnLogin = webauthn.hooks?.onLogin ?? hooks.onLogin

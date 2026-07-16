@@ -6,6 +6,38 @@ import {
 } from '../../src/handlers/magicLink.ts'
 import type { RequestEventLike } from '../../src/types/auth.ts'
 
+const MAGIC_LINK_BASE_URL = 'https://auth.example.test'
+const OTP_PEPPER = 'test-only-magic-link-pepper-32-bytes-minimum'
+
+function createTestMagicLinkRequestHandler(
+	config: Omit<Parameters<typeof createMagicLinkRequestHandler>[0], 'baseUrl' | 'otpPepper'> & {
+		baseUrl?: string
+		otpPepper?: string | Uint8Array
+	}
+) {
+	return createMagicLinkRequestHandler({
+		baseUrl: MAGIC_LINK_BASE_URL,
+		otpPepper: OTP_PEPPER,
+		...config
+	})
+}
+
+function createTestMagicLinkVerifyHandler(
+	config: Omit<
+		Parameters<typeof createMagicLinkVerifyHandler>[0],
+		'otpPepper' | 'verifyRateLimit'
+	> & {
+		otpPepper?: string | Uint8Array
+		verifyRateLimit?: (key: string) => Promise<{ allowed: boolean }>
+	}
+) {
+	return createMagicLinkVerifyHandler({
+		otpPepper: OTP_PEPPER,
+		verifyRateLimit: async () => ({ allowed: true }),
+		...config
+	})
+}
+
 type MagicLinkTokenRecord = {
 	id?: string
 	userId: string | null
@@ -106,7 +138,7 @@ describe('magic link handlers', () => {
 	it('does not send email when user is missing and signup disabled', async () => {
 		const magicLinkAdapter = createMagicLinkAdapter()
 		const sendEmail = vi.fn()
-		const handler = createMagicLinkRequestHandler({
+		const handler = createTestMagicLinkRequestHandler({
 			magicLinkAdapter,
 			sendEmail,
 			allowSignup: false
@@ -123,7 +155,7 @@ describe('magic link handlers', () => {
 
 	it('deletes a newly issued token when delivery fails', async () => {
 		const magicLinkAdapter = createMagicLinkAdapter()
-		const handler = createMagicLinkRequestHandler({
+		const handler = createTestMagicLinkRequestHandler({
 			magicLinkAdapter,
 			userAdapter: {
 				getUserByEmail: vi.fn(async (email) => ({ id: 'u1', email }))
@@ -139,15 +171,21 @@ describe('magic link handlers', () => {
 		expect(magicLinkAdapter._tokens.size).toBe(0)
 	})
 
-	it('forbids raw token exposure in production', () => {
-		vi.stubEnv('NODE_ENV', 'production')
+	it('requires a canonical HTTPS origin and sufficiently strong OTP pepper', () => {
+		const base = { magicLinkAdapter: createMagicLinkAdapter(), sendEmail: vi.fn() }
+		expect(() =>
+			createMagicLinkRequestHandler({ ...base, baseUrl: 'http://example.test' })
+		).toThrow('HTTPS origin')
+		expect(() => createMagicLinkRequestHandler({ ...base, baseUrl: MAGIC_LINK_BASE_URL })).toThrow(
+			'requires otpPepper'
+		)
 		expect(() =>
 			createMagicLinkRequestHandler({
-				magicLinkAdapter: createMagicLinkAdapter(),
-				sendEmail: vi.fn(),
-				exposeToken: true
+				...base,
+				baseUrl: MAGIC_LINK_BASE_URL,
+				otpPepper: 'too-short'
 			})
-		).toThrow('forbidden in production')
+		).toThrow('at least 32 bytes')
 	})
 
 	it('verifies token and creates session', async () => {
@@ -163,18 +201,18 @@ describe('magic link handlers', () => {
 			setSessionCookie: vi.fn()
 		}
 
-		const requestHandler = createMagicLinkRequestHandler({
+		const requestHandler = createTestMagicLinkRequestHandler({
 			magicLinkAdapter,
 			userAdapter,
-			sendEmail,
-			exposeToken: true
+			sendEmail
 		})
 
 		const requestEvent = createEvent({ body: { email: 'u1@example.com' } })
 		const requestResponse = await requestHandler(requestEvent as RequestEventLike)
-		const { token } = await requestResponse.json()
+		expect(await requestResponse.json()).toEqual({ ok: true })
+		const token = sendEmail.mock.calls[0]?.[0].token
 
-		const verifyHandler = createMagicLinkVerifyHandler({
+		const verifyHandler = createTestMagicLinkVerifyHandler({
 			magicLinkAdapter,
 			userAdapter,
 			sessionAdapter,
@@ -190,25 +228,81 @@ describe('magic link handlers', () => {
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
 
+	it('HMACs OTPs, keeps credentials out of responses, and binds verification to the pepper', async () => {
+		const magicLinkAdapter = createMagicLinkAdapter()
+		const sendEmail = vi.fn()
+		const userAdapter = {
+			getUserByEmail: vi.fn(async (email: string) => ({ id: 'u1', email })),
+			getUserById: vi.fn(async (id: string) => ({ id, email: 'u1@example.com' })),
+			updateUser: vi.fn(async () => {})
+		}
+		const sessionAdapter = {
+			createSession: vi.fn(async (userId: string) => ({ id: 's1', userId })),
+			setSessionCookie: vi.fn()
+		}
+		const requestHandler = createTestMagicLinkRequestHandler({
+			magicLinkAdapter,
+			userAdapter,
+			sendEmail
+		})
+
+		const requestResponse = await requestHandler(
+			createEvent({ body: { email: 'u1@example.com' } }) as RequestEventLike
+		)
+		const responseText = await requestResponse.text()
+		const delivery = sendEmail.mock.calls[0]?.[0]
+		const stored = [...magicLinkAdapter._tokens.values()][0]
+		expect(responseText).toBe('{"ok":true}')
+		expect(responseText).not.toContain(delivery.token)
+		expect(responseText).not.toContain(delivery.otp)
+		expect(stored?.otpHash).not.toBe(delivery.otp)
+		expect(stored?.otpHash).toMatch(/^[A-Za-z0-9_-]+$/)
+
+		const wrongPepperHandler = createTestMagicLinkVerifyHandler({
+			magicLinkAdapter,
+			userAdapter,
+			sessionAdapter,
+			otpPepper: 'different-test-pepper-that-is-at-least-32-bytes'
+		})
+		const wrongResponse = await wrongPepperHandler(
+			createEvent({ body: { email: delivery.email, otp: delivery.otp } }) as RequestEventLike
+		)
+		expect(wrongResponse.status).toBe(400)
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
+
+		const verifyHandler = createTestMagicLinkVerifyHandler({
+			magicLinkAdapter,
+			userAdapter,
+			sessionAdapter,
+			requireUserConfirmation: false
+		})
+		const verifyResponse = await verifyHandler(
+			createEvent({ body: { email: delivery.email, otp: delivery.otp } }) as RequestEventLike
+		)
+		expect(await verifyResponse.json()).toMatchObject({ ok: true })
+		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1')
+	})
+
 	it('does not create a session when verified-email persistence fails', async () => {
 		const magicLinkAdapter = createMagicLinkAdapter()
-		const requestHandler = createMagicLinkRequestHandler({
+		const sendEmail = vi.fn()
+		const requestHandler = createTestMagicLinkRequestHandler({
 			magicLinkAdapter,
 			userAdapter: {
 				getUserByEmail: vi.fn(async (email) => ({ id: 'u1', email, emailVerified: false }))
 			},
-			sendEmail: vi.fn(),
-			exposeToken: true
+			sendEmail
 		})
 		const requestResponse = await requestHandler(
 			createEvent({ body: { email: 'u1@example.com' } }) as RequestEventLike
 		)
-		const { token } = await requestResponse.json()
+		expect(await requestResponse.json()).toEqual({ ok: true })
+		const token = sendEmail.mock.calls[0]?.[0].token
 		const sessionAdapter = {
 			createSession: vi.fn(),
 			setSessionCookie: vi.fn()
 		}
-		const verifyHandler = createMagicLinkVerifyHandler({
+		const verifyHandler = createTestMagicLinkVerifyHandler({
 			magicLinkAdapter,
 			userAdapter: {
 				getUserByEmail: vi.fn(async (email) => ({ id: 'u1', email, emailVerified: false })),
@@ -240,19 +334,19 @@ describe('magic link handlers', () => {
 			setSessionCookie: vi.fn()
 		}
 
-		const requestHandler = createMagicLinkRequestHandler({
+		const requestHandler = createTestMagicLinkRequestHandler({
 			magicLinkAdapter,
 			sendEmail,
-			allowSignup: true,
-			exposeToken: true
+			allowSignup: true
 		})
 
 		const requestResponse = await requestHandler(
 			createEvent({ body: { email: 'hook@example.com' } }) as RequestEventLike
 		)
-		const { token } = await requestResponse.json()
+		expect(await requestResponse.json()).toEqual({ ok: true })
+		const token = sendEmail.mock.calls[0]?.[0].token
 
-		const verifyHandler = createMagicLinkVerifyHandler({
+		const verifyHandler = createTestMagicLinkVerifyHandler({
 			magicLinkAdapter,
 			sessionAdapter,
 			onLogin: async () => ({ userId: 'hook-user' }),
@@ -275,19 +369,19 @@ describe('magic link handlers', () => {
 			setSessionCookie: vi.fn()
 		}
 
-		const requestHandler = createMagicLinkRequestHandler({
+		const requestHandler = createTestMagicLinkRequestHandler({
 			magicLinkAdapter,
 			sendEmail,
-			allowSignup: true,
-			exposeToken: true
+			allowSignup: true
 		})
 
 		const requestResponse = await requestHandler(
 			createEvent({ body: { email: 'missing@example.com' } }) as RequestEventLike
 		)
-		const { token } = await requestResponse.json()
+		expect(await requestResponse.json()).toEqual({ ok: true })
+		const token = sendEmail.mock.calls[0]?.[0].token
 
-		const verifyHandler = createMagicLinkVerifyHandler({
+		const verifyHandler = createTestMagicLinkVerifyHandler({
 			magicLinkAdapter,
 			sessionAdapter,
 			onLogin: async () => undefined,
@@ -316,11 +410,10 @@ describe('magic link handlers', () => {
 			setSessionCookie: vi.fn()
 		}
 
-		const requestHandler = createMagicLinkRequestHandler({
+		const requestHandler = createTestMagicLinkRequestHandler({
 			magicLinkAdapter,
 			userAdapter,
-			sendEmail,
-			exposeToken: true
+			sendEmail
 		})
 
 		const requestResponse = await requestHandler(
@@ -328,9 +421,10 @@ describe('magic link handlers', () => {
 				body: { email: 'u1@example.com', redirectTo: '/dashboard' }
 			}) as RequestEventLike
 		)
-		const { token } = await requestResponse.json()
+		expect(await requestResponse.json()).toEqual({ ok: true })
+		const token = sendEmail.mock.calls[0]?.[0].token
 
-		const verifyHandler = createMagicLinkVerifyHandler({
+		const verifyHandler = createTestMagicLinkVerifyHandler({
 			magicLinkAdapter,
 			userAdapter,
 			sessionAdapter,

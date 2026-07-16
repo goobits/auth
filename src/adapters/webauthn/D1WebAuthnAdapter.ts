@@ -1,5 +1,10 @@
 import type { WebAuthnCredential } from '../../types/index.ts'
+import { assertD1Identifiers } from '../_d1Sql.ts'
 import { WebAuthnAdapter } from './WebAuthnAdapter.ts'
+import {
+	assertCredentialCounterTransition,
+	isValidCredentialCounter
+} from './_credentialCounter.ts'
 
 type D1Value = string | number | boolean | null
 type D1Row = Record<string, D1Value>
@@ -20,6 +25,14 @@ type WebAuthnChallengeRecord = {
 	challenge: string
 	type: string
 	expiresAt: Date
+}
+
+function changedRows(result: unknown): number {
+	if (!result || typeof result !== 'object') return 0
+	const meta = (result as { meta?: unknown }).meta
+	if (!meta || typeof meta !== 'object') return 0
+	const changes = (meta as { changes?: unknown }).changes
+	return typeof changes === 'number' && Number.isSafeInteger(changes) ? changes : 0
 }
 
 /** Cloudflare D1 web authn adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
@@ -70,6 +83,13 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 			challengeUserId: options.columns?.['challengeUserId'] || 'user_id',
 			challengeExpiresAt: options.columns?.['challengeExpiresAt'] || 'expires_at'
 		}
+		assertD1Identifiers({
+			credentialsTable: this.credentialsTable,
+			challengesTable: this.challengesTable,
+			...Object.fromEntries(
+				Object.entries(this.columns).map(([key, value]) => [`webauthn.${key}`, value])
+			)
+		})
 	}
 
 	async createChallenge({
@@ -129,7 +149,7 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 		if (typeof credentialId !== 'string') return null
 		if (typeof userId !== 'string' && typeof userId !== 'number') return null
 		if (typeof publicKey !== 'string') return null
-		if (typeof counter !== 'number') return null
+		if (!isValidCredentialCounter(counter)) return null
 		if (transportsRaw !== null && typeof transportsRaw !== 'string') return null
 		if (name !== null && typeof name !== 'string') return null
 		let transports: string[] | null = null
@@ -192,9 +212,12 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 		counter: number
 		transports?: string[] | null
 		name?: string | null
-	}) {
-		const sql = `INSERT INTO ${this.credentialsTable} (${this.columns.userId}, ${this.columns.credentialId}, ${this.columns.publicKey}, ${this.columns.counter}, ${this.columns.transports}, ${this.columns.name}) VALUES (?, ?, ?, ?, ?, ?)`
-		await this.db
+	}): Promise<boolean> {
+		if (!isValidCredentialCounter(counter)) {
+			throw new RangeError('WebAuthn counter must be a non-negative safe integer')
+		}
+		const sql = `INSERT INTO ${this.credentialsTable} (${this.columns.userId}, ${this.columns.credentialId}, ${this.columns.publicKey}, ${this.columns.counter}, ${this.columns.transports}, ${this.columns.name}) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(${this.columns.credentialId}) DO NOTHING`
+		const result = await this.db
 			.prepare(sql)
 			.bind(
 				userId,
@@ -205,6 +228,7 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 				name ?? null
 			)
 			.run()
+		return changedRows(result) === 1
 	}
 
 	async getCredential(credentialId: string): Promise<WebAuthnCredential | null> {
@@ -226,34 +250,24 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 		return credentials
 	}
 
-	async updateCredential(credentialId: string, updates: Record<string, unknown>) {
-		const payload = new Map<string, D1Value>()
-		for (const [key, value] of Object.entries(updates)) {
-			const column = this.columns[key as keyof typeof this.columns] || key
-			if (column === this.columns.transports && Array.isArray(value)) {
-				if (value.every((entry) => typeof entry === 'string')) {
-					payload.set(column, JSON.stringify(value))
-				}
-				continue
-			}
-			if (
-				value === null ||
-				typeof value === 'string' ||
-				typeof value === 'number' ||
-				typeof value === 'boolean'
-			) {
-				payload.set(column, value)
-			}
-		}
-		const fields = Array.from(payload.keys())
-		if (fields.length === 0) return
-		const setSql = fields.map((field) => `${field} = ?`).join(', ')
-		const sql = `UPDATE ${this.credentialsTable} SET ${setSql} WHERE ${this.columns.credentialId} = ?`
-		const values = fields.map((field) => payload.get(field) ?? null)
-		await this.db
+	async advanceCredentialCounter({
+		credentialId,
+		userId,
+		expectedCounter,
+		newCounter
+	}: {
+		credentialId: string
+		userId: string
+		expectedCounter: number
+		newCounter: number
+	}): Promise<boolean> {
+		assertCredentialCounterTransition(expectedCounter, newCounter)
+		const sql = `UPDATE ${this.credentialsTable} SET ${this.columns.counter} = ?, ${this.columns.updatedAt} = ? WHERE ${this.columns.credentialId} = ? AND ${this.columns.userId} = ? AND ${this.columns.counter} = ?`
+		const result = await this.db
 			.prepare(sql)
-			.bind(...values, credentialId)
+			.bind(newCounter, new Date().toISOString(), credentialId, userId, expectedCounter)
 			.run()
+		return changedRows(result) === 1
 	}
 
 	async deleteCredential(credentialId: string) {

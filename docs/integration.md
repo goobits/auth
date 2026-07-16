@@ -48,27 +48,39 @@ which features:
 ### `SessionAdapter` (required)
 
 ```ts
-abstract createSession(userId: string, metadata?: Record<string, unknown>): Promise<Session>
+abstract readonly cookieName: string
+abstract createSession(userId: string, metadata?: SessionMetadata): Promise<Session>
 abstract validateSession(sessionId: string): Promise<{ session: Session | null; user: User | null }>
 abstract invalidateSession(sessionId: string): Promise<void>
 abstract invalidateUserSessions(userId: string): Promise<void>
-abstract listSessions(userId: string): Promise<Session[]>
 abstract setSessionCookie(cookies: Cookies, session: Session): void
 abstract deleteSessionCookie(cookies: Cookies): void
+
+// Optional non-secret session-management capability
+listManagedSessions?(userId: string): Promise<SessionSummary[]>
+revokeManagedSession?(userId: string, managementId: string): Promise<void>
 ```
 
 Behavioral expectations:
 
+- `createSession` returns a 256-bit bearer token but persists only its SHA-256
+  verifier. `validateSession` and `invalidateSession` accept the bearer and hash
+  it before storage access. Do not add raw-token fallback reads.
 - `validateSession` returns `{ session: null, user: null }` for unknown or
-  expired session IDs. It must not throw.
+  expired session IDs. Storage-backed adapters should follow the package's
+  documented failure policy rather than exposing backend errors to callers.
 - `validateSession` is allowed to **renew** the session and set
   `session.fresh = true` to signal that the cookie should be re-issued; the
   `GoobitsAuth` hook pipeline checks this and calls `setSessionCookie`.
 - `setSessionCookie` is responsible for cookie attributes (`HttpOnly`,
   `Secure`, `SameSite`, path). Don't expect the framework to add them.
-- Optionally expose a `cookieName` property on the adapter instance so the
-  framework hook can read the cookie name from there; otherwise it
-  defaults to `"session"`.
+- `cookieName` is required and is the single cookie-name source used by the
+  framework hook.
+- Session listings must expose an independent opaque management ID, never the
+  persisted verifier or bearer token. Revocation by management ID must also be
+  constrained by the authenticated owner.
+- `SessionMetadata` is a deliberately bounded contract. Reject unknown fields
+  instead of persisting arbitrary request or extension data.
 
 ### `UserAdapter` (effectively required for OAuth/magic-link/passkey flows)
 

@@ -2,11 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { RequestEventLike } from '../src/types/auth.ts'
 import type { OAuthProfile, OAuthTokens } from '../src/types/index.ts'
-import {
-	MockSessionAdapter,
-	MockTokenAdapter,
-	MockUserAdapter
-} from '../src/testing/MockSessionAdapter.ts'
+import { MockSessionAdapter, MockTokenAdapter, MockUserAdapter } from '../src/testing/index.ts'
 
 let capturedOnAuthenticated:
 	| ((event: RequestEventLike, profile: OAuthProfile, tokens: OAuthTokens) => Promise<void>)

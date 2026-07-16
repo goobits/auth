@@ -22,6 +22,7 @@ const auth = new GoobitsAuth({
 	adapter,
 	security: {
 		rateLimit: { store: sharedRateLimitStore },
+		audit: { emitter: auditEmitter },
 		alerts: {
 			enabled: true,
 			webhook: {
@@ -33,9 +34,10 @@ const auth = new GoobitsAuth({
 ```
 
 Applications with a single, application-wide request-origin guard may use
-`csrf: { mode: 'off', externalBoundary: true }` under the `secure` profile.
-That declaration is explicit because Goobits Auth cannot verify an outer
-boundary itself. The `strict` profile always requires built-in CSRF.
+`csrf: { mode: 'off', validateExternalSecurityBoundary: verifyOrigin }` under
+the `secure` profile. Auth executes that validator for every unsafe request and
+fails closed when it rejects. The `strict` profile always requires built-in
+CSRF.
 
 ## Responsibilities
 
@@ -58,7 +60,9 @@ boundary itself. The `strict` profile always requires built-in CSRF.
     including key rotation
   - a shared production rate-limit store; strict or expiry-checked CSRF also
     requires a shared CSRF store
-  - rate limiting for standalone credential and MFA handlers
+  - CSRF plus rate limiting for standalone credential handlers, or one
+    executable application boundary that enforces equivalent controls before
+    every request
   - generic route audit logging through `@goobits/security/audit`
   - security headers, TLS/HSTS/CSP at app/edge layer
   - secrets management and key rotation
@@ -75,10 +79,10 @@ them. Every value here is configurable on the matching config block.
 | Password-reset policy preset      | 3 / 15 minutes and 5 / hour                  | app-supplied limiter config                                       |
 | Magic link expiry                 | 15 minutes                                   | `magicLink.settings.expiresInMs`                                  |
 | Magic link OTP length             | 6 digits                                     | `magicLink.settings.otpDigits`                                    |
-| Magic link verify rate limit      | 5 attempts / 10 minutes                      | `magicLink.limits.{verifyMax,verifyWindowMs}`                     |
+| Magic link verify rate limit      | 5 / minute and 15 / 15 minutes               | `magicLink.limits.verify`                                         |
 | WebAuthn challenge timeout        | 60 seconds                                   | `webauthn.timeoutMs`                                              |
 | Session lifetime (KV adapter)     | 30 days                                      | `KVSessionAdapter` constructor `sessionLifetime`                  |
-| Session ID entropy                | 160 bits (20 bytes, base64url)               | n/a                                                               |
+| Session bearer entropy            | 256 bits (32 bytes, base64url)               | n/a                                                               |
 | Absolute password input length    | 1024 characters                              | n/a                                                               |
 | OAuth state / PKCE                | issued by `arctic`, single-use, cookie-bound | n/a                                                               |
 | Argon2 (Cloudflare Workers, WASM) | 12 MiB memory, 3 iterations, 16-byte salt    | not configurable — tune via fork if your edge runtime allows more |
@@ -97,6 +101,12 @@ rate-limit their login/signup routes aggressively to compensate.
 4. Validate secrets at deploy-time (`TOKEN_ENCRYPTION_KEYRING`, OAuth secrets).
 5. Keep dependency and secret scanning enabled in CI.
 6. Configure shared rate-limit state before using `secure` or `strict` in production.
+7. Configure an awaited audit emitter before using `secure` or `strict` in production.
+
+Use `createAuthEventAuditEmitter()` to bridge Auth events into a canonical
+`@goobits/security/audit` logger. The bridge redacts structured detail and does
+not persist free-form event messages, because backend exception text is not a
+safe audit field.
 
 `security.rateLimit.{max,windowMs}` remains a deprecated one-window migration
 bridge. New integrations should supply `windows` or use the named factories

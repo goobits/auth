@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { verifyAuthenticationResponse, verifyRegistrationResponse } from '@simplewebauthn/server'
 
 import {
 	createWebAuthnLoginVerifyHandler,
@@ -94,13 +95,27 @@ function createWebAuthnAdapter() {
 			return record
 		},
 		createCredential: async (credential: StoredCredential) => {
+			if (credentials.has(credential.credentialId)) return false
 			credentials.set(credential.credentialId, credential)
+			return true
 		},
 		getCredential: async (id: string) => credentials.get(id) || null,
 		listCredentials: async () => Array.from(credentials.values()),
-		updateCredential: async (id: string, updates: Record<string, unknown>) => {
-			const current = credentials.get(id)
-			credentials.set(id, { ...current, ...updates })
+		advanceCredentialCounter: async ({
+			credentialId,
+			userId,
+			expectedCounter,
+			newCounter
+		}: {
+			credentialId: string
+			userId: string
+			expectedCounter: number
+			newCounter: number
+		}) => {
+			const current = credentials.get(credentialId)
+			if (!current || current.userId !== userId || current.counter !== expectedCounter) return false
+			credentials.set(credentialId, { ...current, counter: newCounter })
+			return true
 		},
 		deleteCredential: async (id: string) => credentials.delete(id),
 		deleteUserCredentials: async () => {},
@@ -171,6 +186,72 @@ describe('webauthn handlers', () => {
 
 		expect(payload.ok).toBe(true)
 		expect(webauthnAdapter._credentials.size).toBe(1)
+	})
+
+	it('never replaces an existing credential owner during registration', async () => {
+		const webauthnAdapter = createWebAuthnAdapter()
+		await webauthnAdapter.createCredential({
+			userId: 'existing-owner',
+			credentialId: 'AQID',
+			publicKey: 'existing-key',
+			counter: 7
+		})
+		await webauthnAdapter.createChallenge({
+			challengeId: 'duplicate-credential',
+			userId: 'u1',
+			challenge: 'reg-challenge',
+			type: 'registration',
+			expiresAt: new Date(Date.now() + 1000)
+		})
+		const handler = createWebAuthnRegisterVerifyHandler({
+			webauthnAdapter,
+			rpID: 'example.com',
+			origin: 'http://localhost'
+		})
+
+		const response = await handler(
+			createEvent({
+				body: { challengeId: 'duplicate-credential', credential: { id: 'cred' } }
+			}) as RequestEventLike
+		)
+		expect(response.status).toBe(409)
+		expect(webauthnAdapter._credentials.get('AQID')).toMatchObject({
+			userId: 'existing-owner',
+			publicKey: 'existing-key',
+			counter: 7
+		})
+	})
+
+	it('rejects an invalid registration counter before persistence', async () => {
+		vi.mocked(verifyRegistrationResponse).mockResolvedValueOnce({
+			verified: true,
+			registrationInfo: {
+				credentialID: new Uint8Array([1, 2, 3]),
+				credentialPublicKey: new Uint8Array([4, 5, 6]),
+				counter: -1
+			}
+		} as never)
+		const webauthnAdapter = createWebAuthnAdapter()
+		await webauthnAdapter.createChallenge({
+			challengeId: 'invalid-counter',
+			userId: 'u1',
+			challenge: 'reg-challenge',
+			type: 'registration',
+			expiresAt: new Date(Date.now() + 1000)
+		})
+		const handler = createWebAuthnRegisterVerifyHandler({
+			webauthnAdapter,
+			rpID: 'example.com',
+			origin: 'http://localhost'
+		})
+
+		const response = await handler(
+			createEvent({
+				body: { challengeId: 'invalid-counter', credential: { id: 'cred' } }
+			}) as RequestEventLike
+		)
+		expect(response.status).toBe(400)
+		expect(webauthnAdapter._credentials.size).toBe(0)
 	})
 
 	it('rejects registration verification under a different principal', async () => {
@@ -270,6 +351,83 @@ describe('webauthn handlers', () => {
 		expect(payload.ok).toBe(true)
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1')
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
+		expect(webauthnAdapter._credentials.get('AQIDBAcI')?.counter).toBe(5)
+	})
+
+	it('fails closed when the credential counter changes concurrently', async () => {
+		const webauthnAdapter = createWebAuthnAdapter()
+		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
+		await webauthnAdapter.createChallenge({
+			challengeId: 'counter-race',
+			userId: 'u1',
+			challenge: 'auth-challenge',
+			type: 'authentication',
+			expiresAt: new Date(Date.now() + 1000)
+		})
+		await webauthnAdapter.createCredential({
+			userId: 'u1',
+			credentialId: 'AQIDBAcL',
+			publicKey: 'AQID',
+			counter: 0
+		})
+		webauthnAdapter.advanceCredentialCounter = vi.fn(async () => false)
+		const handler = createWebAuthnLoginVerifyHandler({
+			webauthnAdapter,
+			sessionAdapter,
+			userAdapter: {
+				getUserById: vi.fn(async () => ({ id: 'u1', email: 'u1@example.com' }))
+			},
+			rpID: 'example.com',
+			origin: 'http://localhost'
+		})
+
+		const response = await handler(
+			createEvent({
+				body: { challengeId: 'counter-race', credential: { id: 'AQIDBAcL' } }
+			}) as RequestEventLike
+		)
+		expect(response.status).toBe(409)
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
+	})
+
+	it('rejects a regressing authenticator counter before creating a session', async () => {
+		vi.mocked(verifyAuthenticationResponse).mockResolvedValueOnce({
+			verified: true,
+			authenticationInfo: { newCounter: 6 }
+		} as never)
+		const webauthnAdapter = createWebAuthnAdapter()
+		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
+		await webauthnAdapter.createChallenge({
+			challengeId: 'counter-regression',
+			userId: 'u1',
+			challenge: 'auth-challenge',
+			type: 'authentication',
+			expiresAt: new Date(Date.now() + 1000)
+		})
+		await webauthnAdapter.createCredential({
+			userId: 'u1',
+			credentialId: 'AQIDBAcM',
+			publicKey: 'AQID',
+			counter: 7
+		})
+		const handler = createWebAuthnLoginVerifyHandler({
+			webauthnAdapter,
+			sessionAdapter,
+			userAdapter: {
+				getUserById: vi.fn(async () => ({ id: 'u1', email: 'u1@example.com' }))
+			},
+			rpID: 'example.com',
+			origin: 'http://localhost'
+		})
+
+		const response = await handler(
+			createEvent({
+				body: { challengeId: 'counter-regression', credential: { id: 'AQIDBAcM' } }
+			}) as RequestEventLike
+		)
+		expect(response.status).toBe(409)
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
+		expect(webauthnAdapter._credentials.get('AQIDBAcM')?.counter).toBe(7)
 	})
 
 	it('creates a session when onLogin returns a userId', async () => {

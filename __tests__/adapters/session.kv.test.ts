@@ -60,13 +60,21 @@ describe('KVSessionAdapter', () => {
 		expect(result.session).toBeNull()
 	})
 
-	it('lists sessions for a user when list is available', async () => {
+	it('persists only verifiers and lists non-secret management handles', async () => {
 		const namespace = createNamespace()
 		const adapter = new KVSessionAdapter(namespace)
 		const s1 = await adapter.createSession('u1')
 		await adapter.createSession('u2')
-		const sessions = await adapter.listSessions('u1')
+		const sessions = await adapter.listManagedSessions('u1')
 		expect(sessions).toHaveLength(1)
-		expect(sessions[0]!.id).toBe(s1.id)
+		expect(sessions[0]!.id).toBe(s1.managementId)
+		expect(sessions[0]!.id).not.toBe(s1.id)
+		expect([...namespace._store.keys()]).not.toContain(`session:${s1.id}`)
+
+		const storedVerifier = [...namespace._store.keys()][0]?.replace('session:', '') ?? ''
+		await expect(adapter.validateSession(storedVerifier)).resolves.toEqual({
+			session: null,
+			user: null
+		})
 	})
 })

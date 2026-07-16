@@ -49,15 +49,21 @@ export const auth = new GoobitsAuth({
 			})
 		}
 	},
-	security: { rateLimit: { store: sharedRateLimitStore } }
+	security: {
+		rateLimit: { store: sharedRateLimitStore },
+		audit: { emitter: auditEmitter }
+	}
 })
 ```
 
 `secure` is the default profile. It requires CSRF and rate limiting, and a
-shared rate-limit store is mandatory in production. Applications that enforce
+shared rate-limit store plus an awaited audit emitter are mandatory in
+production. Use `createAuthEventAuditEmitter` with a canonical
+`@goobits/security/audit` logger. Applications that enforce
 an equivalent outer request boundary must declare
-`csrf: { mode: 'off', externalBoundary: true }` rather than silently disabling
-CSRF.
+`csrf: { mode: 'off', validateExternalSecurityBoundary: verifyOrigin }`. The
+callback is executed for every unsafe request; a boolean configuration flag is
+not accepted.
 
 ## `GoobitsAuth` surface
 
@@ -119,6 +125,12 @@ must enforce one row per `(userId, provider)` so stores and lazy key rotation us
 an atomic upsert. The old `oauthTokenEncryptionKey` option remains only as a
 migration bridge.
 
+Session adapters return bearer tokens only from `createSession()` and persist
+only their verifiers. Import `createSessionToken` and `hashSessionToken` from
+`@goobits/auth/adapters/session` when implementing a custom store. Never expose
+the persisted verifier through listing APIs; implement the optional managed
+session capability with a separate opaque management ID.
+
 ### Required schema tables
 
 - `users`
@@ -153,8 +165,9 @@ Handler options support custom form field names and metadata:
 Standalone signin, signup, and password-reset handlers fail at construction
 unless both CSRF and rate-limit callbacks are configured. When an application
 already enforces equivalent checks before the handler, acknowledge that
-boundary explicitly with `externalSecurityBoundary: true`; omission is never a
-silent opt-out.
+boundary explicitly with `validateExternalSecurityBoundary: verifyOuterPolicy`;
+omission is never a silent opt-out. The value is an async request validator
+callback, not a boolean.
 
 Authentication limiter presets are exported from `@goobits/auth/security`:
 
@@ -237,26 +250,29 @@ Magic-link token URLs use a scanner-safe confirmation interstitial by default.
 The GET request does not consume the token; a short-lived, HttpOnly
 confirmation cookie and deliberate POST are required. Set
 `settings.requireUserConfirmation: false` only when an application-owned page
-already provides an equivalent same-origin confirmation boundary. Raw token
-exposure is rejected when `NODE_ENV=production`.
+already provides an equivalent same-origin confirmation boundary. The raw token
+is supplied only to the configured delivery callback and is never returned in
+an HTTP response.
 
 ## Security primitives
 
 Use `@goobits/auth/security` for auth-specific policy, authorization, audit,
-CSRF ergonomics, alerts, and signed-session primitives:
+alerts, and rate-limit presets:
 
 ```ts
 import {
-	createSignedSessionToken,
+	createLoginRateLimiter,
 	requireAuthenticated,
-	requireOwnership,
-	validateCsrfRequest,
-	verifySignedSessionToken
+	requireOwnership
 } from '@goobits/auth/security'
 ```
 
-- Signed, expiring session-token creation and verification.
-- CSRF issuance/validation, auth event auditing, and role/ownership guards.
+- Auth event auditing, role/ownership guards, policy composition, and
+  authentication-specific limits.
+- Import SvelteKit CSRF integration directly from
+  `@goobits/security/csrf/sveltekit`. Custom session adapters use
+  `createSessionToken` and `hashSessionToken` from
+  `@goobits/auth/adapters/session`.
 
 Generic primitives are intentionally imported from their Security owners:
 
@@ -269,7 +285,7 @@ import {
 	verifyBasicAuthHeader
 } from '@goobits/security/http-credentials'
 import { constantTimeEqual } from '@goobits/security/crypto'
-import { redactSensitiveData } from '@goobits/security/redaction'
+import { redactSensitive } from '@goobits/security/redaction'
 ```
 
 ## Typing App locals

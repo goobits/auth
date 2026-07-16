@@ -1,4 +1,5 @@
 import type { MfaStatus } from '../../types/core.ts'
+import { assertD1Identifiers } from '../_d1Sql.ts'
 import { MfaAdapter, type MfaSecretCodec } from './MfaAdapter.ts'
 
 type D1Row = Record<string, unknown>
@@ -40,14 +41,6 @@ type D1MfaAdapterOptions = {
 		hash: string
 		createdAt: string
 	}>
-}
-
-const SQL_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/
-
-function assertIdentifier(value: string | null, label: string): void {
-	if (value !== null && !SQL_IDENTIFIER.test(value)) {
-		throw new Error(`@goobits/auth: invalid D1 MFA ${label}`)
-	}
 }
 
 function parseDate(value: unknown): Date | null {
@@ -104,7 +97,7 @@ export class D1MfaAdapter extends MfaAdapter {
 			hash: options.backupCodeColumns?.hash ?? 'code_hash',
 			createdAt: options.backupCodeColumns?.createdAt ?? 'created_at'
 		}
-		for (const [label, value] of Object.entries({
+		assertD1Identifiers({
 			factorsTable: this.factorsTable,
 			backupCodesTable: this.backupCodesTable,
 			factorUserId: this.factorColumns.userId,
@@ -114,9 +107,7 @@ export class D1MfaAdapter extends MfaAdapter {
 			backupUserId: this.backupCodeColumns.userId,
 			backupHash: this.backupCodeColumns.hash,
 			backupCreatedAt: this.backupCodeColumns.createdAt
-		})) {
-			assertIdentifier(value, label)
-		}
+		})
 	}
 
 	async beginEnrollment(userId: string, secret: string, backupCodes: string[]): Promise<boolean> {

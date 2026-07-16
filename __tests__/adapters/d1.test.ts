@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import { D1UserAdapter } from '../../src/adapters/database/D1UserAdapter.ts'
+import { D1MagicLinkAdapter } from '../../src/adapters/magic-link/D1MagicLinkAdapter.ts'
 import { D1TokenAdapter } from '../../src/adapters/oauth-token/D1TokenAdapter.ts'
 import { D1SessionAdapter } from '../../src/adapters/session/D1SessionAdapter.ts'
 import { D1VerificationTokenAdapter } from '../../src/adapters/verification-token/D1VerificationTokenAdapter.ts'
+import { D1WebAuthnAdapter } from '../../src/adapters/webauthn/D1WebAuthnAdapter.ts'
 
 type TableRow = Record<string, unknown>
 type Tables = Record<string, TableRow[]>
@@ -51,6 +53,7 @@ function createMockDb() {
 	}
 
 	return {
+		_tables: tables,
 		prepare(sql: string) {
 			sql = sql.replaceAll('"', '')
 			let bound: unknown[] = []
@@ -283,7 +286,10 @@ describe('D1 adapters', () => {
 		expect(result.user?.email).toBe('a@b.com')
 		expect(result.session?.id).toBe(session.id)
 		expect(result.session?.mfaVerifiedAt).toEqual(mfaVerifiedAt)
-		expect((await sessionAdapter.listSessions(user.id))[0]?.mfaVerifiedAt).toEqual(mfaVerifiedAt)
+		expect(db._tables.sessions[0]?.['id']).not.toBe(session.id)
+		await expect(
+			sessionAdapter.validateSession(String(db._tables.sessions[0]?.['id']))
+		).resolves.toEqual({ session: null, user: null })
 	})
 
 	it('round-trips D1 session timestamps and request metadata when configured', async () => {
@@ -315,9 +321,11 @@ describe('D1 adapters', () => {
 			ip: '192.0.2.10',
 			userAgent: 'Test Browser'
 		})
-		expect(await sessionAdapter.listSessions(user.id)).toEqual([
-			expect.objectContaining({ createdAt, ip: '192.0.2.10', userAgent: 'Test Browser' })
-		])
+		expect(db._tables.sessions[0]).toMatchObject({
+			created_at: createdAt.toISOString(),
+			ip: '192.0.2.10',
+			user_agent: 'Test Browser'
+		})
 	})
 
 	it('round-trips Unix-second assurance timestamps and non-secret management handles', async () => {
@@ -410,7 +418,114 @@ describe('D1 adapters', () => {
 					tokensTable: 'oauth_tokens; DROP TABLE users',
 					encryptionKey: 'a'.repeat(64)
 				})
-		).toThrow(/invalid SQL identifier/)
+		).toThrow(/invalid D1 SQL identifier/)
+	})
+
+	it('rejects unsafe identifiers consistently across every D1 adapter family', () => {
+		const db = createMockDb()
+		const unsafe = 'records; DROP TABLE users'
+		const factories = [
+			() => new D1UserAdapter(db, { usersTable: unsafe }),
+			() => new D1SessionAdapter(db, { sessionsTable: unsafe }),
+			() => new D1MagicLinkAdapter(db as never, { tokensTable: unsafe }),
+			() => new D1VerificationTokenAdapter(db as never, { tokensTable: unsafe }),
+			() => new D1WebAuthnAdapter(db as never, { credentialsTable: unsafe })
+		]
+
+		for (const createAdapter of factories) {
+			expect(createAdapter).toThrow(/invalid D1 SQL identifier/)
+		}
+	})
+
+	it('keeps D1 WebAuthn owners immutable and counters compare-and-swap protected', async () => {
+		type Credential = { userId: string; publicKey: string; counter: number }
+		const credentials = new Map<string, Credential>()
+		const db = {
+			prepare(sql: string) {
+				let values: unknown[] = []
+				return {
+					bind(...bound: unknown[]) {
+						values = bound
+						return this
+					},
+					async run() {
+						if (sql.startsWith('INSERT INTO webauthn_credentials')) {
+							const [userId, credentialId, publicKey, counter] = values as [
+								string,
+								string,
+								string,
+								number
+							]
+							if (credentials.has(credentialId)) return { meta: { changes: 0 } }
+							credentials.set(credentialId, { userId, publicKey, counter })
+							return { meta: { changes: 1 } }
+						}
+						if (sql.startsWith('UPDATE webauthn_credentials')) {
+							const [newCounter, , credentialId, userId, expectedCounter] = values as [
+								number,
+								string,
+								string,
+								string,
+								number
+							]
+							const current = credentials.get(credentialId)
+							if (!current || current.userId !== userId || current.counter !== expectedCounter) {
+								return { meta: { changes: 0 } }
+							}
+							credentials.set(credentialId, { ...current, counter: newCounter })
+							return { meta: { changes: 1 } }
+						}
+						return { meta: { changes: 0 } }
+					},
+					async first() {
+						return null
+					},
+					async all() {
+						return { results: [] }
+					}
+				}
+			}
+		}
+		const adapter = new D1WebAuthnAdapter(db as never)
+		const first = {
+			userId: 'owner-1',
+			credentialId: 'credential-1',
+			publicKey: 'key-1',
+			counter: 0
+		}
+		await expect(adapter.createCredential(first)).resolves.toBe(true)
+		await expect(
+			adapter.createCredential({ ...first, userId: 'owner-2', publicKey: 'key-2' })
+		).resolves.toBe(false)
+		expect(credentials.get('credential-1')).toEqual({
+			userId: 'owner-1',
+			publicKey: 'key-1',
+			counter: 0
+		})
+		await expect(
+			adapter.advanceCredentialCounter({
+				credentialId: 'credential-1',
+				userId: 'owner-2',
+				expectedCounter: 0,
+				newCounter: 1
+			})
+		).resolves.toBe(false)
+		await expect(
+			adapter.advanceCredentialCounter({
+				credentialId: 'credential-1',
+				userId: 'owner-1',
+				expectedCounter: 0,
+				newCounter: 1
+			})
+		).resolves.toBe(true)
+		await expect(
+			adapter.advanceCredentialCounter({
+				credentialId: 'credential-1',
+				userId: 'owner-1',
+				expectedCounter: 0,
+				newCounter: 2
+			})
+		).resolves.toBe(false)
 	})
 
 	it('creates and finds verification tokens', async () => {

@@ -2,10 +2,11 @@ import type { Cookies } from '@sveltejs/kit'
 
 import { errorContext, resolveLogger, type Logger } from '../../_internal/logger.ts'
 import { AuthAdapterCapabilityError } from '../../errors/AuthPrincipalResolutionError.ts'
-import type { Session, User } from '../../types/index.ts'
-import { generateRandomUUID } from '../../utils/crypto.ts'
+import type { Session, SessionMetadata, SessionSummary, User } from '../../types/index.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
+import { normalizeSessionMetadata } from './_sessionMetadata.ts'
 import { parseMfaVerifiedAt, parseSessionTimestamp } from './sessionAssurance.ts'
+import { createSessionToken, generateSessionId, hashSessionToken } from './sessionId.ts'
 
 type KVNamespaceLike = {
 	put: (key: string, value: string, options?: { expirationTtl?: number }) => Promise<void>
@@ -22,6 +23,11 @@ type KVSessionRecord = {
 	expiresAt: string
 	createdAt?: string
 	mfaVerifiedAt?: string
+	managementId: string
+	ip?: string
+	userAgent?: string
+	fingerprint?: string
+	rememberMe?: boolean
 }
 
 function isKVSessionRecord(
@@ -34,7 +40,13 @@ function isKVSessionRecord(
 		'expiresAt' in value &&
 		typeof value['expiresAt'] === 'string' &&
 		(!('createdAt' in value) || typeof value['createdAt'] === 'string') &&
-		(!('mfaVerifiedAt' in value) || typeof value['mfaVerifiedAt'] === 'string')
+		(!('mfaVerifiedAt' in value) || typeof value['mfaVerifiedAt'] === 'string') &&
+		'managementId' in value &&
+		typeof value['managementId'] === 'string' &&
+		(!('ip' in value) || typeof value['ip'] === 'string') &&
+		(!('userAgent' in value) || typeof value['userAgent'] === 'string') &&
+		(!('fingerprint' in value) || typeof value['fingerprint'] === 'string') &&
+		(!('rememberMe' in value) || typeof value['rememberMe'] === 'boolean')
 	)
 }
 
@@ -85,33 +97,53 @@ export class KVSessionAdapter extends SessionAdapter {
 		return `${this.keyPrefix}:${sessionId}`
 	}
 
-	async createSession(userId: string, metadata: Record<string, unknown> = {}) {
-		const sessionId = await generateRandomUUID()
+	async createSession(userId: string, metadata: SessionMetadata = {}) {
+		const normalized = normalizeSessionMetadata(metadata)
+		const token = createSessionToken()
+		const verifier = await hashSessionToken(token)
+		const managementId = generateSessionId()
 		const expiresAt = new Date(Date.now() + this.sessionLifetime)
-		const createdAt = parseSessionTimestamp(metadata['createdAt']) ?? new Date()
-		const mfaVerifiedAt = parseMfaVerifiedAt(metadata['mfaVerifiedAt'])
+		const createdAt = normalized.createdAt ?? new Date()
+		const mfaVerifiedAt = normalized.mfaVerifiedAt
 		const payload = {
 			userId,
 			expiresAt: expiresAt.toISOString(),
 			createdAt: createdAt.toISOString(),
-			...(mfaVerifiedAt ? { mfaVerifiedAt: mfaVerifiedAt.toISOString() } : {})
+			managementId,
+			...(mfaVerifiedAt ? { mfaVerifiedAt: mfaVerifiedAt.toISOString() } : {}),
+			...(normalized.ip ? { ip: normalized.ip } : {}),
+			...(normalized.userAgent ? { userAgent: normalized.userAgent } : {}),
+			...(normalized.fingerprint ? { fingerprint: normalized.fingerprint } : {}),
+			...(normalized.rememberMe !== undefined ? { rememberMe: normalized.rememberMe } : {})
 		}
-		await this.namespace.put(this._key(sessionId), JSON.stringify(payload), {
+		await this.namespace.put(this._key(verifier), JSON.stringify(payload), {
 			expirationTtl: Math.ceil(this.sessionLifetime / 1000)
 		})
-		return { id: sessionId, userId, expiresAt, ...metadata, createdAt, mfaVerifiedAt }
+		return {
+			id: token,
+			managementId,
+			userId,
+			expiresAt,
+			createdAt,
+			mfaVerifiedAt: mfaVerifiedAt ?? null,
+			ip: normalized.ip ?? null,
+			userAgent: normalized.userAgent ?? null,
+			fingerprint: normalized.fingerprint ?? null,
+			...(normalized.rememberMe !== undefined ? { rememberMe: normalized.rememberMe } : {})
+		}
 	}
 
 	async validateSession(sessionId: string): Promise<{
 		session: Session | null
 		user: User | null
 	}> {
+		const verifier = await hashSessionToken(sessionId)
 		// SessionAdapter contract requires validateSession to never throw.
 		// Any storage-level failure (network, permission) returns the empty
 		// principal and is logged.
 		let rawValue: Record<string, unknown> | string | null
 		try {
-			rawValue = await this.namespace.get(this._key(sessionId), { type: 'json' })
+			rawValue = await this.namespace.get(this._key(verifier), { type: 'json' })
 		} catch (error) {
 			this.logger.warn('[KVSessionAdapter] validateSession KV.get failed', errorContext(error))
 			return { session: null, user: null }
@@ -122,7 +154,7 @@ export class KVSessionAdapter extends SessionAdapter {
 		const expiresAt = new Date(raw.expiresAt)
 		if (Date.now() >= expiresAt.getTime()) {
 			try {
-				await this.namespace.delete(this._key(sessionId))
+				await this.namespace.delete(this._key(verifier))
 			} catch (error) {
 				this.logger.warn('[KVSessionAdapter] failed to delete expired session', errorContext(error))
 			}
@@ -137,12 +169,10 @@ export class KVSessionAdapter extends SessionAdapter {
 			newExpiresAt = new Date(Date.now() + this.sessionLifetime)
 			try {
 				await this.namespace.put(
-					this._key(sessionId),
+					this._key(verifier),
 					JSON.stringify({
-						userId: raw.userId,
-						expiresAt: newExpiresAt.toISOString(),
-						...(raw.createdAt ? { createdAt: raw.createdAt } : {}),
-						...(raw.mfaVerifiedAt ? { mfaVerifiedAt: raw.mfaVerifiedAt } : {})
+						...raw,
+						expiresAt: newExpiresAt.toISOString()
 					}),
 					{ expirationTtl: Math.ceil(this.sessionLifetime / 1000) }
 				)
@@ -170,18 +200,23 @@ export class KVSessionAdapter extends SessionAdapter {
 		return {
 			session: {
 				id: sessionId,
+				managementId: raw.managementId,
 				userId: raw.userId,
 				expiresAt: newExpiresAt,
 				fresh,
 				...(createdAt ? { createdAt } : {}),
-				mfaVerifiedAt: parseMfaVerifiedAt(raw.mfaVerifiedAt)
+				mfaVerifiedAt: parseMfaVerifiedAt(raw.mfaVerifiedAt),
+				ip: raw.ip ?? null,
+				userAgent: raw.userAgent ?? null,
+				fingerprint: raw.fingerprint ?? null,
+				...(raw.rememberMe !== undefined ? { rememberMe: raw.rememberMe } : {})
 			},
 			user
 		}
 	}
 
 	async invalidateSession(sessionId: string) {
-		await this.namespace.delete(this._key(sessionId))
+		await this.namespace.delete(this._key(await hashSessionToken(sessionId)))
 	}
 
 	async invalidateUserSessions(userId: string) {
@@ -190,10 +225,10 @@ export class KVSessionAdapter extends SessionAdapter {
 				'KVSessionAdapter requires a KV namespace with list() support for invalidateUserSessions'
 			)
 		}
-		const matching = await this.listSessions(userId)
+		const matching = await this._listStoredEntries(userId)
 		await Promise.all(
-			matching.map((session) =>
-				this.namespace.delete(this._key(session.id)).catch((error) => {
+			matching.map(({ key }) =>
+				this.namespace.delete(key).catch((error) => {
 					this.logger.warn(
 						'[KVSessionAdapter] failed to delete session during bulk invalidate',
 						errorContext(error)
@@ -203,29 +238,44 @@ export class KVSessionAdapter extends SessionAdapter {
 		)
 	}
 
-	async listSessions(userId: string): Promise<Session[]> {
+	private async _listStoredEntries(
+		userId: string
+	): Promise<Array<{ key: string; record: KVSessionRecord }>> {
 		if (typeof this.namespace.list !== 'function') {
 			throw new AuthAdapterCapabilityError(
-				'KVSessionAdapter requires a KV namespace with list() support for listSessions'
+				'KVSessionAdapter requires a KV namespace with list() support for session management'
 			)
 		}
 		const keys = await this.namespace.list({ prefix: `${this.keyPrefix}:` })
-		const sessions: Session[] = []
+		const sessions: Array<{ key: string; record: KVSessionRecord }> = []
 		for (const key of keys.keys ?? []) {
 			const rawValue = await this.namespace.get(key.name, { type: 'json' })
 			const raw = isKVSessionRecord(rawValue) ? rawValue : null
 			if (!raw) continue
 			if (raw.userId !== userId) continue
-			const createdAt = parseSessionTimestamp(raw.createdAt)
-			sessions.push({
-				id: key.name.replace(`${this.keyPrefix}:`, ''),
-				userId: raw.userId,
-				expiresAt: new Date(raw.expiresAt),
-				...(createdAt ? { createdAt } : {}),
-				mfaVerifiedAt: parseMfaVerifiedAt(raw.mfaVerifiedAt)
-			})
+			sessions.push({ key: key.name, record: raw })
 		}
 		return sessions
+	}
+
+	async listManagedSessions(userId: string): Promise<SessionSummary[]> {
+		return (await this._listStoredEntries(userId)).map(({ record }) => ({
+			id: record.managementId,
+			userId: record.userId,
+			expiresAt: new Date(record.expiresAt),
+			createdAt: parseSessionTimestamp(record.createdAt),
+			ip: record.ip ?? null,
+			userAgent: record.userAgent ?? null
+		}))
+	}
+
+	async revokeManagedSession(userId: string, managementId: string): Promise<void> {
+		for (const { key, record } of await this._listStoredEntries(userId)) {
+			if (record.managementId === managementId) {
+				await this.namespace.delete(key)
+				return
+			}
+		}
 	}
 
 	setSessionCookie(cookies: Cookies, session: { id: string; expiresAt: Date }) {

@@ -1,4 +1,5 @@
 import type { MagicLinkToken } from '../../types/index.ts'
+import { assertD1Identifiers } from '../_d1Sql.ts'
 import { generateRandomUUID } from '../../utils/crypto.ts'
 import { MagicLinkAdapter } from './MagicLinkAdapter.ts'
 
@@ -47,6 +48,12 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 			expiresAt: options.columns?.['expiresAt'] || 'expires_at',
 			createdAt: options.columns?.['createdAt'] || 'created_at'
 		}
+		assertD1Identifiers({
+			tokensTable: this.tokensTable,
+			...Object.fromEntries(
+				Object.entries(this.columns).map(([key, value]) => [`magicLinks.${key}`, value])
+			)
+		})
 	}
 
 	async createToken({

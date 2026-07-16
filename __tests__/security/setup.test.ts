@@ -26,11 +26,19 @@ describe('auth security profiles', () => {
 		const resolved = resolveSecurity(config())
 
 		expect(resolved.csrf.mode).toBe('required')
-		expect(resolved.csrf.externalBoundary).toBe(false)
+		expect(resolved.csrf.validateExternalSecurityBoundary).toBeUndefined()
 		expect(resolved.rateLimit.mode).toBe('required')
 		expect(resolved.rateLimit.windows).toEqual([
 			{ name: 'login:burst', windowMs: 60_000, maxEvents: 5 },
 			{ name: 'login:15-min', windowMs: 15 * 60_000, maxEvents: 15 }
+		])
+		expect(resolved.routes['magic.request']?.rateLimitWindows).toEqual([
+			{ name: 'password-reset:15-min', windowMs: 15 * 60_000, maxEvents: 3 },
+			{ name: 'password-reset:hour', windowMs: 60 * 60_000, maxEvents: 5 }
+		])
+		expect(resolved.routes['webauthn.register.options']?.rateLimitWindows).toEqual([
+			{ name: 'registration:10-min', windowMs: 10 * 60_000, maxEvents: 3 },
+			{ name: 'registration:hour', windowMs: 60 * 60_000, maxEvents: 5 }
 		])
 	})
 
@@ -40,6 +48,7 @@ describe('auth security profiles', () => {
 		expect(resolved.rateLimit.windows).toEqual([
 			{ name: 'auth:custom', maxEvents: 7, windowMs: 30_000 }
 		])
+		expect(resolved.routes['magic.request']?.rateLimitWindows).toBe(resolved.rateLimit.windows)
 	})
 
 	it('requires an explicit external boundary when secure CSRF is disabled', () => {
@@ -47,16 +56,26 @@ describe('auth security profiles', () => {
 			'requires CSRF protection'
 		)
 
+		const validateExternalSecurityBoundary = async () => true
 		const resolved = resolveSecurity(
-			config('secure', { csrf: { mode: 'off', externalBoundary: true } })
+			config('secure', { csrf: { mode: 'off', validateExternalSecurityBoundary } })
 		)
-		expect(resolved.csrf).toMatchObject({ mode: 'off', externalBoundary: true })
+		expect(resolved.csrf).toMatchObject({ mode: 'off', validateExternalSecurityBoundary })
 	})
 
 	it('does not allow the strict profile to delegate its CSRF boundary', () => {
 		expect(() =>
-			resolveSecurity(config('strict', { csrf: { mode: 'off', externalBoundary: true } }))
+			resolveSecurity(
+				config('strict', {
+					csrf: { mode: 'off', validateExternalSecurityBoundary: async () => true }
+				})
+			)
 		).toThrow('strict auth profile requires built-in CSRF protection')
+	})
+
+	it('treats unknown runtime modes as production-safe', () => {
+		vi.stubEnv('NODE_ENV', 'staging')
+		expect(() => resolveSecurity(config())).toThrow('shared rate-limit store in production')
 	})
 
 	it('does not allow secure profiles to disable rate limiting', () => {
@@ -71,14 +90,24 @@ describe('auth security profiles', () => {
 
 		const rateLimitStore = new MemoryRateLimitStore()
 		const csrfStore = new MemoryCsrfStore()
+		const emitter = vi.fn()
 		expect(() =>
-			resolveSecurity(config('strict', { rateLimit: { store: rateLimitStore } }))
+			resolveSecurity(config('secure', { rateLimit: { store: rateLimitStore } }))
+		).toThrow('explicit audit emitter')
+		expect(() =>
+			resolveSecurity(
+				config('strict', {
+					rateLimit: { store: rateLimitStore },
+					audit: { emitter }
+				})
+			)
 		).toThrow('shared CSRF store in production')
 
 		const resolved = resolveSecurity(
 			config('strict', {
 				csrf: { store: csrfStore },
-				rateLimit: { store: rateLimitStore }
+				rateLimit: { store: rateLimitStore },
+				audit: { emitter }
 			})
 		)
 		expect(resolved.csrf.store).toBe(csrfStore)

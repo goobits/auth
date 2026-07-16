@@ -25,7 +25,7 @@ import {
 } from '../verification/index.ts'
 import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
 import {
-	assertStandaloneSecurityBoundary,
+	createStandaloneSecurityBoundaryValidator,
 	type StandaloneSecurityBoundary
 } from './_standaloneSecurity.ts'
 
@@ -46,11 +46,16 @@ export function createPasswordResetRequestHandler(
 		logger?: Logger
 	} & StandaloneSecurityBoundary
 ) {
-	assertStandaloneSecurityBoundary('createPasswordResetRequestHandler', {
-		hasCsrf: typeof config.csrf?.validate === 'function',
-		hasRateLimit: typeof config.rateLimit?.check === 'function',
-		...(config.externalSecurityBoundary === true ? { externalSecurityBoundary: true } : {})
-	})
+	const validateRequestBoundary = createStandaloneSecurityBoundaryValidator(
+		'createPasswordResetRequestHandler',
+		{
+			hasCsrf: typeof config.csrf?.validate === 'function',
+			hasRateLimit: typeof config.rateLimit?.check === 'function',
+			...(config.validateExternalSecurityBoundary
+				? { validateExternalSecurityBoundary: config.validateExternalSecurityBoundary }
+				: {})
+		}
+	)
 	const {
 		userAdapter,
 		verificationTokenAdapter,
@@ -65,6 +70,9 @@ export function createPasswordResetRequestHandler(
 	const log = resolveLogger(logger)
 
 	return async (event: RequestEventLike) => {
+		if (!(await validateRequestBoundary(event))) {
+			return { error: 'Invalid security boundary', success: false }
+		}
 		if (csrf?.validate) {
 			const valid = await csrf.validate(event)
 			if (!valid) {
@@ -158,11 +166,16 @@ export function createPasswordResetConfirmHandler(
 		logger?: Logger
 	} & StandaloneSecurityBoundary
 ) {
-	assertStandaloneSecurityBoundary('createPasswordResetConfirmHandler', {
-		hasCsrf: typeof config.csrf?.validate === 'function',
-		hasRateLimit: typeof config.rateLimit?.check === 'function',
-		...(config.externalSecurityBoundary === true ? { externalSecurityBoundary: true } : {})
-	})
+	const validateRequestBoundary = createStandaloneSecurityBoundaryValidator(
+		'createPasswordResetConfirmHandler',
+		{
+			hasCsrf: typeof config.csrf?.validate === 'function',
+			hasRateLimit: typeof config.rateLimit?.check === 'function',
+			...(config.validateExternalSecurityBoundary
+				? { validateExternalSecurityBoundary: config.validateExternalSecurityBoundary }
+				: {})
+		}
+	)
 	const {
 		credentialsProvider,
 		completePasswordReset,
@@ -175,6 +188,9 @@ export function createPasswordResetConfirmHandler(
 	const log = resolveLogger(logger)
 
 	return async (event: RequestEventLike) => {
+		if (!(await validateRequestBoundary(event))) {
+			return { error: 'Invalid security boundary', success: false }
+		}
 		if (csrf?.validate && !(await csrf.validate(event))) {
 			return {
 				error: csrf.errorMessage || 'Invalid CSRF token',

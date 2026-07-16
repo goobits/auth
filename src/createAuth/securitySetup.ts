@@ -1,6 +1,7 @@
 import { createWebhookChannel, type AlertChannel } from '@goobits/security/alerting'
+import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME, MemoryCsrfStore } from '@goobits/security/csrf'
+import { isProductionRuntime } from '@goobits/security/runtime'
 import { createSecurityAlertObserver } from '../security/alerts.ts'
-import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME, MemoryCsrfStore } from '../security/csrf.ts'
 import { createAuthEvent } from '../security/events.ts'
 import { applySecurityPolicy, type SecurityPolicySettings } from '../security/policy.ts'
 import { getAuthRateLimitWindows } from '../security/rateLimit.ts'
@@ -52,10 +53,6 @@ function resolveTrustedProxyHeaders(
 	)
 }
 
-function isProductionRuntime(): boolean {
-	return typeof process !== 'undefined' && process.env['NODE_ENV'] === 'production'
-}
-
 function resolveRateLimitWindows(
 	base: AuthSecurityConfig['rateLimit'],
 	override: AuthSecurityConfig['rateLimit']
@@ -78,7 +75,7 @@ function resolveRateLimitWindows(
 function assertProfileRequirements(profile: SecurityProfile, security: AuthSecurityConfig): void {
 	if (profile === 'basic') return
 	const csrfMode = security.csrf?.mode ?? 'required'
-	const externalCsrfBoundary = security.csrf?.externalBoundary === true
+	const externalCsrfBoundary = security.csrf?.validateExternalSecurityBoundary
 
 	if (profile === 'strict' && (csrfMode !== 'required' || externalCsrfBoundary)) {
 		throw new Error('The strict auth profile requires built-in CSRF protection')
@@ -89,11 +86,11 @@ function assertProfileRequirements(profile: SecurityProfile, security: AuthSecur
 		!(csrfMode === 'off' && externalCsrfBoundary)
 	) {
 		throw new Error(
-			"The secure auth profile requires CSRF protection or csrf.externalBoundary with mode 'off'"
+			"The secure auth profile requires CSRF protection or csrf.validateExternalSecurityBoundary with mode 'off'"
 		)
 	}
 	if (externalCsrfBoundary && csrfMode !== 'off') {
-		throw new Error("csrf.externalBoundary may only be used with csrf.mode 'off'")
+		throw new Error("csrf.validateExternalSecurityBoundary may only be used with csrf.mode 'off'")
 	}
 	if (security.rateLimit?.mode !== 'required') {
 		throw new Error(`${profile} auth profile requires rate limiting`)
@@ -109,12 +106,26 @@ function assertProfileRequirements(profile: SecurityProfile, security: AuthSecur
 	) {
 		throw new Error(`${profile} auth profile requires a shared CSRF store in production`)
 	}
+	if (
+		security.audit?.mode === 'required' &&
+		(profile === 'strict' || isProductionRuntime()) &&
+		!security.audit.emitter
+	) {
+		throw new Error(`${profile} auth profile requires an explicit audit emitter`)
+	}
 }
 
 export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 	const profile = config.profile ?? 'secure'
 	const base = PROFILE_DEFAULTS[profile]
 	const rateLimitWindows = resolveRateLimitWindows(base.rateLimit, config.security?.rateLimit)
+	const hasCustomRateLimitWindows = Boolean(
+		config.security?.rateLimit?.windows ||
+		config.security?.rateLimit?.max !== undefined ||
+		config.security?.rateLimit?.windowMs !== undefined
+	)
+	const flowWindows = (flow: Parameters<typeof getAuthRateLimitWindows>[0]) =>
+		hasCustomRateLimitWindows ? rateLimitWindows : getAuthRateLimitWindows(flow)
 	const merged: AuthSecurityConfig = {
 		csrf: { ...base.csrf, ...config.security?.csrf },
 		rateLimit: { ...base.rateLimit, ...config.security?.rateLimit },
@@ -122,6 +133,12 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 		alerts: { ...base.alerts, ...config.security?.alerts }
 	}
 	assertProfileRequirements(profile, merged)
+	if (config.magicLink && isProductionRuntime() && !merged.rateLimit?.store) {
+		throw new Error('Production magic-link auth requires a shared rate-limit store')
+	}
+	if (config.magicLink && isProductionRuntime() && !merged.audit?.emitter) {
+		throw new Error('Production magic-link auth requires an explicit audit emitter')
+	}
 	const csrfStore = merged.csrf?.store ?? new MemoryCsrfStore()
 	const webhook = merged.alerts?.webhook
 	const fallbackWebhookUrl =
@@ -161,7 +178,11 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 		profile,
 		csrf: {
 			mode: merged.csrf?.mode ?? 'optional',
-			externalBoundary: merged.csrf?.externalBoundary ?? false,
+			...(merged.csrf?.validateExternalSecurityBoundary
+				? {
+						validateExternalSecurityBoundary: merged.csrf.validateExternalSecurityBoundary
+					}
+				: {}),
 			cookieName: merged.csrf?.cookieName ?? CSRF_COOKIE_NAME,
 			headerName: merged.csrf?.headerName ?? CSRF_HEADER_NAME,
 			checkExpiry: merged.csrf?.checkExpiry ?? false,
@@ -181,23 +202,70 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			emitter
 		},
 		routes: {
-			'oauth.login': { csrf: 'off', rateLimit: 'optional' },
-			'oauth.callback': { csrf: 'off', rateLimit: 'optional' },
-			'auth.logout': { csrf: merged.csrf?.mode ?? 'optional' },
-			'magic.request': { csrf: merged.csrf?.mode ?? 'optional' },
-			'magic.verify': { csrf: merged.csrf?.mode ?? 'optional' },
-			'webauthn.register.options': { csrf: merged.csrf?.mode ?? 'optional' },
-			'webauthn.register.verify': { csrf: merged.csrf?.mode ?? 'optional' },
-			'webauthn.login.options': { csrf: merged.csrf?.mode ?? 'optional' },
-			'webauthn.login.verify': { csrf: merged.csrf?.mode ?? 'optional' },
-			'mfa.status': { csrf: 'off' },
-			'mfa.enroll': { csrf: merged.csrf?.mode ?? 'optional' },
-			'mfa.verify': { csrf: merged.csrf?.mode ?? 'optional' },
-			'mfa.disable': { csrf: merged.csrf?.mode ?? 'optional' },
-			'mfa.backup_code': { csrf: merged.csrf?.mode ?? 'optional' },
-			'mfa.step_up': { csrf: merged.csrf?.mode ?? 'optional' },
-			'sessions.list': { csrf: 'off' },
-			'sessions.revoke': { csrf: merged.csrf?.mode ?? 'optional' }
+			'oauth.login': {
+				csrf: 'off',
+				rateLimit: 'optional',
+				rateLimitWindows: flowWindows('login')
+			},
+			'oauth.callback': {
+				csrf: 'off',
+				rateLimit: 'optional',
+				rateLimitWindows: flowWindows('default')
+			},
+			'auth.logout': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('default')
+			},
+			'magic.request': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('password-reset')
+			},
+			'magic.verify': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('login')
+			},
+			'webauthn.register.options': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('registration')
+			},
+			'webauthn.register.verify': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('registration')
+			},
+			'webauthn.login.options': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('login')
+			},
+			'webauthn.login.verify': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('login')
+			},
+			'mfa.status': { csrf: 'off', rateLimitWindows: flowWindows('default') },
+			'mfa.enroll': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('registration')
+			},
+			'mfa.verify': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('login')
+			},
+			'mfa.disable': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('default')
+			},
+			'mfa.backup_code': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('login')
+			},
+			'mfa.step_up': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('login')
+			},
+			'sessions.list': { csrf: 'off', rateLimitWindows: flowWindows('default') },
+			'sessions.revoke': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('default')
+			}
 		}
 	}
 }

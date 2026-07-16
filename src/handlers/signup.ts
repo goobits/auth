@@ -10,7 +10,7 @@ import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 import { createVerificationToken, VERIFICATION_TOKEN_TYPES } from '../verification/index.ts'
 import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
 import {
-	assertStandaloneSecurityBoundary,
+	createStandaloneSecurityBoundaryValidator,
 	type StandaloneSecurityBoundary
 } from './_standaloneSecurity.ts'
 
@@ -72,10 +72,12 @@ export function createSignupHandler(
 		logger?: Logger
 	} & StandaloneSecurityBoundary
 ) {
-	assertStandaloneSecurityBoundary('createSignupHandler', {
+	const validateRequestBoundary = createStandaloneSecurityBoundaryValidator('createSignupHandler', {
 		hasCsrf: typeof config.csrf?.validate === 'function',
 		hasRateLimit: typeof config.rateLimit?.check === 'function',
-		...(config.externalSecurityBoundary === true ? { externalSecurityBoundary: true } : {})
+		...(config.validateExternalSecurityBoundary
+			? { validateExternalSecurityBoundary: config.validateExternalSecurityBoundary }
+			: {})
 	})
 	const {
 		credentialsProvider,
@@ -101,6 +103,9 @@ export function createSignupHandler(
 		autoLogin ?? !(verificationTokenAdapter !== undefined && sendVerificationEmail !== undefined)
 
 	return async (event: RequestEventLike) => {
+		if (!(await validateRequestBoundary(event))) {
+			return { error: 'Invalid security boundary', success: false }
+		}
 		if (csrf?.validate) {
 			const valid = await csrf.validate(event)
 			if (!valid) {

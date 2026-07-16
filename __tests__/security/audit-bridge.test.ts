@@ -15,6 +15,7 @@ describe('Auth event audit bridge', () => {
 			method: 'POST',
 			status: 403,
 			userId: '42',
+			message: 'database password=never-store-this',
 			details: { token: 'never-store-me', factor: 'totp' }
 		})
 

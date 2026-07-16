@@ -1,6 +1,6 @@
 import { redirect, type RequestHandler } from '@sveltejs/kit'
 import { constantTimeEqual } from '@goobits/security/crypto'
-import { createRateLimiter } from '@goobits/security/rate-limit'
+import { CSRF_COOKIE_NAME } from '@goobits/security/csrf'
 
 import { AUTH_ROUTE_PATHS, resolveAuthRoutePath } from '../_routePaths.ts'
 import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
@@ -8,14 +8,19 @@ import type { MagicLinkAdapter } from '../adapters/magic-link/MagicLinkAdapter.t
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
 import type { Logger } from '../_internal/logger.ts'
-import { auditAuthEvent } from '../security/audit.ts'
-import { CSRF_COOKIE_NAME } from '../security/csrf.ts'
+import { emitRequestAuthEvent, type AuthEventEmitter } from '../security/events.ts'
 import type { AuthHooks, AuthLocals, OnLoginMode, RequestEventLike } from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { jsonResponse, parseRequestData } from '../utils/http.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
-import { generateMagicLinkToken, generateOtp, hashToken } from './magicLinkUtils.ts'
+import {
+	assertMagicLinkOtpPepper,
+	generateMagicLinkToken,
+	generateOtp,
+	hashMagicLinkOtp,
+	hashToken
+} from './magicLinkUtils.ts'
 import { resolveHandlerRateLimitKey } from './rateLimitKey.ts'
 import { ensureSessionAfterLogin } from './sessionLifecycle.ts'
 
@@ -59,12 +64,13 @@ type MagicLinkRequestConfig = {
 	singleUsePerEmail?: boolean
 	secureCookies?: boolean
 	normalizeEmail?: (email: string) => string
-	exposeToken?: boolean
-	baseUrl?: string
+	baseUrl: string
+	otpPepper?: string | Uint8Array
 	rateLimit?: (event: RequestEventLike) => Promise<void> | void
 	getMetadata?: (event: RequestEventLike) => Promise<Record<string, unknown>>
 	key?: (event: RequestEventLike) => string
 	logger?: Logger
+	emitSecurityEvent?: AuthEventEmitter
 }
 
 type MagicLinkVerifyConfig = {
@@ -79,8 +85,7 @@ type MagicLinkVerifyConfig = {
 	secureCookies?: boolean
 	normalizeEmail?: (email: string) => string
 	verifyRateLimit?: (key: string) => Promise<{ allowed: boolean }>
-	verifyRateLimitMax?: number
-	verifyRateLimitWindowMs?: number
+	otpPepper?: string | Uint8Array
 	sanitizeUser?: (user: User | null) => User | null
 	autoCreateSession?: boolean
 	onLoginMode?: OnLoginMode
@@ -90,6 +95,7 @@ type MagicLinkVerifyConfig = {
 	confirmationTtlSeconds?: number
 	csrfCookieName?: string
 	logger?: Logger
+	emitSecurityEvent?: AuthEventEmitter
 }
 
 type MagicLinkTokenRecord = {
@@ -100,8 +106,24 @@ type MagicLinkTokenRecord = {
 	[key: string]: unknown
 }
 
-function isProductionRuntime(): boolean {
-	return typeof process !== 'undefined' && process.env['NODE_ENV'] === 'production'
+function validateMagicLinkBaseUrl(value: string): string {
+	let parsed: URL
+	try {
+		parsed = new URL(value)
+	} catch {
+		throw new TypeError('Magic-link baseUrl must be an absolute HTTPS URL')
+	}
+	if (
+		parsed.protocol !== 'https:' ||
+		parsed.username ||
+		parsed.password ||
+		parsed.pathname !== '/' ||
+		parsed.search ||
+		parsed.hash
+	) {
+		throw new TypeError('Magic-link baseUrl must be a credential-free HTTPS origin')
+	}
+	return parsed.origin
 }
 
 function escapeHtml(value: string): string {
@@ -157,8 +179,8 @@ export function createMagicLinkRequestHandler(config: MagicLinkRequestConfig): R
 		singleUsePerEmail = true,
 		secureCookies = true,
 		normalizeEmail = (email: string) => email.trim().toLowerCase(),
-		exposeToken = false,
 		baseUrl,
+		otpPepper,
 		rateLimit,
 		getMetadata
 	} = config
@@ -169,8 +191,16 @@ export function createMagicLinkRequestHandler(config: MagicLinkRequestConfig): R
 	if (typeof sendEmail !== 'function') {
 		throw new Error('createMagicLinkRequestHandler requires sendEmail')
 	}
-	if (exposeToken && isProductionRuntime()) {
-		throw new Error('Magic-link token exposure is forbidden in production')
+	const publicBaseUrl = validateMagicLinkBaseUrl(baseUrl)
+	if (includeOtp && !otpPepper) {
+		throw new Error('createMagicLinkRequestHandler requires otpPepper when OTP is enabled')
+	}
+	if (otpPepper) assertMagicLinkOtpPepper(otpPepper)
+	if (!Number.isSafeInteger(otpDigits) || otpDigits < 6 || otpDigits > 9) {
+		throw new TypeError('Magic-link otpDigits must be an integer between 6 and 9')
+	}
+	if (!Number.isSafeInteger(expiresInMs) || expiresInMs <= 0 || expiresInMs > 24 * 60 * 60 * 1000) {
+		throw new TypeError('Magic-link expiresInMs must be between 1 ms and 24 hours')
 	}
 
 	return async (event: RequestEventLike) => {
@@ -202,7 +232,7 @@ export function createMagicLinkRequestHandler(config: MagicLinkRequestConfig): R
 		const token = await generateMagicLinkToken()
 		const tokenHash = await hashToken(token)
 		const otp = includeOtp ? await generateOtp(otpDigits) : null
-		const otpHash = otp ? await hashToken(otp) : null
+		const otpHash = otp ? await hashMagicLinkOtp(email, otp, otpPepper!) : null
 		const expiresAt = new Date(Date.now() + expiresInMs)
 		const metadata = typeof getMetadata === 'function' ? await getMetadata(event) : {}
 
@@ -217,8 +247,7 @@ export function createMagicLinkRequestHandler(config: MagicLinkRequestConfig): R
 
 		const redirectToRaw = typeof data['redirectTo'] === 'string' ? data['redirectTo'] : ''
 		const redirectTo = isSafeRedirectPath(redirectToRaw) ? redirectToRaw : ''
-		const origin = baseUrl || event.url.origin
-		const url = new URL(magicLinkPath, origin)
+		const url = new URL(magicLinkPath, publicBaseUrl)
 		url.searchParams.set('token', token)
 		if (redirectTo) {
 			url.searchParams.set('redirectTo', redirectTo)
@@ -242,10 +271,6 @@ export function createMagicLinkRequestHandler(config: MagicLinkRequestConfig): R
 			throw error
 		}
 
-		if (exposeToken) {
-			return jsonResponse({ ok: true, token, otp })
-		}
-
 		return jsonResponse({ ok: true })
 	}
 }
@@ -263,15 +288,15 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 		isAuthenticated = (locals: AuthLocals) => !!locals.user,
 		normalizeEmail = (email: string) => email.trim().toLowerCase(),
 		verifyRateLimit,
-		verifyRateLimitMax = 5,
-		verifyRateLimitWindowMs = 10 * 60 * 1000,
+		otpPepper,
 		sanitizeUser = defaultSanitizeUser,
 		autoCreateSession = true,
 		onLoginMode = 'augment',
 		requireUserConfirmation = true,
 		confirmationCookieName = 'goobits_magic_confirmation',
 		confirmationTtlSeconds = 10 * 60,
-		csrfCookieName = CSRF_COOKIE_NAME
+		csrfCookieName = CSRF_COOKIE_NAME,
+		emitSecurityEvent
 	} = config
 
 	if (!magicLinkAdapter) {
@@ -281,19 +306,11 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 		throw new Error('createMagicLinkVerifyHandler requires sessionAdapter')
 	}
 
-	const checkMagicLinkRateLimit =
-		typeof verifyRateLimit === 'function'
-			? verifyRateLimit
-			: createRateLimiter({
-					windows: [
-						{
-							name: 'magic.verify',
-							windowMs: verifyRateLimitWindowMs,
-							maxEvents: verifyRateLimitMax
-						}
-					],
-					keyPrefix: 'mlv'
-				}).check
+	if (typeof verifyRateLimit !== 'function') {
+		throw new Error('createMagicLinkVerifyHandler requires a shared verifyRateLimit')
+	}
+	if (otpPepper) assertMagicLinkOtpPepper(otpPepper)
+	const checkMagicLinkRateLimit = verifyRateLimit
 
 	return async (event: RequestEventLike) => {
 		if (isAuthenticated(event.locals)) {
@@ -374,7 +391,10 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 			const tokenHash = await hashToken(token)
 			record = (await magicLinkAdapter.consumeByTokenHash(tokenHash)) as MagicLinkTokenRecord | null
 		} else if (otp && email) {
-			const otpHash = await hashToken(otp)
+			if (!otpPepper) {
+				return jsonResponse({ ok: false, error: 'OTP verification unavailable' }, 503)
+			}
+			const otpHash = await hashMagicLinkOtp(email, otp, otpPepper)
 			record = (await magicLinkAdapter.consumeByEmailAndOtpHash({
 				email,
 				otpHash
@@ -382,10 +402,15 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 		}
 
 		if (!record) {
-			auditAuthEvent('magic_link.invalid', {
-				email,
-				hasToken: Boolean(token),
-				hasOtp: Boolean(otp)
+			await emitRequestAuthEvent(emitSecurityEvent, event, {
+				name: 'magic_link.invalid',
+				severity: 'warn',
+				status: 400,
+				details: {
+					hasEmail: Boolean(email),
+					hasToken: Boolean(token),
+					hasOtp: Boolean(otp)
+				}
 			})
 			return jsonResponse({ ok: false, error: 'Invalid magic link' }, 400)
 		}
@@ -393,8 +418,10 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 		const expiresAt = record['expiresAt']
 		if (expiresAt && new Date(expiresAt) < new Date()) {
 			// Token was already consumed by the read above; just audit.
-			auditAuthEvent('magic_link.expired', {
-				email: record['email'] ?? email
+			await emitRequestAuthEvent(emitSecurityEvent, event, {
+				name: 'magic_link.expired',
+				severity: 'warn',
+				status: 400
 			})
 			return jsonResponse({ ok: false, error: 'Magic link expired' }, 400)
 		}
