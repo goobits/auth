@@ -1,9 +1,8 @@
 import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.ts'
-import type { Session, SessionMetadata } from '../types/core.ts'
+import type { Session, SessionMetadata, User } from '../types/core.ts'
 import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../mfa/backupCodes.ts'
 import { createOtpAuthURL, generateSecret, verifyTOTP } from '../mfa/totp.ts'
 import type { AuthorizeSecurityChange, RequestEventLike } from '../types/auth.ts'
-import type { User } from '../types/core.ts'
 import {
 	consumeVerificationTokenRecord,
 	createVerificationToken,
