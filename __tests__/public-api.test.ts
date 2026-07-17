@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import * as root from '../src/index.ts'
 import * as adapters from '../src/adapters/index.ts'
@@ -25,6 +25,7 @@ import * as security from '../src/security/index.ts'
 import * as testing from '../src/testing/index.ts'
 import * as types from '../src/types/index.ts'
 import * as verification from '../src/verification/index.ts'
+import type { Session, User } from '../src/types/index.ts'
 
 const publicApis = {
 	root,
@@ -61,5 +62,21 @@ describe('public API', () => {
 				Object.entries(publicApis).map(([subpath, api]) => [subpath, Object.keys(api).sort()])
 			)
 		).toMatchSnapshot()
+	})
+
+	it('pins reusable user and session type boundaries', () => {
+		expectTypeOf<keyof User>().toEqualTypeOf<
+			| 'id'
+			| 'email'
+			| 'name'
+			| 'avatar'
+			| 'emailVerified'
+			| 'role'
+			| 'settings'
+			| 'createdAt'
+			| 'updatedAt'
+		>()
+		expectTypeOf<Session['managementId']>().toEqualTypeOf<string | undefined>()
+		expectTypeOf<Session['mfaVerifiedAt']>().toEqualTypeOf<Date | null | undefined>()
 	})
 })
