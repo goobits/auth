@@ -75,7 +75,7 @@ export function createOAuthCookies(
  * @param {Object} cookies - SvelteKit cookies object
  * @param {string} provider - Provider name
  */
-export function cleanupOAuthCookies(cookies: CookiesLike, provider: string): void {
+function cleanupOAuthCookies(cookies: CookiesLike, provider: string): void {
 	cookies.delete(`${provider}_oauth_state`, { path: '/' })
 	cookies.delete(`${provider}_oauth_code_verifier`, { path: '/' })
 }

@@ -18,7 +18,7 @@ type AuthHandlersBundle = {
 	POST: RequestHandler
 }
 
-export type AuthRoleResolver = (user: User) => string[] | Promise<string[]>
+type AuthRoleResolver = (user: User) => string[] | Promise<string[]>
 
 /** Route paths used by the SvelteKit auth integration. */
 export type GoobitsAuthRoutingConfig = {

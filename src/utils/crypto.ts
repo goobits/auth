@@ -46,12 +46,6 @@ export async function decryptTokens<T = Record<string, unknown>>(
 	}
 }
 
-/** Generates a 32-byte token encryption key encoded as hex. */
-export async function generateEncryptionKey(): Promise<string> {
-	const bytes = randomBytes(32)
-	return bytesToHex(bytes)
-}
-
 /** Generates a random UUID with WebCrypto fallback support. */
 export async function generateRandomUUID(): Promise<string> {
 	if (globalThis.crypto?.randomUUID) {

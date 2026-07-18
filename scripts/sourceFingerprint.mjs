@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 export const packageRoot = join(here, '..')
-export const fingerprintPath = join(packageRoot, 'dist', '.source-fingerprint')
+const fingerprintPath = join(packageRoot, 'dist', '.source-fingerprint')
 
 const requiredInputs = [
 	'src',
@@ -41,7 +41,7 @@ async function collectFiles(path, output) {
 	}
 }
 
-export async function createSourceFingerprint() {
+async function createSourceFingerprint() {
 	const files = []
 	for (const input of requiredInputs) {
 		await collectFiles(join(packageRoot, input), files)
