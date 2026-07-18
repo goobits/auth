@@ -31,6 +31,13 @@ export type AuthEvent = {
 
 export type AuthEventEmitter = (event: AuthEvent) => Promise<void> | void
 
+type AuthEventRequest = {
+	request: { method: string }
+	url: { pathname: string }
+	locals: { user?: { id?: string | number | null } | null }
+	getClientAddress?: () => string
+}
+
 /** Creates auth event for auth security checks. */
 export function createAuthEvent(input: Omit<AuthEvent, 'timestamp'>): AuthEvent {
 	return {
@@ -42,7 +49,7 @@ export function createAuthEvent(input: Omit<AuthEvent, 'timestamp'>): AuthEvent 
 /** Emits a handler outcome through the configured, awaitable Auth event pipeline. */
 export async function emitRequestAuthEvent(
 	emitter: AuthEventEmitter | undefined,
-	event: RequestEventLike,
+	event: AuthEventRequest,
 	input: Pick<AuthEvent, 'name' | 'severity'> &
 		Partial<Pick<AuthEvent, 'status' | 'message' | 'details'>>
 ): Promise<void> {
@@ -63,4 +70,3 @@ export async function emitRequestAuthEvent(
 		})
 	)
 }
-import type { RequestEventLike } from '../types/auth.ts'
