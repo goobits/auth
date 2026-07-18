@@ -52,6 +52,7 @@ type LocalsWithAuth = AuthLocals & {
 function normalizeBasePath(input: string | undefined): string {
 	const raw = input ?? '/auth'
 	const trimmed = raw.endsWith('/') && raw.length > 1 ? raw.slice(0, -1) : raw
+	if (trimmed === '' || trimmed === '/') return ''
 	return trimmed.startsWith('/') ? trimmed : `/${trimmed}`
 }
 

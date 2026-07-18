@@ -119,6 +119,33 @@ describe('GoobitsAuth', () => {
 		})
 	})
 
+	it('dispatches root-mounted handlers when basePath is empty', async () => {
+		const session: Session = {
+			id: 's-root',
+			userId: 'u-root',
+			expiresAt: new Date(Date.now() + 60_000)
+		}
+		const sessionAdapter = createSessionAdapter({ session: null, user: null })
+		const auth = new GoobitsAuth({
+			profile: 'secure',
+			adapter: { session: sessionAdapter },
+			security: {
+				csrf: { mode: 'off', validateExternalSecurityBoundary: async () => true }
+			}
+		})
+		const event = createRequestEvent({
+			url: 'http://localhost/logout',
+			method: 'POST'
+		})
+		event.locals.session = session
+
+		await expect(auth.createHandlers({ basePath: '' }).POST(event as never)).rejects.toMatchObject({
+			status: 302,
+			location: '/'
+		})
+		expect(sessionAdapter.invalidateSession).toHaveBeenCalledWith(session.id)
+	})
+
 	it('enforces requireAuthRole', async () => {
 		const user: User = {
 			id: 'u2',
