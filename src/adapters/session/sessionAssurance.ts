@@ -1,4 +1,4 @@
-export type NumericTimestampUnit = 'milliseconds' | 'seconds'
+type NumericTimestampUnit = 'milliseconds' | 'seconds'
 
 /** Converts a persisted session timestamp into a valid date or a fail-closed null value. */
 export function parseSessionTimestamp(
