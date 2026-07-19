@@ -21,11 +21,14 @@ leak into the published package.
 `pnpm run test:integration` exercises the Drizzle adapters.
 
 By default, the test fixture uses `pg-mem`, so no external database is required.
-To run the same tests against Postgres, set `DATABASE_URL`:
+To run the same tests against PostgreSQL, select the required-service owner and
+set `DATABASE_URL`:
 
 ```sh
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/auth_test pnpm run test:integration
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/auth_test pnpm run test:postgres
 ```
 
-The fixture creates the small `users`, `sessions`, and `oauth_tokens` tables it
-needs. Use a disposable test database when setting `DATABASE_URL`.
+`test:postgres` fails fast without `DATABASE_URL` and runs the integration files
+serially. The fixture creates the small `users`, `sessions`, `oauth_tokens`, and
+`magic_link_tokens` tables it needs. Use a disposable test database when
+setting `DATABASE_URL`.
