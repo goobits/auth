@@ -26,7 +26,7 @@ import {
 	type WebAuthnLoginVerifyHandlerConfig,
 	type WebAuthnRegisterOptionsHandlerConfig,
 	type WebAuthnRegisterVerifyHandlerConfig
-} from '../handlers/webauthn.ts'
+} from '#webauthn-handlers'
 import { createAuthRateLimiter } from '../security/rateLimit.ts'
 import type {
 	AuthConfig,

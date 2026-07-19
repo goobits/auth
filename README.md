@@ -33,12 +33,16 @@ browser and authenticator behavior evolves.
 
 ## Usage
 
-Published installations consume the compiled package in `dist`; raw TypeScript
-source is not part of the public runtime contract.
+`@goobits/auth` supports two deliberate distribution modes:
 
-- Registry install: `pnpm add @goobits/auth`
-- Workspace/submodule development: build the package after checkout with
-  `pnpm --filter @goobits/auth build`. BandAMP owns this through `pnpm auth:build`.
+- First-party TypeScript workspaces consume the checked-out `src/` entrypoints
+  directly, so application checks and builds cannot use stale generated output.
+- Registry installations consume compiled Node/Worker JavaScript and declarations
+  from `dist/`; raw TypeScript is excluded from the published artifact.
+
+Use `pnpm add @goobits/auth` for a registry install. Workspace consumers should
+pin the package checkout and declare `@goobits/auth` as a workspace dependency;
+building Auth is required only when testing or publishing its compiled package.
 
 ## 5-Minute Setup
 

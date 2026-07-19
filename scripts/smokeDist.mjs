@@ -1,46 +1,80 @@
-import { spawn } from 'node:child_process'
-import { access, readFile } from 'node:fs/promises'
 import assert from 'node:assert/strict'
+import { spawn } from 'node:child_process'
+import { access, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const root = new URL('../', import.meta.url)
-const packageJson = JSON.parse(await readFile(new URL('package.json', root), 'utf8'))
+const rootUrl = new URL('../', import.meta.url)
+const root = fileURLToPath(rootUrl)
+const packageJson = JSON.parse(await readFile(new URL('package.json', rootUrl), 'utf8'))
+const published = packageJson.publishConfig
 const nodeOnlySubpaths = new Set(['./adapters/pg', './node'])
 const uiSubpaths = new Set(['./ui', './ui/qr-code', './ui/theme.css'])
+const runtimeConditions = ['types', 'workerd', 'worker', 'browser', 'node', 'default']
 
 function packageSpecifier(subpath) {
 	return subpath === '.' ? packageJson.name : `${packageJson.name}${subpath.slice(1)}`
 }
 
-async function assertFileExists(target) {
-	assert.match(target, /^\.\/dist\//, `export target must live in dist: ${target}`)
-	await access(new URL(target, root))
+function targets(value) {
+	return typeof value === 'string' ? [value] : Object.values(value)
 }
 
-async function assertExportMap() {
-	assert.equal(packageJson.main, './dist/node/index.js')
-	assert.equal(packageJson.types, './dist/types/index.d.ts')
+async function assertSourceTarget(target) {
+	assert.match(target, /^\.\/src\//, `workspace target must live in src: ${target}`)
+	await access(new URL(target, rootUrl))
+}
+
+async function assertDistTarget(target) {
+	assert.match(target, /^\.\/dist\//, `published target must live in dist: ${target}`)
+	await access(new URL(target, rootUrl))
+}
+
+async function assertWorkspaceMap() {
+	assert.equal(packageJson.main, './src/index.ts')
+	assert.equal(packageJson.types, './src/index.ts')
+	assert.deepEqual(
+		Object.keys(packageJson.exports),
+		Object.keys(published.exports),
+		'workspace and published export subpaths must stay aligned'
+	)
+	assert.deepEqual(
+		Object.keys(packageJson.imports),
+		Object.keys(published.imports),
+		'workspace and published private imports must stay aligned'
+	)
+
+	for (const [subpath, value] of Object.entries(packageJson.exports)) {
+		for (const target of targets(value)) await assertSourceTarget(target)
+		if (typeof value === 'object') {
+			const expected = nodeOnlySubpaths.has(subpath) ? ['types', 'node'] : runtimeConditions
+			assert.deepEqual(Object.keys(value), expected, `${subpath} workspace conditions`)
+		}
+	}
+	for (const [specifier, value] of Object.entries(packageJson.imports)) {
+		assert.deepEqual(Object.keys(value), runtimeConditions, `${specifier} workspace conditions`)
+		for (const target of targets(value)) await assertSourceTarget(target)
+	}
+}
+
+async function assertPublishedMap() {
+	assert.equal(published.main, './dist/node/index.js')
+	assert.equal(published.types, './dist/types/index.d.ts')
 	assert(packageJson.files.includes('dist'), 'published files must include dist')
 	assert(!packageJson.files.includes('src'), 'published files must not include src')
 	assert(!packageJson.files.includes('scripts'), 'published files must not include scripts')
 
-	for (const [subpath, conditions] of Object.entries(packageJson.exports)) {
-		assert.equal(typeof conditions, 'object', `${subpath} must use conditional exports`)
+	for (const [subpath, conditions] of Object.entries(published.exports)) {
 		const expectedConditions =
 			subpath === './ui/theme.css'
-				? ['workerd', 'worker', 'browser', 'node', 'default']
+				? runtimeConditions.slice(1)
 				: nodeOnlySubpaths.has(subpath)
 					? ['types', 'node']
-					: ['types', 'workerd', 'worker', 'browser', 'node', 'default']
-
-		assert.deepEqual(
-			Object.keys(conditions),
-			expectedConditions,
-			`${subpath} has an inconsistent Node/Worker export shape`
-		)
-
+					: runtimeConditions
+		assert.deepEqual(Object.keys(conditions), expectedConditions, `${subpath} published conditions`)
 		for (const [condition, target] of Object.entries(conditions)) {
-			assert.equal(typeof target, 'string', `${subpath} ${condition} target must be a string`)
-			await assertFileExists(target)
+			await assertDistTarget(target)
 			if (condition === 'types') {
 				assert.match(target, /^\.\/dist\/types\/.+(?:\.d\.ts|\.svelte)$/)
 			} else if (condition === 'node') {
@@ -50,56 +84,38 @@ async function assertExportMap() {
 			}
 		}
 	}
-}
 
-async function importBuiltEntrypoints() {
-	for (const [subpath, conditions] of Object.entries(packageJson.exports)) {
-		if (uiSubpaths.has(subpath)) continue
-
-		await import(packageSpecifier(subpath))
-		if ('default' in conditions && conditions.default.endsWith('.js')) {
-			await import(new URL(conditions.default, root).href)
-		}
-	}
-}
-
-async function assertPublicSurface() {
-	const expectedRoot = [
-		'AuthAdapterCapabilityError',
-		'AuthPrincipalResolutionError',
-		'GoobitsAuth',
-		'createCookieLoginContext'
-	]
-	for (const target of ['dist/node/index.js', 'dist/worker/index.js']) {
-		const api = await import(new URL(target, root).href)
-		assert.deepEqual(Object.keys(api).sort(), expectedRoot)
-	}
-
-	const expectedPassword = [
-		'MAX_PASSWORD_LENGTH',
-		'createPasswordMigrationVerifier',
-		'hashPassword',
-		'validatePasswordStrength',
-		'verifyPassword'
-	]
-	for (const target of ['dist/node/password/index.js', 'dist/worker/password/index.js']) {
-		const api = await import(new URL(target, root).href)
-		assert.deepEqual(Object.keys(api).sort(), expectedPassword)
+	for (const [specifier, conditions] of Object.entries(published.imports)) {
+		assert.deepEqual(
+			Object.keys(conditions),
+			runtimeConditions,
+			`${specifier} published conditions`
+		)
+		for (const target of Object.values(conditions)) await assertDistTarget(target)
 	}
 }
 
 async function assertRuntimeSeparation() {
-	const nodePassword = await readFile(new URL('dist/node/password/index.js', root), 'utf8')
-	const workerPassword = await readFile(new URL('dist/worker/password/index.js', root), 'utf8')
-	const nodeRoot = await readFile(new URL('dist/node/index.js', root), 'utf8')
-	const workerRoot = await readFile(new URL('dist/worker/index.js', root), 'utf8')
+	const nodePassword = await readFile(new URL('dist/node/password/index.js', rootUrl), 'utf8')
+	const workerPassword = await readFile(new URL('dist/worker/password/index.js', rootUrl), 'utf8')
+	const nodeWebAuthn = await readFile(new URL('dist/node/handlers/webauthn.js', rootUrl), 'utf8')
+	const workerWebAuthn = await readFile(
+		new URL('dist/worker/handlers/webauthn.js', rootUrl),
+		'utf8'
+	)
+	const nodeProviders = await readFile(new URL('dist/node/providers/index.js', rootUrl), 'utf8')
+	const workerProviders = await readFile(new URL('dist/worker/providers/index.js', rootUrl), 'utf8')
 
 	assert.match(nodePassword, /@node-rs\/argon2/)
 	assert.doesNotMatch(nodePassword, /hash-wasm/)
 	assert.match(workerPassword, /hash-wasm/)
 	assert.doesNotMatch(workerPassword, /@node-rs\/argon2/)
-	assert.match(nodeRoot, /@simplewebauthn\/server/)
-	assert.doesNotMatch(workerRoot, /@simplewebauthn\/server/)
+	assert.match(nodeWebAuthn, /@simplewebauthn\/server/)
+	assert.doesNotMatch(nodeWebAuthn, /not supported on this runtime/)
+	assert.match(workerWebAuthn, /not supported on this runtime/)
+	assert.doesNotMatch(workerWebAuthn, /@simplewebauthn\/server/)
+	assert.match(nodeProviders, /from ['"]#password['"]/)
+	assert.match(workerProviders, /from ['"]#password['"]/)
 }
 
 async function assertUiDistribution() {
@@ -114,24 +130,24 @@ async function assertUiDistribution() {
 	for (const output of ['node', 'worker', 'types']) {
 		for (const component of components) {
 			const target = `dist/${output}/ui/${component}`
-			await assertFileExists(`./${target}`)
-			const source = await readFile(new URL(target, root), 'utf8')
+			await assertDistTarget(`./${target}`)
+			const source = await readFile(new URL(target, rootUrl), 'utf8')
 			assert.doesNotMatch(source, /['"]\.{1,2}\/.+\.ts['"]/, `${target} imports raw TypeScript`)
 		}
 	}
 
 	for (const output of ['node', 'worker']) {
 		const target = `dist/${output}/ui/index.js`
-		const source = await readFile(new URL(target, root), 'utf8')
+		const source = await readFile(new URL(target, rootUrl), 'utf8')
 		assert.doesNotMatch(source, /\.svelte\.css|svelte\/internal|\$app\//)
 		assert.doesNotMatch(source, /['"]\.{1,2}\/.+\.ts['"]/)
 	}
 }
 
-function run(command, args) {
+function run(command, args, cwd = root) {
 	return new Promise((resolve, reject) => {
 		const child = spawn(command, args, {
-			cwd: new URL('.', root),
+			cwd,
 			env: { ...process.env, npm_config_update_notifier: 'false' },
 			stdio: ['ignore', 'pipe', 'pipe']
 		})
@@ -150,37 +166,120 @@ function run(command, args) {
 			if (code === 0) {
 				resolve(stdout)
 			} else {
-				reject(new Error(`${command} ${args.join(' ')} exited with ${code}\n${stderr}`))
+				reject(new Error(`${command} ${args.join(' ')} exited with ${code}\n${stdout}${stderr}`))
 			}
 		})
 	})
 }
 
-async function assertPackedFiles() {
-	const output = await run('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'])
-	const [result] = JSON.parse(output)
-	const files = result.files.map((file) => file.path)
-
-	for (const required of [
-		'dist/node/index.js',
-		'dist/worker/index.js',
-		'dist/types/index.d.ts',
-		'dist/types/ui/AuthGate.svelte'
-	]) {
-		assert(files.includes(required), `packed artifact is missing ${required}`)
+async function listFiles(directory, prefix = '') {
+	const entries = await readdir(directory, { withFileTypes: true })
+	const files = []
+	for (const entry of entries) {
+		const path = join(directory, entry.name)
+		const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name
+		if (entry.isDirectory()) {
+			files.push(...(await listFiles(path, relativePath)))
+		} else {
+			files.push(relativePath)
+		}
 	}
-	assert(!files.some((path) => path.startsWith('src/')), 'packed artifact contains source files')
-	assert(
-		!files.some((path) => path.startsWith('scripts/')),
-		'packed artifact contains release tooling'
-	)
+	return files
 }
 
-await assertExportMap()
-await importBuiltEntrypoints()
-await assertPublicSurface()
+function packageSmokeSource(subpaths, runtime) {
+	const specifiers = subpaths.map(packageSpecifier)
+	return `import assert from 'node:assert/strict'
+
+const expectedRoot = [
+	'AuthAdapterCapabilityError',
+	'AuthPrincipalResolutionError',
+	'GoobitsAuth',
+	'createCookieLoginContext'
+]
+const expectedPassword = [
+	'MAX_PASSWORD_LENGTH',
+	'createPasswordMigrationVerifier',
+	'hashPassword',
+	'validatePasswordStrength',
+	'verifyPassword'
+]
+const root = await import('@goobits/auth')
+const password = await import('@goobits/auth/password')
+assert.deepEqual(Object.keys(root).sort(), expectedRoot)
+assert.deepEqual(Object.keys(password).sort(), expectedPassword)
+assert.match(import.meta.resolve('#password'), /\\/dist\\/${runtime}\\/password\\/index\\.js$/)
+assert.match(
+	import.meta.resolve('#webauthn-handlers'),
+	/\\/dist\\/${runtime}\\/handlers\\/webauthn\\.js$/
+)
+for (const specifier of ${JSON.stringify(specifiers)}) await import(specifier)
+if ('${runtime}' === 'worker') {
+	const handlers = await import('@goobits/auth/handlers')
+	const response = await handlers.createWebAuthnRegisterOptionsHandler({})()
+	assert.equal(response.status, 501)
+}
+`
+}
+
+async function assertPackedPackage() {
+	const tempDir = await mkdtemp(join(tmpdir(), 'goobits-auth-package-'))
+	try {
+		await run('pnpm', ['pack', '--pack-destination', tempDir])
+		const tarballs = (await readdir(tempDir)).filter((file) => file.endsWith('.tgz'))
+		assert.equal(tarballs.length, 1, 'package verification must produce exactly one tarball')
+		await run('tar', ['-xzf', join(tempDir, tarballs[0]), '-C', tempDir])
+
+		const installedRoot = join(tempDir, 'package')
+		const installedManifest = JSON.parse(
+			await readFile(join(installedRoot, 'package.json'), 'utf8')
+		)
+		assert.equal(installedManifest.main, published.main)
+		assert.equal(installedManifest.types, published.types)
+		assert.deepEqual(installedManifest.imports, published.imports)
+		assert.deepEqual(installedManifest.exports, published.exports)
+		assert.deepEqual(installedManifest.publishConfig, { access: 'public' })
+
+		const packedFiles = await listFiles(installedRoot)
+		for (const required of [
+			'dist/node/index.js',
+			'dist/worker/index.js',
+			'dist/types/index.d.ts',
+			'dist/types/ui/AuthGate.svelte'
+		]) {
+			assert(packedFiles.includes(required), `packed artifact is missing ${required}`)
+		}
+		assert(!packedFiles.some((path) => path.startsWith('src/')), 'packed artifact contains source')
+		assert(
+			!packedFiles.some((path) => path.startsWith('scripts/')),
+			'packed artifact contains scripts'
+		)
+
+		await symlink(join(root, 'node_modules'), join(installedRoot, 'node_modules'), 'dir')
+		const importableSubpaths = Object.keys(installedManifest.exports).filter(
+			(subpath) => !uiSubpaths.has(subpath)
+		)
+		const nodeSmoke = join(installedRoot, 'smoke-node.mjs')
+		const workerSmoke = join(installedRoot, 'smoke-worker.mjs')
+		await writeFile(nodeSmoke, packageSmokeSource(importableSubpaths, 'node'))
+		await writeFile(
+			workerSmoke,
+			packageSmokeSource(
+				importableSubpaths.filter((subpath) => !nodeOnlySubpaths.has(subpath)),
+				'worker'
+			)
+		)
+		await run(process.execPath, [nodeSmoke], installedRoot)
+		await run(process.execPath, ['--conditions=worker', workerSmoke], installedRoot)
+	} finally {
+		await rm(tempDir, { recursive: true, force: true })
+	}
+}
+
+await assertWorkspaceMap()
+await assertPublishedMap()
 await assertRuntimeSeparation()
 await assertUiDistribution()
-await assertPackedFiles()
+await assertPackedPackage()
 
-console.log('dist and package smoke passed')
+console.log('workspace source and published package smoke passed')

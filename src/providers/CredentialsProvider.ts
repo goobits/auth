@@ -4,7 +4,7 @@ import type {
 } from '../adapters/database/PasswordCredentialAdapter.ts'
 import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
 import { omitSensitiveUserData } from '../adapters/database/publicUserData.ts'
-import { hashPassword, verifyPassword } from '../password/index.ts'
+import { hashPassword, verifyPassword } from '#password'
 import type { PasswordMigrationVerificationResult } from '../password/migration.ts'
 import { assertPasswordInput, isPasswordWithinLimit } from '../password/policy.ts'
 import type { User } from '../types/core.ts'

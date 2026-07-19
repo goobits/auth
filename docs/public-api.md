@@ -16,11 +16,14 @@ receive additive options as platform behavior evolves.
 
 ## Distribution
 
-The package publishes compiled JavaScript and declarations from `dist`.
-Conditional exports select native Argon2 and WebAuthn support on Node 22+, while
-the default Worker build uses WASM-backed password hashing and explicit
-unsupported WebAuthn handlers. `@goobits/auth/node` and
-`@goobits/auth/adapters/pg` intentionally have no Worker target.
+TypeScript workspaces consume the checked-out `src/` entrypoints directly.
+Published installations consume compiled JavaScript and declarations from
+`dist`; source files and release tooling are excluded from the package.
+Package-private conditional imports select native Argon2 and WebAuthn support
+on Node 22+, while the default Worker runtime uses WASM-backed password hashing
+and explicit unsupported WebAuthn handlers in both distribution modes.
+`@goobits/auth/node` and `@goobits/auth/adapters/pg` intentionally have no
+Worker target.
 
 ## Main entrypoint
 

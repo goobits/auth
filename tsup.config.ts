@@ -1,26 +1,4 @@
-import { join } from 'node:path'
-
 import { defineConfig, type Options } from 'tsup'
-
-function rewritePlugin(rewrites: Array<{ from: RegExp; to: (path: string) => string }>) {
-	return {
-		name: 'rewrite-plugin',
-		setup(build: any) {
-			build.onResolve({ filter: /.*/ }, (args: any) => {
-				for (const rule of rewrites) {
-					if (rule.from.test(args.path)) {
-						const next = rule.to(args.path)
-						if (next.startsWith('.')) {
-							return { path: join(args.resolveDir, next) }
-						}
-						return { path: next }
-					}
-				}
-				return null
-			})
-		}
-	}
-}
 
 const commonEntries = [
 	'src/index.ts',
@@ -36,6 +14,7 @@ const commonEntries = [
 	'src/adapters/webauthn/index.ts',
 	'src/providers/index.ts',
 	'src/handlers/index.ts',
+	'src/handlers/webauthn.ts',
 	'src/login-context/index.ts',
 	'src/verification/index.ts',
 	'src/client/index.ts',
@@ -49,7 +28,21 @@ const commonEntries = [
 	'src/errors/index.ts'
 ]
 
-const nodeEntries = [...commonEntries, 'src/adapters/pg/index.ts', 'src/node/index.ts']
+const toEntryMap = (entries: string[], overrides: Record<string, string> = {}) =>
+	Object.fromEntries(
+		entries.map((entry) => {
+			const output = entry.replace(/^src\//, '').replace(/\.ts$/, '')
+			return [output, overrides[output] ?? entry]
+		})
+	)
+
+const nodeEntries = toEntryMap(
+	[...commonEntries, 'src/adapters/pg/index.ts', 'src/node/index.ts'],
+	{ 'password/index': 'src/password/index.node.ts' }
+)
+const workerEntries = toEntryMap(commonEntries, {
+	'handlers/webauthn': 'src/handlers/webauthn.worker.ts'
+})
 
 const common: Options = {
 	entry: commonEntries,
@@ -68,25 +61,18 @@ export default defineConfig([
 		...common,
 		entry: nodeEntries,
 		outDir: 'dist/node',
-		esbuildPlugins: [
-			rewritePlugin([
-				{
-					from: /(^|\/)password\/index\.ts$/,
-					to: (p) => p.replace(/index\.ts$/, 'index.node.ts')
-				}
-			])
-		]
+		platform: 'node',
+		esbuildOptions(options) {
+			options.conditions = ['node']
+		}
 	},
 	{
 		...common,
+		entry: workerEntries,
 		outDir: 'dist/worker',
-		esbuildPlugins: [
-			rewritePlugin([
-				{
-					from: /(^|\/)webauthn\.ts$/,
-					to: (p) => p.replace(/webauthn\.ts$/, 'webauthn.worker.ts')
-				}
-			])
-		]
+		platform: 'browser',
+		esbuildOptions(options) {
+			options.conditions = ['workerd', 'worker', 'browser']
+		}
 	}
 ])

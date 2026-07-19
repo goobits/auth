@@ -10,11 +10,11 @@ pnpm run build
 pnpm run test:dist
 ```
 
-`test:dist` treats `package.json` as the public entrypoint inventory. It checks
-that every Node, Worker, and declaration target exists and imports, verifies
-the runtime-specific password/WebAuthn builds, checks the copied Svelte UI
-assets, and inspects the packed file list so source and release tooling cannot
-leak into the published package.
+`test:dist` treats `package.json` as the public entrypoint inventory. It pins
+workspace exports to source and published exports to compiled output, verifies
+the runtime-specific password/WebAuthn targets, checks copied Svelte UI assets,
+packs the package, and imports every non-UI entrypoint under both Node and Worker
+conditions. It also rejects source or release-tool leakage into the artifact.
 
 ## Integration Tests
 

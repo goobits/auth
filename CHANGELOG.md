@@ -82,6 +82,9 @@
   so consumers share the same secret-field boundary as built-in adapters.
 - 🔑 Verification-token hashing, record inspection, atomic consumption, and canonical token types now share one public utility boundary for application adapters and transactional account flows.
 - 📦 Published entrypoints now resolve compiled Node/Worker JavaScript and declarations; the source-only security runtime is bundled at this distribution boundary, and smoke checks cover every export and the packed file list.
+- 📦 First-party workspaces now consume Auth source directly while published
+  packages retain compiled Node/Worker exports; package-private conditional
+  imports keep password and WebAuthn runtime selection identical in both modes.
 - 🧭 Removed the auth type cycle, stale source-entrypoint map, undeclared TypeScript script runner, unpinned API-map commands, unused `pg-server` fixture dependency, and accidental exports from private helpers.
 - 📚 Public API docs now describe the curated package entrypoints and low-level subpaths.
 - 📌 Runtime exports for every supported non-UI subpath are snapshot-pinned so

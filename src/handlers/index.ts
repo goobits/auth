@@ -40,7 +40,7 @@ export {
 	createWebAuthnLoginVerifyHandler,
 	createWebAuthnRegisterOptionsHandler,
 	createWebAuthnRegisterVerifyHandler
-} from './webauthn.ts'
+} from '#webauthn-handlers'
 
 // Session management handlers
 export { createSessionListHandler, createSessionRevokeHandler } from './sessions.ts'
