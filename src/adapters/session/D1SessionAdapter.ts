@@ -398,7 +398,7 @@ export class D1SessionAdapter extends SessionAdapter {
 			.run()
 	}
 
-	async listManagedSessions(userId: string): Promise<SessionSummary[]> {
+	override async listManagedSessions(userId: string): Promise<SessionSummary[]> {
 		if (!this.columns.managementId) {
 			throw new AuthAdapterCapabilityError(
 				'D1SessionAdapter requires a managementId column for session management'
@@ -436,7 +436,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		})
 	}
 
-	async revokeManagedSession(userId: string, managementId: string): Promise<void> {
+	override async revokeManagedSession(userId: string, managementId: string): Promise<void> {
 		if (!this.columns.managementId) {
 			throw new AuthAdapterCapabilityError(
 				'D1SessionAdapter requires a managementId column for session management'

@@ -258,7 +258,7 @@ export class KVSessionAdapter extends SessionAdapter {
 		return sessions
 	}
 
-	async listManagedSessions(userId: string): Promise<SessionSummary[]> {
+	override async listManagedSessions(userId: string): Promise<SessionSummary[]> {
 		return (await this._listStoredEntries(userId)).map(({ record }) => ({
 			id: record.managementId,
 			userId: record.userId,
@@ -269,7 +269,7 @@ export class KVSessionAdapter extends SessionAdapter {
 		}))
 	}
 
-	async revokeManagedSession(userId: string, managementId: string): Promise<void> {
+	override async revokeManagedSession(userId: string, managementId: string): Promise<void> {
 		for (const { key, record } of await this._listStoredEntries(userId)) {
 			if (record.managementId === managementId) {
 				await this.namespace.delete(key)
