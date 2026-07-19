@@ -54,7 +54,7 @@ function normalizeBasePath(input: string | undefined): string {
 }
 
 function splitRoutedPath(pathname: string, basePath: string): string[] {
-	if (!pathname.startsWith(basePath)) return []
+	if (pathname !== basePath && !pathname.startsWith(`${basePath}/`)) return []
 	const rest = pathname.slice(basePath.length)
 	const normalized = rest.startsWith('/') ? rest.slice(1) : rest
 	if (!normalized) return []
