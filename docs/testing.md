@@ -4,17 +4,21 @@ Run the package checks from the package root:
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm run typecheck
-pnpm test
-pnpm run build
-pnpm run test:dist
+pnpm run check
 ```
 
-`test:dist` treats `package.json` as the public entrypoint inventory. It checks
-that every Node, Worker, and declaration target exists and imports, verifies
-the runtime-specific password/WebAuthn builds, checks the copied Svelte UI
-assets, and inspects the packed file list so source and release tooling cannot
-leak into the published package.
+`check` is the package signoff owner. It checks TypeScript and source Svelte
+components, runs the unit suite with enforced coverage floors, creates a fresh
+distribution, and runs `test:dist`. The distribution check treats
+`package.json` as the public entrypoint inventory. It checks that every Node,
+Worker, and declaration target exists and imports, verifies the runtime-specific
+password and WebAuthn builds, checks the copied Svelte UI assets with
+`svelte-check`, and inspects the packed file list so source and release tooling
+cannot leak into the published package.
+
+Use `pnpm test` for a fast unit run. Use `pnpm run test:coverage` when changing
+runtime behavior and `pnpm run test:dist` after an existing distribution needs
+to be inspected without rebuilding it.
 
 ## Integration Tests
 

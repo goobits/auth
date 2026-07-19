@@ -121,10 +121,25 @@ async function assertUiDistribution() {
 	}
 
 	for (const output of ['node', 'worker']) {
+		await assertFileExists(`./dist/${output}/client/index.d.ts`)
+		await assertFileExists(`./dist/${output}/qr/index.d.ts`)
+		await assertFileExists(`./dist/${output}/qr/qrCode.d.ts`)
+
 		const target = `dist/${output}/ui/index.js`
 		const source = await readFile(new URL(target, root), 'utf8')
 		assert.doesNotMatch(source, /\.svelte\.css|svelte\/internal|\$app\//)
 		assert.doesNotMatch(source, /['"]\.{1,2}\/.+\.ts['"]/)
+	}
+}
+
+async function assertSvelteDistribution() {
+	for (const output of ['node', 'worker']) {
+		await run('svelte-check', [
+			'--workspace',
+			`dist/${output}/ui`,
+			'--no-tsconfig',
+			'--fail-on-warnings'
+		])
 	}
 }
 
@@ -150,7 +165,8 @@ function run(command, args) {
 			if (code === 0) {
 				resolve(stdout)
 			} else {
-				reject(new Error(`${command} ${args.join(' ')} exited with ${code}\n${stderr}`))
+				const details = [stdout.trim(), stderr.trim()].filter(Boolean).join('\n')
+				reject(new Error(`${command} ${args.join(' ')} exited with ${code}\n${details}`))
 			}
 		})
 	})
@@ -181,6 +197,7 @@ await importBuiltEntrypoints()
 await assertPublicSurface()
 await assertRuntimeSeparation()
 await assertUiDistribution()
+await assertSvelteDistribution()
 await assertPackedFiles()
 
 console.log('dist and package smoke passed')
