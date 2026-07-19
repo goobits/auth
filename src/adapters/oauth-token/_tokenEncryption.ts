@@ -1,5 +1,8 @@
-import type { OAuthTokenCodec, OAuthTokenEncryptionOptions } from './OAuthTokenCodec.ts'
-import { createAesGcmOAuthTokenCodec } from './OAuthTokenCodec.ts'
+import {
+	createAesGcmOAuthTokenCodec,
+	type OAuthTokenCodec,
+	type OAuthTokenEncryptionOptions
+} from './OAuthTokenCodec.ts'
 
 export function resolveOAuthTokenCodec(
 	options: OAuthTokenEncryptionOptions,

@@ -41,6 +41,9 @@ importers:
       '@types/node':
         specifier: ^26.1.0
         version: 26.1.1
+      '@vitest/coverage-v8':
+        specifier: ^4.1.10
+        version: 4.1.10(vitest@4.1.10)
       pg-mem:
         specifier: ^3.0.14
         version: 3.0.14(pg-server@0.1.8)(postgres@3.4.9)

@@ -19,9 +19,9 @@ import {
 	createMfaLoginVerifyHandler,
 	createMfaStatusHandler,
 	createMfaStepUpHandler,
-	createMfaVerifyHandler
+	createMfaVerifyHandler,
+	type MfaStore
 } from '../../src/handlers/mfa.ts'
-import type { MfaStore } from '../../src/handlers/mfa.ts'
 import * as backup from '../../src/mfa/backupCodes.ts'
 import * as totp from '../../src/mfa/totp.ts'
 import { createCookies, createRequestEvent } from '../testKit.ts'
