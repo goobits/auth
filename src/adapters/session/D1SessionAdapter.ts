@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit'
 
-import type { Session, SessionMetadata, SessionSummary, User } from '../../types/index.ts'
+import type { SessionMetadata, SessionSummary, User } from '../../types/index.ts'
 import { AuthAdapterCapabilityError } from '../../errors/AuthPrincipalResolutionError.ts'
 import { assertD1Identifiers } from '../_d1Sql.ts'
 import { normalizeSessionMetadata } from './_sessionMetadata.ts'

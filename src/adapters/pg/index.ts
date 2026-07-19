@@ -22,7 +22,6 @@ import { MagicLinkAdapter } from '../magic-link/MagicLinkAdapter.ts'
 import { MfaAdapter, type MfaSecretCodec } from '../mfa/MfaAdapter.ts'
 import { SessionAdapter } from '../session/SessionAdapter.ts'
 import { normalizeSessionMetadata } from '../session/_sessionMetadata.ts'
-import { parseMfaVerifiedAt, parseSessionTimestamp } from '../session/sessionAssurance.ts'
 import { createSessionToken, hashSessionToken } from '../session/sessionId.ts'
 import {
 	VerificationTokenAdapter,
