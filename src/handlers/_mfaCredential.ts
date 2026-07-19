@@ -8,7 +8,7 @@ type MfaCredentialStore = {
 	getStatus: (userId: string) => Promise<{ enabled: boolean }>
 }
 
-export type MfaCredentialProof = { method: 'totp' } | { method: 'backup-code'; hash: string }
+type MfaCredentialProof = { method: 'totp' } | { method: 'backup-code'; hash: string }
 
 export async function verifyMfaCredential({
 	store,

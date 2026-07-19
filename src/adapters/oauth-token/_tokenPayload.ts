@@ -6,7 +6,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** Normalizes persisted OAuth token data without inventing missing security fields. */
-export function normalizeOAuthTokens(value: unknown): OAuthTokens | null {
+function normalizeOAuthTokens(value: unknown): OAuthTokens | null {
 	if (!isRecord(value) || typeof value['accessToken'] !== 'string') return null
 	if (value['refreshToken'] !== null && typeof value['refreshToken'] !== 'string') return null
 	if (value['scope'] !== null && typeof value['scope'] !== 'string') return null
@@ -19,7 +19,7 @@ export function normalizeOAuthTokens(value: unknown): OAuthTokens | null {
 	}
 }
 
-export function parseOAuthTokensJson(value: string): OAuthTokens | null {
+function parseOAuthTokensJson(value: string): OAuthTokens | null {
 	try {
 		return normalizeOAuthTokens(JSON.parse(value))
 	} catch {
