@@ -56,12 +56,12 @@ describe('totp', () => {
 	it('builds an otpauth URL for authenticator apps', () => {
 		const url = createOtpAuthURL({
 			secret: 'ABC123',
-			label: 'pdx.fun:hello@pdx.fun',
-			issuer: 'pdx.fun'
+			label: 'example.test:hello@example.test',
+			issuer: 'example.test'
 		})
 
-		expect(url).toContain('otpauth://totp/pdx.fun%3Ahello%40pdx.fun?')
+		expect(url).toContain('otpauth://totp/example.test%3Ahello%40example.test?')
 		expect(url).toContain('secret=ABC123')
-		expect(url).toContain('issuer=pdx.fun')
+		expect(url).toContain('issuer=example.test')
 	})
 })

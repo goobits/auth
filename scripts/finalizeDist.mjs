@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -48,6 +48,13 @@ async function writeRuntimeUiBarrels() {
 	}
 }
 
+async function copyRuntimeDeclarations(subpath) {
+	const sourceDir = join(root, 'dist', 'types', subpath)
+	for (const outputDir of runtimeDirs) {
+		await cp(sourceDir, join(outputDir, subpath), { recursive: true })
+	}
+}
+
 async function rewriteDeclarations(directory) {
 	const entries = await readdir(directory, { withFileTypes: true })
 	for (const entry of entries) {
@@ -67,4 +74,8 @@ async function rewriteDeclarations(directory) {
 await copyUiAssets()
 await writeRuntimeUiBarrels()
 await rewriteDeclarations(join(root, 'dist', 'types'))
+// Published Svelte sources resolve types beside their runtime imports.
+for (const subpath of ['client', 'qr']) {
+	await copyRuntimeDeclarations(subpath)
+}
 await writeSourceFingerprint()

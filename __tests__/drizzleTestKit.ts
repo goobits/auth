@@ -111,6 +111,15 @@ export async function createIntegrationDrizzleFixture(): Promise<IntegrationDbFi
 			updated_at TIMESTAMP DEFAULT now(),
 			UNIQUE(user_id, provider)
 		)`
+		await client`CREATE TABLE IF NOT EXISTS magic_link_tokens (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			"userId" UUID,
+			email TEXT NOT NULL,
+			"tokenHash" TEXT NOT NULL,
+			"otpHash" TEXT,
+			"expiresAt" TIMESTAMP NOT NULL,
+			"createdAt" TIMESTAMP DEFAULT now()
+		)`
 
 		return {
 			db: db as DrizzleDbLike,

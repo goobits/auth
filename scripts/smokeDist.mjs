@@ -137,10 +137,25 @@ async function assertUiDistribution() {
 	}
 
 	for (const output of ['node', 'worker']) {
+		await assertDistTarget(`./dist/${output}/client/index.d.ts`)
+		await assertDistTarget(`./dist/${output}/qr/index.d.ts`)
+		await assertDistTarget(`./dist/${output}/qr/qrCode.d.ts`)
+
 		const target = `dist/${output}/ui/index.js`
 		const source = await readFile(new URL(target, rootUrl), 'utf8')
 		assert.doesNotMatch(source, /\.svelte\.css|svelte\/internal|\$app\//)
 		assert.doesNotMatch(source, /['"]\.{1,2}\/.+\.ts['"]/)
+	}
+}
+
+async function assertSvelteDistribution() {
+	for (const output of ['node', 'worker']) {
+		await run('svelte-check', [
+			'--workspace',
+			`dist/${output}/ui`,
+			'--no-tsconfig',
+			'--fail-on-warnings'
+		])
 	}
 }
 
@@ -166,7 +181,8 @@ function run(command, args, cwd = root) {
 			if (code === 0) {
 				resolve(stdout)
 			} else {
-				reject(new Error(`${command} ${args.join(' ')} exited with ${code}\n${stdout}${stderr}`))
+				const details = [stdout.trim(), stderr.trim()].filter(Boolean).join('\n')
+				reject(new Error(`${command} ${args.join(' ')} exited with ${code}\n${details}`))
 			}
 		})
 	})
@@ -280,6 +296,7 @@ await assertWorkspaceMap()
 await assertPublishedMap()
 await assertRuntimeSeparation()
 await assertUiDistribution()
+await assertSvelteDistribution()
 await assertPackedPackage()
 
 console.log('workspace source and published package smoke passed')

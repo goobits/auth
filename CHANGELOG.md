@@ -74,6 +74,9 @@
 
 ### 🏠 Internal
 
+- Reconciled the public and first-party integration histories into one
+  canonical package line and made shared documentation and test fixtures
+  consumer-neutral.
 - 📦 Added `@goobits/auth/verification`, PostgreSQL verification-token storage,
   and a named `auth.routes` facade for clean application composition.
 - 🔑 Added a provider-neutral password migration verifier so applications can
