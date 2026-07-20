@@ -1,4 +1,4 @@
-# Public API (vNext)
+# Public API (0.3.x)
 
 Primary API: `new GoobitsAuth(...)`
 
@@ -14,59 +14,17 @@ outside SvelteKit should prefer low-level subpaths such as
 The documented exports are stable for the `0.3.x` line. WebAuthn and MFA may
 receive additive options as platform behavior evolves.
 
-## Distribution
+## Main Entrypoint
 
-TypeScript workspaces consume the checked-out `src/` entrypoints directly.
-Published installations consume compiled JavaScript and declarations from
-`dist`; source files and release tooling are excluded from the package.
-Package-private conditional imports select native Argon2 and WebAuthn support
-on Node 22+, while the default Worker runtime uses WASM-backed password hashing
-and explicit unsupported WebAuthn handlers in both distribution modes.
-`@goobits/auth/node` and `@goobits/auth/adapters/pg` intentionally have no
-Worker target.
+`GoobitsAuth` is the primary class exported from `@goobits/auth`. The complete
+instance, provider, hook, and catch-all route setup lives in
+[`quickstart.md`](quickstart.md); this file documents the resulting public
+surface without maintaining a second setup recipe.
 
-## Main entrypoint
-
-```ts
-import { GoobitsAuth } from '@goobits/auth'
-import { drizzleAdapter } from '@goobits/auth/adapters/drizzle'
-import { GoogleProvider } from '@goobits/auth/providers'
-import { db, schema } from '$lib/server/db'
-import { sharedRateLimitStore } from '$lib/server/security/rate-limit'
-import { env } from '$env/dynamic/private'
-
-export const auth = new GoobitsAuth({
-	adapter: drizzleAdapter(db, {
-		schema,
-		oauthTokenEncryption: {
-			encryptionKeyringJson: env.TOKEN_ENCRYPTION_KEYRING,
-			legacyEncryptionKeyId: 'previous'
-		}
-	}),
-	providers: {
-		google: {
-			provider: new GoogleProvider({
-				clientId: env.GOOGLE_CLIENT_ID,
-				clientSecret: env.GOOGLE_CLIENT_SECRET,
-				callbackUrl: `${env.APP_URL}/auth/callback/google`
-			})
-		}
-	},
-	security: {
-		rateLimit: { store: sharedRateLimitStore },
-		audit: { emitter: auditEmitter }
-	}
-})
-```
-
-`secure` is the default profile. It requires CSRF and rate limiting, and a
-shared rate-limit store plus an awaited audit emitter are mandatory in
-production. Use `createAuthEventAuditEmitter` with a canonical
-`@goobits/security/audit` logger. Applications that enforce
-an equivalent outer request boundary must declare
-`csrf: { mode: 'off', validateExternalSecurityBoundary: verifyOrigin }`. The
-callback is executed for every unsafe request; a boolean configuration flag is
-not accepted.
+`secure` is the default profile. It requires CSRF, production rate limiting,
+and an awaited audit emitter. An equivalent outer request boundary must be
+declared through the executable
+`validateExternalSecurityBoundary` callback; a boolean opt-out is not accepted.
 
 ## `GoobitsAuth` surface
 
@@ -88,21 +46,11 @@ Security alert webhooks are configured through `security.alerts.webhook.url`.
 provided. Use `security.alerts.onAlert` for custom signing, cooldown, or fan-out
 behavior.
 
-## SvelteKit wiring
+## SvelteKit Wiring
 
-```ts
-// src/hooks.server.ts
-import { auth } from '$lib/auth'
-
-export const handle = auth.handle()
-```
-
-```ts
-// src/routes/auth/[...auth]/+server.ts
-import { auth } from '$lib/auth'
-
-export const { GET, POST } = auth.handlers
-```
+Use the hook and catch-all route shown in [`quickstart.md`](quickstart.md).
+Custom mount paths can instead use `auth.createHandlers({ basePath })` or the
+named factories under `auth.routes`.
 
 ## Wrappable handlers
 
