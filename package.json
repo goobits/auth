@@ -382,12 +382,12 @@
 	},
 	"devDependencies": {
 		"@sveltejs/kit": "^2.70.1",
-		"@types/node": "^26.1.0",
+		"@types/node": "^26.1.1",
 		"@vitest/coverage-v8": "^4.1.10",
 		"pg-mem": "^3.0.14",
 		"postgres": "^3.4.9",
 		"svelte": "^5.56.7",
-		"svelte-check": "^4.7.1",
+		"svelte-check": "^4.7.3",
 		"tsup": "^8.5.1",
 		"typescript": "^6.0.3",
 		"vitest": "^4.1.10"
