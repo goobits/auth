@@ -8,7 +8,12 @@ import {
 	type DrizzleTable,
 	requireColumn
 } from '../drizzleTypes.ts'
-import { WebAuthnAdapter } from './WebAuthnAdapter.ts'
+import {
+	WebAuthnAdapter,
+	type AdvanceWebAuthnCredentialCounterInput,
+	type CreateWebAuthnChallengeInput,
+	type CreateWebAuthnCredentialInput
+} from './WebAuthnAdapter.ts'
 import {
 	assertCredentialCounterTransition,
 	isValidCredentialCounter
@@ -179,13 +184,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		challenge,
 		type,
 		expiresAt
-	}: {
-		challengeId: string
-		userId: string | null
-		challenge: string
-		type: string
-		expiresAt: Date
-	}): Promise<void> {
+	}: CreateWebAuthnChallengeInput & { userId: string | null }): Promise<void> {
 		await this.db.insert(this.challengesTable).values({
 			[this.columns.challengeId]: challengeId,
 			[this.columns.challengeUserId]: userId,
@@ -216,14 +215,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		counter,
 		transports,
 		name
-	}: {
-		userId: string
-		credentialId: string
-		publicKey: string
-		counter: number
-		transports?: string[] | null
-		name?: string | null
-	}): Promise<boolean> {
+	}: CreateWebAuthnCredentialInput): Promise<boolean> {
 		if (!isValidCredentialCounter(counter)) {
 			throw new RangeError('WebAuthn counter must be a non-negative safe integer')
 		}
@@ -272,12 +264,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		userId,
 		expectedCounter,
 		newCounter
-	}: {
-		credentialId: string
-		userId: string
-		expectedCounter: number
-		newCounter: number
-	}): Promise<boolean> {
+	}: AdvanceWebAuthnCredentialCounterInput): Promise<boolean> {
 		assertCredentialCounterTransition(expectedCounter, newCounter)
 		const result = this.db
 			.update(this.credentialsTable)

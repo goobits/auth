@@ -16,6 +16,7 @@ import { PgSessionAdapter as DirectSessionAdapter } from '../../src/adapters/pg/
 import { PgUserAdapter as DirectUserAdapter } from '../../src/adapters/pg/user.ts'
 import { PgVerificationTokenAdapter as DirectVerificationTokenAdapter } from '../../src/adapters/pg/verificationToken.ts'
 import { PgWebAuthnAdapter as DirectWebAuthnAdapter } from '../../src/adapters/pg/webauthn.ts'
+import { expectSingleDeclarationOwners } from './_moduleBoundaries.ts'
 
 const owners = {
 	'../_inputValues.ts': ['normalizeEmail', 'recordValue', 'stringValue'],
@@ -40,9 +41,6 @@ const owners = {
 	]
 } as const
 
-const declarationPattern = (name: string) =>
-	new RegExp(`(?:^|\\n)(?:export )?(?:type|interface|class|function|const) ${name}\\b`)
-
 describe('PostgreSQL auth adapter boundaries', () => {
 	it('keeps published values identity-stable', () => {
 		expect(PgMagicLinkAdapter).toBe(DirectMagicLinkAdapter)
@@ -55,28 +53,7 @@ describe('PostgreSQL auth adapter boundaries', () => {
 	})
 
 	it('keeps every PostgreSQL adapter concept with one owner', async () => {
-		const sources = new Map(
-			await Promise.all(
-				Object.keys(owners).map(
-					async (file) =>
-						[
-							file,
-							await readFile(new URL(`../../src/adapters/pg/${file}`, import.meta.url), 'utf8')
-						] as const
-				)
-			)
-		)
-
-		for (const [expectedFile, names] of Object.entries(owners)) {
-			for (const name of names) {
-				expect(
-					[...sources]
-						.filter(([, source]) => declarationPattern(name).test(source))
-						.map(([file]) => file),
-					name
-				).toEqual([expectedFile])
-			}
-		}
+		await expectSingleDeclarationOwners(new URL('../../src/adapters/pg/', import.meta.url), owners)
 	})
 
 	it('keeps the published entrypoint free of adapter implementations and schema SQL', async () => {

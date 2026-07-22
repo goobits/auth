@@ -1,5 +1,10 @@
 import type { WebAuthnCredential } from '../../types/index.ts'
-import { WebAuthnAdapter } from '../webauthn/WebAuthnAdapter.ts'
+import {
+	WebAuthnAdapter,
+	type AdvanceWebAuthnCredentialCounterInput,
+	type CreateWebAuthnChallengeInput,
+	type CreateWebAuthnCredentialInput
+} from '../webauthn/WebAuthnAdapter.ts'
 import {
 	assertCredentialCounterTransition,
 	isValidCredentialCounter
@@ -40,13 +45,7 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		challenge,
 		type,
 		expiresAt
-	}: {
-		challengeId: string
-		userId?: string | null
-		challenge: string
-		type: string
-		expiresAt: Date
-	}): Promise<void> {
+	}: CreateWebAuthnChallengeInput): Promise<void> {
 		await this.#db.query(
 			`
 			INSERT INTO auth_webauthn_challenges (id, user_id, challenge, type, expires_at)
@@ -92,14 +91,7 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		counter,
 		transports,
 		name
-	}: {
-		userId: string
-		credentialId: string
-		publicKey: string
-		counter: number
-		transports?: string[] | null
-		name?: string | null
-	}): Promise<boolean> {
+	}: CreateWebAuthnCredentialInput): Promise<boolean> {
 		if (!isValidCredentialCounter(counter)) {
 			throw new RangeError('WebAuthn counter must be a non-negative safe integer')
 		}
@@ -141,12 +133,7 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		userId,
 		expectedCounter,
 		newCounter
-	}: {
-		credentialId: string
-		userId: string
-		expectedCounter: number
-		newCounter: number
-	}): Promise<boolean> {
+	}: AdvanceWebAuthnCredentialCounterInput): Promise<boolean> {
 		assertCredentialCounterTransition(expectedCounter, newCounter)
 		const result = await this.#db.query<{ credential_id: string }>(
 			`UPDATE auth_webauthn_credentials

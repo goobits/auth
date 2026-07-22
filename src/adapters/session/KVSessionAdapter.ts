@@ -5,6 +5,7 @@ import { AuthAdapterCapabilityError } from '../../errors/AuthPrincipalResolution
 import type { Session, SessionMetadata, SessionSummary, User } from '../../types/index.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
 import { normalizeSessionMetadata } from './_sessionMetadata.ts'
+import { clearSessionCookie, writeSessionCookie } from './_sessionCookie.ts'
 import { parseMfaVerifiedAt, parseSessionTimestamp } from './sessionAssurance.ts'
 import { createSessionToken, generateSessionId, hashSessionToken } from './sessionId.ts'
 
@@ -279,16 +280,10 @@ export class KVSessionAdapter extends SessionAdapter {
 	}
 
 	setSessionCookie(cookies: Cookies, session: { id: string; expiresAt: Date }) {
-		cookies.set(this.cookieName, session.id, {
-			httpOnly: true,
-			secure: this.secureCookies,
-			sameSite: 'lax',
-			path: '/',
-			expires: session.expiresAt
-		})
+		writeSessionCookie(cookies, session, this.cookieName, this.secureCookies)
 	}
 
 	deleteSessionCookie(cookies: Cookies) {
-		cookies.delete(this.cookieName, { path: '/' })
+		clearSessionCookie(cookies, this.cookieName)
 	}
 }

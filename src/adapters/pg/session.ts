@@ -1,6 +1,7 @@
 import type { Cookies } from '@sveltejs/kit'
 import type { Session, SessionMetadata, User } from '../../types/index.ts'
 import { SessionAdapter } from '../session/SessionAdapter.ts'
+import { clearSessionCookie, writeSessionCookie } from '../session/_sessionCookie.ts'
 import { normalizeSessionMetadata } from '../session/_sessionMetadata.ts'
 import { createSessionToken, hashSessionToken } from '../session/sessionId.ts'
 import { type PgPoolLike, requireRow } from './query.ts'
@@ -150,21 +151,11 @@ export class PgSessionAdapter extends SessionAdapter {
 	}
 
 	setSessionCookie(cookies: Cookies, session: Session): void {
-		cookies.set(this.#cookieName, session.id, {
-			...(this.#cookieDomain ? { domain: this.#cookieDomain } : {}),
-			expires: session.expiresAt,
-			httpOnly: true,
-			path: '/',
-			sameSite: 'lax',
-			secure: this.#secureCookies
-		})
+		writeSessionCookie(cookies, session, this.#cookieName, this.#secureCookies, this.#cookieDomain)
 	}
 
 	deleteSessionCookie(cookies: Cookies): void {
-		cookies.delete(this.#cookieName, {
-			...(this.#cookieDomain ? { domain: this.#cookieDomain } : {}),
-			path: '/'
-		})
+		clearSessionCookie(cookies, this.#cookieName, this.#cookieDomain)
 	}
 }
 

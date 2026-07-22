@@ -1,6 +1,11 @@
 import type { WebAuthnCredential } from '../../types/index.ts'
 import { assertD1Identifiers } from '../_d1Sql.ts'
-import { WebAuthnAdapter } from './WebAuthnAdapter.ts'
+import {
+	WebAuthnAdapter,
+	type AdvanceWebAuthnCredentialCounterInput,
+	type CreateWebAuthnChallengeInput,
+	type CreateWebAuthnCredentialInput
+} from './WebAuthnAdapter.ts'
 import {
 	assertCredentialCounterTransition,
 	isValidCredentialCounter
@@ -98,13 +103,7 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 		challenge,
 		type,
 		expiresAt
-	}: {
-		challengeId: string
-		userId: string | null
-		challenge: string
-		type: string
-		expiresAt: Date
-	}) {
+	}: CreateWebAuthnChallengeInput & { userId: string | null }) {
 		const sql = `INSERT INTO ${this.challengesTable} (${this.columns.challengeId}, ${this.columns.challengeUserId}, ${this.columns.challenge}, ${this.columns.challengeType}, ${this.columns.challengeExpiresAt}) VALUES (?, ?, ?, ?, ?)`
 		await this.db
 			.prepare(sql)
@@ -205,14 +204,7 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 		counter,
 		transports,
 		name
-	}: {
-		userId: string
-		credentialId: string
-		publicKey: string
-		counter: number
-		transports?: string[] | null
-		name?: string | null
-	}): Promise<boolean> {
+	}: CreateWebAuthnCredentialInput): Promise<boolean> {
 		if (!isValidCredentialCounter(counter)) {
 			throw new RangeError('WebAuthn counter must be a non-negative safe integer')
 		}
@@ -255,12 +247,7 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 		userId,
 		expectedCounter,
 		newCounter
-	}: {
-		credentialId: string
-		userId: string
-		expectedCounter: number
-		newCounter: number
-	}): Promise<boolean> {
+	}: AdvanceWebAuthnCredentialCounterInput): Promise<boolean> {
 		assertCredentialCounterTransition(expectedCounter, newCounter)
 		const sql = `UPDATE ${this.credentialsTable} SET ${this.columns.counter} = ?, ${this.columns.updatedAt} = ? WHERE ${this.columns.credentialId} = ? AND ${this.columns.userId} = ? AND ${this.columns.counter} = ?`
 		const result = await this.db

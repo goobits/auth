@@ -1,3 +1,27 @@
+export type CreateWebAuthnChallengeInput = {
+	challengeId: string
+	userId?: string | null
+	challenge: string
+	type: string
+	expiresAt: Date
+}
+
+export type CreateWebAuthnCredentialInput = {
+	userId: string
+	credentialId: string
+	publicKey: string
+	counter: number
+	transports?: string[] | null
+	name?: string | null
+}
+
+export type AdvanceWebAuthnCredentialCounterInput = {
+	credentialId: string
+	userId: string
+	expectedCounter: number
+	newCounter: number
+}
+
 /**
  * Base WebAuthn Adapter Interface
  */
@@ -18,13 +42,7 @@ export abstract class WebAuthnAdapter {
 		challenge,
 		type,
 		expiresAt
-	}: {
-		challengeId: string
-		userId?: string | null
-		challenge: string
-		type: string
-		expiresAt: Date
-	}): Promise<void>
+	}: CreateWebAuthnChallengeInput): Promise<void>
 
 	/**
 	 * Get challenge by ID
@@ -60,14 +78,7 @@ export abstract class WebAuthnAdapter {
 		counter,
 		transports,
 		name
-	}: {
-		userId: string
-		credentialId: string
-		publicKey: string
-		counter: number
-		transports?: string[] | null
-		name?: string | null
-	}): Promise<boolean>
+	}: CreateWebAuthnCredentialInput): Promise<boolean>
 
 	/**
 	 * Get a credential by ID
@@ -86,12 +97,7 @@ export abstract class WebAuthnAdapter {
 	abstract listCredentials(userId: string): Promise<Record<string, unknown>[]>
 
 	/** Atomically advances a credential counter for its immutable owner. */
-	abstract advanceCredentialCounter(input: {
-		credentialId: string
-		userId: string
-		expectedCounter: number
-		newCounter: number
-	}): Promise<boolean>
+	abstract advanceCredentialCounter(input: AdvanceWebAuthnCredentialCounterInput): Promise<boolean>
 
 	/**
 	 * Delete a credential
