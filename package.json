@@ -345,9 +345,6 @@
 		"build:types": "tsc -p tsconfig.build.json",
 		"audit": "node scripts/auditPackage.mjs",
 		"security:check": "pnpm run typecheck && pnpm test && pnpm run audit",
-		"api:scan": "pnpm --dir ../../.. codeatlas scan packages/@goobits/auth --format json --out packages/@goobits/auth/.codeatlas",
-		"api:audit": "pnpm --dir ../../.. codeatlas audit packages/@goobits/auth",
-		"api:map": "pnpm --dir ../../.. codeatlas map packages/@goobits/auth --out packages/@goobits/auth/.codeatlas/atlas.mmd",
 		"prepublishOnly": "pnpm run build && pnpm run security:check"
 	},
 	"keywords": [
