@@ -276,6 +276,26 @@ describe('security policy wrapper', () => {
 		expect(secondSameForwardedIp.status).toBe(200)
 	})
 
+	it('uses the shared client bucket when the platform address accessor is unavailable', async () => {
+		const emitter = vi.fn()
+		const inner = vi.fn(async () => new Response(JSON.stringify({ ok: true })))
+		const handler = applySecurityPolicy({
+			handler: inner,
+			routeId: 'sessions.list',
+			settings: createAuditSettings(emitter)
+		})
+		const event = createEvent()
+		event.getClientAddress = () => {
+			throw new Error('Client address unavailable')
+		}
+
+		const response = await handler(event as Parameters<typeof handler>[0])
+
+		expect(response.status).toBe(200)
+		expect(inner).toHaveBeenCalledOnce()
+		expect(emitter).toHaveBeenCalledWith(expect.objectContaining({ ip: 'unknown' }))
+	})
+
 	it('audits redirects as successful control flow', async () => {
 		const emitter = vi.fn()
 		const handler = applySecurityPolicy({

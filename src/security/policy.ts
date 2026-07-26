@@ -9,6 +9,7 @@ import type { Logger } from '@goobits/security/logger'
 import type { CsrfTokenStore } from '@goobits/security/csrf'
 import { createSvelteKitCsrf } from '@goobits/security/csrf/sveltekit'
 import type { RequestEventLike, TrustedProxyHeader } from '../types/auth.ts'
+import { resolvePlatformClientAddress } from '../utils/clientAddress.ts'
 import { type AuthEventEmitter, createAuthEvent } from './events.ts'
 
 type PolicyMode = 'required' | 'optional' | 'off'
@@ -83,8 +84,7 @@ function getClientIp(
 ): string {
 	const proxyIp = getClientIP(event.request, { trustHeaders: trustedProxyHeaders })
 	if (proxyIp !== 'unknown') return proxyIp
-	if (event.getClientAddress) return event.getClientAddress()
-	return 'unknown'
+	return resolvePlatformClientAddress(event)
 }
 
 /** Processes security policy for auth security checks. */

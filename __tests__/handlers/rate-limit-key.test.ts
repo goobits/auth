@@ -23,4 +23,13 @@ describe('standalone handler rate-limit keys', () => {
 		)
 		expect(resolveHandlerRateLimitKey(event)).toBe('unknown')
 	})
+
+	it('uses the shared bucket when the platform client-address accessor is unavailable', () => {
+		const event = createRequestEvent()
+		event.getClientAddress = () => {
+			throw new Error('Client address unavailable')
+		}
+
+		expect(resolveHandlerRateLimitKey(event)).toBe('unknown')
+	})
 })
