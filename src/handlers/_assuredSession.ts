@@ -1,20 +1,21 @@
 import type { RequestEventLike } from '../types/auth.ts'
 import type { Session, SessionMetadata } from '../types/core.ts'
 
-export type MfaSessionAdapter = {
+export type AssuredSessionAdapter = {
 	createSession: (userId: string, metadata?: SessionMetadata) => Promise<Session>
 	invalidateSession: (sessionId: string) => Promise<void>
 	setSessionCookie: (cookies: RequestEventLike['cookies'], session: Session) => void
 }
 
-export async function rotateSessionAfterMfa({
+/** Rotates a session after a verified phishing-resistant or one-time-code factor. */
+export async function rotateAssuredSession({
 	sessionAdapter,
 	cookies,
 	currentSession,
 	userId,
 	mfaVerifiedAt = new Date()
 }: {
-	sessionAdapter: MfaSessionAdapter
+	sessionAdapter: AssuredSessionAdapter
 	cookies: RequestEventLike['cookies']
 	currentSession: Session
 	userId: string

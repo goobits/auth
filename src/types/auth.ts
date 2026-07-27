@@ -129,15 +129,20 @@ export type WebAuthnConfig = {
 	rpName?: string
 	timeoutMs?: number
 	attestation?: 'none' | 'indirect' | 'direct' | 'enterprise'
-	userVerification?: 'required' | 'preferred' | 'discouraged'
-	credentialName?: string
+	maxCredentialsPerUser?: number
 	hooks?: {
 		onLogin?: AuthHooks['onLogin']
+		onCredentialCreated?: (input: { userId: string; credentialId: string }) => Promise<void> | void
+		onCredentialDeleted?: (input: { userId: string; credentialId: string }) => Promise<void> | void
 	}
 }
 
 /** Security-sensitive account mutation that requires fresh application authorization. */
-export type SecurityChangeAction = 'mfa.enroll' | 'mfa.disable' | 'webauthn.register'
+export type SecurityChangeAction =
+	| 'mfa.enroll'
+	| 'mfa.disable'
+	| 'webauthn.register'
+	| 'webauthn.remove'
 
 /** Application-owned step-up authorization for factor enrollment and removal. */
 export type AuthorizeSecurityChange = (input: {
@@ -152,6 +157,10 @@ export type TotpMfaConfig = {
 	authorizeSecurityChange: AuthorizeSecurityChange
 	issuer?: string
 	label?: (userId: string, locals: RequestEventLike['locals']) => string
+	hooks?: {
+		onEnabled?: (input: { userId: string; event: RequestEventLike }) => Promise<void> | void
+		onDisabled?: (input: { userId: string; event: RequestEventLike }) => Promise<void> | void
+	}
 }
 
 /** Defines sessions config options for wiring providers, adapters, cookies, hooks, and route handlers. */
@@ -288,6 +297,10 @@ export type AuthHandlers = {
 		registerVerify: RequestHandler
 		loginOptions: RequestHandler
 		loginVerify: RequestHandler
+		listCredentials: RequestHandler
+		removeCredential: RequestHandler
+		stepUpOptions: RequestHandler
+		stepUpVerify: RequestHandler
 	}
 	mfa?: {
 		status: RequestHandler
@@ -314,6 +327,9 @@ export type AuthRoutes = {
 	passkeyRegisterVerify: () => { POST: RequestHandler }
 	passkeyLoginOptions: () => { POST: RequestHandler }
 	passkeyLoginVerify: () => { POST: RequestHandler }
+	passkeyCredentials: () => { GET: RequestHandler; POST: RequestHandler }
+	passkeyStepUpOptions: () => { POST: RequestHandler }
+	passkeyStepUpVerify: () => { POST: RequestHandler }
 	mfaStatus: () => { GET: RequestHandler }
 	mfaEnroll: () => { POST: RequestHandler }
 	mfaVerify: () => { POST: RequestHandler }

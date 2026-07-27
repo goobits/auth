@@ -475,6 +475,18 @@ describe('D1 adapters', () => {
 							credentials.set(credentialId, { ...current, counter: newCounter })
 							return { meta: { changes: 1 } }
 						}
+						if (sql.startsWith('DELETE FROM webauthn_credentials')) {
+							const [credentialId, userId] = values as [string, string]
+							const current = credentials.get(credentialId)
+							if (!current || current.userId !== userId) {
+								return { meta: { changes: 0 } }
+							}
+							credentials.delete(credentialId)
+							return { meta: { changes: 1 } }
+						}
+						if (sql.startsWith('DELETE FROM webauthn_challenges')) {
+							return { meta: { changes: 2 } }
+						}
 						return { meta: { changes: 0 } }
 					},
 					async first() {
@@ -526,6 +538,13 @@ describe('D1 adapters', () => {
 				newCounter: 2
 			})
 		).resolves.toBe(false)
+		await expect(
+			adapter.deleteCredential({ credentialId: 'credential-1', userId: 'owner-2' })
+		).resolves.toBe(false)
+		await expect(
+			adapter.deleteCredential({ credentialId: 'credential-1', userId: 'owner-1' })
+		).resolves.toBe(true)
+		await expect(adapter.deleteExpiredChallenges(new Date())).resolves.toBe(2)
 	})
 
 	it('creates and finds verification tokens', async () => {

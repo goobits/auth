@@ -3,7 +3,8 @@ import {
 	WebAuthnAdapter,
 	type AdvanceWebAuthnCredentialCounterInput,
 	type CreateWebAuthnChallengeInput,
-	type CreateWebAuthnCredentialInput
+	type CreateWebAuthnCredentialInput,
+	type DeleteWebAuthnCredentialInput
 } from '../webauthn/WebAuthnAdapter.ts'
 import {
 	assertCredentialCounterTransition,
@@ -37,6 +38,23 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 
 	async deleteChallenge(challengeId: string): Promise<void> {
 		this.#challenges.delete(challengeId)
+	}
+
+	async deleteExpiredChallenges(expiresAtOrBefore: Date): Promise<number> {
+		let removed = 0
+		for (const [challengeId, challenge] of this.#challenges) {
+			const expiresAt = challenge['expiresAt']
+			if (
+				(expiresAt instanceof Date ||
+					typeof expiresAt === 'string' ||
+					typeof expiresAt === 'number') &&
+				new Date(expiresAt).getTime() <= expiresAtOrBefore.getTime()
+			) {
+				this.#challenges.delete(challengeId)
+				removed += 1
+			}
+		}
+		return removed
 	}
 
 	async consumeChallenge(challengeId: string): Promise<Record<string, unknown> | null> {
@@ -98,8 +116,13 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 		return true
 	}
 
-	async deleteCredential(credentialId: string): Promise<void> {
-		this.#credentials.delete(credentialId)
+	async deleteCredential({
+		credentialId,
+		userId
+	}: DeleteWebAuthnCredentialInput): Promise<boolean> {
+		const credential = this.#credentials.get(credentialId)
+		if (!credential || credential.userId !== userId) return false
+		return this.#credentials.delete(credentialId)
 	}
 
 	async deleteUserCredentials(userId: string): Promise<void> {

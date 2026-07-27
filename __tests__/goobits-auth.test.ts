@@ -66,7 +66,11 @@ function createRoutingHarness(basePath = '/auth') {
 			registerOptions: handler('webauthn.registerOptions'),
 			registerVerify: handler('webauthn.registerVerify'),
 			loginOptions: handler('webauthn.loginOptions'),
-			loginVerify: handler('webauthn.loginVerify')
+			loginVerify: handler('webauthn.loginVerify'),
+			listCredentials: handler('webauthn.listCredentials'),
+			removeCredential: handler('webauthn.removeCredential'),
+			stepUpOptions: handler('webauthn.stepUpOptions'),
+			stepUpVerify: handler('webauthn.stepUpVerify')
 		},
 		mfa: {
 			status: handler('mfa.status'),
@@ -226,6 +230,26 @@ describe('GoobitsAuth', () => {
 				method: 'POST',
 				path: '/auth/passkey/login/verify',
 				handler: 'webauthn.loginVerify'
+			},
+			{
+				method: 'GET',
+				path: '/auth/passkey/credentials',
+				handler: 'webauthn.listCredentials'
+			},
+			{
+				method: 'POST',
+				path: '/auth/passkey/credentials',
+				handler: 'webauthn.removeCredential'
+			},
+			{
+				method: 'POST',
+				path: '/auth/passkey/step-up/options',
+				handler: 'webauthn.stepUpOptions'
+			},
+			{
+				method: 'POST',
+				path: '/auth/passkey/step-up/verify',
+				handler: 'webauthn.stepUpVerify'
 			},
 			{ method: 'GET', path: '/auth/mfa/status', handler: 'mfa.status' },
 			{ method: 'POST', path: '/auth/mfa/enroll', handler: 'mfa.enroll' },

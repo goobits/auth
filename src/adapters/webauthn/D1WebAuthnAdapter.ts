@@ -4,7 +4,8 @@ import {
 	WebAuthnAdapter,
 	type AdvanceWebAuthnCredentialCounterInput,
 	type CreateWebAuthnChallengeInput,
-	type CreateWebAuthnCredentialInput
+	type CreateWebAuthnCredentialInput,
+	type DeleteWebAuthnCredentialInput
 } from './WebAuthnAdapter.ts'
 import {
 	assertCredentialCounterTransition,
@@ -197,6 +198,14 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 			.run()
 	}
 
+	async deleteExpiredChallenges(expiresAtOrBefore: Date): Promise<number> {
+		const result = await this.db
+			.prepare(`DELETE FROM ${this.challengesTable} WHERE ${this.columns.challengeExpiresAt} <= ?`)
+			.bind(expiresAtOrBefore.toISOString())
+			.run()
+		return changedRows(result)
+	}
+
 	async createCredential({
 		userId,
 		credentialId,
@@ -257,11 +266,17 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 		return changedRows(result) === 1
 	}
 
-	async deleteCredential(credentialId: string) {
-		await this.db
-			.prepare(`DELETE FROM ${this.credentialsTable} WHERE ${this.columns.credentialId} = ?`)
-			.bind(credentialId)
+	async deleteCredential({
+		credentialId,
+		userId
+	}: DeleteWebAuthnCredentialInput): Promise<boolean> {
+		const result = await this.db
+			.prepare(
+				`DELETE FROM ${this.credentialsTable} WHERE ${this.columns.credentialId} = ? AND ${this.columns.userId} = ?`
+			)
+			.bind(credentialId, userId)
 			.run()
+		return changedRows(result) === 1
 	}
 
 	async deleteUserCredentials(userId: string) {

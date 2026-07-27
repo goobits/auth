@@ -12,6 +12,9 @@ export type AuthClientEndpoints = {
 	passkeyRegisterVerify?: string
 	passkeyLoginOptions?: string
 	passkeyLoginVerify?: string
+	passkeyCredentials?: string
+	passkeyStepUpOptions?: string
+	passkeyStepUpVerify?: string
 	mfaStatus?: string
 	mfaEnroll?: string
 	mfaVerify?: string
@@ -59,6 +62,18 @@ export type MfaStatusResult =
 			}
 	  }
 
+export type PasskeyCredentialSummary = {
+	credentialId: string
+	name: string | null
+	transports: string[] | null
+	createdAt: string | null
+	lastUsedAt: string | null
+}
+
+export type PasskeyListResult =
+	| AuthClientFailure
+	| { success: true; credentials: PasskeyCredentialSummary[] }
+
 export type AuthSessionSummary = {
 	id: string
 	userId: string
@@ -103,6 +118,42 @@ function requireSuccessFlag(value: Record<string, unknown>): boolean {
 
 function parseMfaAction(value: Record<string, unknown>): MfaActionResult {
 	if (!requireSuccessFlag(value)) return parseFailure(value)
+	const verifiedAt = value['mfaVerifiedAt']
+	if (verifiedAt !== undefined && typeof verifiedAt !== 'string') {
+		throw new Error('Invalid authentication response')
+	}
+	return verifiedAt ? { success: true, mfaVerifiedAt: verifiedAt } : { success: true }
+}
+
+function parsePasskeyCredential(value: unknown): PasskeyCredentialSummary {
+	if (!isRecord(value)) throw new Error('Invalid authentication response')
+	const credentialId = value['credentialId']
+	const name = value['name']
+	const transports = value['transports']
+	const createdAt = value['createdAt']
+	const lastUsedAt = value['lastUsedAt']
+	if (
+		typeof credentialId !== 'string' ||
+		(name !== null && typeof name !== 'string') ||
+		(transports !== null &&
+			(!Array.isArray(transports) ||
+				!transports.every((transport) => typeof transport === 'string'))) ||
+		(createdAt !== null && typeof createdAt !== 'string') ||
+		(lastUsedAt !== null && typeof lastUsedAt !== 'string')
+	) {
+		throw new Error('Invalid authentication response')
+	}
+	return { credentialId, name, transports, createdAt, lastUsedAt }
+}
+
+function parsePasskeyAction(value: Record<string, unknown>): MfaActionResult {
+	if (value['ok'] === false) {
+		return {
+			success: false,
+			error: typeof value['error'] === 'string' ? value['error'] : 'Authentication request failed'
+		}
+	}
+	if (value['ok'] !== true) throw new Error('Invalid authentication response')
 	const verifiedAt = value['mfaVerifiedAt']
 	if (verifiedAt !== undefined && typeof verifiedAt !== 'string') {
 		throw new Error('Invalid authentication response')
@@ -258,6 +309,12 @@ export function createAuthClient({
 			endpoints.passkeyLoginOptions || defaultEndpoint(AUTH_ROUTE_PATHS.passkeyLoginOptions),
 		passkeyLoginVerify:
 			endpoints.passkeyLoginVerify || defaultEndpoint(AUTH_ROUTE_PATHS.passkeyLoginVerify),
+		passkeyCredentials:
+			endpoints.passkeyCredentials || defaultEndpoint(AUTH_ROUTE_PATHS.passkeyCredentials),
+		passkeyStepUpOptions:
+			endpoints.passkeyStepUpOptions || defaultEndpoint(AUTH_ROUTE_PATHS.passkeyStepUpOptions),
+		passkeyStepUpVerify:
+			endpoints.passkeyStepUpVerify || defaultEndpoint(AUTH_ROUTE_PATHS.passkeyStepUpVerify),
 		mfaStatus: endpoints.mfaStatus || defaultEndpoint(AUTH_ROUTE_PATHS.mfaStatus),
 		mfaEnroll: endpoints.mfaEnroll || defaultEndpoint(AUTH_ROUTE_PATHS.mfaEnroll),
 		mfaVerify: endpoints.mfaVerify || defaultEndpoint(AUTH_ROUTE_PATHS.mfaVerify),
@@ -310,12 +367,18 @@ export function createAuthClient({
 			return response.json()
 		},
 
-		async registerPasskey({ name }: { name?: string } = {}) {
+		async registerPasskey({
+			name,
+			currentPassword
+		}: { name?: string; currentPassword?: string } = {}) {
 			if (!globalThis?.navigator?.credentials) {
 				throw new Error('WebAuthn not supported in this environment')
 			}
+			const authorization = new FormData()
+			if (currentPassword) authorization.set('currentPassword', currentPassword)
 			const optionsRes = await authFetch(withBase(resolved.passkeyRegisterOptions), {
-				method: 'POST'
+				method: 'POST',
+				body: authorization
 			})
 			const { options, challengeId } = await optionsRes.json()
 			const credential = await navigator.credentials.create({
@@ -333,14 +396,12 @@ export function createAuthClient({
 			return verifyRes.json()
 		},
 
-		async loginWithPasskey({ email }: { email?: string } = {}) {
+		async loginWithPasskey() {
 			if (!globalThis?.navigator?.credentials) {
 				throw new Error('WebAuthn not supported in this environment')
 			}
 			const optionsRes = await authFetch(withBase(resolved.passkeyLoginOptions), {
-				method: 'POST',
-				headers: jsonHeaders,
-				body: JSON.stringify({ email })
+				method: 'POST'
 			})
 			const { options, challengeId } = await optionsRes.json()
 			const credential = await navigator.credentials.get({
@@ -355,6 +416,69 @@ export function createAuthClient({
 				})
 			})
 			return verifyRes.json()
+		},
+
+		async listPasskeys(): Promise<PasskeyListResult> {
+			const value = await readJsonRecord(
+				await authFetch(withBase(resolved.passkeyCredentials), { method: 'GET' })
+			)
+			if (value['ok'] === false) {
+				return {
+					success: false,
+					error:
+						typeof value['error'] === 'string' ? value['error'] : 'Authentication request failed'
+				}
+			}
+			if (value['ok'] !== true || !Array.isArray(value['credentials'])) {
+				throw new Error('Invalid authentication response')
+			}
+			return {
+				success: true,
+				credentials: value['credentials'].map(parsePasskeyCredential)
+			}
+		},
+
+		async removePasskey({
+			credentialId,
+			currentPassword
+		}: {
+			credentialId: string
+			currentPassword?: string
+		}): Promise<MfaActionResult> {
+			const form = new FormData()
+			form.set('credentialId', credentialId)
+			if (currentPassword) form.set('currentPassword', currentPassword)
+			const value = await readJsonRecord(
+				await authFetch(withBase(resolved.passkeyCredentials), {
+					method: 'POST',
+					body: form
+				})
+			)
+			return parsePasskeyAction(value)
+		},
+
+		async stepUpWithPasskey(): Promise<MfaActionResult> {
+			if (!globalThis?.navigator?.credentials) {
+				throw new Error('WebAuthn not supported in this environment')
+			}
+			const optionsRes = await authFetch(withBase(resolved.passkeyStepUpOptions), {
+				method: 'POST'
+			})
+			const { options, challengeId } = await optionsRes.json()
+			const credential = await navigator.credentials.get({
+				publicKey: parseRequestOptions(options)
+			})
+			const value = await readJsonRecord(
+				await authFetch(withBase(resolved.passkeyStepUpVerify), {
+					method: 'POST',
+					headers: jsonHeaders,
+					body: JSON.stringify({
+						challengeId,
+						credential: serializeCredential(credential)
+					})
+				})
+			)
+			return parsePasskeyAction(value)
 		},
 
 		async getMfaStatus(): Promise<MfaStatusResult> {
@@ -382,9 +506,14 @@ export function createAuthClient({
 			}
 		},
 
-		async enrollMfa(): Promise<MfaEnrollmentResult> {
+		async enrollMfa({
+			currentPassword
+		}: { currentPassword?: string } = {}): Promise<MfaEnrollmentResult> {
+			const form = new FormData()
+			if (currentPassword) form.set('currentPassword', currentPassword)
 			const response = await authFetch(withBase(resolved.mfaEnroll), {
-				method: 'POST'
+				method: 'POST',
+				body: form
 			})
 			const value = await readJsonRecord(response)
 			if (!requireSuccessFlag(value)) return parseFailure(value)
@@ -417,11 +546,17 @@ export function createAuthClient({
 
 		async disableMfa({
 			token,
-			backupCode
-		}: { token?: string; backupCode?: string } = {}): Promise<MfaActionResult> {
+			backupCode,
+			currentPassword
+		}: {
+			token?: string
+			backupCode?: string
+			currentPassword?: string
+		} = {}): Promise<MfaActionResult> {
 			const form = new FormData()
 			if (token) form.set('token', token)
 			if (backupCode) form.set('backupCode', backupCode)
+			if (currentPassword) form.set('currentPassword', currentPassword)
 			const response = await authFetch(withBase(resolved.mfaDisable), {
 				method: 'POST',
 				body: form

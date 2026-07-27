@@ -3,7 +3,8 @@ import {
 	WebAuthnAdapter,
 	type AdvanceWebAuthnCredentialCounterInput,
 	type CreateWebAuthnChallengeInput,
-	type CreateWebAuthnCredentialInput
+	type CreateWebAuthnCredentialInput,
+	type DeleteWebAuthnCredentialInput
 } from '../webauthn/WebAuthnAdapter.ts'
 import {
 	assertCredentialCounterTransition,
@@ -16,7 +17,7 @@ type WebAuthnChallengeRow = {
 	expires_at: Date
 	id: string
 	type: string
-	user_id: string | null
+	user_id: string | number | null
 }
 
 type WebAuthnCredentialRow = {
@@ -27,7 +28,7 @@ type WebAuthnCredentialRow = {
 	public_key: string
 	transports: string[] | null
 	updated_at: Date
-	user_id: string
+	user_id: string | number
 }
 
 /** Postgres web authn adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
@@ -72,6 +73,14 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 
 	async deleteChallenge(challengeId: string): Promise<void> {
 		await this.#db.query('DELETE FROM auth_webauthn_challenges WHERE id = $1', [challengeId])
+	}
+
+	async deleteExpiredChallenges(expiresAtOrBefore: Date): Promise<number> {
+		const result = await this.#db.query<{ id: string }>(
+			'DELETE FROM auth_webauthn_challenges WHERE expires_at <= $1 RETURNING id',
+			[expiresAtOrBefore]
+		)
+		return result.rows.length
 	}
 
 	async consumeChallenge(challengeId: string): Promise<Record<string, unknown> | null> {
@@ -145,10 +154,15 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		return result.rows.length === 1
 	}
 
-	async deleteCredential(credentialId: string): Promise<void> {
-		await this.#db.query('DELETE FROM auth_webauthn_credentials WHERE credential_id = $1', [
-			credentialId
-		])
+	async deleteCredential({
+		credentialId,
+		userId
+	}: DeleteWebAuthnCredentialInput): Promise<boolean> {
+		const result = await this.#db.query<{ credential_id: string }>(
+			'DELETE FROM auth_webauthn_credentials WHERE credential_id = $1 AND user_id = $2 RETURNING credential_id',
+			[credentialId, userId]
+		)
+		return result.rows.length === 1
 	}
 
 	async deleteUserCredentials(userId: string): Promise<void> {
@@ -162,7 +176,7 @@ function toWebAuthnChallenge(row: WebAuthnChallengeRow): Record<string, unknown>
 		expiresAt: row.expires_at,
 		id: row.id,
 		type: row.type,
-		userId: row.user_id
+		userId: row.user_id === null ? null : String(row.user_id)
 	}
 }
 
@@ -176,6 +190,6 @@ function toWebAuthnCredential(row: WebAuthnCredentialRow): WebAuthnCredential {
 		publicKey: row.public_key,
 		transports: Array.isArray(row.transports) ? row.transports : null,
 		updatedAt: row.updated_at,
-		userId: row.user_id
+		userId: String(row.user_id)
 	}
 }

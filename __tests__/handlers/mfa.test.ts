@@ -145,6 +145,39 @@ describe('MFA handlers', () => {
 		).resolves.toEqual({ success: false, error: 'MFA enrollment not started' })
 	})
 
+	it('runs application lifecycle hooks only after factor state changes succeed', async () => {
+		const store = createStore()
+		const onEnabled = vi.fn()
+		const onDisabled = vi.fn()
+		vi.mocked(totp.verifyTOTP).mockResolvedValue(true)
+		const verifyEvent = createEvent({
+			locals: { userId: 'u1' },
+			form: { token: '123456' }
+		})
+		await expect(
+			createMfaVerifyHandler({
+				getUserId: () => 'u1',
+				store,
+				hooks: { onEnabled }
+			})(verifyEvent)
+		).resolves.toEqual({ success: true })
+		expect(onEnabled).toHaveBeenCalledWith({ userId: 'u1', event: verifyEvent })
+
+		const disableEvent = createEvent({
+			locals: { userId: 'u1' },
+			form: { token: '123456' }
+		})
+		await expect(
+			createMfaDisableHandler({
+				authorizeSecurityChange,
+				getUserId: () => 'u1',
+				store,
+				hooks: { onDisabled }
+			})(disableEvent)
+		).resolves.toEqual({ success: true })
+		expect(onDisabled).toHaveBeenCalledWith({ userId: 'u1', event: disableEvent })
+	})
+
 	it('disable requires user', async () => {
 		const store = createStore()
 		const handler = createMfaDisableHandler({

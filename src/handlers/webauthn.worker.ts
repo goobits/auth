@@ -1,8 +1,12 @@
 import type {
 	WebAuthnLoginOptionsHandlerConfig,
 	WebAuthnLoginVerifyHandlerConfig,
+	WebAuthnListCredentialsHandlerConfig,
+	WebAuthnRemoveCredentialHandlerConfig,
 	WebAuthnRegisterOptionsHandlerConfig,
-	WebAuthnRegisterVerifyHandlerConfig
+	WebAuthnRegisterVerifyHandlerConfig,
+	WebAuthnStepUpOptionsHandlerConfig,
+	WebAuthnStepUpVerifyHandlerConfig
 } from './webauthn.ts'
 
 function notSupported() {
@@ -25,5 +29,25 @@ export function createWebAuthnLoginOptionsHandler(_config: WebAuthnLoginOptionsH
 }
 
 export function createWebAuthnLoginVerifyHandler(_config: WebAuthnLoginVerifyHandlerConfig) {
+	return async () => notSupported()
+}
+
+export function createWebAuthnListCredentialsHandler(
+	_config: WebAuthnListCredentialsHandlerConfig
+) {
+	return async () => notSupported()
+}
+
+export function createWebAuthnRemoveCredentialHandler(
+	_config: WebAuthnRemoveCredentialHandlerConfig
+) {
+	return async () => notSupported()
+}
+
+export function createWebAuthnStepUpOptionsHandler(_config: WebAuthnStepUpOptionsHandlerConfig) {
+	return async () => notSupported()
+}
+
+export function createWebAuthnStepUpVerifyHandler(_config: WebAuthnStepUpVerifyHandlerConfig) {
 	return async () => notSupported()
 }

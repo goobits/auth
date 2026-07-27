@@ -38,8 +38,12 @@ export { createMagicLinkRequestHandler, createMagicLinkVerifyHandler } from './m
 export {
 	createWebAuthnLoginOptionsHandler,
 	createWebAuthnLoginVerifyHandler,
+	createWebAuthnListCredentialsHandler,
+	createWebAuthnRemoveCredentialHandler,
 	createWebAuthnRegisterOptionsHandler,
-	createWebAuthnRegisterVerifyHandler
+	createWebAuthnRegisterVerifyHandler,
+	createWebAuthnStepUpOptionsHandler,
+	createWebAuthnStepUpVerifyHandler
 } from '#webauthn-handlers'
 
 // Session management handlers

@@ -112,6 +112,32 @@ describe('auth client', () => {
 		await expect(invalidClient.enrollMfa()).rejects.toThrow('Invalid authentication response')
 	})
 
+	it('carries current-password proof through factor-management requests', async () => {
+		const fetcher = createQueuedFetcher([
+			{
+				success: true,
+				secret: 'secret',
+				otpauthUrl: 'otpauth://totp/example',
+				backupCodes: ['backup-1']
+			},
+			{ success: true }
+		])
+		const client = createAuthClient({ fetcher })
+
+		await client.enrollMfa({ currentPassword: 'current-password' })
+		await client.disableMfa({
+			token: '123456',
+			currentPassword: 'current-password'
+		})
+
+		expect(
+			Object.fromEntries((vi.mocked(fetcher).mock.calls[0]?.[1]?.body as FormData).entries())
+		).toEqual({ currentPassword: 'current-password' })
+		expect(
+			Object.fromEntries((vi.mocked(fetcher).mock.calls[1]?.[1]?.body as FormData).entries())
+		).toEqual({ token: '123456', currentPassword: 'current-password' })
+	})
+
 	it('preserves the request contract for every non-WebAuthn operation', async () => {
 		const fetcher = createQueuedFetcher([
 			{ success: true },
@@ -278,7 +304,7 @@ describe('auth client', () => {
 		const client = createAuthClient({ fetcher })
 
 		await client.registerPasskey({ name: 'Example app key' })
-		await client.loginWithPasskey({ email: 'member@example.com' })
+		await client.loginWithPasskey()
 
 		const createOptions = createCredential.mock.calls[0]?.[0]?.publicKey
 		expect(Array.from(createOptions?.challenge as Uint8Array)).toEqual([1, 2])
@@ -324,6 +350,87 @@ describe('auth client', () => {
 				}
 			}
 		})
+		expect(vi.mocked(fetcher).mock.calls[2]?.[1]?.body).toBeUndefined()
+	})
+
+	it('lists and removes passkeys through the owner-scoped management endpoint', async () => {
+		const fetcher = createQueuedFetcher([
+			{
+				ok: true,
+				credentials: [
+					{
+						credentialId: 'credential-1',
+						name: 'Laptop',
+						transports: ['internal'],
+						createdAt: '2026-07-27T00:00:00.000Z',
+						lastUsedAt: null
+					}
+				]
+			},
+			{ ok: true }
+		])
+		const client = createAuthClient({ fetcher })
+
+		await expect(client.listPasskeys()).resolves.toEqual({
+			success: true,
+			credentials: [
+				{
+					credentialId: 'credential-1',
+					name: 'Laptop',
+					transports: ['internal'],
+					createdAt: '2026-07-27T00:00:00.000Z',
+					lastUsedAt: null
+				}
+			]
+		})
+		await expect(
+			client.removePasskey({
+				credentialId: 'credential-1',
+				currentPassword: 'current-password'
+			})
+		).resolves.toEqual({ success: true })
+
+		expect(vi.mocked(fetcher).mock.calls.map(([url, init]) => [String(url), init?.method])).toEqual(
+			[
+				['/auth/passkey/credentials', 'GET'],
+				['/auth/passkey/credentials', 'POST']
+			]
+		)
+		expect(
+			Object.fromEntries((vi.mocked(fetcher).mock.calls[1]?.[1]?.body as FormData).entries())
+		).toEqual({
+			credentialId: 'credential-1',
+			currentPassword: 'current-password'
+		})
+	})
+
+	it('uses a browser passkey for session step-up', async () => {
+		const getCredential = vi.fn(async () => ({
+			id: 'step-up-credential',
+			type: 'public-key',
+			rawId: new Uint8Array([1]),
+			response: {
+				authenticatorData: new Uint8Array([2]),
+				clientDataJSON: new Uint8Array([3]),
+				signature: new Uint8Array([4]),
+				userHandle: new Uint8Array([5])
+			}
+		}))
+		vi.stubGlobal('navigator', { credentials: { get: getCredential } })
+		const fetcher = createQueuedFetcher([
+			{ challengeId: 'step-up-challenge', options: { challenge: 'AQ' } },
+			{ ok: true, mfaVerifiedAt: '2026-07-27T00:01:00.000Z' }
+		])
+		const client = createAuthClient({ fetcher })
+
+		await expect(client.stepUpWithPasskey()).resolves.toEqual({
+			success: true,
+			mfaVerifiedAt: '2026-07-27T00:01:00.000Z'
+		})
+		expect(vi.mocked(fetcher).mock.calls.map(([url]) => String(url))).toEqual([
+			'/auth/passkey/step-up/options',
+			'/auth/passkey/step-up/verify'
+		])
 	})
 
 	it.each([
