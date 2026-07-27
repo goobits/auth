@@ -303,7 +303,7 @@ describe('pg auth adapters', () => {
 					return {
 						rows: [
 							{
-								counter: 0,
+								counter: '4294967295',
 								created_at: new Date('2026-01-01T00:00:00.000Z'),
 								credential_id: values[0],
 								name: 'Work laptop',
@@ -347,6 +347,7 @@ describe('pg auth adapters', () => {
 
 		expect(challenge?.id).toBe('challenge-1')
 		expect(challenge?.userId).toBe('42')
+		expect(credential?.counter).toBe(4_294_967_295)
 		expect(credential?.transports).toEqual(['internal'])
 		expect(
 			queries.some((query) => query.text.includes('INSERT INTO auth_webauthn_challenges'))

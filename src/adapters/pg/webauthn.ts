@@ -21,7 +21,7 @@ type WebAuthnChallengeRow = {
 }
 
 type WebAuthnCredentialRow = {
-	counter: number
+	counter: number | string
 	created_at: Date
 	credential_id: string
 	name: string | null
@@ -181,8 +181,12 @@ function toWebAuthnChallenge(row: WebAuthnChallengeRow): Record<string, unknown>
 }
 
 function toWebAuthnCredential(row: WebAuthnCredentialRow): WebAuthnCredential {
+	const counter = typeof row.counter === 'string' ? Number(row.counter) : row.counter
+	if (!isValidCredentialCounter(counter)) {
+		throw new RangeError('Stored WebAuthn counter must be a non-negative safe integer')
+	}
 	return {
-		counter: row.counter,
+		counter,
 		createdAt: row.created_at,
 		credentialId: row.credential_id,
 		id: row.credential_id,
