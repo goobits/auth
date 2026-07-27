@@ -1,4 +1,4 @@
-import type { RequestEvent, RequestHandler } from '@sveltejs/kit'
+import type { Actions, RequestEvent, RequestHandler } from '@sveltejs/kit'
 
 import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
 import type { PasswordCredentialAdapter } from '../adapters/database/PasswordCredentialAdapter.ts'
@@ -321,6 +321,11 @@ export type AuthRoutes = {
 	mfaBackupCode: () => { POST: RequestHandler }
 	mfaStepUp: () => { POST: RequestHandler }
 	sessions: () => { GET: RequestHandler; POST: RequestHandler }
+}
+
+/** Defines auth form actions for wiring handlers into SvelteKit pages. */
+export type AuthActions = {
+	logout: () => Actions
 }
 
 /** Defines session list response options for wiring providers, adapters, cookies, hooks, and route handlers. */

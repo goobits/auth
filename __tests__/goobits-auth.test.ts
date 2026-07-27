@@ -96,6 +96,29 @@ describe('GoobitsAuth', () => {
 		expect(() => auth.routes.login()).toThrow(/not configured/)
 	})
 
+	it('exposes form actions separately from endpoint route factories', async () => {
+		const auth = new GoobitsAuth({
+			profile: 'basic',
+			adapter: { session: createSessionAdapter({ session: null, user: null }) },
+			security: {
+				csrf: { mode: 'required' },
+				rateLimit: { mode: 'off' },
+				audit: { mode: 'off' }
+			}
+		})
+		const event = createRequestEvent({
+			url: 'http://localhost/sign-out',
+			method: 'POST'
+		})
+
+		const result = await auth.actions.logout().default(event as never)
+
+		expect(result).toMatchObject({
+			status: 403,
+			data: { ok: false, error: 'Invalid CSRF token' }
+		})
+	})
+
 	it('populates event.locals.auth via handle()', async () => {
 		const user: User = {
 			id: 'u1',

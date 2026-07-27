@@ -1,6 +1,7 @@
 import { createCallbackHandler } from '../handlers/callback.ts'
 import { createLoginHandler } from '../handlers/login.ts'
 import { createLogoutHandler } from '../handlers/logout.ts'
+import { fail } from '@sveltejs/kit'
 import {
 	createMagicLinkRequestHandler,
 	createMagicLinkVerifyHandler
@@ -29,6 +30,7 @@ import {
 } from '#webauthn-handlers'
 import { createAuthRateLimiter } from '../security/rateLimit.ts'
 import type {
+	AuthActions,
 	AuthConfig,
 	AuthHandlers,
 	AuthLocals,
@@ -467,6 +469,34 @@ export function buildRoutes(handlers: AuthHandlers): AuthRoutes {
 			if (!handlers.sessions) throw new Error('Session handlers not configured')
 			return { GET: handlers.sessions.list, POST: handlers.sessions.revoke }
 		}
+	}
+}
+
+async function readActionResponse(response: Response): Promise<Record<string, unknown>> {
+	if (response.status === 204) return { ok: true }
+
+	const contentType = response.headers.get('content-type') ?? ''
+	if (contentType.includes('application/json')) {
+		const data: unknown = await response.json()
+		return data && typeof data === 'object' && !Array.isArray(data)
+			? (data as Record<string, unknown>)
+			: { data }
+	}
+
+	const message = await response.text()
+	return message ? { message } : { ok: response.ok }
+}
+
+/** Builds SvelteKit form actions from secured auth request handlers. */
+export function buildActions(handlers: AuthHandlers): AuthActions {
+	return {
+		logout: () => ({
+			default: async (event) => {
+				const response = await handlers.logout(event)
+				const data = await readActionResponse(response)
+				return response.ok ? data : fail(response.status, data)
+			}
+		})
 	}
 }
 

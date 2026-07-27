@@ -119,6 +119,11 @@ export class GoobitsAuth {
 		return this.defaultHandlers
 	}
 
+	/** Named action factories for applications that mount auth form actions. */
+	get actions(): CoreAuth['actions'] {
+		return this.core.actions
+	}
+
 	/** Named route factories for applications that mount individual auth endpoints. */
 	get routes(): CoreAuth['routes'] {
 		return this.core.routes
