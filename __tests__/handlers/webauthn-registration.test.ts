@@ -109,15 +109,14 @@ describe('WebAuthn registration', () => {
 			emitSecurityEvent
 		})
 
-		const response = await handler(
-			createEvent({
-				body: {
-					challengeId: 'register-1',
-					credential: { id: 'AQIDBAcI' },
-					name: 'Laptop'
-				}
-			})
-		)
+		const event = createEvent({
+			body: {
+				challengeId: 'register-1',
+				credential: { id: 'AQIDBAcI' },
+				name: 'Laptop'
+			}
+		})
+		const response = await handler(event)
 
 		expect(response.status).toBe(200)
 		expect(verifyRegistrationResponse).toHaveBeenCalledWith(
@@ -128,7 +127,8 @@ describe('WebAuthn registration', () => {
 		])
 		expect(onCredentialCreated).toHaveBeenCalledWith({
 			userId: 'u1',
-			credentialId: 'AQIDBAcI'
+			credentialId: 'AQIDBAcI',
+			event
 		})
 		expect(JSON.stringify(emitSecurityEvent.mock.calls)).not.toContain('AQID')
 		expect(JSON.stringify(emitSecurityEvent.mock.calls)).not.toContain('registration-challenge')

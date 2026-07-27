@@ -9,7 +9,11 @@ import type { RequestHandler } from '@sveltejs/kit'
 import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
 import { isValidCredentialCounter } from '../adapters/webauthn/_credentialCounter.ts'
 import { emitRequestAuthEvent, type AuthEventEmitter } from '../security/events.ts'
-import type { AuthorizeSecurityChange, RequestEventLike } from '../types/auth.ts'
+import type {
+	AuthorizeSecurityChange,
+	RequestEventLike,
+	WebAuthnCredentialLifecycleInput
+} from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { generateRandomUUID } from '../utils/crypto.ts'
 import { jsonResponse, parseRequestDataWithSchema } from '../utils/http.ts'
@@ -53,7 +57,7 @@ export type WebAuthnRegisterVerifyHandlerConfig = {
 	origin: string
 	maxCredentialsPerUser?: number
 	getUser?: (event: RequestEventLike) => User | null | Promise<User | null>
-	onCredentialCreated?: (input: { userId: string; credentialId: string }) => Promise<void> | void
+	onCredentialCreated?: (input: WebAuthnCredentialLifecycleInput) => Promise<void> | void
 	emitSecurityEvent?: AuthEventEmitter
 }
 
@@ -229,7 +233,7 @@ export function createWebAuthnRegisterVerifyHandler(
 			return jsonResponse({ ok: false, error: 'Credential is already registered' }, 409)
 		}
 
-		await onCredentialCreated?.({ userId: user.id, credentialId })
+		await onCredentialCreated?.({ userId: user.id, credentialId, event })
 		await emitRequestAuthEvent(emitSecurityEvent, event, {
 			name: 'webauthn.credential_registered',
 			severity: 'info',

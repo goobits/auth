@@ -2,7 +2,11 @@ import type { RequestHandler } from '@sveltejs/kit'
 
 import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
 import { emitRequestAuthEvent, type AuthEventEmitter } from '../security/events.ts'
-import type { AuthorizeSecurityChange, RequestEventLike } from '../types/auth.ts'
+import type {
+	AuthorizeSecurityChange,
+	RequestEventLike,
+	WebAuthnCredentialLifecycleInput
+} from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { jsonResponse, parseRequestDataWithSchema } from '../utils/http.ts'
 import { removeCredentialRequestSchema } from './webauthnUtils.ts'
@@ -18,7 +22,7 @@ export type WebAuthnListCredentialsHandlerConfig = WebAuthnManagementConfig
 
 export type WebAuthnRemoveCredentialHandlerConfig = WebAuthnManagementConfig & {
 	authorizeSecurityChange: AuthorizeSecurityChange
-	onCredentialDeleted?: (input: { userId: string; credentialId: string }) => Promise<void> | void
+	onCredentialDeleted?: (input: WebAuthnCredentialLifecycleInput) => Promise<void> | void
 	emitSecurityEvent?: AuthEventEmitter
 }
 
@@ -102,7 +106,8 @@ export function createWebAuthnRemoveCredentialHandler(
 
 		await config.onCredentialDeleted?.({
 			userId: user.id,
-			credentialId: data.credentialId
+			credentialId: data.credentialId,
+			event
 		})
 		await emitRequestAuthEvent(config.emitSecurityEvent, event, {
 			name: 'webauthn.credential_removed',

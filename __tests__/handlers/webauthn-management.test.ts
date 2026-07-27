@@ -42,7 +42,8 @@ describe('WebAuthn credential management', () => {
 		})
 		const form = new FormData()
 		form.set('credentialId', 'AQIDBAcI')
-		const response = await handler(createEvent({ body: form }))
+		const event = createEvent({ body: form })
+		const response = await handler(event)
 
 		expect(response.status).toBe(200)
 		expect(authorizeSecurityChange).toHaveBeenCalledWith(
@@ -50,7 +51,8 @@ describe('WebAuthn credential management', () => {
 		)
 		expect(onCredentialDeleted).toHaveBeenCalledWith({
 			userId: 'u1',
-			credentialId: 'AQIDBAcI'
+			credentialId: 'AQIDBAcI',
+			event
 		})
 		expect(await adapter.listCredentials('u1')).toEqual([])
 	})

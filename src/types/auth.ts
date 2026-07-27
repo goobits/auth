@@ -121,6 +121,13 @@ export type MagicLinkConfig = {
 	}
 }
 
+/** Request context supplied after an owned WebAuthn credential changes. */
+export type WebAuthnCredentialLifecycleInput = {
+	userId: string
+	credentialId: string
+	event: RequestEventLike
+}
+
 /** Defines web authn config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type WebAuthnConfig = {
 	authorizeSecurityChange: AuthorizeSecurityChange
@@ -132,8 +139,8 @@ export type WebAuthnConfig = {
 	maxCredentialsPerUser?: number
 	hooks?: {
 		onLogin?: AuthHooks['onLogin']
-		onCredentialCreated?: (input: { userId: string; credentialId: string }) => Promise<void> | void
-		onCredentialDeleted?: (input: { userId: string; credentialId: string }) => Promise<void> | void
+		onCredentialCreated?: (input: WebAuthnCredentialLifecycleInput) => Promise<void> | void
+		onCredentialDeleted?: (input: WebAuthnCredentialLifecycleInput) => Promise<void> | void
 	}
 }
 
