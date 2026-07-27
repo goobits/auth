@@ -28,7 +28,7 @@ export type WebAuthnVerificationConfig = {
 
 type AuthenticationPurpose = 'authentication' | 'step-up'
 
-export type CredentialVerificationResult =
+type CredentialVerificationResult =
 	| { verified: true; credential: { userId: string } }
 	| { verified: false; response: Response }
 
