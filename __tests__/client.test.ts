@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { createAuthClient } from '../src/client/index.ts'
+import { createAuthClient, supportsPasskeys } from '../src/client/index.ts'
 
 function jsonResponse(body: unknown) {
 	return new Response(JSON.stringify(body), {
@@ -41,6 +41,14 @@ describe('auth client', () => {
 		await client.disableMfa()
 		const [, init] = vi.mocked(fetcher).mock.calls[0] ?? []
 		expect(new Headers(init?.headers).get('X-CSRF-Token')).toBe('csrf-token')
+	})
+
+	it('reports passkey support only when the complete browser boundary exists', () => {
+		expect(supportsPasskeys()).toBe(false)
+
+		vi.stubGlobal('PublicKeyCredential', class {})
+		vi.stubGlobal('navigator', { credentials: {} })
+		expect(supportsPasskeys()).toBe(true)
 	})
 
 	it('does not attach a CSRF token to safe or cross-origin requests', async () => {
@@ -279,6 +287,7 @@ describe('auth client', () => {
 				userHandle: new Uint8Array([13])
 			}
 		}))
+		vi.stubGlobal('PublicKeyCredential', class {})
 		vi.stubGlobal('navigator', {
 			credentials: { create: createCredential, get: getCredential }
 		})
@@ -358,6 +367,7 @@ describe('auth client', () => {
 	it('returns passkey option failures without opening a browser ceremony', async () => {
 		const createCredential = vi.fn()
 		const getCredential = vi.fn()
+		vi.stubGlobal('PublicKeyCredential', class {})
 		vi.stubGlobal('navigator', {
 			credentials: { create: createCredential, get: getCredential }
 		})
@@ -443,6 +453,7 @@ describe('auth client', () => {
 				userHandle: new Uint8Array([5])
 			}
 		}))
+		vi.stubGlobal('PublicKeyCredential', class {})
 		vi.stubGlobal('navigator', { credentials: { get: getCredential } })
 		const fetcher = createQueuedFetcher([
 			{ challengeId: 'step-up-challenge', options: { challenge: 'AQ' } },

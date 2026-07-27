@@ -74,6 +74,14 @@ export type PasskeyListResult =
 	| AuthClientFailure
 	| { success: true; credentials: PasskeyCredentialSummary[] }
 
+/** Returns whether the current browser exposes the WebAuthn credential API. */
+export function supportsPasskeys(): boolean {
+	return (
+		typeof globalThis.PublicKeyCredential !== 'undefined' &&
+		Boolean(globalThis.navigator?.credentials)
+	)
+}
+
 type PasskeyOptionsResult =
 	| AuthClientFailure
 	| {
@@ -391,7 +399,7 @@ export function createAuthClient({
 			name,
 			currentPassword
 		}: { name?: string; currentPassword?: string } = {}) {
-			if (!globalThis?.navigator?.credentials) {
+			if (!supportsPasskeys()) {
 				throw new Error('WebAuthn not supported in this environment')
 			}
 			const authorization = new FormData()
@@ -418,7 +426,7 @@ export function createAuthClient({
 		},
 
 		async loginWithPasskey() {
-			if (!globalThis?.navigator?.credentials) {
+			if (!supportsPasskeys()) {
 				throw new Error('WebAuthn not supported in this environment')
 			}
 			const optionsRes = await authFetch(withBase(resolved.passkeyLoginOptions), {
@@ -480,7 +488,7 @@ export function createAuthClient({
 		},
 
 		async stepUpWithPasskey(): Promise<MfaActionResult> {
-			if (!globalThis?.navigator?.credentials) {
+			if (!supportsPasskeys()) {
 				throw new Error('WebAuthn not supported in this environment')
 			}
 			const optionsRes = await authFetch(withBase(resolved.passkeyStepUpOptions), {
