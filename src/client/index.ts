@@ -74,6 +74,14 @@ export type PasskeyListResult =
 	| AuthClientFailure
 	| { success: true; credentials: PasskeyCredentialSummary[] }
 
+type PasskeyOptionsResult =
+	| AuthClientFailure
+	| {
+			success: true
+			options: Record<string, unknown>
+			challengeId: string
+	  }
+
 export type AuthSessionSummary = {
 	id: string
 	userId: string
@@ -159,6 +167,18 @@ function parsePasskeyAction(value: Record<string, unknown>): MfaActionResult {
 		throw new Error('Invalid authentication response')
 	}
 	return verifiedAt ? { success: true, mfaVerifiedAt: verifiedAt } : { success: true }
+}
+
+function parsePasskeyOptions(value: Record<string, unknown>): PasskeyOptionsResult {
+	if (value['ok'] === false || value['success'] === false) return parseFailure(value)
+	if (!isRecord(value['options']) || typeof value['challengeId'] !== 'string') {
+		throw new Error('Invalid authentication response')
+	}
+	return {
+		success: true,
+		options: value['options'],
+		challengeId: value['challengeId']
+	}
 }
 
 function parseSessionFailure(value: Record<string, unknown>): { ok: false; error: string } {
@@ -380,20 +400,21 @@ export function createAuthClient({
 				method: 'POST',
 				body: authorization
 			})
-			const { options, challengeId } = await optionsRes.json()
+			const optionsResult = parsePasskeyOptions(await readJsonRecord(optionsRes))
+			if (!optionsResult.success) return optionsResult
 			const credential = await navigator.credentials.create({
-				publicKey: parseCreationOptions(options)
+				publicKey: parseCreationOptions(optionsResult.options)
 			})
 			const verifyRes = await authFetch(withBase(resolved.passkeyRegisterVerify), {
 				method: 'POST',
 				headers: jsonHeaders,
 				body: JSON.stringify({
-					challengeId,
+					challengeId: optionsResult.challengeId,
 					credential: serializeCredential(credential),
 					name
 				})
 			})
-			return verifyRes.json()
+			return parsePasskeyAction(await readJsonRecord(verifyRes))
 		},
 
 		async loginWithPasskey() {
@@ -403,19 +424,20 @@ export function createAuthClient({
 			const optionsRes = await authFetch(withBase(resolved.passkeyLoginOptions), {
 				method: 'POST'
 			})
-			const { options, challengeId } = await optionsRes.json()
+			const optionsResult = parsePasskeyOptions(await readJsonRecord(optionsRes))
+			if (!optionsResult.success) return optionsResult
 			const credential = await navigator.credentials.get({
-				publicKey: parseRequestOptions(options)
+				publicKey: parseRequestOptions(optionsResult.options)
 			})
 			const verifyRes = await authFetch(withBase(resolved.passkeyLoginVerify), {
 				method: 'POST',
 				headers: jsonHeaders,
 				body: JSON.stringify({
-					challengeId,
+					challengeId: optionsResult.challengeId,
 					credential: serializeCredential(credential)
 				})
 			})
-			return verifyRes.json()
+			return parsePasskeyAction(await readJsonRecord(verifyRes))
 		},
 
 		async listPasskeys(): Promise<PasskeyListResult> {
@@ -464,16 +486,17 @@ export function createAuthClient({
 			const optionsRes = await authFetch(withBase(resolved.passkeyStepUpOptions), {
 				method: 'POST'
 			})
-			const { options, challengeId } = await optionsRes.json()
+			const optionsResult = parsePasskeyOptions(await readJsonRecord(optionsRes))
+			if (!optionsResult.success) return optionsResult
 			const credential = await navigator.credentials.get({
-				publicKey: parseRequestOptions(options)
+				publicKey: parseRequestOptions(optionsResult.options)
 			})
 			const value = await readJsonRecord(
 				await authFetch(withBase(resolved.passkeyStepUpVerify), {
 					method: 'POST',
 					headers: jsonHeaders,
 					body: JSON.stringify({
-						challengeId,
+						challengeId: optionsResult.challengeId,
 						credential: serializeCredential(credential)
 					})
 				})

@@ -291,7 +291,7 @@ describe('auth client', () => {
 					excludeCredentials: [{ id: 'BQY', type: 'public-key' }]
 				}
 			},
-			{ success: true },
+			{ ok: true },
 			{
 				challengeId: 'login-challenge',
 				options: {
@@ -299,12 +299,14 @@ describe('auth client', () => {
 					allowCredentials: [{ id: 'EBE', type: 'public-key' }]
 				}
 			},
-			{ success: true }
+			{ ok: true }
 		])
 		const client = createAuthClient({ fetcher })
 
-		await client.registerPasskey({ name: 'Example app key' })
-		await client.loginWithPasskey()
+		await expect(client.registerPasskey({ name: 'Example app key' })).resolves.toEqual({
+			success: true
+		})
+		await expect(client.loginWithPasskey()).resolves.toEqual({ success: true })
 
 		const createOptions = createCredential.mock.calls[0]?.[0]?.publicKey
 		expect(Array.from(createOptions?.challenge as Uint8Array)).toEqual([1, 2])
@@ -351,6 +353,31 @@ describe('auth client', () => {
 			}
 		})
 		expect(vi.mocked(fetcher).mock.calls[2]?.[1]?.body).toBeUndefined()
+	})
+
+	it('returns passkey option failures without opening a browser ceremony', async () => {
+		const createCredential = vi.fn()
+		const getCredential = vi.fn()
+		vi.stubGlobal('navigator', {
+			credentials: { create: createCredential, get: getCredential }
+		})
+		const client = createAuthClient({
+			fetcher: createQueuedFetcher([
+				{ ok: false, error: 'Reauthentication required' },
+				{ ok: false, error: 'Passkey login unavailable' }
+			])
+		})
+
+		await expect(client.registerPasskey({ currentPassword: 'wrong-password' })).resolves.toEqual({
+			success: false,
+			error: 'Reauthentication required'
+		})
+		await expect(client.loginWithPasskey()).resolves.toEqual({
+			success: false,
+			error: 'Passkey login unavailable'
+		})
+		expect(createCredential).not.toHaveBeenCalled()
+		expect(getCredential).not.toHaveBeenCalled()
 	})
 
 	it('lists and removes passkeys through the owner-scoped management endpoint', async () => {
