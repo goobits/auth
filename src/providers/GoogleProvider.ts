@@ -144,8 +144,7 @@ export class GoogleProvider extends OAuthProvider {
 				typeof googleUser['id'] !== 'string' ||
 				typeof googleUser['email'] !== 'string' ||
 				typeof googleUser['name'] !== 'string' ||
-				(googleUser['picture'] !== undefined &&
-					typeof googleUser['picture'] !== 'string') ||
+				(googleUser['picture'] !== undefined && typeof googleUser['picture'] !== 'string') ||
 				typeof googleUser['verified_email'] !== 'boolean'
 			) {
 				throw new Error('Invalid Google user profile')
