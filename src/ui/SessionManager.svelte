@@ -96,7 +96,7 @@
 	{#if loading && !sessions}
 		<p class="auth-session-loading">Loading sessions…</p>
 	{:else if sessions && sessions.length > 0}
-		<ul class="auth-session-list" aria-label="Active sessions">
+		<ul class="auth-session-list" aria-label="Active sessions" data-testid="auth-session-list">
 			{#each sessions as session}
 				<li class="auth-session-item">
 					<div>
@@ -112,6 +112,7 @@
 						<button
 							class="auth-session-revoke"
 							type="button"
+							data-testid="auth-session-revoke"
 							disabled={revokingId === session.id}
 							aria-label="Revoke session {session.ip || 'Unknown IP'}"
 							onclick={() => revoke(session.id)}
