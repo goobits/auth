@@ -220,6 +220,7 @@ export function createHandlers(
 					event,
 					sessionAdapter: adapters.session,
 					userId,
+					...(hooks.getSessionMetadata ? { getSessionMetadata: hooks.getSessionMetadata } : {}),
 					autoCreateSession,
 					onLoginMode
 				})
@@ -314,6 +315,7 @@ export function createHandlers(
 			...(security.audit.emitter ? { emitSecurityEvent: security.audit.emitter } : {}),
 			...(config.logger ? { logger: config.logger } : {}),
 			...(normalizedMagicLink['sanitizeUser'] === undefined ? { sanitizeUser } : {}),
+			...(hooks.getSessionMetadata ? { getSessionMetadata: hooks.getSessionMetadata } : {}),
 			...(adapters.user ? { userAdapter: adapters.user } : {})
 		}
 		handlers.magicLink = {
@@ -361,6 +363,7 @@ export function createHandlers(
 			autoCreateSession,
 			onLoginMode,
 			sanitizeUser,
+			...(hooks.getSessionMetadata ? { getSessionMetadata: hooks.getSessionMetadata } : {}),
 			...(security.audit.emitter ? { emitSecurityEvent: security.audit.emitter } : {}),
 			...(adapters.user ? { userAdapter: adapters.user } : {})
 		}

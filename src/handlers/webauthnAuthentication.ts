@@ -29,6 +29,7 @@ export type WebAuthnLoginOptionsHandlerConfig = {
 export type WebAuthnLoginVerifyHandlerConfig = WebAuthnVerificationConfig & {
 	userAdapter?: { getUserById: (id: string) => Promise<User | null> }
 	sessionAdapter: Pick<SessionAdapter, 'createSession' | 'setSessionCookie'>
+	getSessionMetadata?: AuthHooks['getSessionMetadata']
 	redirectAfterLogin?: string
 	onLogin?: AuthHooks['onLogin']
 	sanitizeUser?: (user: User | null) => User | null
@@ -84,6 +85,7 @@ export function createWebAuthnLoginVerifyHandler(
 	const {
 		userAdapter,
 		sessionAdapter,
+		getSessionMetadata,
 		redirectAfterLogin = '/',
 		onLogin,
 		sanitizeUser = defaultSanitizeUser,
@@ -124,6 +126,7 @@ export function createWebAuthnLoginVerifyHandler(
 				event,
 				sessionAdapter,
 				userId,
+				...(getSessionMetadata ? { getSessionMetadata } : {}),
 				sessionMetadata: { mfaVerifiedAt: new Date() },
 				autoCreateSession,
 				onLoginMode

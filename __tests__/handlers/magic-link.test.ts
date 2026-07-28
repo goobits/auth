@@ -216,6 +216,7 @@ describe('magic link handlers', () => {
 			magicLinkAdapter,
 			userAdapter,
 			sessionAdapter,
+			getSessionMetadata: vi.fn(async () => ({ fingerprint: 'fingerprint-1' })),
 			requireUserConfirmation: false
 		})
 
@@ -224,7 +225,9 @@ describe('magic link handlers', () => {
 		const payload = await verifyResponse.json()
 
 		expect(payload.ok).toBe(true)
-		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1')
+		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1', {
+			fingerprint: 'fingerprint-1'
+		})
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
 

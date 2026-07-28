@@ -62,6 +62,7 @@ describe('WebAuthn authentication', () => {
 			webauthnAdapter: adapter,
 			userAdapter: { getUserById: vi.fn(async () => TEST_USER) },
 			sessionAdapter,
+			getSessionMetadata: vi.fn(async () => ({ fingerprint: 'fingerprint-1' })),
 			rpID: 'example.com',
 			origin: 'http://localhost'
 		})
@@ -77,7 +78,10 @@ describe('WebAuthn authentication', () => {
 		)
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith(
 			'u1',
-			expect.objectContaining({ mfaVerifiedAt: expect.any(Date) })
+			expect.objectContaining({
+				fingerprint: 'fingerprint-1',
+				mfaVerifiedAt: expect.any(Date)
+			})
 		)
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalledOnce()
 	})

@@ -15,7 +15,14 @@ import type { SecurityAlertHandler, ThresholdRule } from '../security/alerts.ts'
 import type { AuthEventEmitter } from '../security/events.ts'
 import type { RateLimitStore, RateLimitWindow } from '@goobits/security/rate-limit'
 import type { Logger } from '@goobits/security/logger'
-import type { OAuthProfile, OAuthTokens, Session, SessionSummary, User } from './core.ts'
+import type {
+	OAuthProfile,
+	OAuthTokens,
+	Session,
+	SessionMetadata,
+	SessionSummary,
+	User
+} from './core.ts'
 
 /** Defines auth locals options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthLocals = {
@@ -58,6 +65,10 @@ export type OnLoginMode = 'augment' | 'manual'
 
 /** Defines auth hooks options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthHooks = {
+	getSessionMetadata?: (
+		event: RequestEventLike,
+		userId: string
+	) => SessionMetadata | Promise<SessionMetadata>
 	onSessionValidated?: (
 		event: RequestEventLike,
 		session: Session,
