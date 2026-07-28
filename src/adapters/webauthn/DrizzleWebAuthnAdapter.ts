@@ -93,7 +93,12 @@ function mapCredentialRow(
 	if (name !== null && typeof name !== 'string') return null
 	let transports: string[] | null = null
 	if (typeof transportsRaw === 'string') {
-		const parsed = JSON.parse(transportsRaw)
+		let parsed: unknown
+		try {
+			parsed = JSON.parse(transportsRaw)
+		} catch {
+			return null
+		}
 		if (!Array.isArray(parsed) || parsed.some((entry) => typeof entry !== 'string')) {
 			return null
 		}
@@ -239,7 +244,9 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 			[this.columns.name]: name ?? null
 		})
 		if (!('onConflictDoNothing' in insert)) {
-			throw new Error('Drizzle WebAuthn credential inserts require onConflictDoNothing support')
+			throw new Error(
+				'Drizzle WebAuthn credential inserts require onConflictDoNothing support'
+			)
 		}
 		const rows = await (insert as InsertConflictQuery)
 			.onConflictDoNothing({
@@ -253,7 +260,9 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		const [row] = await this.db
 			.select()
 			.from(this.credentialsTable)
-			.where(eq(requireColumn(this.credentialsTable, this.columns.credentialId), credentialId))
+			.where(
+				eq(requireColumn(this.credentialsTable, this.columns.credentialId), credentialId)
+			)
 		return mapCredentialRow(row ?? null, this.columns)
 	}
 
@@ -285,7 +294,10 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 			})
 			.where(
 				and(
-					eq(requireColumn(this.credentialsTable, this.columns.credentialId), credentialId),
+					eq(
+						requireColumn(this.credentialsTable, this.columns.credentialId),
+						credentialId
+					),
 					eq(requireColumn(this.credentialsTable, this.columns.userId), userId),
 					eq(requireColumn(this.credentialsTable, this.columns.counter), expectedCounter)
 				)!

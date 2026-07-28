@@ -1,22 +1,30 @@
 # @goobits/auth
 
-Pluggable authentication for SvelteKit with a class-first API.
+Pluggable authentication for SvelteKit with a class-first API and durable
+adapters for sessions, users, credentials, OAuth tokens, MFA, and WebAuthn.
 
-## TL;DR
+## Start Here
 
-- Drop `GoobitsAuth` into `src/lib/auth.ts` and wire `auth.handle()` into `hooks.server.ts`.
-- Attach route handlers at `src/routes/auth/[...auth]/+server.ts` with `auth.handlers`.
-- Use `drizzleAdapter(db, { schema })` for Drizzle ORM; bring your own adapter for other storage.
-- Lower-level subpaths (`/security`, `/password`, `/mfa`, `/adapters/pg`) work outside SvelteKit.
+```bash
+pnpm add @goobits/auth
+```
+
+- [`docs/quickstart.md`](docs/quickstart.md) owns the complete SvelteKit setup.
+- [`docs/public-api.md`](docs/public-api.md) is the exported API reference.
+- [`docs/integration.md`](docs/integration.md) covers custom storage adapters.
+- [`docs/security-contract.md`](docs/security-contract.md) defines application
+  and library security responsibilities.
+
+A normal SvelteKit integration creates one `GoobitsAuth` instance, wires
+`auth.handle()` into `hooks.server.ts`, and mounts `auth.handlers` at
+`src/routes/auth/[...auth]/+server.ts`. Use `drizzleAdapter(db, { schema })` for
+Drizzle or provide the documented adapter capabilities for another store.
 
 ## Entrypoints
 
-`@goobits/auth` is SvelteKit-first. The main `GoobitsAuth` export, route
-handlers, cookie adapters, and UI helpers expect SvelteKit request/cookie
-types or a SvelteKit build pipeline.
-
-Lower-level subpaths are still useful outside a full SvelteKit app when you
-want the primitives directly:
+The main `@goobits/auth` entrypoint, route handlers, cookie adapters, and UI
+helpers are SvelteKit-first. Framework-neutral primitives are available through
+focused subpaths:
 
 - `@goobits/auth/security`
 - `@goobits/auth/verification`
@@ -25,237 +33,72 @@ want the primitives directly:
 - `@goobits/auth/adapters/pg`
 - `@goobits/auth/testing`
 
-## Stability
+Generic HTTP credentials, CSRF, cryptography, logging, redaction, and rate-limit
+counters remain owned by their `@goobits/security/*` entrypoints.
 
-The documented exports are treated as stable for the `0.3.x` line. WebAuthn
-and MFA APIs are production-oriented but may receive additive options as
-browser and authenticator behavior evolves.
+## Stability And Distribution
 
-## Usage
+Documented exports are stable for the `0.3.x` line. WebAuthn and MFA may receive
+additive options as browser and authenticator behavior evolves.
 
-`@goobits/auth` supports two deliberate distribution modes:
-
-- First-party TypeScript workspaces consume the checked-out `src/` entrypoints
-  directly, so application checks and builds cannot use stale generated output.
-- Registry installations consume compiled Node/Worker JavaScript and declarations
-  from `dist/`; raw TypeScript is excluded from the published artifact.
-
-Use `pnpm add @goobits/auth` for a registry install. Workspace consumers should
-pin the package checkout and declare `@goobits/auth` as a workspace dependency;
-building Auth is required only when testing or publishing its compiled package.
-
-## 5-Minute Setup
-
-```ts
-// src/lib/auth.ts
-import { GoobitsAuth } from '@goobits/auth'
-import { drizzleAdapter } from '@goobits/auth/adapters/drizzle'
-import { GoogleProvider } from '@goobits/auth/providers'
-import { db, schema } from '$lib/server/db'
-import { sharedRateLimitStore } from '$lib/server/security/rate-limit'
-import { env } from '$env/dynamic/private'
-
-export const auth = new GoobitsAuth({
-	profile: 'secure',
-	adapter: drizzleAdapter(db, {
-		schema,
-		oauthTokenEncryption: {
-			encryptionKeyringJson: env.TOKEN_ENCRYPTION_KEYRING,
-			legacyEncryptionKeyId: 'previous'
-		}
-	}),
-	providers: {
-		google: {
-			provider: new GoogleProvider({
-				clientId: env.GOOGLE_CLIENT_ID,
-				clientSecret: env.GOOGLE_CLIENT_SECRET,
-				callbackUrl: `${env.APP_URL}/auth/callback/google`
-			})
-		}
-	},
-	security: {
-		rateLimit: { store: sharedRateLimitStore },
-		audit: { emitter: auditEmitter }
-	}
-})
-```
-
-The `secure` profile requires CSRF and rate limiting. Production deployments
-must provide a shared rate-limit store and an awaited audit emitter. Build the
-emitter with `createAuthEventAuditEmitter` to bridge a
-`@goobits/security/audit` logger. If an application-wide origin guard
-already protects every auth route, declare that boundary explicitly with
-`csrf: { mode: 'off', validateExternalSecurityBoundary: verifyOrigin }`, where
-the callback validates every request at runtime. The Auth client echoes
-same-origin CSRF cookies through `@goobits/security/csrf-client`.
+- First-party TypeScript workspaces consume checked-out `src/` entrypoints so
+  application checks cannot use stale generated output.
+- Registry installations consume compiled JavaScript and declarations from
+  `dist`; raw TypeScript and release tooling are excluded.
+- `pnpm run build` rebuilds the compiled package when a workspace needs `dist`.
 
 ## Runtime Targets
 
-- Cloudflare Workers / Pages:
-  - Default exports use the Worker build and WASM-backed password hashing.
-  - WebAuthn handlers return `501`; do not enable WebAuthn on this target.
-- Node runtime:
-  - Node 22+ selects the Node build and native Argon2 automatically.
-  - `@goobits/auth/node` and `@goobits/auth/adapters/pg` are Node-only.
+- Cloudflare Workers and Pages use the Worker build and WASM-backed password
+  hashing. WebAuthn handlers return `501` and must not be enabled there.
+- Node 22+ selects native Argon2 and Node WebAuthn support. `@goobits/auth/node`
+  and `@goobits/auth/adapters/pg` are Node-only.
 
-```ts
-// src/hooks.server.ts
-import { auth } from '$lib/auth'
+## Core Contract
 
-export const handle = auth.handle()
-```
+- `GoobitsAuth` owns the SvelteKit handle, managed handlers, named route
+  factories, session lookup, route-role guards, and security-event pipeline.
+- The `secure` profile requires CSRF, shared production rate limiting, and an
+  awaited audit emitter. An application-wide origin guard is valid only through
+  the executable `validateExternalSecurityBoundary` callback.
+- `requireAuthRole()` gates website/session roles; product permissions remain an
+  application concern.
+- `drizzleAdapter()` returns the required session, user, and password-credential
+  capabilities plus optional token, magic-link, MFA, and WebAuthn capabilities
+  when their tables are configured.
+- Password hashes are available only through `PasswordCredentialAdapter`, never
+  through general user-profile methods.
+- Password-reset completion and token consumption require application-owned
+  atomic operations; unsafe find-then-delete compatibility paths are not kept.
+- Session stores persist verifier hashes rather than bearer cookie values, and
+  managed-session APIs use separate opaque identifiers.
+- OAuth token storage requires a rotation-ready keyring or application-owned
+  codec and a unique `(userId, provider)` constraint.
 
-```ts
-// src/routes/auth/[...auth]/+server.ts
-import { auth } from '$lib/auth'
+See the public API and migration guide for the complete capability contracts.
 
-export const { GET, POST } = auth.handlers
-```
+## Production Expectations
 
-## Guard Helpers
+- Use one durable rate-limit store across production instances.
+- Bridge Auth events into an awaited `@goobits/security/audit` logger with
+  `createAuthEventAuditEmitter()`.
+- Configure secure cookies, trusted proxy headers, alert delivery, encryption
+  keys, and required database migrations before deployment.
+- Require fresh application authorization for MFA and passkey changes.
+- Keep route-level product authorization, TLS, headers, secrets, and key
+  rotation in the host application or edge.
 
-- `await auth.requireUser(event)`
-- `await auth.requireAuthRole(event, "admin")`
-- `await auth.getSession(event)`
-- `auth.routes` for individually mounted named route factories
+## Documentation
 
-`requireAuthRole()` checks website/session route roles only. Product
-permissions for Spaces, Zones, Goobits, agents, and wormholes should be checked
-through the product access system.
-
-## Security Primitives
-
-`@goobits/auth/security` exports auth-specific policy, authorization, audit,
-alerting, and authentication rate-limit presets:
-
-```ts
-import {
-	createLoginRateLimiter,
-	requireAuthenticated,
-	requireOwnership
-} from '@goobits/auth/security'
-```
-
-- Auth event auditing, authorization guards, authentication policy, and alert
-  composition.
-- Session bearer generation and hashing live at
-  `@goobits/auth/adapters/session`; generic CSRF primitives live at
-  `@goobits/security/csrf` and `@goobits/security/csrf/sveltekit`.
-
-Generic HTTP credentials, redaction, cryptography, logging, and rate-limit
-counters belong to `@goobits/security`. Authentication policy presets belong to
-Auth so applications and managed routes use the same limits:
-
-```ts
-import {
-	createLoginRateLimiter,
-	createPasswordResetRateLimiter,
-	createRegistrationRateLimiter
-} from '@goobits/auth/security'
-```
-
-Generic mechanisms are not re-exported by Auth:
-
-```ts
-import {
-	createApiKey,
-	parseApiKeyHeader,
-	parseBasicAuthHeader,
-	verifyApiKey,
-	verifyBasicAuthHeader
-} from '@goobits/security/http-credentials'
-```
-
-## Credentials Provider
-
-```ts
-import { CredentialsProvider } from '@goobits/auth/providers'
-
-const credentials = new CredentialsProvider({
-	identifierField: 'nickname',
-	allowBoth: true,
-	normalizeIdentifier: (value) => value.trim().toLowerCase()
-})
-```
-
-Unknown or passwordless accounts automatically receive a compatible dummy-hash
-verification, reducing credential-enumeration timing differences. Keep the
-signin route rate-limited; pass `dummyPasswordHash` to avoid first-use hash
-generation on latency-sensitive runtimes.
-
-Credential handlers require a `PasswordCredentialAdapter`. Password hashes
-are deliberately absent from the general `UserAdapter`; only the dedicated
-adapter may read or write them. Prebuilt adapter bundles expose this capability
-as `passwordCredential`.
-
-Password-reset confirmation also requires an application-owned
-`completePasswordReset({ tokenHash, passwordHash })` transaction. It must
-atomically consume the token, update the hash, and invalidate existing sessions.
-
-Sites migrating legacy password formats can compose read-only verification with
-`createPasswordMigrationVerifier()` from `@goobits/auth/password`. The current
-scheme remains the only writer; a successful legacy check returns
-`needsRehash: true` so `CredentialsProvider` upgrades through the dedicated
-credential adapter.
-
-## One-Stop Drizzle Adapter
-
-`drizzleAdapter(db, { schema })` returns a unified bundle. The required
-`user` and `passwordCredential` capabilities share the configured users table
-while keeping public profile access separate from secret-bearing access.
-
-- Required tables: `users`, `sessions`
-- Optional tables: `oauthAccounts`, `oauthTokens`, `verificationTokens`, `magicLinkTokens`, `webauthnCredentials`, `webauthnChallenges`
-
-## Production Guarantees
-
-- `hooks.onLogin` resolves identity only; framework-managed session issuance remains default.
-- If no principal is resolved in login flows (`OAuth`, `Magic Link`, `WebAuthn`), auth fails explicitly.
-- Session revoke capabilities are mapped to deterministic responses (`501` for unsupported operations).
-
-## Security Alerts
-
-Security threshold alerts can be delivered through an explicit webhook config:
-
-```ts
-export const auth = new GoobitsAuth({
-	adapter,
-	security: {
-		alerts: {
-			enabled: true,
-			webhook: {
-				url: env.SECURITY_WEBHOOK_URL
-			}
-		}
-	}
-})
-```
-
-`SECURITY_WEBHOOK_URL` is also read from `process.env` when no explicit
-`security.alerts.webhook.url` value is provided. Prefer explicit config in new
-apps. Use `security.alerts.onAlert` for custom signing, cooldown, or fan-out
-behavior.
-
-Applications that compose public Goobits handler factories into custom routes
-should send their final outcomes through the same configured pipeline:
-
-```ts
-await auth.emitSecurityEvent({
-	name: 'auth.failure',
-	severity: 'warn',
-	route: event.url.pathname,
-	method: event.request.method,
-	status: 401
-})
-```
-
-## Docs
-
-- `docs/quickstart.md`: 5-minute SvelteKit wire-up
-- `docs/integration.md`: adapter contract for custom storage backends
-- `docs/public-api.md`
-- `docs/security-contract.md`
-- `docs/schema.md`
-- `docs/testing.md`
-- `docs/migrations/vnext-breaking.md`
-- `examples/sveltekit-quickstart/`: minimal SvelteKit wiring
+- [`docs/quickstart.md`](docs/quickstart.md) — SvelteKit setup.
+- [`docs/public-api.md`](docs/public-api.md) — exported API and capability
+  reference.
+- [`docs/integration.md`](docs/integration.md) — custom adapter contract.
+- [`docs/security-contract.md`](docs/security-contract.md) — profiles, defaults,
+  and production responsibilities.
+- [`docs/schema.md`](docs/schema.md) — schema requirements.
+- [`docs/testing.md`](docs/testing.md) — test helpers and expectations.
+- [`docs/migrations/0.3-breaking.md`](docs/migrations/0.3-breaking.md) — migration
+  from pre-0.3 integrations.
+- [`examples/sveltekit-quickstart/`](examples/sveltekit-quickstart/) — minimal
+  application wiring.

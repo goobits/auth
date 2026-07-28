@@ -6,7 +6,7 @@ this if you're either:
 - Implementing a custom adapter (e.g. Postgres without Drizzle, in-memory for
   tests, a custom KV-backed session store).
 - Trying to understand what the prebuilt `drizzleAdapter`, `D1*Adapter`,
-  `Cookie*Adapter`, and `KV*Adapter` are actually doing under the hood.
+  `CookieTokenAdapter`, and `KV*Adapter` are actually doing under the hood.
 
 If you just want to wire the package into a SvelteKit app, start with
 [`quickstart.md`](./quickstart.md).
@@ -207,24 +207,6 @@ fallback. Its required `mfaSecretCodec` must bind ciphertext to the supplied
 user ID and use `@goobits/security/crypto` AES-GCM primitives, a managed KMS, or
 an equivalent authenticated-encryption service. Keep key identifiers in the
 ciphertext envelope so old keys can decrypt during controlled rotation.
-
-## How `@calendar/kit` does it (worked example)
-
-`packages/calendar/kit/src/auth/calendar-adapters.ts` (in this monorepo) is a
-real working example of consuming the contract. It:
-
-1. Configures the prebuilt `D1UserAdapter` and `D1SessionAdapter` with the
-   calendar table and column names.
-2. Configures `D1MfaAdapter` with the calendar factor tables and an AES-GCM
-   keyring codec, and explicitly persists `createdAt`, `mfaVerifiedAt`, client
-   IP, and user agent for session assurance.
-3. Reuses a D1-backed rate-limit store for both request limits and durable
-   security-alert thresholds.
-4. Hands the adapters to `new GoobitsAuth({ adapter: {...} })` in
-   `packages/calendar/app/src/server/auth/calendar.ts`.
-
-If you're integrating into an app with an existing user table, that file is
-the closest thing to a template.
 
 ## Things the package does not do
 

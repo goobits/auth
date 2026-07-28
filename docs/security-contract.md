@@ -11,26 +11,20 @@ This package enforces authentication primitives and secure defaults, while autho
 - `strict`:
   CSRF `required`, rate limit `required`, audit `required`, alerts enabled.
 
-## Setup
+## Security configuration
+
+Use the [quickstart](./quickstart.md) for complete `GoobitsAuth` setup. The
+fragment below shows only the security-specific options:
 
 ```ts
-import { GoobitsAuth } from '@goobits/auth'
-import { sharedRateLimitStore } from '$lib/server/security/rate-limit'
-
-const auth = new GoobitsAuth({
-	profile: 'secure',
-	adapter,
-	security: {
-		rateLimit: { store: sharedRateLimitStore },
-		audit: { emitter: auditEmitter },
-		alerts: {
-			enabled: true,
-			webhook: {
-				url: env.SECURITY_WEBHOOK_URL
-			}
-		}
+security: {
+	rateLimit: { store: sharedRateLimitStore },
+	audit: { emitter: auditEmitter },
+	alerts: {
+		enabled: true,
+		webhook: { url: env.SECURITY_WEBHOOK_URL }
 	}
-})
+}
 ```
 
 Applications with a single, application-wide request-origin guard may use

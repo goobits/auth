@@ -4,6 +4,10 @@ import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts
 import type { OAuthProfile, OAuthTokens } from '../types/index.ts'
 import { OAuthProvider } from './OAuthProvider.ts'
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 type GoogleProviderConfig = {
 	clientId: string
 	clientSecret: string
@@ -130,16 +134,24 @@ export class GoogleProvider extends OAuthProvider {
 					}
 				}
 			)
-
-			const googleUser = (await googleUserResponse.json()) as {
-				id: string
-				email: string
-				name: string
-				picture?: string
-				verified_email?: boolean
+			if (!googleUserResponse.ok) {
+				throw new Error(`Google user info request failed (${googleUserResponse.status})`)
 			}
 
-			if (!googleUser.verified_email) {
+			const googleUser: unknown = await googleUserResponse.json()
+			if (
+				!isRecord(googleUser) ||
+				typeof googleUser['id'] !== 'string' ||
+				typeof googleUser['email'] !== 'string' ||
+				typeof googleUser['name'] !== 'string' ||
+				(googleUser['picture'] !== undefined &&
+					typeof googleUser['picture'] !== 'string') ||
+				typeof googleUser['verified_email'] !== 'boolean'
+			) {
+				throw new Error('Invalid Google user profile')
+			}
+
+			if (!googleUser['verified_email']) {
 				throw new Error('Google email not verified')
 			}
 
@@ -150,13 +162,13 @@ export class GoogleProvider extends OAuthProvider {
 				picture?: string
 				verified_email: true
 			} = {
-				id: googleUser.id,
-				email: googleUser.email,
-				name: googleUser.name,
-				verified_email: googleUser.verified_email
+				id: googleUser['id'],
+				email: googleUser['email'],
+				name: googleUser['name'],
+				verified_email: googleUser['verified_email']
 			}
-			if (googleUser.picture) {
-				profile.picture = googleUser.picture
+			if (googleUser['picture']) {
+				profile.picture = googleUser['picture']
 			}
 			return {
 				profile,

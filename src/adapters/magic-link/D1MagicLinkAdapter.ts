@@ -6,6 +6,10 @@ import { MagicLinkAdapter } from './MagicLinkAdapter.ts'
 type D1Value = string | number | boolean | null
 type D1Row = Record<string, D1Value>
 
+function readRowValue(row: D1Row, column: string, fallback: string): D1Value | undefined {
+	return Object.hasOwn(row, column) ? row[column] : row[fallback]
+}
+
 type D1DatabaseLike = {
 	prepare: (sql: string) => {
 		bind: (...args: D1Value[]) => {
@@ -148,13 +152,13 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 
 	private mapRow(row: D1Row | null): MagicLinkToken | null {
 		if (!row) return null
-		const id = row[this.columns['id']] ?? row['id']
-		const userId = row[this.columns.userId] ?? row['user_id']
-		const email = row[this.columns['email']] ?? row['email']
-		const tokenHash = row[this.columns.tokenHash] ?? row['token_hash']
-		const otpHash = row[this.columns.otpHash] ?? row['otp_hash']
-		const expiresAt = row[this.columns.expiresAt] ?? row['expires_at']
-		const createdAt = row[this.columns.createdAt] ?? row['created_at']
+		const id = readRowValue(row, this.columns.id, 'id')
+		const userId = readRowValue(row, this.columns.userId, 'user_id')
+		const email = readRowValue(row, this.columns.email, 'email')
+		const tokenHash = readRowValue(row, this.columns.tokenHash, 'token_hash')
+		const otpHash = readRowValue(row, this.columns.otpHash, 'otp_hash')
+		const expiresAt = readRowValue(row, this.columns.expiresAt, 'expires_at')
+		const createdAt = readRowValue(row, this.columns.createdAt, 'created_at')
 		if (typeof id !== 'string') return null
 		if (userId !== null && typeof userId !== 'string') return null
 		if (typeof email !== 'string') return null
