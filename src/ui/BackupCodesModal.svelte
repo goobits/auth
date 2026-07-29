@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { AlertTriangle, X } from '@lucide/svelte'
 	import { onMount, onDestroy } from 'svelte'
 
 	let {
@@ -103,13 +104,13 @@
 					{isNewEnrollment ? 'Save Your Backup Codes' : 'New Backup Codes Generated'}
 				</h2>
 				<button type="button" class="close-button" onclick={close} aria-label="Close dialog"
-					>×</button
+					><X size={18} /></button
 				>
 			</div>
 
 			<div class="modal-body">
 				<div class="warning-box">
-					<div class="icon">!</div>
+					<div class="icon"><AlertTriangle size={20} /></div>
 					<div>
 						<strong>Important:</strong>
 						<p>Save these backup codes in a secure location. Each code can only be used once.</p>

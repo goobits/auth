@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { Check, X } from '@lucide/svelte'
+
 	let {
 		visible = $bindable(false),
 		title = 'Notice',
@@ -25,7 +27,7 @@
 	<div class="auth-notification" role="alert">
 		<div class="notification-content">
 			<div class="notification-icon">
-				<span>✓</span>
+				<Check size={18} />
 			</div>
 
 			<div class="notification-body">
@@ -37,7 +39,7 @@
 			</div>
 
 			<button type="button" class="close-button" onclick={close} aria-label="Close notification"
-				>×</button
+				><X size={18} /></button
 			>
 		</div>
 	</div>

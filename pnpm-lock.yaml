@@ -17,6 +17,9 @@ importers:
       '@goobits/security':
         specifier: workspace:*
         version: link:../security
+      '@lucide/svelte':
+        specifier: ^0.563.1
+        version: 0.563.1(svelte@5.56.7)
       '@simplewebauthn/server':
         specifier: ^13.3.2
         version: 13.3.2
@@ -305,6 +308,11 @@ packages:
 
   '@levischuck/tiny-cbor@0.2.11':
     resolution: {integrity: sha512-llBRm4dT4Z89aRsm6u2oEZ8tfwL/2l6BwpZ7JcyieouniDECM5AqNgr/y08zalEIvW3RSK4upYyybDcmjXqAow==}
+
+  '@lucide/svelte@0.563.1':
+    resolution: {integrity: sha512-Kt+MbnE5D9RsuI/csmf7M+HWxALe57x3A0DhQ8pPnnUpneh7zuldrYjlT+veWtk+tVnp5doQtaAAxLujzIlhBw==}
+    peerDependencies:
+      svelte: ^5
 
   '@napi-rs/wasm-runtime@0.2.12':
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
@@ -1810,6 +1818,10 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.5.5
 
   '@levischuck/tiny-cbor@0.2.11': {}
+
+  '@lucide/svelte@0.563.1(svelte@5.56.7)':
+    dependencies:
+      svelte: 5.56.7
 
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
