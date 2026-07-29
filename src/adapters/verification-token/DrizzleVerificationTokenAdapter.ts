@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 
 import type { User, VerificationToken } from '../../types/index.ts'
+import { toDrizzleUser as toUser } from '../_drizzleUser.ts'
 import {
 	type DrizzleDbLike,
 	type InsertConflictQuery,
@@ -102,29 +103,6 @@ function toToken(row: DrizzleRow | null): VerificationToken | null {
 		expiresAt: expiresDate,
 		createdAt: Number.isNaN(createdDate.getTime()) ? new Date() : createdDate,
 		...(isDrizzleJsonRecord(metadata) ? { metadata } : {})
-	}
-}
-
-function toUser(row: DrizzleRow | null): User | null {
-	if (!row) return null
-	const id = row['id']
-	const email = row['email']
-	const name = row['name']
-	const avatar = row['avatar'] ?? null
-	const emailVerified = row['emailVerified'] ?? row['email_verified'] ?? false
-	if (typeof id !== 'string' && typeof id !== 'number') return null
-	if (typeof email !== 'string') return null
-	if (typeof name !== 'string') return null
-	if (avatar !== null && typeof avatar !== 'string') return null
-	if (typeof emailVerified !== 'boolean' && emailVerified !== 0 && emailVerified !== 1) {
-		return null
-	}
-	return {
-		id: String(id),
-		email,
-		name,
-		avatar,
-		emailVerified: Boolean(emailVerified)
 	}
 }
 

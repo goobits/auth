@@ -2,8 +2,10 @@ import type { Cookies } from '@sveltejs/kit'
 import { eq } from 'drizzle-orm'
 
 import type { Session, SessionMetadata, User } from '../../types/index.ts'
+import { toDrizzleUser as toUser } from '../_drizzleUser.ts'
 import type { DrizzleDbLike, DrizzleRow, DrizzleTable } from '../drizzleTypes.ts'
 import { normalizeSessionMetadata } from './_sessionMetadata.ts'
+import { clearSessionCookie, writeSessionCookie } from './_sessionCookie.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
 import { parseMfaVerifiedAt, parseSessionTimestamp } from './sessionAssurance.ts'
 import { createSessionToken, hashSessionToken } from './sessionId.ts'
@@ -26,29 +28,6 @@ type UsersTable = DrizzleTable & {
 	name: DrizzleTable[string]
 	avatar?: DrizzleTable[string]
 	emailVerified?: DrizzleTable[string]
-}
-
-function toUser(row: DrizzleRow | null): User | null {
-	if (!row) return null
-	const id = row['id']
-	const email = row['email']
-	const name = row['name']
-	const avatar = row['avatar'] ?? null
-	const emailVerified = row['emailVerified'] ?? row['email_verified'] ?? false
-	if (typeof id !== 'string' && typeof id !== 'number') return null
-	if (typeof email !== 'string') return null
-	if (typeof name !== 'string') return null
-	if (avatar !== null && typeof avatar !== 'string') return null
-	if (typeof emailVerified !== 'boolean' && emailVerified !== 0 && emailVerified !== 1) {
-		return null
-	}
-	return {
-		id: String(id),
-		email,
-		name,
-		avatar,
-		emailVerified: Boolean(emailVerified)
-	}
 }
 
 function toSession(row: DrizzleRow | null): Session | null {
@@ -200,18 +179,10 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 	}
 
 	setSessionCookie(cookies: Cookies, session: Session): void {
-		cookies.set(this.cookieName, session.id, {
-			httpOnly: true,
-			secure: this.secureCookies,
-			sameSite: 'lax',
-			path: '/',
-			expires: session.expiresAt
-		})
+		writeSessionCookie(cookies, session, this.cookieName, this.secureCookies)
 	}
 
 	deleteSessionCookie(cookies: Cookies): void {
-		cookies.delete(this.cookieName, {
-			path: '/'
-		})
+		clearSessionCookie(cookies, this.cookieName)
 	}
 }

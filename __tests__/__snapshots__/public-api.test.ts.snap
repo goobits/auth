@@ -32,6 +32,7 @@ exports[`public API > pins every JavaScript export by supported subpath 1`] = `
   ],
   "client": [
     "createAuthClient",
+    "supportsPasskeys",
   ],
   "database": [
     "D1UserAdapter",
@@ -68,10 +69,14 @@ exports[`public API > pins every JavaScript export by supported subpath 1`] = `
     "createSessionRevokeHandler",
     "createSigninHandler",
     "createSignupHandler",
+    "createWebAuthnListCredentialsHandler",
     "createWebAuthnLoginOptionsHandler",
     "createWebAuthnLoginVerifyHandler",
     "createWebAuthnRegisterOptionsHandler",
     "createWebAuthnRegisterVerifyHandler",
+    "createWebAuthnRemoveCredentialHandler",
+    "createWebAuthnStepUpOptionsHandler",
+    "createWebAuthnStepUpVerifyHandler",
   ],
   "loginContext": [
     "createCookieLoginContext",

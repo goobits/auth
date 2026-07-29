@@ -302,6 +302,20 @@ export class GoobitsAuth {
 			if (!handlers.webauthn) return null
 			return { method: 'POST', handler: handlers.webauthn.loginVerify }
 		}
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.passkeyCredentials)) {
+			if (!handlers.webauthn) return null
+			return method === 'GET'
+				? { method: 'GET', handler: handlers.webauthn.listCredentials }
+				: { method: 'POST', handler: handlers.webauthn.removeCredential }
+		}
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.passkeyStepUpOptions)) {
+			if (!handlers.webauthn) return null
+			return { method: 'POST', handler: handlers.webauthn.stepUpOptions }
+		}
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.passkeyStepUpVerify)) {
+			if (!handlers.webauthn) return null
+			return { method: 'POST', handler: handlers.webauthn.stepUpVerify }
+		}
 		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.mfaStatus)) {
 			if (!handlers.mfa) return null
 			return { method: 'GET', handler: handlers.mfa.status }

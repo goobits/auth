@@ -1,3 +1,32 @@
+export type CreateWebAuthnChallengeInput = {
+	challengeId: string
+	userId?: string | null
+	challenge: string
+	type: string
+	expiresAt: Date
+}
+
+export type CreateWebAuthnCredentialInput = {
+	userId: string
+	credentialId: string
+	publicKey: string
+	counter: number
+	transports?: string[] | null
+	name?: string | null
+}
+
+export type AdvanceWebAuthnCredentialCounterInput = {
+	credentialId: string
+	userId: string
+	expectedCounter: number
+	newCounter: number
+}
+
+export type DeleteWebAuthnCredentialInput = {
+	credentialId: string
+	userId: string
+}
+
 /**
  * Base WebAuthn Adapter Interface
  */
@@ -18,13 +47,7 @@ export abstract class WebAuthnAdapter {
 		challenge,
 		type,
 		expiresAt
-	}: {
-		challengeId: string
-		userId?: string | null
-		challenge: string
-		type: string
-		expiresAt: Date
-	}): Promise<void>
+	}: CreateWebAuthnChallengeInput): Promise<void>
 
 	/**
 	 * Get challenge by ID
@@ -41,6 +64,9 @@ export abstract class WebAuthnAdapter {
 	 * @returns Whether the credential was inserted without replacing an existing owner.
 	 */
 	abstract deleteChallenge(challengeId: string): Promise<void>
+
+	/** Delete expired challenges and return the number removed. */
+	abstract deleteExpiredChallenges(expiresAtOrBefore: Date): Promise<number>
 
 	/**
 	 * Create a credential
@@ -60,14 +86,7 @@ export abstract class WebAuthnAdapter {
 		counter,
 		transports,
 		name
-	}: {
-		userId: string
-		credentialId: string
-		publicKey: string
-		counter: number
-		transports?: string[] | null
-		name?: string | null
-	}): Promise<boolean>
+	}: CreateWebAuthnCredentialInput): Promise<boolean>
 
 	/**
 	 * Get a credential by ID
@@ -86,20 +105,15 @@ export abstract class WebAuthnAdapter {
 	abstract listCredentials(userId: string): Promise<Record<string, unknown>[]>
 
 	/** Atomically advances a credential counter for its immutable owner. */
-	abstract advanceCredentialCounter(input: {
-		credentialId: string
-		userId: string
-		expectedCounter: number
-		newCounter: number
-	}): Promise<boolean>
+	abstract advanceCredentialCounter(input: AdvanceWebAuthnCredentialCounterInput): Promise<boolean>
 
 	/**
 	 * Delete a credential
 	 *
-	 * @param {string} credentialId - Identifier to use.
-	 * @returns {Promise<void>}
+	 * @param input - Immutable credential owner and identifier.
+	 * @returns Whether an owned credential was removed.
 	 */
-	abstract deleteCredential(credentialId: string): Promise<void>
+	abstract deleteCredential(input: DeleteWebAuthnCredentialInput): Promise<boolean>
 
 	/**
 	 * Delete all credentials for a user

@@ -240,6 +240,22 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 				csrf: merged.csrf?.mode ?? 'optional',
 				rateLimitWindows: flowWindows('login')
 			},
+			'webauthn.credentials.list': {
+				csrf: 'off',
+				rateLimitWindows: flowWindows('default')
+			},
+			'webauthn.credentials.remove': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('default')
+			},
+			'webauthn.step_up.options': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('login')
+			},
+			'webauthn.step_up.verify': {
+				csrf: merged.csrf?.mode ?? 'optional',
+				rateLimitWindows: flowWindows('login')
+			},
 			'mfa.status': { csrf: 'off', rateLimitWindows: flowWindows('default') },
 			'mfa.enroll': {
 				csrf: merged.csrf?.mode ?? 'optional',
@@ -327,6 +343,26 @@ export function applyPolicies(handlers: AuthHandlers, security: ResolvedSecurity
 			loginVerify: applySecurityPolicy({
 				handler: handlers.webauthn.loginVerify,
 				routeId: 'webauthn.login.verify',
+				settings: security
+			}),
+			listCredentials: applySecurityPolicy({
+				handler: handlers.webauthn.listCredentials,
+				routeId: 'webauthn.credentials.list',
+				settings: security
+			}),
+			removeCredential: applySecurityPolicy({
+				handler: handlers.webauthn.removeCredential,
+				routeId: 'webauthn.credentials.remove',
+				settings: security
+			}),
+			stepUpOptions: applySecurityPolicy({
+				handler: handlers.webauthn.stepUpOptions,
+				routeId: 'webauthn.step_up.options',
+				settings: security
+			}),
+			stepUpVerify: applySecurityPolicy({
+				handler: handlers.webauthn.stepUpVerify,
+				routeId: 'webauthn.step_up.verify',
 				settings: security
 			})
 		}

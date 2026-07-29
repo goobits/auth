@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 
 import type { OAuthProfile, User } from '../../types/index.ts'
+import { toDrizzleUser as toUser } from '../_drizzleUser.ts'
 import { assertPublicUserData } from './publicUserData.ts'
 import {
 	type DrizzleDbLike,
@@ -26,29 +27,6 @@ type OAuthAccountsTable = DrizzleTable & {
 	userId: DrizzleTable[string]
 	provider: DrizzleTable[string]
 	providerAccountId: DrizzleTable[string]
-}
-
-function toUser(row: DrizzleRow | null): User | null {
-	if (!row) return null
-	const id = row['id']
-	const email = row['email']
-	const name = row['name']
-	const avatar = row['avatar'] ?? null
-	const emailVerified = row['emailVerified'] ?? row['email_verified'] ?? false
-	if (typeof id !== 'string' && typeof id !== 'number') return null
-	if (typeof email !== 'string') return null
-	if (typeof name !== 'string') return null
-	if (avatar !== null && typeof avatar !== 'string') return null
-	if (typeof emailVerified !== 'boolean' && emailVerified !== 0 && emailVerified !== 1) {
-		return null
-	}
-	return {
-		id: String(id),
-		email,
-		name,
-		avatar,
-		emailVerified: Boolean(emailVerified)
-	}
 }
 
 function toDrizzleRow(values: Record<string, DrizzleJson>): DrizzleRow {

@@ -73,16 +73,16 @@ const authenticationResponseSchema = z.custom<AuthenticationResponseJSON>(
 export const registerVerifyRequestSchema = z.object({
 	challengeId: z.string().min(1),
 	credential: registrationResponseSchema,
-	name: z.string().optional()
-})
-
-export const loginOptionsRequestSchema = z.object({
-	email: z.string().optional()
+	name: z.string().trim().min(1).max(100).optional()
 })
 
 export const loginVerifyRequestSchema = z.object({
 	challengeId: z.string().min(1),
 	credential: authenticationResponseSchema
+})
+
+export const removeCredentialRequestSchema = z.object({
+	credentialId: z.string().min(1)
 })
 
 export function toChallengeRecord(value: Record<string, unknown> | null): ChallengeRecord | null {

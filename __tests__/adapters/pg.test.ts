@@ -294,7 +294,7 @@ describe('pg auth adapters', () => {
 								expires_at: new Date('2099-01-01T00:00:00.000Z'),
 								id: values[0],
 								type: 'registration',
-								user_id: 'user-1'
+								user_id: 42
 							}
 						]
 					}
@@ -303,7 +303,7 @@ describe('pg auth adapters', () => {
 					return {
 						rows: [
 							{
-								counter: 0,
+								counter: '4294967295',
 								created_at: new Date('2026-01-01T00:00:00.000Z'),
 								credential_id: values[0],
 								name: 'Work laptop',
@@ -346,6 +346,8 @@ describe('pg auth adapters', () => {
 		const credential = await adapters.webauthn.getCredential('credential-1')
 
 		expect(challenge?.id).toBe('challenge-1')
+		expect(challenge?.userId).toBe('42')
+		expect(credential?.counter).toBe(4_294_967_295)
 		expect(credential?.transports).toEqual(['internal'])
 		expect(
 			queries.some((query) => query.text.includes('INSERT INTO auth_webauthn_challenges'))
@@ -374,6 +376,14 @@ describe('pg auth adapters', () => {
 					}
 					credential.counter = Number(newCounter)
 					return { rows: [{ credential_id: 'credential-1' }] }
+				}
+				if (text.includes('DELETE FROM auth_webauthn_credentials WHERE credential_id')) {
+					const [, owner] = values
+					if (credential.owner !== owner) return { rows: [] }
+					return { rows: [{ credential_id: 'credential-1' }] }
+				}
+				if (text.includes('DELETE FROM auth_webauthn_challenges WHERE expires_at')) {
+					return { rows: [{ id: 'expired-1' }, { id: 'expired-2' }] }
 				}
 				throw new Error(`Unexpected query: ${text}`)
 			}
@@ -420,6 +430,19 @@ describe('pg auth adapters', () => {
 				newCounter: 2
 			})
 		).resolves.toBe(false)
+		await expect(
+			adapters.webauthn.deleteCredential({
+				credentialId: 'credential-1',
+				userId: 'attacker'
+			})
+		).resolves.toBe(false)
+		await expect(
+			adapters.webauthn.deleteCredential({
+				credentialId: 'credential-1',
+				userId: 'user-1'
+			})
+		).resolves.toBe(true)
+		await expect(adapters.webauthn.deleteExpiredChallenges(new Date())).resolves.toBe(2)
 		expect(credential).toEqual({ counter: 1, owner: 'user-1' })
 	})
 

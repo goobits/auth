@@ -162,6 +162,34 @@ describe('memory auth adapters', () => {
 				newCounter: 1
 			})
 		).rejects.toThrow('advance monotonically')
+		await expect(
+			adapter.deleteCredential({ credentialId: 'credential-1', userId: 'attacker' })
+		).resolves.toBe(false)
+		await expect(
+			adapter.deleteCredential({ credentialId: 'credential-1', userId: 'user-1' })
+		).resolves.toBe(true)
+	})
+
+	it('removes only expired in-memory WebAuthn challenges', async () => {
+		const adapter = new MemoryWebAuthnAdapter()
+		await adapter.createChallenge({
+			challengeId: 'expired',
+			userId: null,
+			challenge: 'expired',
+			type: 'authentication',
+			expiresAt: new Date(0)
+		})
+		await adapter.createChallenge({
+			challengeId: 'active',
+			userId: null,
+			challenge: 'active',
+			type: 'authentication',
+			expiresAt: new Date('2099-01-01T00:00:00.000Z')
+		})
+
+		await expect(adapter.deleteExpiredChallenges(new Date())).resolves.toBe(1)
+		await expect(adapter.getChallenge('expired')).resolves.toBeNull()
+		await expect(adapter.getChallenge('active')).resolves.not.toBeNull()
 	})
 	it('keeps active MFA factors immutable and backup codes single-use', async () => {
 		const adapter = new MemoryMfaAdapter()

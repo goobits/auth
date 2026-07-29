@@ -15,7 +15,14 @@ import type { SecurityAlertHandler, ThresholdRule } from '../security/alerts.ts'
 import type { AuthEventEmitter } from '../security/events.ts'
 import type { RateLimitStore, RateLimitWindow } from '@goobits/security/rate-limit'
 import type { Logger } from '@goobits/security/logger'
-import type { OAuthProfile, OAuthTokens, Session, SessionSummary, User } from './core.ts'
+import type {
+	OAuthProfile,
+	OAuthTokens,
+	Session,
+	SessionMetadata,
+	SessionSummary,
+	User
+} from './core.ts'
 
 /** Defines auth locals options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthLocals = {
@@ -58,6 +65,10 @@ export type OnLoginMode = 'augment' | 'manual'
 
 /** Defines auth hooks options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthHooks = {
+	getSessionMetadata?: (
+		event: RequestEventLike,
+		userId: string
+	) => SessionMetadata | Promise<SessionMetadata>
 	onSessionValidated?: (
 		event: RequestEventLike,
 		session: Session,
@@ -121,6 +132,13 @@ export type MagicLinkConfig = {
 	}
 }
 
+/** Request context supplied after an owned WebAuthn credential changes. */
+export type WebAuthnCredentialLifecycleInput = {
+	userId: string
+	credentialId: string
+	event: RequestEventLike
+}
+
 /** Defines web authn config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type WebAuthnConfig = {
 	authorizeSecurityChange: AuthorizeSecurityChange
@@ -129,15 +147,20 @@ export type WebAuthnConfig = {
 	rpName?: string
 	timeoutMs?: number
 	attestation?: 'none' | 'indirect' | 'direct' | 'enterprise'
-	userVerification?: 'required' | 'preferred' | 'discouraged'
-	credentialName?: string
+	maxCredentialsPerUser?: number
 	hooks?: {
 		onLogin?: AuthHooks['onLogin']
+		onCredentialCreated?: (input: WebAuthnCredentialLifecycleInput) => Promise<void> | void
+		onCredentialDeleted?: (input: WebAuthnCredentialLifecycleInput) => Promise<void> | void
 	}
 }
 
 /** Security-sensitive account mutation that requires fresh application authorization. */
-export type SecurityChangeAction = 'mfa.enroll' | 'mfa.disable' | 'webauthn.register'
+export type SecurityChangeAction =
+	| 'mfa.enroll'
+	| 'mfa.disable'
+	| 'webauthn.register'
+	| 'webauthn.remove'
 
 /** Application-owned step-up authorization for factor enrollment and removal. */
 export type AuthorizeSecurityChange = (input: {
@@ -152,6 +175,10 @@ export type TotpMfaConfig = {
 	authorizeSecurityChange: AuthorizeSecurityChange
 	issuer?: string
 	label?: (userId: string, locals: RequestEventLike['locals']) => string
+	hooks?: {
+		onEnabled?: (input: { userId: string; event: RequestEventLike }) => Promise<void> | void
+		onDisabled?: (input: { userId: string; event: RequestEventLike }) => Promise<void> | void
+	}
 }
 
 /** Defines sessions config options for wiring providers, adapters, cookies, hooks, and route handlers. */
@@ -288,6 +315,10 @@ export type AuthHandlers = {
 		registerVerify: RequestHandler
 		loginOptions: RequestHandler
 		loginVerify: RequestHandler
+		listCredentials: RequestHandler
+		removeCredential: RequestHandler
+		stepUpOptions: RequestHandler
+		stepUpVerify: RequestHandler
 	}
 	mfa?: {
 		status: RequestHandler
@@ -314,6 +345,9 @@ export type AuthRoutes = {
 	passkeyRegisterVerify: () => { POST: RequestHandler }
 	passkeyLoginOptions: () => { POST: RequestHandler }
 	passkeyLoginVerify: () => { POST: RequestHandler }
+	passkeyCredentials: () => { GET: RequestHandler; POST: RequestHandler }
+	passkeyStepUpOptions: () => { POST: RequestHandler }
+	passkeyStepUpVerify: () => { POST: RequestHandler }
 	mfaStatus: () => { GET: RequestHandler }
 	mfaEnroll: () => { POST: RequestHandler }
 	mfaVerify: () => { POST: RequestHandler }

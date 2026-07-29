@@ -9,8 +9,8 @@ import {
 	getVerificationTokenRecord,
 	VERIFICATION_TOKEN_TYPES
 } from '../verification/index.ts'
+import { type AssuredSessionAdapter, rotateAssuredSession } from './_assuredSession.ts'
 import { consumeMfaCredentialProof, verifyMfaCredential } from './_mfaCredential.ts'
-import { type MfaSessionAdapter, rotateSessionAfterMfa } from './_mfaSession.ts'
 import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
 
 const DEFAULT_LOGIN_CHALLENGE_COOKIE = 'goobits_mfa_login'
@@ -37,6 +37,10 @@ export type MfaConfig = {
 	store: MfaStore
 	issuer?: string
 	label?: (userId: string, locals: RequestEventLike['locals']) => string
+	hooks?: {
+		onEnabled?: (input: { userId: string; event: RequestEventLike }) => Promise<void> | void
+		onDisabled?: (input: { userId: string; event: RequestEventLike }) => Promise<void> | void
+	}
 }
 
 /** Configuration for MFA operations that change a user's factors. */
@@ -297,7 +301,9 @@ export function createMfaEnrollHandler(config: MfaSecurityChangeConfig) {
  *
  * @param config - Configuration for this operation.
  */
-export function createMfaVerifyHandler(config: MfaConfig & { sessionAdapter?: MfaSessionAdapter }) {
+export function createMfaVerifyHandler(
+	config: MfaConfig & { sessionAdapter?: AssuredSessionAdapter }
+) {
 	const { getUserId, store } = config
 	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
@@ -317,8 +323,9 @@ export function createMfaVerifyHandler(config: MfaConfig & { sessionAdapter?: Mf
 		if (!(await store.activateEnrollment(userId))) {
 			return { success: false, error: 'MFA enrollment not started' }
 		}
+		await config.hooks?.onEnabled?.({ userId, event })
 		if (!config.sessionAdapter || !currentSession) return { success: true }
-		const replacement = await rotateSessionAfterMfa({
+		const replacement = await rotateAssuredSession({
 			sessionAdapter: config.sessionAdapter,
 			cookies: event.cookies,
 			currentSession,
@@ -355,12 +362,15 @@ export function createMfaDisableHandler(config: MfaSecurityChangeConfig) {
 		if (!(await store.disableMfa(userId))) {
 			return { success: false, error: 'Multi-factor authentication is not enabled' }
 		}
+		await config.hooks?.onDisabled?.({ userId, event })
 		return { success: true }
 	}
 }
 
 /** Verifies a second factor and rotates the current session with fresh MFA assurance. */
-export function createMfaStepUpHandler(config: MfaConfig & { sessionAdapter: MfaSessionAdapter }) {
+export function createMfaStepUpHandler(
+	config: MfaConfig & { sessionAdapter: AssuredSessionAdapter }
+) {
 	return async (event: RequestEventLike) => {
 		const userId = config.getUserId(event.locals)
 		const currentSession = event.locals.session
@@ -378,7 +388,7 @@ export function createMfaStepUpHandler(config: MfaConfig & { sessionAdapter: Mfa
 			return { success: false, error: 'Invalid authentication code' }
 		}
 
-		const replacement = await rotateSessionAfterMfa({
+		const replacement = await rotateAssuredSession({
 			sessionAdapter: config.sessionAdapter,
 			cookies: event.cookies,
 			currentSession,

@@ -21,12 +21,20 @@ import { createSvelteKitCsrf } from '@goobits/security/csrf/sveltekit'
 import {
 	createWebAuthnLoginOptionsHandler,
 	createWebAuthnLoginVerifyHandler,
+	createWebAuthnListCredentialsHandler,
+	createWebAuthnRemoveCredentialHandler,
 	createWebAuthnRegisterOptionsHandler,
 	createWebAuthnRegisterVerifyHandler,
+	createWebAuthnStepUpOptionsHandler,
+	createWebAuthnStepUpVerifyHandler,
 	type WebAuthnLoginOptionsHandlerConfig,
 	type WebAuthnLoginVerifyHandlerConfig,
+	type WebAuthnListCredentialsHandlerConfig,
+	type WebAuthnRemoveCredentialHandlerConfig,
 	type WebAuthnRegisterOptionsHandlerConfig,
-	type WebAuthnRegisterVerifyHandlerConfig
+	type WebAuthnRegisterVerifyHandlerConfig,
+	type WebAuthnStepUpOptionsHandlerConfig,
+	type WebAuthnStepUpVerifyHandlerConfig
 } from '#webauthn-handlers'
 import { createAuthRateLimiter } from '../security/rateLimit.ts'
 import type {
@@ -214,6 +222,7 @@ export function createHandlers(
 					event,
 					sessionAdapter: adapters.session,
 					userId,
+					...(hooks.getSessionMetadata ? { getSessionMetadata: hooks.getSessionMetadata } : {}),
 					autoCreateSession,
 					onLoginMode
 				})
@@ -308,6 +317,7 @@ export function createHandlers(
 			...(security.audit.emitter ? { emitSecurityEvent: security.audit.emitter } : {}),
 			...(config.logger ? { logger: config.logger } : {}),
 			...(normalizedMagicLink['sanitizeUser'] === undefined ? { sanitizeUser } : {}),
+			...(hooks.getSessionMetadata ? { getSessionMetadata: hooks.getSessionMetadata } : {}),
 			...(adapters.user ? { userAdapter: adapters.user } : {})
 		}
 		handlers.magicLink = {
@@ -325,20 +335,26 @@ export function createHandlers(
 			rpName: webauthn.rpName ?? 'Passkey',
 			attestationType,
 			...(webauthn.timeoutMs ? { timeout: webauthn.timeoutMs } : {}),
-			...(webauthn.userVerification ? { userVerification: webauthn.userVerification } : {})
+			...(webauthn.maxCredentialsPerUser
+				? { maxCredentialsPerUser: webauthn.maxCredentialsPerUser }
+				: {})
 		}
 		const registerVerifyConfig: WebAuthnRegisterVerifyHandlerConfig = {
 			webauthnAdapter: adapters.webauthn!,
 			rpID: webauthn.rpID ?? '',
 			origin: webauthn.origin ?? '',
-			requireUserVerification: webauthn.userVerification === 'required'
+			...(webauthn.maxCredentialsPerUser
+				? { maxCredentialsPerUser: webauthn.maxCredentialsPerUser }
+				: {}),
+			...(webauthn.hooks?.onCredentialCreated
+				? { onCredentialCreated: webauthn.hooks.onCredentialCreated }
+				: {}),
+			...(security.audit.emitter ? { emitSecurityEvent: security.audit.emitter } : {})
 		}
 		const loginOptionsConfig: WebAuthnLoginOptionsHandlerConfig = {
 			webauthnAdapter: adapters.webauthn!,
 			rpID: webauthn.rpID ?? '',
-			...(webauthn.timeoutMs ? { timeout: webauthn.timeoutMs } : {}),
-			...(webauthn.userVerification ? { userVerification: webauthn.userVerification } : {}),
-			...(adapters.user ? { userAdapter: adapters.user } : {})
+			...(webauthn.timeoutMs ? { timeout: webauthn.timeoutMs } : {})
 		}
 		const loginVerifyConfig: WebAuthnLoginVerifyHandlerConfig = {
 			webauthnAdapter: adapters.webauthn!,
@@ -346,10 +362,10 @@ export function createHandlers(
 			rpID: webauthn.rpID ?? '',
 			origin: webauthn.origin ?? '',
 			redirectAfterLogin: urlConfig.afterLogin,
-			requireUserVerification: webauthn.userVerification === 'required',
 			autoCreateSession,
 			onLoginMode,
 			sanitizeUser,
+			...(hooks.getSessionMetadata ? { getSessionMetadata: hooks.getSessionMetadata } : {}),
 			...(security.audit.emitter ? { emitSecurityEvent: security.audit.emitter } : {}),
 			...(adapters.user ? { userAdapter: adapters.user } : {})
 		}
@@ -357,11 +373,38 @@ export function createHandlers(
 		if (webauthnOnLogin) {
 			loginVerifyConfig.onLogin = webauthnOnLogin
 		}
+		const listCredentialsConfig: WebAuthnListCredentialsHandlerConfig = {
+			webauthnAdapter: adapters.webauthn!
+		}
+		const removeCredentialConfig: WebAuthnRemoveCredentialHandlerConfig = {
+			webauthnAdapter: adapters.webauthn!,
+			authorizeSecurityChange: webauthn.authorizeSecurityChange,
+			...(webauthn.hooks?.onCredentialDeleted
+				? { onCredentialDeleted: webauthn.hooks.onCredentialDeleted }
+				: {}),
+			...(security.audit.emitter ? { emitSecurityEvent: security.audit.emitter } : {})
+		}
+		const stepUpOptionsConfig: WebAuthnStepUpOptionsHandlerConfig = {
+			webauthnAdapter: adapters.webauthn!,
+			rpID: webauthn.rpID ?? '',
+			...(webauthn.timeoutMs ? { timeout: webauthn.timeoutMs } : {})
+		}
+		const stepUpVerifyConfig: WebAuthnStepUpVerifyHandlerConfig = {
+			webauthnAdapter: adapters.webauthn!,
+			sessionAdapter: adapters.session,
+			rpID: webauthn.rpID ?? '',
+			origin: webauthn.origin ?? '',
+			...(security.audit.emitter ? { emitSecurityEvent: security.audit.emitter } : {})
+		}
 		handlers.webauthn = {
 			registerOptions: createWebAuthnRegisterOptionsHandler(registerOptionsConfig),
 			registerVerify: createWebAuthnRegisterVerifyHandler(registerVerifyConfig),
 			loginOptions: createWebAuthnLoginOptionsHandler(loginOptionsConfig),
-			loginVerify: createWebAuthnLoginVerifyHandler(loginVerifyConfig)
+			loginVerify: createWebAuthnLoginVerifyHandler(loginVerifyConfig),
+			listCredentials: createWebAuthnListCredentialsHandler(listCredentialsConfig),
+			removeCredential: createWebAuthnRemoveCredentialHandler(removeCredentialConfig),
+			stepUpOptions: createWebAuthnStepUpOptionsHandler(stepUpOptionsConfig),
+			stepUpVerify: createWebAuthnStepUpVerifyHandler(stepUpVerifyConfig)
 		}
 	}
 
@@ -372,7 +415,8 @@ export function createHandlers(
 			getUserId,
 			store: adapters.mfa!,
 			...(mfa.issuer ? { issuer: mfa.issuer } : {}),
-			...(mfa.label ? { label: mfa.label } : {})
+			...(mfa.label ? { label: mfa.label } : {}),
+			...(mfa.hooks ? { hooks: mfa.hooks } : {})
 		}
 		handlers.mfa = {
 			status: asJsonHandler(createMfaStatusHandler(mfaConfig)),
@@ -440,6 +484,21 @@ export function buildRoutes(handlers: AuthHandlers): AuthRoutes {
 		passkeyLoginVerify: () => {
 			if (!handlers.webauthn) throw new Error('WebAuthn handlers not configured')
 			return { POST: handlers.webauthn.loginVerify }
+		},
+		passkeyCredentials: () => {
+			if (!handlers.webauthn) throw new Error('WebAuthn handlers not configured')
+			return {
+				GET: handlers.webauthn.listCredentials,
+				POST: handlers.webauthn.removeCredential
+			}
+		},
+		passkeyStepUpOptions: () => {
+			if (!handlers.webauthn) throw new Error('WebAuthn handlers not configured')
+			return { POST: handlers.webauthn.stepUpOptions }
+		},
+		passkeyStepUpVerify: () => {
+			if (!handlers.webauthn) throw new Error('WebAuthn handlers not configured')
+			return { POST: handlers.webauthn.stepUpVerify }
 		},
 		mfaStatus: () => {
 			if (!handlers.mfa) throw new Error('MFA handlers not configured')

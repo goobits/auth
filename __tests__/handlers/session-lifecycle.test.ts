@@ -30,6 +30,31 @@ describe('ensureSessionAfterLogin', () => {
 		})
 	})
 
+	it('merges application metadata while keeping assurance timestamps protocol-owned', async () => {
+		const sessionAdapter = createSessionAdapter()
+		const event = createRequestEvent()
+		const assuredAt = new Date('2026-07-28T11:00:00.000Z')
+		const getSessionMetadata = vi.fn(async () => ({
+			createdAt: new Date('2002-01-01T00:00:00.000Z'),
+			fingerprint: 'fingerprint-1',
+			mfaVerifiedAt: new Date('2002-01-01T00:00:00.000Z')
+		}))
+
+		await ensureSessionAfterLogin({
+			event,
+			sessionAdapter: sessionAdapter as never,
+			userId: 'u1',
+			getSessionMetadata,
+			sessionMetadata: { mfaVerifiedAt: assuredAt }
+		})
+
+		expect(getSessionMetadata).toHaveBeenCalledWith(event, 'u1')
+		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1', {
+			fingerprint: 'fingerprint-1',
+			mfaVerifiedAt: assuredAt
+		})
+	})
+
 	it('throws AuthPrincipalResolutionError when userId is null', async () => {
 		const sessionAdapter = createSessionAdapter()
 		const event = createRequestEvent()

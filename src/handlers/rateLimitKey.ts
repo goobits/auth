@@ -1,4 +1,5 @@
 import type { RequestEventLike } from '../types/auth.ts'
+import { resolvePlatformClientAddress } from '../utils/clientAddress.ts'
 
 export type HandlerRateLimitConfig = {
 	check?: (key: string) => Promise<{ allowed: boolean }>
@@ -10,5 +11,5 @@ export function resolveHandlerRateLimitKey(
 	event: RequestEventLike,
 	config?: Pick<HandlerRateLimitConfig, 'key'>
 ): string {
-	return config?.key?.(event) ?? event.getClientAddress?.() ?? 'unknown'
+	return config?.key?.(event) ?? resolvePlatformClientAddress(event)
 }

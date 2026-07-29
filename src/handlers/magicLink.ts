@@ -80,6 +80,7 @@ type MagicLinkVerifyConfig = {
 	allowSignup?: boolean
 	createUser?: (email: string, event: RequestEventLike) => Promise<User>
 	onLogin?: AuthHooks['onLogin']
+	getSessionMetadata?: AuthHooks['getSessionMetadata']
 	redirectAfterLogin?: string
 	isAuthenticated?: (locals: AuthLocals) => boolean
 	secureCookies?: boolean
@@ -284,6 +285,7 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 		allowSignup = false,
 		createUser,
 		onLogin,
+		getSessionMetadata,
 		redirectAfterLogin = '/',
 		isAuthenticated = (locals: AuthLocals) => !!locals.user,
 		normalizeEmail = (email: string) => email.trim().toLowerCase(),
@@ -475,6 +477,7 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 				event,
 				sessionAdapter,
 				userId,
+				...(getSessionMetadata ? { getSessionMetadata } : {}),
 				autoCreateSession,
 				onLoginMode
 			})

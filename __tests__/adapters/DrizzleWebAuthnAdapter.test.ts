@@ -89,4 +89,23 @@ describe('DrizzleWebAuthnAdapter', () => {
 		expect(insert).not.toHaveBeenCalled()
 		expect(update).not.toHaveBeenCalled()
 	})
+
+	it('requires an owner match for deletion and reports expired challenge cleanup', async () => {
+		const returning = vi
+			.fn()
+			.mockResolvedValueOnce([])
+			.mockResolvedValueOnce([{}])
+			.mockResolvedValueOnce([{}, {}])
+		const where = vi.fn(() => ({ returning }))
+		const adapter = createAdapter({ delete: () => ({ where }) })
+
+		await expect(
+			adapter.deleteCredential({ credentialId: 'credential-1', userId: 'owner-2' })
+		).resolves.toBe(false)
+		await expect(
+			adapter.deleteCredential({ credentialId: 'credential-1', userId: 'owner-1' })
+		).resolves.toBe(true)
+		await expect(adapter.deleteExpiredChallenges(new Date())).resolves.toBe(2)
+		expect(where).toHaveBeenCalledTimes(3)
+	})
 })

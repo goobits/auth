@@ -13,7 +13,10 @@ export type AuthEventName =
 	| 'webauthn.challenge_invalid_type'
 	| 'webauthn.challenge_expired'
 	| 'webauthn.credential_missing'
+	| 'webauthn.credential_registered'
+	| 'webauthn.credential_removed'
 	| 'webauthn.authentication_failed'
+	| 'webauthn.authentication_succeeded'
 	| 'session.revoked'
 
 export type AuthEvent = {

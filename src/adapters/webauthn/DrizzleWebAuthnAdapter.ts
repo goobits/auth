@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, lte } from 'drizzle-orm'
 
 import type { WebAuthnCredential } from '../../types/index.ts'
 import {
@@ -8,7 +8,13 @@ import {
 	type DrizzleTable,
 	requireColumn
 } from '../drizzleTypes.ts'
-import { WebAuthnAdapter } from './WebAuthnAdapter.ts'
+import {
+	WebAuthnAdapter,
+	type AdvanceWebAuthnCredentialCounterInput,
+	type CreateWebAuthnChallengeInput,
+	type CreateWebAuthnCredentialInput,
+	type DeleteWebAuthnCredentialInput
+} from './WebAuthnAdapter.ts'
 import {
 	assertCredentialCounterTransition,
 	isValidCredentialCounter
@@ -184,13 +190,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		challenge,
 		type,
 		expiresAt
-	}: {
-		challengeId: string
-		userId: string | null
-		challenge: string
-		type: string
-		expiresAt: Date
-	}): Promise<void> {
+	}: CreateWebAuthnChallengeInput & { userId: string | null }): Promise<void> {
 		await this.db.insert(this.challengesTable).values({
 			[this.columns.challengeId]: challengeId,
 			[this.columns.challengeUserId]: userId,
@@ -214,6 +214,16 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 			.where(eq(requireColumn(this.challengesTable, this.columns.challengeId), challengeId))
 	}
 
+	async deleteExpiredChallenges(expiresAtOrBefore: Date): Promise<number> {
+		const rows = await this.db
+			.delete(this.challengesTable)
+			.where(
+				lte(requireColumn(this.challengesTable, this.columns.challengeExpiresAt), expiresAtOrBefore)
+			)
+			.returning()
+		return rows.length
+	}
+
 	async createCredential({
 		userId,
 		credentialId,
@@ -221,14 +231,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		counter,
 		transports,
 		name
-	}: {
-		userId: string
-		credentialId: string
-		publicKey: string
-		counter: number
-		transports?: string[] | null
-		name?: string | null
-	}): Promise<boolean> {
+	}: CreateWebAuthnCredentialInput): Promise<boolean> {
 		if (!isValidCredentialCounter(counter)) {
 			throw new RangeError('WebAuthn counter must be a non-negative safe integer')
 		}
@@ -241,9 +244,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 			[this.columns.name]: name ?? null
 		})
 		if (!('onConflictDoNothing' in insert)) {
-			throw new Error(
-				'Drizzle WebAuthn credential inserts require onConflictDoNothing support'
-			)
+			throw new Error('Drizzle WebAuthn credential inserts require onConflictDoNothing support')
 		}
 		const rows = await (insert as InsertConflictQuery)
 			.onConflictDoNothing({
@@ -257,9 +258,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		const [row] = await this.db
 			.select()
 			.from(this.credentialsTable)
-			.where(
-				eq(requireColumn(this.credentialsTable, this.columns.credentialId), credentialId)
-			)
+			.where(eq(requireColumn(this.credentialsTable, this.columns.credentialId), credentialId))
 		return mapCredentialRow(row ?? null, this.columns)
 	}
 
@@ -281,12 +280,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		userId,
 		expectedCounter,
 		newCounter
-	}: {
-		credentialId: string
-		userId: string
-		expectedCounter: number
-		newCounter: number
-	}): Promise<boolean> {
+	}: AdvanceWebAuthnCredentialCounterInput): Promise<boolean> {
 		assertCredentialCounterTransition(expectedCounter, newCounter)
 		const result = this.db
 			.update(this.credentialsTable)
@@ -296,10 +290,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 			})
 			.where(
 				and(
-					eq(
-						requireColumn(this.credentialsTable, this.columns.credentialId),
-						credentialId
-					),
+					eq(requireColumn(this.credentialsTable, this.columns.credentialId), credentialId),
 					eq(requireColumn(this.credentialsTable, this.columns.userId), userId),
 					eq(requireColumn(this.credentialsTable, this.columns.counter), expectedCounter)
 				)!
@@ -310,12 +301,20 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		return (await result.returning()).length === 1
 	}
 
-	async deleteCredential(credentialId: string): Promise<void> {
-		await this.db
+	async deleteCredential({
+		credentialId,
+		userId
+	}: DeleteWebAuthnCredentialInput): Promise<boolean> {
+		const rows = await this.db
 			.delete(this.credentialsTable)
 			.where(
-				eq(requireColumn(this.credentialsTable, this.columns.credentialId), credentialId)
+				and(
+					eq(requireColumn(this.credentialsTable, this.columns.credentialId), credentialId),
+					eq(requireColumn(this.credentialsTable, this.columns.userId), userId)
+				)!
 			)
+			.returning()
+		return rows.length === 1
 	}
 
 	async deleteUserCredentials(userId: string): Promise<void> {
