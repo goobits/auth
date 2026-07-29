@@ -369,7 +369,7 @@
 	},
 	"dependencies": {
 		"@goobits/security": "workspace:*",
-		"@lucide/svelte": "^0.563.1",
+		"@lucide/svelte": "^1.27.0",
 		"@simplewebauthn/server": "^13.3.2",
 		"arctic": "^3.7.0",
 		"hash-wasm": "^4.12.0",
