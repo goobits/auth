@@ -9,7 +9,7 @@ import {
 	getVerificationTokenRecord,
 	VERIFICATION_TOKEN_TYPES
 } from '../verification/index.ts'
-import { type AssuredSessionAdapter, rotateAssuredSession } from './_assuredSession.ts'
+import { type AssuredSessionAdapter, rotateSessionAssurance } from './_assuredSession.ts'
 import { consumeMfaCredentialProof, verifyMfaCredential } from './_mfaCredential.ts'
 import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
 
@@ -325,8 +325,9 @@ export function createMfaVerifyHandler(
 		}
 		await config.hooks?.onEnabled?.({ userId, event })
 		if (!config.sessionAdapter || !currentSession) return { success: true }
-		const replacement = await rotateAssuredSession({
+		const replacement = await rotateSessionAssurance({
 			sessionAdapter: config.sessionAdapter,
+			assurance: 'mfa',
 			cookies: event.cookies,
 			currentSession,
 			userId
@@ -388,8 +389,9 @@ export function createMfaStepUpHandler(
 			return { success: false, error: 'Invalid authentication code' }
 		}
 
-		const replacement = await rotateAssuredSession({
+		const replacement = await rotateSessionAssurance({
 			sessionAdapter: config.sessionAdapter,
+			assurance: 'mfa',
 			cookies: event.cookies,
 			currentSession,
 			userId

@@ -48,3 +48,8 @@ export {
 
 // Session management handlers
 export { createSessionListHandler, createSessionRevokeHandler } from './sessions.ts'
+export {
+	type AssuredSessionAdapter,
+	rotateSessionAssurance,
+	type SessionAssuranceKind
+} from './_assuredSession.ts'

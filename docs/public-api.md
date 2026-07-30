@@ -193,6 +193,12 @@ optional field when the consuming application uses session assurance for
 privileged authorization. It must not be populated from request-controlled
 metadata.
 
+Applications that verify a current credential outside a managed handler can
+use `rotateSessionAssurance()` from `@goobits/auth/handlers`. The helper rotates
+the session with compensating cleanup, binds the update to the same principal,
+preserves trusted session context, and refreshes exactly one of primary or MFA
+assurance.
+
 MFA login challenges reuse `VerificationTokenAdapter`. Adapters should preserve
 the optional token metadata when remember-me or session context must survive
 between the password and second-factor requests.

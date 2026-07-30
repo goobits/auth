@@ -12,7 +12,7 @@ import type { User } from '../types/index.ts'
 import { generateRandomUUID } from '../utils/crypto.ts'
 import { jsonResponse } from '../utils/http.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
-import { type AssuredSessionAdapter, rotateAssuredSession } from './_assuredSession.ts'
+import { type AssuredSessionAdapter, rotateSessionAssurance } from './_assuredSession.ts'
 import {
 	type WebAuthnVerificationConfig,
 	verifyWebAuthnCredential
@@ -210,8 +210,9 @@ export function createWebAuthnStepUpVerifyHandler(
 		}
 		const result = await verifyWebAuthnCredential(event, config, 'step-up', user.id)
 		if (!result.verified) return result.response
-		const replacement = await rotateAssuredSession({
+		const replacement = await rotateSessionAssurance({
 			sessionAdapter,
+			assurance: 'mfa',
 			cookies: event.cookies,
 			currentSession,
 			userId: user.id

@@ -85,6 +85,9 @@ See the public API and migration guide for the complete capability contracts.
 - Configure secure cookies, trusted proxy headers, alert delivery, encryption
   keys, and required database migrations before deployment.
 - Require fresh application authorization for MFA and passkey changes.
+- Rotate a current session through `rotateSessionAssurance()` after a trusted
+  primary- or second-factor verification instead of rewriting session metadata
+  in application code.
 - Keep route-level product authorization, TLS, headers, secrets, and key
   rotation in the host application or edge.
 

@@ -10,6 +10,8 @@
 
 ### 🔒 Security
 
+- 🔄 Added a principal-bound session-assurance rotator that refreshes primary
+  or MFA verification independently while preserving trusted session context.
 - 🍪 Built-in session adapters now persist only SHA-256 verifiers, return bearer
   values solely to the cookie layer, reject open-ended metadata, and expose
   session management only through distinct non-secret handles.
