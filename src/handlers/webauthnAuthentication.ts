@@ -2,12 +2,17 @@ import {
 	type AuthenticatorTransportFuture,
 	generateAuthenticationOptions
 } from '@simplewebauthn/server'
-import { redirect, type RequestHandler } from '@sveltejs/kit'
+import { redirect } from '@sveltejs/kit'
 
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
-import type { AuthHooks, OnLoginMode, RequestEventLike } from '../types/auth.ts'
+import type {
+	AuthHooks,
+	AuthRequestHandler,
+	OnLoginMode,
+	RequestEventLike
+} from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { generateRandomUUID } from '../utils/crypto.ts'
 import { jsonResponse } from '../utils/http.ts'
@@ -55,7 +60,7 @@ export type WebAuthnStepUpVerifyHandlerConfig = WebAuthnVerificationConfig & {
 /** Creates an identifierless passkey challenge without account-dependent output. */
 export function createWebAuthnLoginOptionsHandler(
 	config: WebAuthnLoginOptionsHandlerConfig
-): RequestHandler {
+): AuthRequestHandler {
 	const { webauthnAdapter, rpID, timeout = 60_000 } = config
 	if (!rpID) throw new Error('createWebAuthnLoginOptionsHandler requires rpID')
 
@@ -81,7 +86,7 @@ export function createWebAuthnLoginOptionsHandler(
 /** Verifies an identifierless passkey and creates an MFA-assured login session. */
 export function createWebAuthnLoginVerifyHandler(
 	config: WebAuthnLoginVerifyHandlerConfig
-): RequestHandler {
+): AuthRequestHandler {
 	const {
 		userAdapter,
 		sessionAdapter,
@@ -145,7 +150,7 @@ export function createWebAuthnLoginVerifyHandler(
 /** Creates a user-bound passkey challenge for an authenticated step-up. */
 export function createWebAuthnStepUpOptionsHandler(
 	config: WebAuthnStepUpOptionsHandlerConfig
-): RequestHandler {
+): AuthRequestHandler {
 	const {
 		webauthnAdapter,
 		rpID,
@@ -195,7 +200,7 @@ export function createWebAuthnStepUpOptionsHandler(
 /** Verifies a user-bound passkey and rotates the current session with fresh assurance. */
 export function createWebAuthnStepUpVerifyHandler(
 	config: WebAuthnStepUpVerifyHandlerConfig
-): RequestHandler {
+): AuthRequestHandler {
 	const { sessionAdapter, getUser = (event: RequestEventLike) => event.locals.user ?? null } =
 		config
 	if (!config.rpID || !config.origin) {

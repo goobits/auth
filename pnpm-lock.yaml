@@ -14,6 +14,9 @@ importers:
 
   .:
     dependencies:
+      '@goobits/keyboard':
+        specifier: workspace:*
+        version: link:../keyboard
       '@goobits/security':
         specifier: workspace:*
         version: link:../security
@@ -74,8 +77,17 @@ importers:
         specifier: ^2.0.2
         version: 2.0.2
 
+  ../keyboard:
+    devDependencies:
+      vitest:
+        specifier: ^4.1.5
+        version: 4.1.10(@types/node@26.1.1)(@vitest/coverage-v8@4.1.10)(vite@8.0.16(@types/node@26.1.1)(esbuild@0.28.1))
+
   ../security:
     dependencies:
+      hash-wasm:
+        specifier: ^4.12.0
+        version: 4.12.0
       jose:
         specifier: ^6.2.3
         version: 6.2.3

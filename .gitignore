@@ -1,13 +1,13 @@
 # Dependencies
-node_modules/
+node_modules
 
 # Build outputs
 dist
-dist/
-**/dist/
-build/
-**/build/
-.svelte-kit/
+**/dist
+build
+**/build
+.svelte-kit
+.turbo
 *.tsbuildinfo
 
 # Environment variables
@@ -27,8 +27,11 @@ Thumbs.db
 *~
 
 # Test coverage
-coverage/
-.nyc_output/
+coverage
+.nyc_output
+.codeatlas
+playwright-report
+test-results
 
 # Logs
 *.log
@@ -39,4 +42,7 @@ pnpm-debug.log*
 
 # Temporary files
 *.tmp
-.cache/
+.cache
+
+# Local agent metadata
+.llm

@@ -368,6 +368,7 @@
 		}
 	},
 	"dependencies": {
+		"@goobits/keyboard": "workspace:*",
 		"@goobits/security": "workspace:*",
 		"@lucide/svelte": "^1.27.0",
 		"@simplewebauthn/server": "^13.3.2",

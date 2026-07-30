@@ -4,12 +4,11 @@ import {
 	type GenerateRegistrationOptionsOpts,
 	verifyRegistrationResponse
 } from '@simplewebauthn/server'
-import type { RequestHandler } from '@sveltejs/kit'
-
 import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
 import { isValidCredentialCounter } from '../adapters/webauthn/_credentialCounter.ts'
 import { emitRequestAuthEvent, type AuthEventEmitter } from '../security/events.ts'
 import type {
+	AuthRequestHandler,
 	AuthorizeSecurityChange,
 	RequestEventLike,
 	WebAuthnCredentialLifecycleInput
@@ -72,7 +71,7 @@ function resolveCredentialLimit(value: number | undefined): number {
 /** Creates discoverable, user-verifying registration options for an authenticated principal. */
 export function createWebAuthnRegisterOptionsHandler(
 	config: WebAuthnRegisterOptionsHandlerConfig
-): RequestHandler {
+): AuthRequestHandler {
 	const {
 		authorizeSecurityChange,
 		webauthnAdapter,
@@ -155,7 +154,7 @@ export function createWebAuthnRegisterOptionsHandler(
 /** Verifies and persists a discoverable passkey for its challenge-bound owner. */
 export function createWebAuthnRegisterVerifyHandler(
 	config: WebAuthnRegisterVerifyHandlerConfig
-): RequestHandler {
+): AuthRequestHandler {
 	const {
 		webauthnAdapter,
 		rpID,

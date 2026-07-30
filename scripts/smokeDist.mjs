@@ -118,6 +118,28 @@ async function assertRuntimeSeparation() {
 	assert.match(workerProviders, /from ['"]#password['"]/)
 }
 
+async function assertDistPackageScope() {
+	const metadata = JSON.parse(await readFile(new URL('dist/package.json', rootUrl), 'utf8'))
+	assert.equal(metadata.type, 'module', 'dist/package.json must declare type=module')
+	assert.deepEqual(
+		Object.keys(metadata.imports),
+		Object.keys(published.imports),
+		'dist/package.json must retain every private package import'
+	)
+	for (const [specifier, conditions] of Object.entries(published.imports)) {
+		for (const [condition, target] of Object.entries(conditions)) {
+			assert.equal(
+				metadata.imports[specifier][condition],
+				target.replace('./dist/', './'),
+				`${specifier} ${condition} must resolve inside the dist package scope`
+			)
+		}
+	}
+
+	const directRoot = await import(new URL('dist/node/index.js', rootUrl).href)
+	assert.equal(typeof directRoot.GoobitsAuth, 'function', 'direct dist import must retain ESM identity')
+}
+
 async function assertUiDistribution() {
 	const components = [
 		'AuthGate.svelte',
@@ -134,6 +156,9 @@ async function assertUiDistribution() {
 			const source = await readFile(new URL(target, rootUrl), 'utf8')
 			assert.doesNotMatch(source, /['"]\.{1,2}\/.+\.ts['"]/, `${target} imports raw TypeScript`)
 		}
+		await assertDistTarget(
+			`./dist/${output}/ui/backupCodesModalKeyboard.${output === 'types' ? 'd.ts' : 'js'}`
+		)
 	}
 
 	for (const output of ['node', 'worker']) {
@@ -258,6 +283,7 @@ async function assertPackedPackage() {
 
 		const packedFiles = await listFiles(installedRoot)
 		for (const required of [
+			'dist/package.json',
 			'dist/node/index.js',
 			'dist/worker/index.js',
 			'dist/types/index.d.ts',
@@ -294,6 +320,7 @@ async function assertPackedPackage() {
 
 await assertWorkspaceMap()
 await assertPublishedMap()
+await assertDistPackageScope()
 await assertRuntimeSeparation()
 await assertUiDistribution()
 await assertSvelteDistribution()

@@ -7,6 +7,9 @@
 ### UI
 
 - Added `@goobits/auth/ui/qr-code` so QR-only consumers do not initialize the auth session store.
+- Backup-code dialogs now contain keyboard focus through `@goobits/keyboard`,
+  restore the opener focus, reset transient state on every opening, expose a
+  labelled dialog, and provide 44px minimum action targets.
 
 ### 🔒 Security
 
@@ -35,7 +38,9 @@
 - 🛡️ Drizzle, D1, KV, and PostgreSQL session adapters now persist MFA assurance
   across validation, refresh, and session-listing round trips.
 - 🔐 PostgreSQL MFA storage now requires an application-owned encryption codec;
-  plaintext secrets and implicit plaintext fallback are rejected.
+  plaintext secrets and implicit plaintext fallback are rejected. The
+  PostgreSQL bundle exposes the MFA capability only when that codec is supplied,
+  so applications that do not enable TOTP need no unused encryption key.
 - 🧱 The secure profile now requires built-in CSRF or an explicit outer request
   boundary, production profiles require shared policy stores, and the browser
   client uses `@goobits/security/csrf-client` for unsafe same-origin requests.
@@ -71,12 +76,26 @@
 - 📜 The Auth-to-Security audit bridge omits free-form event messages and
   redacts structured detail before durable storage, preventing backend error
   text from becoming an accidental secret channel.
+- 🔑 New MFA backup codes use independently salted, versioned PBKDF2 hashes.
+  Verification temporarily accepts the former unprefixed SHA-256 format so
+  deployed codes can be consumed during the v8 regeneration window.
+- 🧭 Append-style `X-Forwarded-For` chains can now select a client address by
+  an explicit trusted-proxy hop count, while malformed hop configuration and
+  undersized chains fail closed.
+- 🧱 Managed forms use Security's canonical `csrf_token` field. Optional CSRF
+  mode now validates unsafe requests whenever its CSRF cookie is present.
+- 🍎 Apple sign-in rejects both boolean and string forms of an explicitly
+  unverified email claim.
+- 📦 Node request streams now use Security's shared bounded body reader with a
+  1 MiB default ceiling.
 
 ### 🏠 Internal
 
 - Reconciled the public and first-party integration histories into one
   canonical package line and made shared documentation and test fixtures
   consumer-neutral.
+- Auth route handlers now use Auth's structural request-event contract instead
+  of inheriting an ambient application's SvelteKit `App.Locals` declaration.
 - 📦 Added `@goobits/auth/verification`, PostgreSQL verification-token storage,
   and a named `auth.routes` facade for clean application composition.
 - 🔑 Added a provider-neutral password migration verifier so applications can
@@ -93,6 +112,11 @@
 - 📌 Runtime exports for every supported non-UI subpath are snapshot-pinned so
   accidental public/private API drift fails tests.
 - 📦 Development dependencies refreshed for the current package toolchain.
+- 📦 Memory and PostgreSQL adapter factories now forward an optional
+  `sessionLifetimeMs`, and emitted `dist` JavaScript carries its own ESM package
+  scope when managed build storage resolves outside the source tree.
+- 📦 The standalone Auth workspace now includes its Keyboard sibling, and the
+  test worker pool is capped locally to avoid resource spikes.
 - Removed generic `auditLog` and `withAuditLogging` exports from
   `@goobits/auth/security`; one awaited auth-event emitter now bridges all
   managed handlers to `@goobits/security/audit`.

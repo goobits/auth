@@ -1,8 +1,7 @@
-import type { RequestHandler } from '@sveltejs/kit'
-
 import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
 import { emitRequestAuthEvent, type AuthEventEmitter } from '../security/events.ts'
 import type {
+	AuthRequestHandler,
 	AuthorizeSecurityChange,
 	RequestEventLike,
 	WebAuthnCredentialLifecycleInput
@@ -63,7 +62,7 @@ async function authenticatedUser(
 /** Lists public passkey metadata for the current authenticated owner. */
 export function createWebAuthnListCredentialsHandler(
 	config: WebAuthnListCredentialsHandlerConfig
-): RequestHandler {
+): AuthRequestHandler {
 	const getUser = config.getUser ?? ((event: RequestEventLike) => event.locals.user ?? null)
 	return async (event: RequestEventLike) => {
 		const user = await authenticatedUser(event, getUser)
@@ -78,7 +77,7 @@ export function createWebAuthnListCredentialsHandler(
 /** Removes only a credential atomically owned by the current authenticated principal. */
 export function createWebAuthnRemoveCredentialHandler(
 	config: WebAuthnRemoveCredentialHandlerConfig
-): RequestHandler {
+): AuthRequestHandler {
 	const getUser = config.getUser ?? ((event: RequestEventLike) => event.locals.user ?? null)
 	return async (event: RequestEventLike) => {
 		const user = await authenticatedUser(event, getUser)

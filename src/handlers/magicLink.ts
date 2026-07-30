@@ -1,4 +1,4 @@
-import { redirect, type RequestHandler } from '@sveltejs/kit'
+import { redirect } from '@sveltejs/kit'
 import { constantTimeEqual } from '@goobits/security/crypto'
 import { CSRF_COOKIE_NAME } from '@goobits/security/csrf'
 
@@ -9,7 +9,13 @@ import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
 import type { Logger } from '../_internal/logger.ts'
 import { emitRequestAuthEvent, type AuthEventEmitter } from '../security/events.ts'
-import type { AuthHooks, AuthLocals, OnLoginMode, RequestEventLike } from '../types/auth.ts'
+import type {
+	AuthHooks,
+	AuthLocals,
+	AuthRequestHandler,
+	OnLoginMode,
+	RequestEventLike
+} from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { jsonResponse, parseRequestData } from '../utils/http.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
@@ -152,7 +158,7 @@ function magicLinkConfirmationResponse({
 		: ''
 	const body = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Confirm sign in</title></head>
-<body><main><h1>Confirm sign in</h1><p>Continue only if you requested this sign-in link.</p><form method="post"><input type="hidden" name="token" value="${escapeHtml(token)}"><input type="hidden" name="confirmation" value="${escapeHtml(confirmation)}"><input type="hidden" name="_csrf" value="${escapeHtml(csrfToken)}">${redirectField}<button type="submit">Continue</button></form></main></body></html>`
+<body><main><h1>Confirm sign in</h1><p>Continue only if you requested this sign-in link.</p><form method="post"><input type="hidden" name="token" value="${escapeHtml(token)}"><input type="hidden" name="confirmation" value="${escapeHtml(confirmation)}"><input type="hidden" name="csrf_token" value="${escapeHtml(csrfToken)}">${redirectField}<button type="submit">Continue</button></form></main></body></html>`
 	return new Response(body, {
 		status: 200,
 		headers: {
@@ -167,7 +173,7 @@ function magicLinkConfirmationResponse({
 }
 
 /** Creates magic link request handler for auth HTTP handlers. */
-export function createMagicLinkRequestHandler(config: MagicLinkRequestConfig): RequestHandler {
+export function createMagicLinkRequestHandler(config: MagicLinkRequestConfig): AuthRequestHandler {
 	const {
 		magicLinkAdapter,
 		userAdapter,

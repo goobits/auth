@@ -1,9 +1,14 @@
-import { error, type Handle, redirect, type RequestHandler } from '@sveltejs/kit'
+import { error, type Handle, redirect } from '@sveltejs/kit'
 
 import { createAuth } from './createAuth.ts'
 import { AUTH_ROUTE_PATHS, matchesAuthRoute } from './_routePaths.ts'
 import { createAuthEvent, type AuthEvent } from './security/events.ts'
-import type { AuthConfig, AuthLocals, RequestEventLike } from './types/auth.ts'
+import type {
+	AuthConfig,
+	AuthLocals,
+	AuthRequestHandler,
+	RequestEventLike
+} from './types/auth.ts'
 import type { Session, User } from './types/index.ts'
 
 type HandlerMethod = 'GET' | 'POST'
@@ -14,8 +19,8 @@ type AuthPrincipal = {
 }
 
 type AuthHandlersBundle = {
-	GET: RequestHandler
-	POST: RequestHandler
+	GET: AuthRequestHandler
+	POST: AuthRequestHandler
 }
 
 type AuthRoleResolver = (user: User) => string[] | Promise<string[]>
@@ -40,7 +45,7 @@ export type AuthSecurityEventInput = Omit<AuthEvent, 'timestamp'>
 
 type HandlerTarget = {
 	method: HandlerMethod
-	handler: RequestHandler
+	handler: AuthRequestHandler
 }
 
 type CoreAuth = ReturnType<typeof createAuth>
@@ -147,8 +152,8 @@ export class GoobitsAuth {
 			})
 			const locals = event.locals as LocalsWithAuth
 			if (locals.auth === undefined) {
-				locals.auth = hasSessionPrincipal(event.locals)
-					? { session: event.locals.session, user: event.locals.user }
+				locals.auth = hasSessionPrincipal(locals)
+					? { session: locals.session, user: locals.user }
 					: null
 			}
 			return response
@@ -157,7 +162,7 @@ export class GoobitsAuth {
 
 	createHandlers(options?: { basePath?: string }): AuthHandlersBundle {
 		const basePath = normalizeBasePath(options?.basePath ?? this.routing.basePath)
-		const dispatch: RequestHandler = async (event) => {
+		const dispatch: AuthRequestHandler = async (event) => {
 			const method = event.request.method.toUpperCase()
 			if (method !== 'GET' && method !== 'POST') {
 				return new Response('Method Not Allowed', { status: 405 })

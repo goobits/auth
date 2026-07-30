@@ -1,4 +1,4 @@
-import { isHttpError, isRedirect, type RequestHandler } from '@sveltejs/kit'
+import { isHttpError, isRedirect } from '@sveltejs/kit'
 import {
 	createRateLimiter,
 	getClientIP,
@@ -8,7 +8,11 @@ import {
 import type { Logger } from '@goobits/security/logger'
 import type { CsrfTokenStore } from '@goobits/security/csrf'
 import { createSvelteKitCsrf } from '@goobits/security/csrf/sveltekit'
-import type { RequestEventLike, TrustedProxyHeader } from '../types/auth.ts'
+import type {
+	AuthRequestHandler,
+	RequestEventLike,
+	TrustedProxyHeader
+} from '../types/auth.ts'
 import { resolvePlatformClientAddress } from '../utils/clientAddress.ts'
 import { type AuthEventEmitter, createAuthEvent } from './events.ts'
 
@@ -59,6 +63,7 @@ export type SecurityPolicySettings = {
 		windows: readonly RateLimitWindow[]
 		keyPrefix: string
 		trustedProxyHeaders: readonly TrustedProxyHeader[]
+		forwardedForTrustedProxyHops?: number
 		store?: RateLimitStore
 		logger?: Logger
 	}
@@ -70,7 +75,7 @@ export type SecurityPolicySettings = {
 }
 
 type ApplyPolicyInput = {
-	handler: RequestHandler
+	handler: AuthRequestHandler
 	routeId: SecurityRouteId
 	settings: SecurityPolicySettings
 }
@@ -84,9 +89,18 @@ function jsonError(status: number, message: string, headers?: Record<string, str
 
 function getClientIp(
 	event: RequestEventLike,
-	trustedProxyHeaders: readonly TrustedProxyHeader[]
+	{
+		trustedProxyHeaders,
+		forwardedForTrustedProxyHops
+	}: Pick<
+		SecurityPolicySettings['rateLimit'],
+		'trustedProxyHeaders' | 'forwardedForTrustedProxyHops'
+	>
 ): string {
-	const proxyIp = getClientIP(event.request, { trustHeaders: trustedProxyHeaders })
+	const proxyIp = getClientIP(event.request, {
+		trustHeaders: trustedProxyHeaders,
+		...(forwardedForTrustedProxyHops !== undefined ? { forwardedForTrustedProxyHops } : {})
+	})
 	if (proxyIp !== 'unknown') return proxyIp
 	return resolvePlatformClientAddress(event)
 }
@@ -107,7 +121,6 @@ export function applySecurityPolicy({ handler, routeId, settings }: ApplyPolicyI
 	const csrf = createSvelteKitCsrf({
 		cookieName: settings.csrf.cookieName,
 		headerName: settings.csrf.headerName,
-		tokenFieldName: '_csrf',
 		checkExpiry: settings.csrf.checkExpiry,
 		...(settings.csrf.store ? { tokenStore: settings.csrf.store } : {})
 	})
@@ -117,7 +130,7 @@ export function applySecurityPolicy({ handler, routeId, settings }: ApplyPolicyI
 		const csrfMode = routePolicy.csrf ?? settings.csrf.mode
 		const rateMode = routePolicy.rateLimit ?? settings.rateLimit.mode
 		const auditMode = routePolicy.audit ?? settings.audit.mode
-		const ip = getClientIp(event, settings.rateLimit.trustedProxyHeaders)
+		const ip = getClientIp(event, settings.rateLimit)
 
 		const emit = async (
 			name: Parameters<typeof createAuthEvent>[0]['name'],
@@ -154,7 +167,11 @@ export function applySecurityPolicy({ handler, routeId, settings }: ApplyPolicyI
 
 		const isStateChanging =
 			method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE'
-		if (isStateChanging && csrfMode === 'required') {
+		const enforceCsrf =
+			isStateChanging &&
+			csrfMode !== 'off' &&
+			(csrfMode === 'required' || Boolean(event.cookies.get(settings.csrf.cookieName)))
+		if (enforceCsrf) {
 			const valid = await csrf.validateRequest(event.request, event.cookies)
 			if (!valid) {
 				await emit('auth.csrf_failed', 'warn', 403, 'Invalid CSRF token')
@@ -173,7 +190,7 @@ export function applySecurityPolicy({ handler, routeId, settings }: ApplyPolicyI
 
 		await emit('auth.request', 'info')
 		try {
-			const response = await handler(event as Parameters<RequestHandler>[0])
+			const response = await handler(event)
 			await emit(
 				response.status >= 400 ? 'auth.failure' : 'auth.success',
 				response.status >= 400 ? 'warn' : 'info',

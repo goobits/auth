@@ -1,6 +1,17 @@
-import { constantTimeEqual, randomBytes, sha256Hex } from '@goobits/security/crypto'
+import {
+	bytesToHex,
+	constantTimeEqual,
+	hexToBytes,
+	randomBytes,
+	sha256Hex
+} from '@goobits/security/crypto'
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+const PBKDF2_ITERATIONS = 100_000
+const SALT_BYTES = 16
+const HASH_VERSION = 'v2'
+const LEGACY_SHA256_PATTERN = /^[0-9a-f]{64}$/u
+const VERSIONED_HASH_PATTERN = /^v2:([0-9a-f]{32}):([0-9a-f]{64})$/u
 
 function randomCode(length: number = 10): string {
 	const bytes = randomBytes(length)
@@ -23,9 +34,36 @@ export function generateBackupCodes({
 	return codes
 }
 
-/** Hashes MFA backup codes for storage. */
+async function deriveCodeHash(code: string, saltHex: string): Promise<string> {
+	const key = await globalThis.crypto.subtle.importKey(
+		'raw',
+		new TextEncoder().encode(code),
+		'PBKDF2',
+		false,
+		['deriveBits']
+	)
+	const bits = await globalThis.crypto.subtle.deriveBits(
+		{
+			name: 'PBKDF2',
+			hash: 'SHA-256',
+			iterations: PBKDF2_ITERATIONS,
+			salt: new Uint8Array(hexToBytes(saltHex))
+		},
+		key,
+		256
+	)
+	return bytesToHex(new Uint8Array(bits))
+}
+
+/** Hashes MFA backup codes as versioned, independently salted PBKDF2 values. */
 export async function hashBackupCodes(codes: string[]): Promise<string[]> {
-	return Promise.all(codes.map((c) => sha256Hex(c)))
+	return Promise.all(
+		codes.map(async (code) => {
+			const saltHex = bytesToHex(randomBytes(SALT_BYTES))
+			const hash = await deriveCodeHash(code, saltHex)
+			return `${HASH_VERSION}:${saltHex}:${hash}`
+		})
+	)
 }
 
 /** Verifies a backup code against stored hashes. */
@@ -37,12 +75,17 @@ export async function verifyBackupCode({
 	hashedCodes?: string[]
 }): Promise<{ valid: boolean; hash?: string; index?: number }> {
 	if (!code || !hashedCodes?.length) return { valid: false }
-	const hash = await sha256Hex(code)
-	let idx = -1
+	const legacyCandidate = await sha256Hex(code)
+	let match: { hash: string; index: number } | undefined
+
 	for (let index = 0; index < hashedCodes.length; index += 1) {
-		const matches = constantTimeEqual(hash, hashedCodes[index] ?? '')
-		if (matches && idx === -1) idx = index
+		const stored = hashedCodes[index] ?? ''
+		const versioned = VERSIONED_HASH_PATTERN.exec(stored)
+		const matches = versioned
+			? constantTimeEqual(await deriveCodeHash(code, versioned[1]!), versioned[2]!)
+			: LEGACY_SHA256_PATTERN.test(stored) && constantTimeEqual(legacyCandidate, stored)
+		if (matches && !match) match = { hash: stored, index }
 	}
-	if (idx === -1) return { valid: false }
-	return { valid: true, hash, index: idx }
+
+	return match ? { valid: true, ...match } : { valid: false }
 }

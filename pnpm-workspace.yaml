@@ -1,5 +1,6 @@
 packages:
   - '.'
+  - '../keyboard'
   - '../security'
 
 allowBuilds:

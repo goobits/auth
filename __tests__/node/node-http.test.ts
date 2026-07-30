@@ -68,4 +68,11 @@ describe('node http bridge', () => {
 		expect(ended.toString('utf8')).toBe('ok')
 		expect(headers.get('set-cookie')).toEqual(['session=next; Path=/; HttpOnly'])
 	})
+
+	it('caps streamed Node request bodies through the shared Security reader', async () => {
+		await expect(
+			readRequestBody([Buffer.alloc(64), Buffer.alloc(64)], { maxBytes: 100 })
+		).rejects.toThrow('Request body exceeds 100 bytes')
+		await expect(readRequestBody([Buffer.alloc(64)], { maxBytes: 100 })).resolves.toHaveLength(64)
+	})
 })

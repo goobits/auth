@@ -2,11 +2,17 @@
 	"name": "@goobits/auth-sveltekit-quickstart",
 	"private": true,
 	"type": "module",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/goobits/auth.git",
+		"directory": "examples/sveltekit-quickstart"
+	},
 	"scripts": {
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
 	},
 	"dependencies": {
-		"@goobits/auth": "^0.2.0",
+		"@goobits/auth": "^0.3.1",
 		"@sveltejs/kit": "^2.0.0",
 		"svelte": "^5.0.0"
 	},

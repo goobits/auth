@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { AlertTriangle, X } from '@lucide/svelte'
-	import { onMount, onDestroy } from 'svelte'
+	import { onDestroy, onMount } from 'svelte'
+
+	import { handleBackupCodesModalKeyboardEvent } from './backupCodesModalKeyboard.ts'
 
 	let {
 		visible = $bindable(false),
@@ -19,6 +21,8 @@
 	let acknowledged = $state(false)
 	let copyStatus = $state('')
 	let modalEl = $state<HTMLElement | null>(null)
+	let previousActiveElement = $state<HTMLElement | null>(null)
+	let hasCapturedFocus = $state(false)
 
 	function handleDownload() {
 		if (!backupCodes || backupCodes.length === 0) return
@@ -59,48 +63,58 @@
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') {
-			close()
-			return
-		}
-		if (e.key !== 'Tab') return
-		const focusable = Array.from(
-			modalEl?.querySelectorAll<HTMLElement>(
-				'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-			) ?? []
-		)
-		if (!focusable || focusable.length === 0) return
-		const first = focusable[0]
-		const last = focusable[focusable.length - 1]
-		if (!first || !last) return
-		if (e.shiftKey && document.activeElement === first) {
-			e.preventDefault()
-			last.focus()
-		} else if (!e.shiftKey && document.activeElement === last) {
-			e.preventDefault()
-			first.focus()
-		}
+		handleBackupCodesModalKeyboardEvent(e, { close, modalEl, visible })
 	}
 
-	onMount(() => {
+	function restorePreviousFocus() {
+		if (previousActiveElement?.isConnected) {
+			previousActiveElement.focus({ preventScroll: true })
+		}
+		previousActiveElement = null
+	}
+
+	$effect(() => {
+		if (!visible) {
+			hasCapturedFocus = false
+			restorePreviousFocus()
+			return
+		}
+
+		if (hasCapturedFocus) return
+		hasCapturedFocus = true
+		previousActiveElement =
+			document.activeElement instanceof HTMLElement ? document.activeElement : null
 		acknowledged = false
 		copyStatus = ''
-		if (visible) {
-			setTimeout(() => {
-				modalEl?.focus()
-			}, 0)
-		}
+
+		const focusTimer = setTimeout(() => {
+			modalEl?.focus({ preventScroll: true })
+		}, 0)
+
+		return () => clearTimeout(focusTimer)
+	})
+
+	onMount(() => {
 		const onKey = (e: KeyboardEvent) => handleKeydown(e)
 		window.addEventListener('keydown', onKey)
-		onDestroy(() => window.removeEventListener('keydown', onKey))
+		return () => window.removeEventListener('keydown', onKey)
 	})
+
+	onDestroy(restorePreviousFocus)
 </script>
 
 {#if visible}
 	<div class="modal-overlay" role="presentation">
-		<div class="modal-content" bind:this={modalEl} tabindex="-1" role="dialog" aria-modal="true">
+		<div
+			class="modal-content"
+			bind:this={modalEl}
+			tabindex="-1"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="backup-codes-modal-title"
+		>
 			<div class="modal-header">
-				<h2>
+				<h2 id="backup-codes-modal-title">
 					{isNewEnrollment ? 'Save Your Backup Codes' : 'New Backup Codes Generated'}
 				</h2>
 				<button type="button" class="close-button" onclick={close} aria-label="Close dialog"
@@ -208,6 +222,8 @@
 		line-height: 1;
 		cursor: pointer;
 		padding: 0.25rem 0.5rem;
+		min-width: 44px;
+		min-height: 44px;
 		border-radius: 0.5rem;
 	}
 	.close-button:hover {
@@ -286,6 +302,7 @@
 		border: 1px solid var(--auth-border, rgba(255, 255, 255, 0.1));
 		border-radius: var(--auth-radius-md, 12px);
 		font-weight: 500;
+		min-height: 44px;
 		cursor: pointer;
 		transition: all 0.2s ease;
 	}
@@ -334,6 +351,7 @@
 		border-radius: var(--auth-radius-md, 12px);
 		font-size: 1rem;
 		font-weight: 500;
+		min-height: 44px;
 		cursor: pointer;
 		transition: all 0.2s ease;
 	}

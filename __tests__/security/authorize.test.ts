@@ -51,6 +51,7 @@ describe('security authorize helpers', () => {
 			emailVerified: true
 		} as User & { role: string })
 		await expect(requireAuthRole({ event }, ['admin'])).resolves.toBeUndefined()
+		await expect(requireAuthRole({ event }, ['owner'])).rejects.toThrow('Forbidden')
 		await expect(requireOwnership({ event }, 'u1')).resolves.toBeUndefined()
 		await expect(requireOwnership({ event }, 'u2')).rejects.toThrow('Forbidden')
 	})
