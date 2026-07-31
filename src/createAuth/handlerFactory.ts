@@ -550,7 +550,7 @@ export function buildActions(handlers: AuthHandlers): AuthActions {
 	return {
 		logout: () => ({
 			default: async (event) => {
-				const response = await handlers.logout(event)
+				const response = await handlers.logout(event as unknown as RequestEventLike)
 				const data = await readActionResponse(response)
 				return response.ok ? data : fail(response.status, data)
 			}
