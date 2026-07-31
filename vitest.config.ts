@@ -4,6 +4,7 @@ import { shouldSuppressConsoleMessage } from './__tests__/consoleSuppressions.js
 
 export default defineConfig({
 	test: {
+		...(process.env.CI ? {} : { maxWorkers: 2 }),
 		setupFiles: ['./vitest.setup.ts'],
 		onConsoleLog(log) {
 			if (shouldSuppressConsoleMessage(log)) return false

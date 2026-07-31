@@ -139,7 +139,7 @@ describe('security policy wrapper', () => {
 		expect(inner).not.toHaveBeenCalled()
 	})
 
-	it('uses the first forwarded ip when proxy headers are trusted', async () => {
+	it('ignores spoofed left entries when one append-style proxy hop is trusted', async () => {
 		const handler = applySecurityPolicy({
 			handler: async () => new Response(JSON.stringify({ ok: true })),
 			routeId: 'magic.request',
@@ -154,7 +154,8 @@ describe('security policy wrapper', () => {
 					mode: 'required',
 					windows: [{ name: 'test', maxEvents: 1, windowMs: 60_000 }],
 					keyPrefix: 'test-forwarded',
-					trustedProxyHeaders: ['x-forwarded-for']
+					trustedProxyHeaders: ['x-forwarded-for'],
+					forwardedForTrustedProxyHops: 1
 				},
 				audit: { mode: 'off' },
 				routes: {}
@@ -162,13 +163,13 @@ describe('security policy wrapper', () => {
 		})
 		const first = await handler(
 			createEvent({
-				headers: { 'x-forwarded-for': '203.0.113.10, 10.0.0.2' },
+				headers: { 'x-forwarded-for': '198.51.100.1, 203.0.113.10' },
 				clientAddress: '10.0.0.1'
 			}) as Parameters<typeof handler>[0]
 		)
 		const secondSameForwardedIp = await handler(
 			createEvent({
-				headers: { 'x-forwarded-for': '203.0.113.10, 10.0.0.3' },
+				headers: { 'x-forwarded-for': '198.51.100.2, 203.0.113.10' },
 				clientAddress: '10.0.0.99'
 			}) as Parameters<typeof handler>[0]
 		)
@@ -182,6 +183,74 @@ describe('security policy wrapper', () => {
 		expect(first.status).toBe(200)
 		expect(secondSameForwardedIp.status).toBe(429)
 		expect(thirdDifferentForwardedIp.status).toBe(200)
+	})
+
+	it('enforces optional csrf after a token cookie has been issued', async () => {
+		const handler = applySecurityPolicy({
+			handler: async () => new Response(JSON.stringify({ ok: true })),
+			routeId: 'magic.request',
+			settings: {
+				csrf: {
+					mode: 'optional',
+					cookieName: 'csrf-token',
+					headerName: 'x-csrf-token',
+					checkExpiry: false
+				},
+				rateLimit: {
+					mode: 'off',
+					windows: [{ name: 'test', maxEvents: 10, windowMs: 60_000 }],
+					keyPrefix: 'test-optional',
+					trustedProxyHeaders: []
+				},
+				audit: { mode: 'off' },
+				routes: {}
+			}
+		})
+
+		await expect(handler(createEvent() as Parameters<typeof handler>[0])).resolves.toMatchObject({
+			status: 200
+		})
+		await expect(
+			handler(
+				createEvent({
+					cookies: createCookies({ 'csrf-token': 'issued-token' })
+				}) as Parameters<typeof handler>[0]
+			)
+		).resolves.toMatchObject({ status: 403 })
+	})
+
+	it('accepts the canonical csrf_token form field', async () => {
+		const cookies = createCookies({ 'csrf-token': 'token' })
+		const handler = applySecurityPolicy({
+			handler: async () => new Response(JSON.stringify({ ok: true })),
+			routeId: 'auth.logout',
+			settings: {
+				csrf: {
+					mode: 'required',
+					cookieName: 'csrf-token',
+					headerName: 'x-csrf-token',
+					checkExpiry: false
+				},
+				rateLimit: {
+					mode: 'off',
+					windows: [{ name: 'test', maxEvents: 10, windowMs: 60_000 }],
+					keyPrefix: 'test-form',
+					trustedProxyHeaders: []
+				},
+				audit: { mode: 'off' },
+				routes: {}
+			}
+		})
+		const event = createEvent({ cookies })
+		event.request = new Request('http://localhost/auth/test', {
+			method: 'POST',
+			headers: { 'content-type': 'application/x-www-form-urlencoded' },
+			body: new URLSearchParams({ csrf_token: 'token' })
+		})
+
+		await expect(handler(event as Parameters<typeof handler>[0])).resolves.toMatchObject({
+			status: 200
+		})
 	})
 
 	it('uses the Cloudflare connecting ip when explicitly trusted', async () => {

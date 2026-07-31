@@ -139,7 +139,6 @@ export function createHandlers(
 	const csrf = createSvelteKitCsrf({
 		cookieName: security.csrf.cookieName,
 		headerName: security.csrf.headerName,
-		tokenFieldName: '_csrf',
 		checkExpiry: security.csrf.checkExpiry,
 		trackExpiry: security.csrf.checkExpiry,
 		cookieOptions: {

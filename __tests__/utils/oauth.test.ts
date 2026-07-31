@@ -42,4 +42,31 @@ describe('oauth cookies', () => {
 		const params = getOAuthCallbackParams(cookies, url, 'google', { code: 'ok', state: 'abc' })
 		expect(validateOAuthCallback(params)).toBe(true)
 	})
+
+	it('rejects callback params with missing or mismatched state', () => {
+		expect(
+			validateOAuthCallback({
+				code: 'ok',
+				state: 'wrong',
+				storedCodeVerifier: 'ver',
+				storedState: 'abc'
+			})
+		).toBe(false)
+		expect(
+			validateOAuthCallback({
+				code: 'ok',
+				state: 'abc',
+				storedCodeVerifier: 'ver',
+				storedState: null
+			})
+		).toBe(false)
+		expect(
+			validateOAuthCallback({
+				code: null,
+				state: 'abc',
+				storedCodeVerifier: 'ver',
+				storedState: 'abc'
+			})
+		).toBe(false)
+	})
 })

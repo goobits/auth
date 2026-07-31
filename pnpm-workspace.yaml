@@ -1,5 +1,6 @@
 packages:
   - '.'
+  - '../keyboard'
   - '../security'
 
 allowBuilds:
@@ -9,4 +10,5 @@ overrides:
   cookie: 0.7.2
   esbuild: 0.28.1
   immutable: ^4.3.9
+  postcss: 8.5.18
   vite: 8.0.16

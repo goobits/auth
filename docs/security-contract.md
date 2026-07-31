@@ -33,6 +33,11 @@ the `secure` profile. Auth executes that validator for every unsafe request and
 fails closed when it rejects. The `strict` profile always requires built-in
 CSRF.
 
+Built-in forms use the Security-owned defaults: cookie `csrf-token`, header
+`X-CSRF-Token`, and form or JSON field `csrf_token`. Optional mode leaves
+cookie-less unsafe requests alone, but once the CSRF cookie exists it requires a
+matching token instead of silently bypassing validation.
+
 ## Responsibilities
 
 - Library provides:
@@ -50,8 +55,8 @@ CSRF.
     `webauthn.authorizeSecurityChange`
   - migration of custom session storage to persist optional assurance metadata
     before privileged routes rely on it
-  - an MFA secret codec backed by `@goobits/security/crypto` or a managed KMS,
-    including key rotation
+  - when TOTP is enabled, an MFA secret codec backed by
+    `@goobits/security/crypto` or a managed KMS, including key rotation
   - a shared production rate-limit store; strict or expiry-checked CSRF also
     requires a shared CSRF store
   - CSRF plus rate limiting for standalone credential handlers, or one
@@ -97,6 +102,13 @@ rate-limit their login/signup routes aggressively to compensate.
 6. Configure shared rate-limit state before using `secure` or `strict` in production.
 7. Configure an awaited audit emitter before using `secure` or `strict` in production.
 
+For a proxy that replaces `X-Forwarded-For` with one client address, allowlist
+the header without a hop count. For an append-style chain, also set
+`security.rateLimit.forwardedForTrustedProxyHops` to the exact number of trusted
+server-side hops. Auth then resolves from the right edge of the chain and
+rejects a chain that is too short; it never trusts a spoofable leftmost entry by
+accident.
+
 Use `createAuthEventAuditEmitter()` to bridge Auth events into a canonical
 `@goobits/security/audit` logger. The bridge redacts structured detail and does
 not persist free-form event messages, because backend exception text is not a
@@ -110,6 +122,12 @@ Password-length enforcement runs before built-in or application-supplied
 hash/verify functions. TOTP verification accepts integer windows from 0 through
 10 and evaluates every candidate with the shared constant-time comparison
 primitive.
+
+New backup-code hashes use the `v2:<salt>:<pbkdf2>` format. The v8 migration
+reader accepts earlier unprefixed SHA-256 hashes only long enough for existing
+codes to be used or regenerated. Applications should rotate outstanding backup
+codes during v8 and remove the legacy reader only after storage confirms that no
+legacy hashes remain.
 
 ## Alert Webhooks
 

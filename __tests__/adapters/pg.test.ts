@@ -220,16 +220,16 @@ describe('pg auth adapters', () => {
 		).resolves.toBeNull()
 	})
 
-	it('requires an MFA secret codec for the postgres bundle', () => {
+	it('omits the optional MFA capability when no secret codec is supplied', () => {
 		const db: PgPoolLike = { query: async () => ({ rows: [] }) }
-		expect(() =>
-			createPgAuthAdapters({
-				cookieName: 'auth',
-				db,
-				mfaSecretCodec: undefined as never,
-				secureCookies: true
-			})
-		).toThrow('requires an MFA secret encryption codec')
+		const adapters = createPgAuthAdapters({
+			cookieName: 'auth',
+			db,
+			secureCookies: true
+		})
+
+		expect(adapters.mfa).toBeUndefined()
+		expect('mfa' in adapters).toBe(false)
 	})
 
 	it('creates sessions through a node-postgres compatible pool', async () => {
@@ -261,7 +261,8 @@ describe('pg auth adapters', () => {
 			cookieName: 'auth',
 			db,
 			mfaSecretCodec,
-			secureCookies: true
+			secureCookies: true,
+			sessionLifetimeMs: 60_000
 		})
 
 		const mfaVerifiedAt = new Date('2026-07-14T12:00:00.000Z')
@@ -275,6 +276,8 @@ describe('pg auth adapters', () => {
 		expect(session.userId).toBe('user-1')
 		expect(session.fingerprint).toBe('fingerprint')
 		expect(session.mfaVerifiedAt).toEqual(mfaVerifiedAt)
+		expect(session.expiresAt.getTime() - Date.now()).toBeGreaterThan(59_000)
+		expect(session.expiresAt.getTime() - Date.now()).toBeLessThanOrEqual(60_000)
 		expect(storedSessionId).not.toBe(session.id)
 	})
 

@@ -1,4 +1,4 @@
-import type { Actions, RequestEvent, RequestHandler } from '@sveltejs/kit'
+import type { Actions, RequestEvent } from '@sveltejs/kit'
 
 import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
 import type { PasswordCredentialAdapter } from '../adapters/database/PasswordCredentialAdapter.ts'
@@ -39,6 +39,9 @@ export type RequestEventLike = Omit<
 	locals: AuthLocals
 	getClientAddress?: () => string
 }
+
+/** Auth-owned request handler that is independent of a consumer's ambient SvelteKit locals. */
+export type AuthRequestHandler = (event: RequestEventLike) => Response | Promise<Response>
 
 /** Defines oauth provider config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type OAuthProviderConfig = {
@@ -219,6 +222,8 @@ export type AuthSecurityConfig = {
 		windowMs?: number
 		keyPrefix?: string
 		trustedProxyHeaders?: TrustedProxyHeader[]
+		/** Trusted append-style X-Forwarded-For hops, counted from the server side. */
+		forwardedForTrustedProxyHops?: number
 		store?: RateLimitStore
 	}
 	audit?: {
@@ -299,62 +304,62 @@ export type AuthConfig =
 
 /** Defines auth handlers options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthHandlers = {
-	login?: RequestHandler
-	callback?: RequestHandler
-	logout: RequestHandler
+	login?: AuthRequestHandler
+	callback?: AuthRequestHandler
+	logout: AuthRequestHandler
 	hooks: (input: {
 		event: RequestEventLike
 		resolve: (e: RequestEventLike) => Promise<Response>
 	}) => Promise<Response>
 	magicLink?: {
-		request: RequestHandler
-		verify: RequestHandler
+		request: AuthRequestHandler
+		verify: AuthRequestHandler
 	}
 	webauthn?: {
-		registerOptions: RequestHandler
-		registerVerify: RequestHandler
-		loginOptions: RequestHandler
-		loginVerify: RequestHandler
-		listCredentials: RequestHandler
-		removeCredential: RequestHandler
-		stepUpOptions: RequestHandler
-		stepUpVerify: RequestHandler
+		registerOptions: AuthRequestHandler
+		registerVerify: AuthRequestHandler
+		loginOptions: AuthRequestHandler
+		loginVerify: AuthRequestHandler
+		listCredentials: AuthRequestHandler
+		removeCredential: AuthRequestHandler
+		stepUpOptions: AuthRequestHandler
+		stepUpVerify: AuthRequestHandler
 	}
 	mfa?: {
-		status: RequestHandler
-		enroll: RequestHandler
-		verify: RequestHandler
-		disable: RequestHandler
-		backupCode: RequestHandler
-		stepUp: RequestHandler
+		status: AuthRequestHandler
+		enroll: AuthRequestHandler
+		verify: AuthRequestHandler
+		disable: AuthRequestHandler
+		backupCode: AuthRequestHandler
+		stepUp: AuthRequestHandler
 	}
 	sessions?: {
-		list: RequestHandler
-		revoke: RequestHandler
+		list: AuthRequestHandler
+		revoke: AuthRequestHandler
 	}
 }
 
 /** Defines auth routes options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthRoutes = {
-	login: () => { GET: RequestHandler }
-	callback: () => { GET: RequestHandler }
-	logout: () => { POST: RequestHandler }
-	magicLink: () => { POST: RequestHandler }
-	magicLinkVerify: () => { GET: RequestHandler; POST: RequestHandler }
-	passkeyRegisterOptions: () => { POST: RequestHandler }
-	passkeyRegisterVerify: () => { POST: RequestHandler }
-	passkeyLoginOptions: () => { POST: RequestHandler }
-	passkeyLoginVerify: () => { POST: RequestHandler }
-	passkeyCredentials: () => { GET: RequestHandler; POST: RequestHandler }
-	passkeyStepUpOptions: () => { POST: RequestHandler }
-	passkeyStepUpVerify: () => { POST: RequestHandler }
-	mfaStatus: () => { GET: RequestHandler }
-	mfaEnroll: () => { POST: RequestHandler }
-	mfaVerify: () => { POST: RequestHandler }
-	mfaDisable: () => { POST: RequestHandler }
-	mfaBackupCode: () => { POST: RequestHandler }
-	mfaStepUp: () => { POST: RequestHandler }
-	sessions: () => { GET: RequestHandler; POST: RequestHandler }
+	login: () => { GET: AuthRequestHandler }
+	callback: () => { GET: AuthRequestHandler }
+	logout: () => { POST: AuthRequestHandler }
+	magicLink: () => { POST: AuthRequestHandler }
+	magicLinkVerify: () => { GET: AuthRequestHandler; POST: AuthRequestHandler }
+	passkeyRegisterOptions: () => { POST: AuthRequestHandler }
+	passkeyRegisterVerify: () => { POST: AuthRequestHandler }
+	passkeyLoginOptions: () => { POST: AuthRequestHandler }
+	passkeyLoginVerify: () => { POST: AuthRequestHandler }
+	passkeyCredentials: () => { GET: AuthRequestHandler; POST: AuthRequestHandler }
+	passkeyStepUpOptions: () => { POST: AuthRequestHandler }
+	passkeyStepUpVerify: () => { POST: AuthRequestHandler }
+	mfaStatus: () => { GET: AuthRequestHandler }
+	mfaEnroll: () => { POST: AuthRequestHandler }
+	mfaVerify: () => { POST: AuthRequestHandler }
+	mfaDisable: () => { POST: AuthRequestHandler }
+	mfaBackupCode: () => { POST: AuthRequestHandler }
+	mfaStepUp: () => { POST: AuthRequestHandler }
+	sessions: () => { GET: AuthRequestHandler; POST: AuthRequestHandler }
 }
 
 /** Defines auth form actions for wiring handlers into SvelteKit pages. */

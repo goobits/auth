@@ -24,6 +24,7 @@ const commonEntries = [
 	'src/mfa/index.ts',
 	'src/qr/index.ts',
 	'src/ui/authStore.ts',
+	'src/ui/backupCodesModalKeyboard.ts',
 	'src/security/index.ts',
 	'src/errors/index.ts'
 ]

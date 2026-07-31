@@ -17,6 +17,7 @@ export function createMemoryAuthAdapters(input: {
 	cookieDomain?: string
 	cookieName: string
 	secureCookies: boolean
+	sessionLifetimeMs?: number
 }): UserAdapterBundle & {
 	magicLink: MemoryMagicLinkAdapter
 	session: MemorySessionAdapter
@@ -29,6 +30,9 @@ export function createMemoryAuthAdapters(input: {
 		passwordCredential: user,
 		session: new MemorySessionAdapter({
 			...(input.cookieDomain ? { cookieDomain: input.cookieDomain } : {}),
+			...(input.sessionLifetimeMs !== undefined
+				? { sessionLifetimeMs: input.sessionLifetimeMs }
+				: {}),
 			cookieName: input.cookieName,
 			secureCookies: input.secureCookies,
 			users: user

@@ -9,6 +9,31 @@ const root = join(here, '..')
 const runtimeDirs = [join(root, 'dist', 'node'), join(root, 'dist', 'worker')]
 const assetDirs = [...runtimeDirs, join(root, 'dist', 'types')]
 
+function movePublishedTargetIntoDistScope(value) {
+	if (typeof value === 'string') {
+		if (!value.startsWith('./dist/')) {
+			throw new Error(`Published package import must live in dist: ${value}`)
+		}
+		return `./${value.slice('./dist/'.length)}`
+	}
+	return Object.fromEntries(
+		Object.entries(value).map(([condition, target]) => [
+			condition,
+			movePublishedTargetIntoDistScope(target)
+		])
+	)
+}
+
+const packageMetadata = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
+const distPackageMetadata = `${JSON.stringify(
+	{
+		type: 'module',
+		imports: movePublishedTargetIntoDistScope(packageMetadata.publishConfig.imports)
+	},
+	null,
+	'\t'
+)}\n`
+
 function rewriteRelativeTypeScriptImports(source) {
 	return source.replace(/(['"])([.][.]?\/[^'"]+)\.ts\1/g, '$1$2.js$1')
 }
@@ -78,4 +103,7 @@ await rewriteDeclarations(join(root, 'dist', 'types'))
 for (const subpath of ['client', 'qr']) {
 	await copyRuntimeDeclarations(subpath)
 }
+// The managed dist directory can resolve outside the package root. Keep its
+// emitted JavaScript self-describing after Node canonicalizes that real path.
+await writeFile(join(root, 'dist', 'package.json'), distPackageMetadata)
 await writeSourceFingerprint()

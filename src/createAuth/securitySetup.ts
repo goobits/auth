@@ -53,6 +53,17 @@ function resolveTrustedProxyHeaders(
 	)
 }
 
+function resolveForwardedForTrustedProxyHops(
+	rateLimit: AuthSecurityConfig['rateLimit']
+): number | undefined {
+	const hops = rateLimit?.forwardedForTrustedProxyHops
+	if (hops === undefined) return undefined
+	if (!Number.isSafeInteger(hops) || hops <= 0) {
+		throw new Error('forwardedForTrustedProxyHops must be a positive safe integer')
+	}
+	return hops
+}
+
 function resolveRateLimitWindows(
 	base: AuthSecurityConfig['rateLimit'],
 	override: AuthSecurityConfig['rateLimit']
@@ -174,6 +185,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 		await merged.audit?.emitter?.(event)
 		await alertObserver(event)
 	}
+	const forwardedForTrustedProxyHops = resolveForwardedForTrustedProxyHops(merged.rateLimit)
 	return {
 		profile,
 		csrf: {
@@ -194,6 +206,9 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			windows: rateLimitWindows,
 			keyPrefix: merged.rateLimit?.keyPrefix ?? 'auth',
 			trustedProxyHeaders: resolveTrustedProxyHeaders(merged.rateLimit),
+			...(forwardedForTrustedProxyHops !== undefined
+				? { forwardedForTrustedProxyHops }
+				: {}),
 			...(config.logger ? { logger: config.logger } : {}),
 			...(merged.rateLimit?.store ? { store: merged.rateLimit.store } : {})
 		},

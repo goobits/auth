@@ -18,28 +18,42 @@ export { PgUserAdapter } from './user.ts'
 export { PgVerificationTokenAdapter } from './verificationToken.ts'
 export { PgWebAuthnAdapter } from './webauthn.ts'
 
-/** Creates pg auth adapters for auth storage. */
-export function createPgAuthAdapters(input: {
+type PgAuthAdapterInput = {
 	cookieDomain?: string
 	cookieName: string
 	db: PgPoolLike
-	mfaSecretCodec: MfaSecretCodec
 	secureCookies: boolean
-}): UserAdapterBundle & {
+	sessionLifetimeMs?: number
+}
+
+type PgAuthAdapters = UserAdapterBundle & {
 	magicLink: PgMagicLinkAdapter
-	mfa: PgMfaAdapter
 	session: PgSessionAdapter
 	verificationToken: PgVerificationTokenAdapter
 	webauthn: PgWebAuthnAdapter
-} {
+}
+
+type PgAuthAdaptersFor<T extends MfaSecretCodec | undefined> = PgAuthAdapters &
+	(T extends MfaSecretCodec ? { mfa: PgMfaAdapter } : { mfa?: undefined })
+
+/** Creates pg auth adapters for auth storage. */
+export function createPgAuthAdapters<T extends MfaSecretCodec | undefined = undefined>(
+	input: PgAuthAdapterInput & { mfaSecretCodec?: T }
+): PgAuthAdaptersFor<T> {
 	const user = new PgUserAdapter({ db: input.db })
-	return {
+	const adapters: PgAuthAdapters = {
 		magicLink: new PgMagicLinkAdapter({ db: input.db }),
-		mfa: new PgMfaAdapter({ db: input.db, secretCodec: input.mfaSecretCodec }),
 		passwordCredential: user,
 		session: new PgSessionAdapter(input),
 		user,
 		verificationToken: new PgVerificationTokenAdapter({ db: input.db }),
 		webauthn: new PgWebAuthnAdapter({ db: input.db })
 	}
+	const result = input.mfaSecretCodec
+		? {
+				...adapters,
+				mfa: new PgMfaAdapter({ db: input.db, secretCodec: input.mfaSecretCodec })
+			}
+		: adapters
+	return result as unknown as PgAuthAdaptersFor<T>
 }

@@ -145,6 +145,21 @@ describe('session handlers', () => {
 		expect(sessionAdapter.revokeManagedSession).toHaveBeenCalledWith('u1', 'public-handle')
 	})
 
+	it('does not revoke a management handle outside the caller session list', async () => {
+		const sessionAdapter = {
+			listManagedSessions: vi.fn(async () => [
+				{ id: 'owned-handle', userId: 'u1', expiresAt: new Date() }
+			]),
+			revokeManagedSession: vi.fn(async () => {})
+		}
+		const handler = createSessionRevokeHandler({ sessionAdapter })
+
+		const response = await handler(createEvent({ id: 'another-owner-handle' }))
+
+		expect(response.status).toBe(404)
+		expect(sessionAdapter.revokeManagedSession).not.toHaveBeenCalled()
+	})
+
 	it('returns 501 when bulk revoke is unsupported', async () => {
 		const sessionAdapter = {}
 

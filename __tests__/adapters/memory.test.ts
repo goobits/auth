@@ -12,7 +12,8 @@ describe('memory auth adapters', () => {
 	it('create users, sessions, and validate session principals', async () => {
 		const adapters = createMemoryAuthAdapters({
 			cookieName: 'auth',
-			secureCookies: false
+			secureCookies: false,
+			sessionLifetimeMs: 60_000
 		})
 		const publicCapabilityHasCredentialReader: 'findPasswordCredential' extends keyof typeof adapters.user
 			? true
@@ -36,6 +37,8 @@ describe('memory auth adapters', () => {
 		expect(credentialCapabilityHasProfileReader).toBe(false)
 		expect(result.user?.id).toBe('dev-user')
 		expect(result.session?.ip).toBe('127.0.0.1')
+		expect(session.expiresAt.getTime() - Date.now()).toBeGreaterThan(59_000)
+		expect(session.expiresAt.getTime() - Date.now()).toBeLessThanOrEqual(60_000)
 		await expect(adapters.session.validateSession(session.id)).resolves.toMatchObject({
 			session: { id: session.id }
 		})

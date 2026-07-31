@@ -20,6 +20,40 @@ function createProvider() {
 	})
 }
 
+function createSignedTokenProvider(emailVerified: unknown): AppleProvider {
+	const now = Math.floor(Date.now() / 1000)
+	const provider = createProvider()
+	Reflect.set(provider, 'client', {
+		validateAuthorizationCode: async () => ({
+			idToken: appleToken({
+				iss: 'https://appleid.apple.com',
+				aud: 'com.example.web',
+				exp: now + 300,
+				iat: now,
+				sub: 'apple-user-1',
+				email: 'relay@privaterelay.appleid.com',
+				email_verified: emailVerified
+			}),
+			accessToken: 'access-token'
+		})
+	})
+	vi.spyOn(globalThis.crypto.subtle, 'importKey').mockResolvedValue({} as CryptoKey)
+	vi.spyOn(globalThis.crypto.subtle, 'verify').mockResolvedValue(true)
+	vi.stubGlobal(
+		'fetch',
+		vi.fn(
+			async () =>
+				new Response(
+					JSON.stringify({
+						keys: [{ kty: 'RSA', kid: 'apple-key-1', use: 'sig', alg: 'RS256' }]
+					}),
+					{ status: 200, headers: { 'content-type': 'application/json' } }
+				)
+		)
+	)
+	return provider
+}
+
 afterEach(() => {
 	vi.restoreAllMocks()
 	vi.unstubAllGlobals()
@@ -40,36 +74,7 @@ describe('AppleProvider identity verification', () => {
 	})
 
 	it('derives email verification only from a signed Apple claim', async () => {
-		const now = Math.floor(Date.now() / 1000)
-		const provider = createProvider()
-		Reflect.set(provider, 'client', {
-			validateAuthorizationCode: async () => ({
-				idToken: appleToken({
-					iss: 'https://appleid.apple.com',
-					aud: 'com.example.web',
-					exp: now + 300,
-					iat: now,
-					sub: 'apple-user-1',
-					email: 'relay@privaterelay.appleid.com',
-					email_verified: 'true'
-				}),
-				accessToken: 'access-token'
-			})
-		})
-		vi.spyOn(globalThis.crypto.subtle, 'importKey').mockResolvedValue({} as CryptoKey)
-		vi.spyOn(globalThis.crypto.subtle, 'verify').mockResolvedValue(true)
-		vi.stubGlobal(
-			'fetch',
-			vi.fn(
-				async () =>
-					new Response(
-						JSON.stringify({
-							keys: [{ kty: 'RSA', kid: 'apple-key-1', use: 'sig', alg: 'RS256' }]
-						}),
-						{ status: 200, headers: { 'content-type': 'application/json' } }
-					)
-			)
-		)
+		const provider = createSignedTokenProvider('true')
 
 		await expect(provider.getUserProfile('code', 'verifier')).resolves.toMatchObject({
 			profile: {
@@ -78,5 +83,13 @@ describe('AppleProvider identity verification', () => {
 				verified_email: true
 			}
 		})
+	})
+
+	it.each([false, 'false'])('rejects an explicitly unverified signed Apple email (%s)', async (claim) => {
+		const provider = createSignedTokenProvider(claim)
+
+		await expect(provider.getUserProfile('code', 'verifier')).rejects.toThrow(
+			'Apple email not verified'
+		)
 	})
 })

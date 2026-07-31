@@ -165,6 +165,9 @@ export class AppleProvider extends OAuthProvider {
 			if (!email || !appleUserId) {
 				throw new Error('Invalid token data from Apple')
 			}
+			if (emailVerified === false || emailVerified === 'false') {
+				throw new Error('Apple email not verified')
+			}
 
 			let name = undefined
 
