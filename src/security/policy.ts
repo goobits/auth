@@ -8,17 +8,13 @@ import {
 import type { Logger } from '@goobits/security/logger'
 import type { CsrfTokenStore } from '@goobits/security/csrf'
 import { createSvelteKitCsrf } from '@goobits/security/csrf/sveltekit'
-import type {
-	AuthRequestHandler,
-	RequestEventLike,
-	TrustedProxyHeader
-} from '../types/auth.ts'
+import type { AuthRequestHandler, RequestEventLike, TrustedProxyHeader } from '../types/auth.ts'
 import { resolvePlatformClientAddress } from '../utils/clientAddress.ts'
 import { type AuthEventEmitter, createAuthEvent } from './events.ts'
 
 type PolicyMode = 'required' | 'optional' | 'off'
 
-export type SecurityRouteId =
+type SecurityRouteId =
 	| 'oauth.login'
 	| 'oauth.callback'
 	| 'auth.logout'
@@ -41,7 +37,7 @@ export type SecurityRouteId =
 	| 'sessions.list'
 	| 'sessions.revoke'
 
-export type SecurityRoutePolicy = {
+type SecurityRoutePolicy = {
 	csrf?: PolicyMode
 	rateLimit?: PolicyMode
 	rateLimitWindows?: readonly RateLimitWindow[]
