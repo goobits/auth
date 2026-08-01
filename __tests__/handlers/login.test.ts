@@ -2,10 +2,19 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { createLoginHandler } from '../../src/handlers/login.ts'
 import type { OAuthProvider } from '../../src/providers/OAuthProvider.ts'
-import { captureRejected, createRequestEvent, getRedirectLocation } from '../testKit.ts'
+import {
+	captureRejected,
+	createCookies,
+	createRequestEvent,
+	getRedirectLocation
+} from '../testKit.ts'
 
-function createProvider(createAuthorizationURL?: () => URL): OAuthProvider {
+function createProvider(
+	createAuthorizationURL?: () => URL | Promise<URL>,
+	callbackMode: 'query' | 'form_post' = 'query'
+): OAuthProvider {
 	return {
+		callbackMode,
 		createAuthorizationURL: createAuthorizationURL ?? (() => new URL('https://example.com/auth')),
 		getUserProfile: vi.fn(async () => ({
 			profile: { id: 'u1', email: 'u1@example.com' },
@@ -34,16 +43,22 @@ describe('createLoginHandler', () => {
 		expect(error.status).toBe(302)
 	})
 
-	it('sets apple response_mode to form_post', async () => {
-		const createAuthorizationURL = vi.fn(() => new URL('https://apple.example.com/authorize'))
+	it('awaits provider-owned authorization URLs', async () => {
+		const createAuthorizationURL = vi.fn(
+			async () => new URL('https://apple.example.com/authorize?response_mode=form_post')
+		)
 		const handler = createLoginHandler({
 			providers: {
-				apple: { provider: createProvider(createAuthorizationURL), scopes: ['email'] }
+				apple: {
+					provider: createProvider(createAuthorizationURL, 'form_post'),
+					scopes: ['email']
+				}
 			}
 		})
+		const cookies = createCookies()
 
 		const error = await captureRejected<{ status?: number; headers?: Headers; location?: string }>(
-			handler(createRequestEvent({ params: { provider: 'apple' } }))
+			handler(createRequestEvent({ params: { provider: 'apple' }, cookies }))
 		)
 		const location = getRedirectLocation(error)
 		expect(error.status).toBe(302)
@@ -51,5 +66,19 @@ describe('createLoginHandler', () => {
 		if (!location) throw new Error('Missing redirect location')
 		expect(new URL(location).searchParams.get('response_mode')).toBe('form_post')
 		expect(createAuthorizationURL).toHaveBeenCalled()
+		expect(cookies._store.get('apple_oauth_state')?.options).toMatchObject({
+			secure: true,
+			sameSite: 'none'
+		})
+	})
+
+	it('rejects insecure cookies for form-post callbacks', async () => {
+		const handler = createLoginHandler({
+			providers: { apple: { provider: createProvider(undefined, 'form_post') } },
+			secureCookies: false
+		})
+
+		const response = await handler(createRequestEvent({ params: { provider: 'apple' } }))
+		expect(response).toMatchObject({ status: 500 })
 	})
 })

@@ -7,9 +7,9 @@
 ### UI
 
 - Added `@goobits/auth/ui/qr-code` so QR-only consumers do not initialize the auth session store.
-- Backup-code dialogs now contain keyboard focus through `@goobits/keyboard`,
-  restore the opener focus, reset transient state on every opening, expose a
-  labelled dialog, and provide 44px minimum action targets.
+- Backup-code dialogs now contain keyboard focus through their package-private
+  modal boundary, restore the opener focus, reset transient state on every
+  opening, expose a labelled dialog, and provide 44px minimum action targets.
 
 ### 🔒 Security
 
@@ -86,8 +86,11 @@
   undersized chains fail closed.
 - 🧱 Managed forms use Security's canonical `csrf_token` field. Optional CSRF
   mode now validates unsafe requests whenever its CSRF cookie is present.
-- 🍎 Apple sign-in rejects both boolean and string forms of an explicitly
-  unverified email claim.
+- 🍎 Apple sign-in requires a signed email-verification claim in either the
+  boolean or string form Apple emits.
+- 🧭 OAuth state, PKCE, Google exchange, and Apple client-secret signing now use
+  Web Crypto and bounded Fetch requests; the deprecated `arctic` dependency
+  and its compatibility branches were removed.
 - 📦 Node request streams now use Security's shared bounded body reader with a
   1 MiB default ceiling.
 

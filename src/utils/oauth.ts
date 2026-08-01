@@ -1,6 +1,5 @@
 import type { Cookies, RequestEvent } from '@sveltejs/kit'
-import { constantTimeEqual } from '@goobits/security/crypto'
-import { generateCodeVerifier, generateState } from 'arctic'
+import { bytesToBase64Url, constantTimeEqual, randomBytes } from '@goobits/security/crypto'
 
 import type { OAuthProvider } from '../providers/OAuthProvider.ts'
 import type { RequestEventLike } from '../types/auth.ts'
@@ -47,8 +46,8 @@ export function createOAuthCookies(
 ): { state: string; codeVerifier: string } {
 	const { secure = true, maxAge = 30 * 60, sameSite = 'lax' } = options
 
-	const state = generateState()
-	const codeVerifier = generateCodeVerifier()
+	const state = bytesToBase64Url(randomBytes(32))
+	const codeVerifier = bytesToBase64Url(randomBytes(32))
 
 	const cookieOptions = {
 		httpOnly: true,
@@ -111,8 +110,8 @@ export function getOAuthCallbackParams(
 	provider: string,
 	overrides: OAuthCallbackOverrides = {}
 ): OAuthCallbackParams {
-	const code = overrides.code ?? url.searchParams.get('code')
-	const state = overrides.state ?? url.searchParams.get('state')
+	const code = 'code' in overrides ? (overrides.code ?? null) : url.searchParams.get('code')
+	const state = 'state' in overrides ? (overrides.state ?? null) : url.searchParams.get('state')
 	const storedState = cookies.get(`${provider}_oauth_state`) ?? null
 	const storedCodeVerifier = cookies.get(`${provider}_oauth_code_verifier`) ?? null
 

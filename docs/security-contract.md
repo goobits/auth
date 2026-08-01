@@ -71,21 +71,21 @@ matching token instead of silently bypassing validation.
 These are the built-in defaults the library applies when you don't override
 them. Every value here is configurable on the matching config block.
 
-| Concern                           | Default                                      | Override                                                          |
-| --------------------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
-| Managed auth route rate limit     | 5 / minute and 15 / 15 minutes               | `security.rateLimit.windows`                                      |
-| Registration policy preset        | 3 / 10 minutes and 5 / hour                  | app-supplied limiter config                                       |
-| Password-reset policy preset      | 3 / 15 minutes and 5 / hour                  | app-supplied limiter config                                       |
-| Magic link expiry                 | 15 minutes                                   | `magicLink.settings.expiresInMs`                                  |
-| Magic link OTP length             | 6 digits                                     | `magicLink.settings.otpDigits`                                    |
-| Magic link verify rate limit      | 5 / minute and 15 / 15 minutes               | `magicLink.limits.verify`                                         |
-| WebAuthn challenge timeout        | 60 seconds                                   | `webauthn.timeoutMs`                                              |
-| Session lifetime (KV adapter)     | 30 days                                      | `KVSessionAdapter` constructor `sessionLifetime`                  |
-| Session bearer entropy            | 256 bits (32 bytes, base64url)               | n/a                                                               |
-| Absolute password input length    | 1024 characters                              | n/a                                                               |
-| OAuth state / PKCE                | issued by `arctic`, single-use, cookie-bound | n/a                                                               |
-| Argon2 (Cloudflare Workers, WASM) | 12 MiB memory, 3 iterations, 16-byte salt    | not configurable — tune via fork if your edge runtime allows more |
-| Argon2 (Node, `@node-rs/argon2`)  | library defaults (≈ 19 MiB, 2 iterations)    | not configurable in this release                                  |
+| Concern                           | Default                                             | Override                                                          |
+| --------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------- |
+| Managed auth route rate limit     | 5 / minute and 15 / 15 minutes                      | `security.rateLimit.windows`                                      |
+| Registration policy preset        | 3 / 10 minutes and 5 / hour                         | app-supplied limiter config                                       |
+| Password-reset policy preset      | 3 / 15 minutes and 5 / hour                         | app-supplied limiter config                                       |
+| Magic link expiry                 | 15 minutes                                          | `magicLink.settings.expiresInMs`                                  |
+| Magic link OTP length             | 6 digits                                            | `magicLink.settings.otpDigits`                                    |
+| Magic link verify rate limit      | 5 / minute and 15 / 15 minutes                      | `magicLink.limits.verify`                                         |
+| WebAuthn challenge timeout        | 60 seconds                                          | `webauthn.timeoutMs`                                              |
+| Session lifetime (KV adapter)     | 30 days                                             | `KVSessionAdapter` constructor `sessionLifetime`                  |
+| Session bearer entropy            | 256 bits (32 bytes, base64url)                      | n/a                                                               |
+| Absolute password input length    | 1024 characters                                     | n/a                                                               |
+| OAuth state / PKCE                | 256-bit Web Crypto values, single-use, cookie-bound | n/a                                                               |
+| Argon2 (Cloudflare Workers, WASM) | 12 MiB memory, 3 iterations, 16-byte salt           | not configurable — tune via fork if your edge runtime allows more |
+| Argon2 (Node, `@node-rs/argon2`)  | library defaults (≈ 19 MiB, 2 iterations)           | not configurable in this release                                  |
 
 The WASM Argon2 parameters sit at the OWASP minimum — defensible for edge
 runtimes with strict CPU budgets, but apps that can afford more should

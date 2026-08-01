@@ -63,20 +63,18 @@ export function createLoginHandler(config: LoginHandlerConfig) {
 		}
 
 		const { provider, scopes } = providerConfig
+		if (provider.callbackMode === 'form_post' && !secureCookies) {
+			return new Response('Form-post OAuth callbacks require secure cookies', { status: 500 })
+		}
 
 		// Generate state and code verifier cookies
 		const { state, codeVerifier } = createOAuthCookies(cookies, providerName, {
 			secure: secureCookies,
-			sameSite: 'lax'
+			sameSite: provider.callbackMode === 'form_post' ? 'none' : 'lax'
 		})
 
 		// Create authorization URL
-		const authUrl = provider.createAuthorizationURL(state, codeVerifier, scopes || [])
-
-		// Special handling for Apple
-		if (providerName === 'apple') {
-			authUrl.searchParams.set('response_mode', 'form_post')
-		}
+		const authUrl = await provider.createAuthorizationURL(state, codeVerifier, scopes || [])
 
 		throw redirect(302, authUrl)
 	}

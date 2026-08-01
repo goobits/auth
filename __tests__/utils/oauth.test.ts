@@ -32,6 +32,9 @@ describe('oauth cookies', () => {
 		expect(state.options?.sameSite).toBe('lax')
 		expect(state.options?.secure).toBe(false)
 		expect(code.options?.secure).toBe(false)
+		expect(state.value).toMatch(/^[A-Za-z0-9_-]{43}$/u)
+		expect(code.value).toMatch(/^[A-Za-z0-9_-]{43}$/u)
+		expect(code.value).not.toBe(state.value)
 	})
 
 	it('validates callback params with overrides', () => {
@@ -41,6 +44,17 @@ describe('oauth cookies', () => {
 		const url = new URL('https://example.com/callback?code=bad&state=bad')
 		const params = getOAuthCallbackParams(cookies, url, 'google', { code: 'ok', state: 'abc' })
 		expect(validateOAuthCallback(params)).toBe(true)
+	})
+
+	it('does not fall back to query parameters when form overrides are explicitly missing', () => {
+		const cookies = new MockCookies()
+		cookies.set('apple_oauth_state', 'abc', {})
+		cookies.set('apple_oauth_code_verifier', 'ver', {})
+		const url = new URL('https://example.com/callback?code=query-code&state=abc')
+
+		expect(
+			getOAuthCallbackParams(cookies, url, 'apple', { code: null, state: null })
+		).toMatchObject({ code: null, state: null })
 	})
 
 	it('rejects callback params with missing or mismatched state', () => {

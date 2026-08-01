@@ -1,7 +1,12 @@
-import { base64UrlToBytes, bytesToText } from '@goobits/security/crypto'
-import { Apple } from 'arctic'
+import {
+	base64UrlToBytes,
+	bytesToBase64Url,
+	bytesToText,
+	textToBytes
+} from '@goobits/security/crypto'
 
 import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
+import { readBoundedResponseText, requestOAuthTokens } from '../_internal/oauth2.ts'
 import type { OAuthProfile, OAuthTokens } from '../types/index.ts'
 import { OAuthProvider } from './OAuthProvider.ts'
 
@@ -25,16 +30,6 @@ type AppleIdTokenPayload = {
 	sub?: string
 }
 
-type AppleTokenResponse = {
-	idToken: string | (() => string)
-	accessToken?: string | (() => string)
-	refreshToken?: string | (() => string)
-	scope?: string
-	scopes?: string
-	expiresIn?: number
-	expires_in?: number
-}
-
 type AppleJwk = JsonWebKey & {
 	alg?: string
 	kid?: string
@@ -42,6 +37,8 @@ type AppleJwk = JsonWebKey & {
 }
 
 const APPLE_ISSUER = 'https://appleid.apple.com'
+const APPLE_AUTHORIZATION_ENDPOINT = 'https://appleid.apple.com/auth/authorize'
+const APPLE_TOKEN_ENDPOINT = 'https://appleid.apple.com/auth/token'
 const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys'
 const APPLE_CLOCK_SKEW_SECONDS = 5 * 60
 const APPLE_JWKS_MAX_BYTES = 128 * 1024
@@ -52,13 +49,14 @@ let cachedAppleJwks: { keys: AppleJwk[]; expiresAt: number } | null = null
  * Implements Sign in with Apple
  */
 export class AppleProvider extends OAuthProvider {
-	private client: Apple
+	override readonly callbackMode = 'form_post' as const
+	private readonly clientId: string
+	private readonly teamId: string
+	private readonly keyId: string
+	private readonly privateKeyBytes: Uint8Array
+	private readonly callbackUrl: string
 	private readonly logger: Logger
-
-	private readTokenValue(value?: string | (() => string) | null): string | null {
-		if (typeof value === 'function') return value()
-		return value ?? null
-	}
+	private signingKeyPromise: Promise<CryptoKey> | null = null
 
 	/**
 	 * @param {Object} config - Configuration
@@ -82,16 +80,11 @@ export class AppleProvider extends OAuthProvider {
 			throw new Error('AppleProvider requires clientId, teamId, keyId, privateKey, and callbackUrl')
 		}
 
-		// Decode the private key
-		const privateKeyBytes = this._decodePrivateKey(config.privateKey)
-
-		this.client = new Apple(
-			config.clientId,
-			config.teamId,
-			config.keyId,
-			privateKeyBytes,
-			config.callbackUrl
-		)
+		this.clientId = config.clientId
+		this.teamId = config.teamId
+		this.keyId = config.keyId
+		this.privateKeyBytes = this._decodePrivateKey(config.privateKey)
+		this.callbackUrl = config.callbackUrl
 	}
 
 	/**
@@ -118,19 +111,20 @@ export class AppleProvider extends OAuthProvider {
 
 	createAuthorizationURL(
 		state: string,
-		codeVerifier: string,
+		_codeVerifier: string,
 		scopes: string[] = ['name', 'email']
 	): URL {
-		// Apple uses name and email scopes
-		const requestedScopes = scopes || ['name', 'email']
-		const client = this.client as unknown as {
-			createAuthorizationURL: (...args: unknown[]) => URL
-		}
-		const createAuthorizationURL = client.createAuthorizationURL
-		if (createAuthorizationURL.length >= 3) {
-			return createAuthorizationURL.call(this.client, state, codeVerifier, requestedScopes)
-		}
-		return createAuthorizationURL.call(this.client, state, requestedScopes)
+		const authorizationUrl = new URL(APPLE_AUTHORIZATION_ENDPOINT)
+		authorizationUrl.searchParams.set('response_type', 'code')
+		authorizationUrl.searchParams.set('response_mode', 'form_post')
+		authorizationUrl.searchParams.set('client_id', this.clientId)
+		authorizationUrl.searchParams.set('redirect_uri', this.callbackUrl)
+		authorizationUrl.searchParams.set('state', state)
+		authorizationUrl.searchParams.set(
+			'scope',
+			(scopes.length > 0 ? scopes : ['name', 'email']).join(' ')
+		)
+		return authorizationUrl
 	}
 
 	/**
@@ -142,30 +136,30 @@ export class AppleProvider extends OAuthProvider {
 	 */
 	async getUserProfile(
 		code: string,
-		codeVerifier: string,
+		_codeVerifier: string,
 		userData: string | null = null
 	): Promise<{ profile: OAuthProfile; tokens: OAuthTokens }> {
 		try {
-			const client = this.client as unknown as {
-				validateAuthorizationCode: (...args: unknown[]) => Promise<AppleTokenResponse>
-			}
-
-			const validateAuthorizationCode = client.validateAuthorizationCode
-			const tokens =
-				validateAuthorizationCode.length >= 2
-					? await validateAuthorizationCode.call(this.client, code, codeVerifier)
-					: await validateAuthorizationCode.call(this.client, code)
+			const tokens = await this.requestTokens(
+				new URLSearchParams({
+					grant_type: 'authorization_code',
+					code,
+					redirect_uri: this.callbackUrl
+				})
+			)
+			if (!tokens.idToken) throw new Error('Missing Apple ID token')
 
 			const {
 				email,
 				email_verified: emailVerified,
 				sub: appleUserId
-			} = await this.verifyIdToken(tokens)
+			} = await this.verifyIdToken(tokens.idToken)
 
 			if (!email || !appleUserId) {
 				throw new Error('Invalid token data from Apple')
 			}
-			if (emailVerified === false || emailVerified === 'false') {
+			const isEmailVerified = emailVerified === true || emailVerified === 'true'
+			if (!isEmailVerified) {
 				throw new Error('Apple email not verified')
 			}
 
@@ -192,15 +186,13 @@ export class AppleProvider extends OAuthProvider {
 					id: appleUserId,
 					email: email as string,
 					...(name && { name }),
-					verified_email: emailVerified === true || emailVerified === 'true'
+					verified_email: true
 				},
 				tokens: {
-					accessToken: this.readTokenValue(tokens.accessToken) ?? '',
-					refreshToken: this.readTokenValue(tokens.refreshToken),
-					scope: tokens.scope ?? tokens.scopes ?? null,
-					accessTokenExpiresAt: new Date(
-						Date.now() + (tokens.expiresIn ?? tokens.expires_in ?? 0) * 1000
-					).toISOString()
+					accessToken: tokens.accessToken,
+					refreshToken: tokens.refreshToken,
+					scope: tokens.scope,
+					accessTokenExpiresAt: new Date(Date.now() + tokens.expiresIn * 1000).toISOString()
 				}
 			}
 		} catch (error) {
@@ -209,13 +201,53 @@ export class AppleProvider extends OAuthProvider {
 		}
 	}
 
-	private async verifyIdToken(tokens: AppleTokenResponse): Promise<AppleIdTokenPayload> {
-		const rawIdToken = typeof tokens.idToken === 'function' ? tokens.idToken() : tokens.idToken
-		const idTokenValue = typeof rawIdToken === 'string' ? rawIdToken : ''
+	private async requestTokens(parameters: URLSearchParams) {
+		parameters.set('client_id', this.clientId)
+		parameters.set('client_secret', await this.createClientSecret())
+		return requestOAuthTokens(APPLE_TOKEN_ENDPOINT, parameters)
+	}
 
-		if (!idTokenValue) {
-			throw new Error('Missing Apple ID token')
+	private async createClientSecret(): Promise<string> {
+		const now = Math.floor(Date.now() / 1000)
+		const header = bytesToBase64Url(
+			textToBytes(JSON.stringify({ alg: 'ES256', kid: this.keyId, typ: 'JWT' }))
+		)
+		const claims = bytesToBase64Url(
+			textToBytes(
+				JSON.stringify({
+					iss: this.teamId,
+					iat: now,
+					exp: now + 5 * 60,
+					aud: APPLE_ISSUER,
+					sub: this.clientId
+				})
+			)
+		)
+		const signingInput = `${header}.${claims}`
+		const signature = await crypto.subtle.sign(
+			{ name: 'ECDSA', hash: 'SHA-256' },
+			await this.getSigningKey(),
+			Uint8Array.from(textToBytes(signingInput)).buffer
+		)
+		const signatureBytes = new Uint8Array(signature)
+		if (signatureBytes.byteLength !== 64) {
+			throw new Error('Apple client secret signature is invalid')
 		}
+		return `${signingInput}.${bytesToBase64Url(signatureBytes)}`
+	}
+
+	private getSigningKey(): Promise<CryptoKey> {
+		this.signingKeyPromise ??= crypto.subtle.importKey(
+			'pkcs8',
+			Uint8Array.from(this.privateKeyBytes).buffer,
+			{ name: 'ECDSA', namedCurve: 'P-256' },
+			false,
+			['sign']
+		)
+		return this.signingKeyPromise
+	}
+
+	private async verifyIdToken(idTokenValue: string): Promise<AppleIdTokenPayload> {
 		if (idTokenValue.length > 16 * 1024) {
 			throw new Error('Apple ID token is too large')
 		}
@@ -260,7 +292,7 @@ export class AppleProvider extends OAuthProvider {
 		if (payload.iss !== APPLE_ISSUER) {
 			throw new Error('Invalid Apple ID token issuer')
 		}
-		if (!audience.includes(String(this.config['clientId'] || ''))) {
+		if (!audience.includes(this.clientId)) {
 			throw new Error('Invalid Apple ID token audience')
 		}
 		if (!payload.exp || payload.exp <= nowSeconds) {
@@ -286,28 +318,18 @@ export class AppleProvider extends OAuthProvider {
 	}
 
 	async refreshAccessToken(refreshToken: string): Promise<OAuthTokens> {
-		type AppleRefreshResponse = {
-			accessToken?: string | (() => string)
-			refreshToken?: string | (() => string)
-			scope?: string
-			scopes?: string
-			expiresIn?: number
-			expires_in?: number
-		}
-
-		const client = this.client as unknown as {
-			refreshAccessToken: (token: string) => Promise<AppleRefreshResponse>
-		}
-
-		const newTokens = await client.refreshAccessToken(refreshToken)
+		const newTokens = await this.requestTokens(
+			new URLSearchParams({
+				grant_type: 'refresh_token',
+				refresh_token: refreshToken
+			})
+		)
 
 		return {
-			accessToken: this.readTokenValue(newTokens.accessToken) ?? '',
-			refreshToken: this.readTokenValue(newTokens.refreshToken),
-			scope: newTokens.scope ?? newTokens.scopes ?? null,
-			accessTokenExpiresAt: new Date(
-				Date.now() + (newTokens.expiresIn ?? newTokens.expires_in ?? 0) * 1000
-			).toISOString()
+			accessToken: newTokens.accessToken,
+			refreshToken: newTokens.refreshToken,
+			scope: newTokens.scope,
+			accessTokenExpiresAt: new Date(Date.now() + newTokens.expiresIn * 1000).toISOString()
 		}
 	}
 }
@@ -328,14 +350,11 @@ async function getAppleJwks(forceRefresh = false): Promise<{ keys: AppleJwk[] }>
 	if (!response.ok) {
 		throw new Error(`Apple JWKS fetch failed (${response.status})`)
 	}
-	const contentLength = Number(response.headers.get('content-length') ?? 0)
-	if (contentLength > APPLE_JWKS_MAX_BYTES) {
-		throw new Error('Apple JWKS response too large')
-	}
-	const responseText = await response.text()
-	if (new TextEncoder().encode(responseText).byteLength > APPLE_JWKS_MAX_BYTES) {
-		throw new Error('Apple JWKS response too large')
-	}
+	const responseText = await readBoundedResponseText(
+		response,
+		APPLE_JWKS_MAX_BYTES,
+		'Apple JWKS response'
+	)
 	const body = JSON.parse(responseText) as { keys?: AppleJwk[] }
 	const keys = Array.isArray(body.keys)
 		? body.keys

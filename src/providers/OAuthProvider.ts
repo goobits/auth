@@ -7,6 +7,7 @@ import type { OAuthProfile, OAuthTokens } from '../types/core.ts'
 export abstract class OAuthProvider {
 	name: string
 	config: Record<string, unknown>
+	readonly callbackMode?: 'query' | 'form_post' = 'query'
 
 	constructor(name: string, config: Record<string, unknown>) {
 		this.name = name
@@ -19,7 +20,11 @@ export abstract class OAuthProvider {
 	 * @param codeVerifier - PKCE code verifier
 	 * @param scopes - OAuth scopes to request
 	 */
-	abstract createAuthorizationURL(state: string, codeVerifier: string, scopes: string[]): URL
+	abstract createAuthorizationURL(
+		state: string,
+		codeVerifier: string,
+		scopes: string[]
+	): URL | Promise<URL>
 
 	/**
 	 * Exchange the authorization code for tokens and resolve the user profile.
