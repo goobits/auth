@@ -1,0 +1,19 @@
+{
+	"root": ".",
+	"postgres": {
+		"contracts": [
+			{
+				"id": "auth-postgres",
+				"bootstrap_sources": [
+					{
+						"path": "src/adapters/pg/schema.ts",
+						"transaction": "always",
+						"psql_meta_commands": "reject"
+					}
+				],
+				"query_roots": ["src/adapters/pg"],
+				"source_complete": true
+			}
+		]
+	}
+}
