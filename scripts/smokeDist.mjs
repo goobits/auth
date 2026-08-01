@@ -1,6 +1,17 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { access, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
+import {
+	access,
+	cp,
+	copyFile,
+	mkdir,
+	mkdtemp,
+	readFile,
+	readdir,
+	rm,
+	symlink,
+	writeFile
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -9,7 +20,7 @@ const rootUrl = new URL('../', import.meta.url)
 const root = fileURLToPath(rootUrl)
 const packageJson = JSON.parse(await readFile(new URL('package.json', rootUrl), 'utf8'))
 const published = packageJson.publishConfig
-const nodeOnlySubpaths = new Set(['./adapters/pg', './node'])
+const nodeOnlySubpaths = new Set(['./adapters/pg', './node', './password/native-packages'])
 const uiSubpaths = new Set(['./ui', './ui/qr-code', './ui/theme.css'])
 const runtimeConditions = ['types', 'workerd', 'worker', 'browser', 'node', 'default']
 
@@ -266,7 +277,18 @@ if ('${runtime}' === 'worker') {
 async function assertPackedPackage() {
 	const tempDir = await mkdtemp(join(tmpdir(), 'goobits-auth-package-'))
 	try {
-		await run('pnpm', ['pack', '--pack-destination', tempDir])
+		const stagingRoot = join(tempDir, 'staging')
+		await mkdir(stagingRoot)
+		await copyFile(join(root, 'package.json'), join(stagingRoot, 'package.json'))
+		for (const entry of packageJson.files) {
+			await cp(join(root, entry), join(stagingRoot, entry), {
+				dereference: true,
+				recursive: true,
+				filter: (source) => !source.split('/').includes('node_modules')
+			})
+		}
+		await symlink(join(root, 'node_modules'), join(stagingRoot, 'node_modules'), 'dir')
+		await run('pnpm', ['pack', '--pack-destination', tempDir], stagingRoot)
 		const tarballs = (await readdir(tempDir)).filter((file) => file.endsWith('.tgz'))
 		assert.equal(tarballs.length, 1, 'package verification must produce exactly one tarball')
 		await run('tar', ['-xzf', join(tempDir, tarballs[0]), '-C', tempDir])

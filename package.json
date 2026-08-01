@@ -136,6 +136,10 @@
 				"node": "./dist/node/password/index.js",
 				"default": "./dist/worker/password/index.js"
 			},
+			"./password/native-packages": {
+				"types": "./dist/types/password/nativePackages.d.ts",
+				"node": "./dist/node/password/nativePackages.js"
+			},
 			"./types": {
 				"types": "./dist/types/types/index.d.ts",
 				"workerd": "./dist/worker/types/index.js",
@@ -308,6 +312,10 @@
 			"node": "./src/password/index.node.ts",
 			"default": "./src/password/index.worker.ts"
 		},
+		"./password/native-packages": {
+			"types": "./src/password/nativePackages.ts",
+			"node": "./src/password/nativePackages.ts"
+		},
 		"./types": "./src/types/index.ts",
 		"./mfa": "./src/mfa/index.ts",
 		"./qr": "./src/qr/index.ts",
@@ -340,7 +348,7 @@
 		"typecheck:svelte": "svelte-check --workspace . --tsconfig ./tsconfig.json --fail-on-warnings",
 		"check:dist-fresh": "node scripts/checkDistFresh.mjs",
 		"ensure:dist": "node scripts/ensureDistFresh.mjs",
-		"build": "rm -rf dist && tsup && pnpm run build:types && node scripts/finalizeDist.mjs",
+		"build": "node scripts/cleanDist.mjs && tsup && pnpm run build:types && node scripts/finalizeDist.mjs",
 		"postbuild": "pnpm run test:dist",
 		"build:types": "tsc -p tsconfig.build.json",
 		"audit": "node scripts/auditPackage.mjs",
