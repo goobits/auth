@@ -1,0 +1,21 @@
+{
+	"root": ".",
+	"projects": [
+		{
+			"id": "auth",
+			"root": ".",
+			"contexts": {
+				"example-app": {
+					"role": "tooling",
+					"scope": "runtime",
+					"entrypoints": ["examples/sveltekit-quickstart/src/lib/auth.ts"]
+				},
+				"node-runtime": {
+					"role": "production",
+					"scope": "public_surface",
+					"entrypoints": ["src/password/index.node.ts"]
+				}
+			}
+		}
+	]
+}
