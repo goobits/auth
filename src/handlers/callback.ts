@@ -1,6 +1,6 @@
 import { error, redirect } from '@sveltejs/kit'
-import { OAuth2RequestError } from 'arctic'
 
+import { OAuth2RequestError } from '../_internal/oauth2.ts'
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
 import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
 import type { OAuthProvider } from '../providers/OAuthProvider.ts'
@@ -87,7 +87,7 @@ export function createCallbackHandler(config: CallbackConfig) {
 			// Extract Apple user data and callback params if present (POST form data)
 			let appleUserData: string | null = null
 			let overrideParams: { code: string | null; state: string | null } | null = null
-			if (providerName === 'apple' && event.request.method === 'POST') {
+			if (providerInstance.callbackMode === 'form_post' && event.request.method === 'POST') {
 				const formData = await event.request.formData()
 				appleUserData = formData.get('user')?.toString() ?? null
 				overrideParams = {

@@ -1,6 +1,6 @@
-import { OAuth2RequestError } from 'arctic'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { OAuth2RequestError } from '../../src/_internal/oauth2.ts'
 import type { OAuthProvider } from '../../src/providers/OAuthProvider.ts'
 import type { OAuthProfile, OAuthTokens } from '../../src/types/index.ts'
 import { captureRejected, createRequestEvent, getRedirectLocation } from '../testKit.ts'
@@ -26,8 +26,9 @@ vi.mock('../../src/utils/oauth.ts', () => ({
 
 import { createCallbackHandler } from '../../src/handlers/callback.ts'
 
-function createProvider(): OAuthProvider {
+function createProvider(callbackMode: 'query' | 'form_post' = 'query'): OAuthProvider {
 	return {
+		callbackMode,
 		createAuthorizationURL: () => new URL('https://example.com/auth'),
 		getUserProfile: vi.fn(async () => ({
 			profile: { id: 'p1', email: 'p1@example.com' },
@@ -59,7 +60,7 @@ describe('createCallbackHandler', () => {
 
 	it('handles OAuth2RequestError as 400', async () => {
 		handleOAuthCallback.mockImplementation(() => {
-			throw new OAuth2RequestError('bad', 'invalid_grant', undefined, undefined)
+			throw new OAuth2RequestError('invalid_grant', 'bad', 400)
 		})
 
 		const handler = createCallbackHandler({
@@ -81,7 +82,7 @@ describe('createCallbackHandler', () => {
 		const onAuthenticated = vi.fn()
 
 		const handler = createCallbackHandler({
-			providers: { apple: createProvider() },
+			providers: { apple: createProvider('form_post') },
 			onAuthenticated
 		})
 

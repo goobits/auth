@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { OAuth2RequestError } from '../../src/_internal/oauth2.ts'
 import { GoogleProvider } from '../../src/providers/GoogleProvider.ts'
 
 function createLogger() {
@@ -35,7 +36,7 @@ afterEach(() => {
 })
 
 describe('GoogleProvider', () => {
-	it('requires complete configuration and delegates authorization URLs', () => {
+	it('requires complete configuration and builds a PKCE authorization URL', async () => {
 		expect(
 			() =>
 				new GoogleProvider({
@@ -46,32 +47,37 @@ describe('GoogleProvider', () => {
 		).toThrow('requires clientId, clientSecret, and callbackUrl')
 
 		const { provider } = createProvider()
-		const createAuthorizationURL = vi.fn(() => new URL('https://accounts.google.test/auth'))
-		Reflect.set(provider, 'client', { createAuthorizationURL })
+		const authorizationUrl = await provider.createAuthorizationURL('state', 'verifier')
 
-		expect(provider.createAuthorizationURL('state', 'verifier').href).toBe(
-			'https://accounts.google.test/auth'
+		expect(authorizationUrl.origin).toBe('https://accounts.google.com')
+		expect(authorizationUrl.searchParams.get('response_type')).toBe('code')
+		expect(authorizationUrl.searchParams.get('client_id')).toBe('google-client')
+		expect(authorizationUrl.searchParams.get('redirect_uri')).toBe(
+			'https://bandamp.test/auth/callback/google'
 		)
-		expect(createAuthorizationURL).toHaveBeenCalledWith('state', 'verifier', [
-			'openid',
-			'profile',
-			'email'
-		])
+		expect(authorizationUrl.searchParams.get('state')).toBe('state')
+		expect(authorizationUrl.searchParams.get('scope')).toBe('openid profile email')
+		expect(authorizationUrl.searchParams.get('code_challenge_method')).toBe('S256')
+		expect(authorizationUrl.searchParams.get('code_challenge')).toMatch(/^[A-Za-z0-9_-]{43}$/u)
 	})
 
-	it('normalizes data-shaped token responses and verified profiles', async () => {
+	it('exchanges an authorization code and returns a verified profile', async () => {
 		const { provider } = createProvider()
-		Reflect.set(provider, 'client', {
-			validateAuthorizationCode: vi.fn(async () => ({
-				data: {
-					access_token: 'data-access-token',
-					refresh_token: 'data-refresh-token',
+		const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+			if (String(input) === 'https://oauth2.googleapis.com/token') {
+				const body = init?.body
+				expect(body).toBeInstanceOf(URLSearchParams)
+				expect((body as URLSearchParams).get('grant_type')).toBe('authorization_code')
+				expect((body as URLSearchParams).get('code_verifier')).toBe('verifier')
+				return Response.json({
+					access_token: 'access-token',
+					refresh_token: 'refresh-token',
 					scope: 'openid email',
 					expires_in: 3600
-				}
-			}))
+				})
+			}
+			return Response.json(userInfo())
 		})
-		const fetcher = vi.fn(async () => Response.json(userInfo()))
 		vi.stubGlobal('fetch', fetcher)
 		const before = Date.now()
 
@@ -85,62 +91,77 @@ describe('GoogleProvider', () => {
 			verified_email: true
 		})
 		expect(result.tokens).toMatchObject({
-			accessToken: 'data-access-token',
-			refreshToken: 'data-refresh-token',
+			accessToken: 'access-token',
+			refreshToken: 'refresh-token',
 			scope: 'openid email'
 		})
 		expect(new Date(result.tokens.accessTokenExpiresAt).getTime()).toBeGreaterThanOrEqual(
 			before + 3_600_000
 		)
-		expect(fetcher).toHaveBeenCalledWith(
+		expect(fetcher).toHaveBeenLastCalledWith(
 			'https://www.googleapis.com/oauth2/v1/userinfo?alt=json',
 			expect.objectContaining({
-				headers: { Authorization: 'Bearer data-access-token' }
+				headers: { Authorization: 'Bearer access-token' }
 			})
 		)
 	})
 
-	it('supports method-shaped Arctic tokens for login and refresh', async () => {
+	it('refreshes a token with the provider credentials', async () => {
 		const { provider } = createProvider()
-		const expiresAt = new Date('2026-07-20T00:00:00.000Z')
-		const loginTokens = {
-			accessToken: () => 'method-access-token',
-			refreshToken: () => 'method-refresh-token',
-			hasRefreshToken: () => true,
-			scopes: () => ['openid', 'profile'],
-			hasScopes: () => true,
-			accessTokenExpiresAt: () => expiresAt
-		}
-		const refreshTokens = {
-			accessToken: () => 'refreshed-access-token',
-			hasRefreshToken: () => false,
-			scopes: () => ['openid', 'email'],
-			hasScopes: () => true,
-			accessTokenExpiresAt: () => expiresAt
-		}
-		Reflect.set(provider, 'client', {
-			validateAuthorizationCode: vi.fn(async () => loginTokens),
-			refreshAccessToken: vi.fn(async () => refreshTokens)
+		const fetcher = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+			const body = init?.body as URLSearchParams
+			expect(body.get('grant_type')).toBe('refresh_token')
+			expect(body.get('refresh_token')).toBe('old-refresh-token')
+			expect(body.get('client_id')).toBe('google-client')
+			return Response.json({
+				access_token: 'refreshed-access-token',
+				scope: 'openid email',
+				expires_in: 1800
+			})
+		})
+		vi.stubGlobal('fetch', fetcher)
+
+		await expect(provider.refreshAccessToken('old-refresh-token')).resolves.toMatchObject({
+			accessToken: 'refreshed-access-token',
+			refreshToken: null,
+			scope: 'openid email'
+		})
+	})
+
+	it('maps token endpoint errors to a bounded OAuth error', async () => {
+		const { provider } = createProvider()
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () =>
+				Response.json(
+					{ error: 'invalid_grant', error_description: 'Authorization code rejected' },
+					{ status: 400 }
+				)
+			)
+		)
+
+		await expect(provider.getUserProfile('code', 'verifier')).rejects.toMatchObject<
+			Partial<OAuth2RequestError>
+		>({ name: 'OAuth2RequestError', code: 'invalid_grant', status: 400 })
+	})
+
+	it('rejects a chunked token response before buffering beyond the limit', async () => {
+		const { provider } = createProvider()
+		const body = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(new Uint8Array(40 * 1024))
+				controller.enqueue(new Uint8Array(40 * 1024))
+				controller.close()
+			}
 		})
 		vi.stubGlobal(
 			'fetch',
-			vi.fn(async () => Response.json(userInfo({ picture: undefined })))
+			vi.fn(async () => new Response(body))
 		)
 
-		await expect(provider.getUserProfile('code', 'verifier')).resolves.toMatchObject({
-			tokens: {
-				accessToken: 'method-access-token',
-				refreshToken: 'method-refresh-token',
-				scope: 'openid profile',
-				accessTokenExpiresAt: expiresAt.toISOString()
-			}
-		})
-		await expect(provider.refreshAccessToken('old-refresh-token')).resolves.toEqual({
-			accessToken: 'refreshed-access-token',
-			refreshToken: null,
-			scope: 'openid email',
-			accessTokenExpiresAt: expiresAt.toISOString()
-		})
+		await expect(provider.getUserProfile('code', 'verifier')).rejects.toThrow(
+			'OAuth token response is too large'
+		)
 	})
 
 	it.each([
@@ -162,12 +183,12 @@ describe('GoogleProvider', () => {
 	])('rejects a $name without logging secrets', async ({ response, error }) => {
 		const { provider, logger } = createProvider()
 		const secret = 'authorization-secret'
-		Reflect.set(provider, 'client', {
-			validateAuthorizationCode: vi.fn(async () => ({ accessToken: secret, expiresIn: 60 }))
-		})
 		vi.stubGlobal(
 			'fetch',
-			vi.fn(async () => response)
+			vi
+				.fn()
+				.mockResolvedValueOnce(Response.json({ access_token: secret, expires_in: 60 }))
+				.mockResolvedValueOnce(response)
 		)
 
 		await expect(provider.getUserProfile('code', 'verifier')).rejects.toThrow(error)

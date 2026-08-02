@@ -33,6 +33,27 @@ describe('backup codes modal keyboard handling', () => {
 		expect(event.stopImmediatePropagation).toHaveBeenCalledOnce()
 		expect(close).toHaveBeenCalledOnce()
 	})
+
+	it('wraps forward focus from the last modal control to the first', () => {
+		const first = { focus: vi.fn(), getAttribute: vi.fn(() => null) }
+		const last = { focus: vi.fn(), getAttribute: vi.fn(() => null) }
+		const modalEl = {
+			querySelectorAll: vi.fn(() => [first, last]),
+			ownerDocument: { activeElement: last },
+			contains: vi.fn(() => true)
+		} as unknown as HTMLElement
+		const event = createKeyboardEvent('Tab')
+
+		expect(
+			handleBackupCodesModalKeyboardEvent(event, {
+				close: vi.fn(),
+				modalEl,
+				visible: true
+			})
+		).toBe(true)
+		expect(first.focus).toHaveBeenCalledOnce()
+		expect(event.preventDefault).toHaveBeenCalledOnce()
+	})
 })
 
 function createKeyboardEvent(key: string): KeyboardEvent {
