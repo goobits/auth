@@ -171,6 +171,23 @@ describe('createAuth OAuth lifecycle', () => {
 		)
 	})
 
+	it('rejects a provider subject whose surrounding whitespace would change identity ownership', async () => {
+		const session = new MockSessionAdapter()
+		const identity = new MemoryUserAdapter()
+		const onAuthentication = vi.fn()
+
+		createAuth({
+			adapters: { session, user: identity, oauthIdentity: identity },
+			providers: { google: { provider: createProvider() } },
+			hooks: { onAuthentication }
+		})
+
+		await expect(
+			callback()(createEvent(), { ...profile, id: ` ${profile.id} ` }, tokens, context('sign-in'))
+		).rejects.toThrow('Invalid provider subject')
+		expect(onAuthentication).not.toHaveBeenCalled()
+	})
+
 	it('never infers identity ownership from a matching provider email', async () => {
 		const session = new MockSessionAdapter()
 		const createSession = vi.spyOn(session, 'createSession')

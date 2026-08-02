@@ -1,6 +1,6 @@
 # Changelog
 
-<!-- CHANGELOG audit cutoff: 2026-08-02. commit b3c11447 on main. -->
+<!-- CHANGELOG audit cutoff: 2026-08-02. commit 6d654d5c on main. -->
 
 ## [Unreleased]
 
@@ -37,6 +37,8 @@
 
 ### 🔒 Security
 
+- 🪪 OAuth callbacks reject provider subjects whose surrounding whitespace would
+  change stable identity ownership.
 - 🔄 Added a principal-bound session-assurance rotator that refreshes primary
   or MFA verification independently while preserving trusted session context.
 - 🍪 Built-in session adapters now persist only SHA-256 verifiers, return bearer

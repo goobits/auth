@@ -166,7 +166,7 @@ export function createHandlers(
 			onAuthenticated: async (event, profile, tokens, context: OAuthFlowContext) => {
 				const providerName = String(event.params['provider'] ?? '')
 				const subject = profile.id.trim()
-				if (!subject || subject.length > 512) {
+				if (!subject || subject !== profile.id || subject.length > 512) {
 					throw new AuthPrincipalResolutionError('Invalid provider subject', 400)
 				}
 				const currentUser = event.locals.user ?? null
