@@ -12,7 +12,9 @@ const rateLimitStore = new MemoryRateLimitStore()
 export const auth = new GoobitsAuth({
 	adapter: drizzleAdapter(db, {
 		schema,
-		oauthTokenEncryptionKey: env.TOKEN_ENCRYPTION_KEY
+		oauthTokenEncryption: {
+			encryptionKeyringJson: env.TOKEN_ENCRYPTION_KEYRING
+		}
 	}),
 	providers: {
 		google: {

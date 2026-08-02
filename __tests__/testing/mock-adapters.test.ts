@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { MockSessionAdapter, MockTokenAdapter, MockUserAdapter } from '../../src/testing/index.ts'
+import { MemoryUserAdapter, MockSessionAdapter, MockTokenAdapter } from '../../src/testing/index.ts'
 
 describe('testing mock adapters', () => {
 	it('creates and validates sessions', async () => {
-		const users = new MockUserAdapter()
+		const users = new MemoryUserAdapter()
 		await users.createUser({ id: 'u1', email: 'u1@example.com', name: 'User One' })
 
 		const sessions = new MockSessionAdapter()

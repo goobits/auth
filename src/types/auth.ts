@@ -216,10 +216,6 @@ export type AuthSecurityConfig = {
 		mode?: SecurityMode
 		/** Multi-window policy. Defaults to the canonical login policy for secure profiles. */
 		windows?: RateLimitWindow[]
-		/** @deprecated Prefer `windows`; retained as a one-window migration bridge. */
-		max?: number
-		/** @deprecated Prefer `windows`; retained as a one-window migration bridge. */
-		windowMs?: number
 		keyPrefix?: string
 		trustedProxyHeaders?: TrustedProxyHeader[]
 		/** Trusted append-style X-Forwarded-For hops, counted from the server side. */

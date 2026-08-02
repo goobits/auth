@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { RequestEventLike } from '../src/types/auth.ts'
 import type { OAuthProfile, OAuthTokens } from '../src/types/index.ts'
-import { MockSessionAdapter, MockTokenAdapter, MockUserAdapter } from '../src/testing/index.ts'
+import { MemoryUserAdapter, MockSessionAdapter, MockTokenAdapter } from '../src/testing/index.ts'
 
 let capturedOnAuthenticated:
 	| ((event: RequestEventLike, profile: OAuthProfile, tokens: OAuthTokens) => Promise<void>)
@@ -119,7 +119,7 @@ describe('createAuth OAuth lifecycle', () => {
 
 	it('fails closed when provider identity lookup infrastructure errors', async () => {
 		const session = new MockSessionAdapter()
-		const user = new MockUserAdapter()
+		const user = new MemoryUserAdapter()
 		vi.spyOn(user, 'getUserByProviderId').mockRejectedValue(new Error('database unavailable'))
 		const createUser = vi.spyOn(user, 'createUser')
 		createAuth({
@@ -140,7 +140,7 @@ describe('createAuth OAuth lifecycle', () => {
 
 	it('never links an existing account from an unverified provider email claim', async () => {
 		const session = new MockSessionAdapter()
-		const user = new MockUserAdapter()
+		const user = new MemoryUserAdapter()
 		await user.createUser({
 			id: 'existing',
 			email: 'user@example.com',
@@ -166,7 +166,7 @@ describe('createAuth OAuth lifecycle', () => {
 	it('does not create a session when OAuth account linking fails', async () => {
 		const session = new MockSessionAdapter()
 		const createSession = vi.spyOn(session, 'createSession')
-		const user = new MockUserAdapter()
+		const user = new MemoryUserAdapter()
 		await user.createUser({
 			id: 'existing',
 			email: 'user@example.com',

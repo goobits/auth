@@ -10,8 +10,7 @@ export function resolveOAuthTokenCodec(
 ): OAuthTokenCodec | null {
 	const hasCodec = options.tokenCodec !== undefined
 	const hasKeyring = !!options.encryptionKeyringJson
-	const hasLegacyKey = !!options.encryptionKey
-	const configuredSources = Number(hasCodec) + Number(hasKeyring) + Number(hasLegacyKey)
+	const configuredSources = Number(hasCodec) + Number(hasKeyring)
 
 	if (options.encrypt === false) {
 		if (configuredSources > 0 || options.legacyEncryptionKeyId !== undefined) {
@@ -29,17 +28,7 @@ export function resolveOAuthTokenCodec(
 			...(options.legacyEncryptionKeyId ? { legacyKeyId: options.legacyEncryptionKeyId } : {})
 		})
 	}
-	if (options.encryptionKey) {
-		const keyId = options.legacyEncryptionKeyId ?? 'legacy'
-		return createAesGcmOAuthTokenCodec({
-			keyringJson: JSON.stringify({
-				activeKeyId: keyId,
-				keys: { [keyId]: options.encryptionKey }
-			}),
-			legacyKeyId: keyId
-		})
-	}
 	throw new Error(
-		`${adapterName} requires tokenCodec, encryptionKeyringJson, or encryptionKey when encryption is enabled`
+		`${adapterName} requires tokenCodec or encryptionKeyringJson when encryption is enabled`
 	)
 }

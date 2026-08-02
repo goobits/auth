@@ -73,8 +73,7 @@ export const GET = async (event) => {
 When `oauthTokens` exists, configure `oauthTokenEncryption` with either a
 rotation-ready `encryptionKeyringJson` or an application `tokenCodec`. The table
 must enforce one row per `(userId, provider)` so stores and lazy key rotation use
-an atomic upsert. The old `oauthTokenEncryptionKey` option remains only as a
-migration bridge.
+an atomic upsert.
 
 Session adapters return bearer tokens only from `createSession()` and persist
 only their verifiers. Import `createSessionToken` and `hashSessionToken` from

@@ -63,10 +63,6 @@ export type DrizzleAdapterOptions<TSchema extends DrizzleAuthSchema = DrizzleAut
 	schema?: TSchema
 	tables?: Partial<Record<TableKey, DrizzleTable>>
 	oauthTokenEncryption?: OAuthTokenEncryptionOptions
-	/** @deprecated Prefer `oauthTokenEncryption.encryptionKeyringJson`. */
-	oauthTokenEncryptionKey?: string | null
-	/** @deprecated Prefer `oauthTokenEncryption.encrypt`. */
-	oauthTokenEncrypt?: boolean
 	session?: {
 		sessionLifetime?: number
 		sessionRefreshThreshold?: number
@@ -74,26 +70,6 @@ export type DrizzleAdapterOptions<TSchema extends DrizzleAuthSchema = DrizzleAut
 		secureCookies?: boolean
 	}
 	sanitizeUser?: (user: User | null) => User | null
-}
-
-function resolveOAuthTokenEncryptionOptions(
-	options: DrizzleAdapterOptions
-): OAuthTokenEncryptionOptions {
-	if (
-		options.oauthTokenEncryption &&
-		(options.oauthTokenEncryptionKey !== undefined || options.oauthTokenEncrypt !== undefined)
-	) {
-		throw new Error(
-			'drizzleAdapter accepts oauthTokenEncryption or legacy flat OAuth token options, not both'
-		)
-	}
-	if (options.oauthTokenEncryption) return options.oauthTokenEncryption
-	return {
-		...(options.oauthTokenEncryptionKey !== undefined
-			? { encryptionKey: options.oauthTokenEncryptionKey }
-			: {}),
-		...(options.oauthTokenEncrypt !== undefined ? { encrypt: options.oauthTokenEncrypt } : {})
-	}
 }
 
 /** Drizzle Adapter Bundle typed model for runtime integration. */
@@ -129,8 +105,7 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 	const usersTable = requireTable('users', options) as UserTableShape
 	const sessionsTable = requireTable('sessions', options) as SessionTableShape
 	const oauthAccountsTable = getTable('oauthAccounts', options) as
-		| OAuthAccountsTableShape
-		| undefined
+		OAuthAccountsTableShape | undefined
 
 	const user = new DrizzleUserAdapter(db, {
 		usersTable,
@@ -160,13 +135,12 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 	const oauthToken = oauthTokensTable
 		? new DrizzleTokenAdapter(db, {
 				tokensTable: oauthTokensTable,
-				...resolveOAuthTokenEncryptionOptions(options)
+				...(options.oauthTokenEncryption ?? {})
 			})
 		: undefined
 
 	const verificationTokensTable = getTable('verificationTokens', options) as
-		| VerificationTokensTableShape
-		| undefined
+		VerificationTokensTableShape | undefined
 	const verificationToken = verificationTokensTable
 		? new DrizzleVerificationTokenAdapter(db, {
 				tokensTable: verificationTokensTable,

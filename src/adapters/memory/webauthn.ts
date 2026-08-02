@@ -4,7 +4,8 @@ import {
 	type AdvanceWebAuthnCredentialCounterInput,
 	type CreateWebAuthnChallengeInput,
 	type CreateWebAuthnCredentialInput,
-	type DeleteWebAuthnCredentialInput
+	type DeleteWebAuthnCredentialInput,
+	type WebAuthnChallengeRecord
 } from '../webauthn/WebAuthnAdapter.ts'
 import {
 	assertCredentialCounterTransition,
@@ -13,7 +14,7 @@ import {
 
 /** In-memory WebAuthn adapter for challenges and credentials. */
 export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
-	#challenges = new Map<string, Record<string, unknown>>()
+	#challenges = new Map<string, WebAuthnChallengeRecord>()
 	#credentials = new Map<string, WebAuthnCredential>()
 
 	async createChallenge({
@@ -32,7 +33,7 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 		})
 	}
 
-	async getChallenge(challengeId: string): Promise<Record<string, unknown> | null> {
+	async getChallenge(challengeId: string): Promise<WebAuthnChallengeRecord | null> {
 		return this.#challenges.get(challengeId) ?? null
 	}
 
@@ -57,7 +58,7 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 		return removed
 	}
 
-	async consumeChallenge(challengeId: string): Promise<Record<string, unknown> | null> {
+	async consumeChallenge(challengeId: string): Promise<WebAuthnChallengeRecord | null> {
 		const challenge = this.#challenges.get(challengeId) ?? null
 		if (challenge) this.#challenges.delete(challengeId)
 		return challenge

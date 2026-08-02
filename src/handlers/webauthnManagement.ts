@@ -12,14 +12,12 @@ import { removeCredentialRequestSchema } from './webauthnUtils.ts'
 
 type ManagementAdapter = Pick<WebAuthnAdapter, 'listCredentials' | 'deleteCredential'>
 
-type WebAuthnManagementConfig = {
+export type WebAuthnListCredentialsHandlerConfig = {
 	webauthnAdapter: ManagementAdapter
 	getUser?: (event: RequestEventLike) => User | null | Promise<User | null>
 }
 
-export type WebAuthnListCredentialsHandlerConfig = WebAuthnManagementConfig
-
-export type WebAuthnRemoveCredentialHandlerConfig = WebAuthnManagementConfig & {
+export type WebAuthnRemoveCredentialHandlerConfig = WebAuthnListCredentialsHandlerConfig & {
 	authorizeSecurityChange: AuthorizeSecurityChange
 	onCredentialDeleted?: (input: WebAuthnCredentialLifecycleInput) => Promise<void> | void
 	emitSecurityEvent?: AuthEventEmitter
@@ -52,7 +50,7 @@ function credentialSummary(credential: Record<string, unknown>) {
 
 async function authenticatedUser(
 	event: RequestEventLike,
-	getUser: NonNullable<WebAuthnManagementConfig['getUser']>
+	getUser: NonNullable<WebAuthnListCredentialsHandlerConfig['getUser']>
 ): Promise<User | null> {
 	const user = await getUser(event)
 	const session = event.locals.session

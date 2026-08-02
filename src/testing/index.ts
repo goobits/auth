@@ -1,2 +1,6 @@
-/** Testing-only aliases backed by the canonical in-memory adapter implementations. */
-export { MockSessionAdapter, MockTokenAdapter, MockUserAdapter } from '../adapters/memory/index.ts'
+/** Testing adapters and the canonical in-memory user adapter. */
+export {
+	MemoryUserAdapter,
+	MockSessionAdapter,
+	MockTokenAdapter
+} from '../adapters/memory/index.ts'

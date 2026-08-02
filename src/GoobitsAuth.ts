@@ -3,12 +3,7 @@ import { error, type Handle, redirect } from '@sveltejs/kit'
 import { createAuth } from './createAuth.ts'
 import { AUTH_ROUTE_PATHS, matchesAuthRoute } from './_routePaths.ts'
 import { createAuthEvent, type AuthEvent } from './security/events.ts'
-import type {
-	AuthConfig,
-	AuthLocals,
-	AuthRequestHandler,
-	RequestEventLike
-} from './types/auth.ts'
+import type { AuthConfig, AuthLocals, AuthRequestHandler, RequestEventLike } from './types/auth.ts'
 import type { Session, User } from './types/index.ts'
 
 type HandlerMethod = 'GET' | 'POST'
@@ -371,6 +366,3 @@ export class GoobitsAuth {
 		return null
 	}
 }
-
-/** Auth typed model for runtime integration. */
-export type Auth = GoobitsAuth

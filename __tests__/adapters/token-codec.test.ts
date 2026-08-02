@@ -85,15 +85,22 @@ describe('AES-GCM OAuth token codec', () => {
 
 	it('rejects ambiguous or disabled encryption configuration', () => {
 		const namespace = createNamespace()
+		const tokenCodec = createAesGcmOAuthTokenCodec({
+			keyringJson: keyring('old', { old: OLD_KEY })
+		})
 		expect(
 			() =>
 				new KVTokenAdapter(namespace, {
-					encryptionKey: OLD_KEY,
+					tokenCodec,
 					encryptionKeyringJson: keyring('current', { current: CURRENT_KEY })
 				})
 		).toThrow(/exactly one OAuth token encryption source/)
-		expect(() => new KVTokenAdapter(namespace, { encrypt: false, encryptionKey: OLD_KEY })).toThrow(
-			/cannot configure token encryption/
-		)
+		expect(
+			() =>
+				new KVTokenAdapter(namespace, {
+					encrypt: false,
+					encryptionKeyringJson: keyring('old', { old: OLD_KEY })
+				})
+		).toThrow(/cannot configure token encryption/)
 	})
 })

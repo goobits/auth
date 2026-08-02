@@ -114,9 +114,8 @@ Use `createAuthEventAuditEmitter()` to bridge Auth events into a canonical
 not persist free-form event messages, because backend exception text is not a
 safe audit field.
 
-`security.rateLimit.{max,windowMs}` remains a deprecated one-window migration
-bridge. New integrations should supply `windows` or use the named factories
-from `@goobits/auth/security`.
+Custom rate-limit policy uses `security.rateLimit.windows` or the named
+factories from `@goobits/auth/security`.
 
 Password-length enforcement runs before built-in or application-supplied
 hash/verify functions. TOTP verification accepts integer windows from 0 through

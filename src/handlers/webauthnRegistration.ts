@@ -19,8 +19,7 @@ import { jsonResponse, parseRequestDataWithSchema } from '../utils/http.ts'
 import {
 	credentialDescriptorFromRecord,
 	encodeCredential,
-	registerVerifyRequestSchema,
-	toChallengeRecord
+	registerVerifyRequestSchema
 } from './webauthnUtils.ts'
 
 const DEFAULT_CREDENTIAL_LIMIT = 10
@@ -178,7 +177,7 @@ export function createWebAuthnRegisterVerifyHandler(
 			return jsonResponse({ ok: false, error: 'Passkey limit reached' }, 409)
 		}
 
-		const challenge = toChallengeRecord(await webauthnAdapter.consumeChallenge(data.challengeId))
+		const challenge = await webauthnAdapter.consumeChallenge(data.challengeId)
 		if (!challenge) return jsonResponse({ ok: false, error: 'Challenge not found' }, 400)
 		if (challenge.type !== 'registration') {
 			return jsonResponse({ ok: false, error: 'Invalid challenge' }, 400)
