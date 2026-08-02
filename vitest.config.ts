@@ -1,8 +1,10 @@
 import { defineConfig } from 'vitest/config'
 
 import { shouldSuppressConsoleMessage } from './__tests__/consoleSuppressions.js'
+import { resolveViteCacheDirectory } from './scripts/testStorage.ts'
 
 export default defineConfig({
+	cacheDir: resolveViteCacheDirectory(import.meta.dirname),
 	test: {
 		...(process.env.CI ? {} : { maxWorkers: 2 }),
 		setupFiles: ['./vitest.setup.ts'],
