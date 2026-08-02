@@ -28,7 +28,8 @@ export type WebAuthnVerificationConfig = {
 type AuthenticationPurpose = 'authentication' | 'step-up'
 
 type CredentialVerificationResult =
-	{ verified: true; credential: { userId: string } } | { verified: false; response: Response }
+	| { verified: true; credential: { credentialId: string; userId: string } }
+	| { verified: false; response: Response }
 
 async function authenticationFailure(
 	emitter: AuthEventEmitter | undefined,
@@ -204,5 +205,11 @@ export async function verifyWebAuthnCredential(
 		status: 200,
 		details: { purpose }
 	})
-	return { verified: true, credential: { userId: storedCredential.userId } }
+	return {
+		verified: true,
+		credential: {
+			credentialId: storedCredential.credentialId,
+			userId: storedCredential.userId
+		}
+	}
 }

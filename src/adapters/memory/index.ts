@@ -20,6 +20,7 @@ export function createMemoryAuthAdapters(input: {
 	sessionLifetimeMs?: number
 }): UserAdapterBundle & {
 	magicLink: MemoryMagicLinkAdapter
+	oauthIdentity: MemoryUserAdapter
 	session: MemorySessionAdapter
 	mfa: MemoryMfaAdapter
 	webauthn: MemoryWebAuthnAdapter
@@ -27,6 +28,7 @@ export function createMemoryAuthAdapters(input: {
 	const user = new MemoryUserAdapter()
 	return {
 		magicLink: new MemoryMagicLinkAdapter(),
+		oauthIdentity: user,
 		passwordCredential: user,
 		session: new MemorySessionAdapter({
 			...(input.cookieDomain ? { cookieDomain: input.cookieDomain } : {}),

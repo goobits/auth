@@ -6,7 +6,11 @@ import type { OAuthProfile, OAuthTokens } from '../../src/types/index.ts'
 import { captureRejected, createRequestEvent, getRedirectLocation } from '../testKit.ts'
 
 type OAuthCallbackHandlers = {
-	onAuthenticated?: (profile: OAuthProfile, tokens: OAuthTokens) => Promise<void> | void
+	onAuthenticated?: (
+		profile: OAuthProfile,
+		tokens: OAuthTokens,
+		context: { intent: 'sign-in'; userId: null; redirectTo: string }
+	) => Promise<void> | void
 	onError?: (error: unknown) => Promise<void> | void
 }
 
@@ -16,7 +20,11 @@ type OAuthCallbackInput = {
 
 const handleOAuthCallback = vi.fn(async ({ callbacks }: OAuthCallbackInput) => {
 	if (callbacks?.onAuthenticated) {
-		await callbacks.onAuthenticated({ id: 'p1', email: 'p1@example.com' }, { accessToken: 't1' })
+		await callbacks.onAuthenticated(
+			{ id: 'p1', email: 'p1@example.com' },
+			{ accessToken: 't1' },
+			{ intent: 'sign-in', userId: null, redirectTo: '/' }
+		)
 	}
 	return { id: 'p1' }
 })
@@ -33,7 +41,9 @@ function createProvider(callbackMode: 'query' | 'form_post' = 'query'): OAuthPro
 		getUserProfile: vi.fn(async () => ({
 			profile: { id: 'p1', email: 'p1@example.com' },
 			tokens: { accessToken: 't1' }
-		}))
+		})),
+		refreshAccessToken: vi.fn(),
+		revokeTokens: vi.fn()
 	}
 }
 

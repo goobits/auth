@@ -1,7 +1,12 @@
 import { createCsrfFetch, type CsrfFetchConfig } from '@goobits/security/csrf-client'
 import { base64UrlToBytes, bytesToBase64Url } from '@goobits/security/crypto/encoding'
 
-import { AUTH_ROUTE_PATHS, resolveAuthRoutePath } from '../_routePaths.ts'
+import {
+	AUTH_ROUTE_PATHS,
+	isOAuthProviderName,
+	normalizeAuthBasePath,
+	resolveAuthRoutePath
+} from '../_routePaths.ts'
 
 type Base64Input = ArrayBuffer | ArrayBufferView | Uint8Array | string | null | undefined
 
@@ -23,10 +28,13 @@ export type AuthClientEndpoints = {
 	mfaStepUp?: string
 	sessions?: string
 	sessionRevoke?: string
+	oauthIdentities?: string
+	oauthUnlink?: string
 }
 
 export type CreateAuthClientOptions = {
 	baseUrl?: string
+	basePath?: string
 	csrf?: Omit<CsrfFetchConfig, 'fetch'>
 	endpoints?: AuthClientEndpoints
 	fetcher?: typeof fetch
@@ -80,6 +88,13 @@ export function supportsPasskeys(): boolean {
 		typeof globalThis.PublicKeyCredential !== 'undefined' &&
 		Boolean(globalThis.navigator?.credentials)
 	)
+}
+
+/** Returns whether the browser supports discoverable conditional passkey mediation. */
+export async function supportsConditionalPasskeys(): Promise<boolean> {
+	if (!supportsPasskeys()) return false
+	const capability = PublicKeyCredential.isConditionalMediationAvailable
+	return typeof capability === 'function' && (await capability.call(PublicKeyCredential))
 }
 
 type PasskeyOptionsResult =
@@ -320,12 +335,14 @@ function serializeCredential(credential: unknown) {
 /** Creates auth client for auth runtime. */
 export function createAuthClient({
 	baseUrl = '',
+	basePath = '/auth',
 	csrf = {},
 	endpoints = {},
 	fetcher = fetch,
 	headers
 }: CreateAuthClientOptions = {}) {
-	const defaultEndpoint = (path: string) => resolveAuthRoutePath('/auth', path)
+	const authBasePath = normalizeAuthBasePath(basePath)
+	const defaultEndpoint = (path: string) => resolveAuthRoutePath(authBasePath, path)
 	const resolved = {
 		magicLinkRequest: endpoints.magicLinkRequest || defaultEndpoint(AUTH_ROUTE_PATHS.magicLink),
 		magicLinkVerify: endpoints.magicLinkVerify || defaultEndpoint(AUTH_ROUTE_PATHS.magicLinkVerify),
@@ -351,7 +368,9 @@ export function createAuthClient({
 		mfaStepUp: endpoints.mfaStepUp || defaultEndpoint(AUTH_ROUTE_PATHS.mfaStepUp),
 		sessions: endpoints.sessions || defaultEndpoint(AUTH_ROUTE_PATHS.sessions),
 		sessionRevoke:
-			endpoints.sessionRevoke || endpoints.sessions || defaultEndpoint(AUTH_ROUTE_PATHS.sessions)
+			endpoints.sessionRevoke || endpoints.sessions || defaultEndpoint(AUTH_ROUTE_PATHS.sessions),
+		oauthIdentities: endpoints.oauthIdentities || defaultEndpoint(AUTH_ROUTE_PATHS.oauthIdentities),
+		oauthUnlink: endpoints.oauthUnlink || defaultEndpoint(AUTH_ROUTE_PATHS.oauthUnlink)
 	}
 
 	const jsonHeaders = { 'content-type': 'application/json' }
@@ -365,11 +384,34 @@ export function createAuthClient({
 
 	return {
 		loginWithOAuth(provider: string) {
-			if (!provider) throw new Error('Provider is required')
-			const url = `${baseUrl}/auth/${provider}`
+			const url = oauthRedirectUrl(baseUrl, authBasePath, AUTH_ROUTE_PATHS.oauthSignIn, provider)
 			if (typeof window !== 'undefined') {
 				window.location.assign(url)
 			}
+			return url
+		},
+
+		linkOAuth(provider: string, returnTo?: string) {
+			const url = oauthRedirectUrl(
+				baseUrl,
+				authBasePath,
+				AUTH_ROUTE_PATHS.oauthLink,
+				provider,
+				returnTo
+			)
+			if (typeof window !== 'undefined') window.location.assign(url)
+			return url
+		},
+
+		reauthenticateWithOAuth(provider: string, returnTo?: string) {
+			const url = oauthRedirectUrl(
+				baseUrl,
+				authBasePath,
+				AUTH_ROUTE_PATHS.oauthReauthenticate,
+				provider,
+				returnTo
+			)
+			if (typeof window !== 'undefined') window.location.assign(url)
 			return url
 		},
 
@@ -425,9 +467,15 @@ export function createAuthClient({
 			return parsePasskeyAction(await readJsonRecord(verifyRes))
 		},
 
-		async loginWithPasskey() {
+		async loginWithPasskey({
+			conditional = false,
+			signal
+		}: { conditional?: boolean; signal?: AbortSignal } = {}) {
 			if (!supportsPasskeys()) {
 				throw new Error('WebAuthn not supported in this environment')
+			}
+			if (conditional && !(await supportsConditionalPasskeys())) {
+				throw new Error('Conditional WebAuthn not supported in this environment')
 			}
 			const optionsRes = await authFetch(withBase(resolved.passkeyLoginOptions), {
 				method: 'POST'
@@ -435,7 +483,9 @@ export function createAuthClient({
 			const optionsResult = parsePasskeyOptions(await readJsonRecord(optionsRes))
 			if (!optionsResult.success) return optionsResult
 			const credential = await navigator.credentials.get({
-				publicKey: parseRequestOptions(optionsResult.options)
+				publicKey: parseRequestOptions(optionsResult.options),
+				...(conditional ? { mediation: 'conditional' as const } : {}),
+				...(signal ? { signal } : {})
 			})
 			const verifyRes = await authFetch(withBase(resolved.passkeyLoginVerify), {
 				method: 'POST',
@@ -643,6 +693,52 @@ export function createAuthClient({
 			const value = await readJsonRecord(response)
 			if (typeof value['ok'] !== 'boolean') throw new Error('Invalid authentication response')
 			return value['ok'] ? { ok: true } : parseSessionFailure(value)
+		},
+
+		async listOAuthIdentities(): Promise<
+			{ ok: true; providers: string[] } | { ok: false; error: string }
+		> {
+			const value = await readJsonRecord(
+				await authFetch(withBase(resolved.oauthIdentities), { method: 'GET' })
+			)
+			if (value['ok'] === false) return parseSessionFailure(value)
+			if (
+				value['ok'] !== true ||
+				!Array.isArray(value['providers']) ||
+				!value['providers'].every((provider) => typeof provider === 'string')
+			) {
+				throw new Error('Invalid authentication response')
+			}
+			return { ok: true, providers: value['providers'] }
+		},
+
+		async unlinkOAuthIdentity(provider: string): Promise<SessionActionResult> {
+			assertProviderName(provider)
+			const form = new FormData()
+			form.set('provider', provider)
+			const value = await readJsonRecord(
+				await authFetch(withBase(resolved.oauthUnlink), { method: 'POST', body: form })
+			)
+			if (typeof value['ok'] !== 'boolean') throw new Error('Invalid authentication response')
+			return value['ok'] ? { ok: true } : parseSessionFailure(value)
 		}
 	}
+}
+
+function assertProviderName(provider: string): void {
+	if (!isOAuthProviderName(provider)) throw new Error('Invalid OAuth provider')
+}
+
+function oauthRedirectUrl(
+	baseUrl: string,
+	basePath: string,
+	flowPath: string,
+	provider: string,
+	returnTo?: string
+): string {
+	assertProviderName(provider)
+	const path = `${baseUrl}${resolveAuthRoutePath(basePath, flowPath)}/${provider}`
+	if (!returnTo) return path
+	const query = new URLSearchParams({ returnTo })
+	return `${path}?${query.toString()}`
 }

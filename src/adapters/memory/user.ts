@@ -1,17 +1,21 @@
-import type { OAuthProfile, User } from '../../types/index.ts'
+import type { OAuthIdentity, OAuthProfile, User } from '../../types/index.ts'
 import { generateRandomUUID } from '../../utils/crypto.ts'
 import { normalizeEmail, recordValue, stringValue } from '../_inputValues.ts'
 import type {
 	PasswordCredential,
 	PasswordCredentialAdapter
 } from '../database/PasswordCredentialAdapter.ts'
+import type { OAuthIdentityAdapter } from '../oauth-identity/OAuthIdentityAdapter.ts'
 import { UserAdapter } from '../database/UserAdapter.ts'
 import { assertPublicUserData } from '../database/publicUserData.ts'
 
 type StoredUser = User & { password?: string | null }
 
 /** In-memory user adapter for local development and tests. */
-export class MemoryUserAdapter extends UserAdapter implements PasswordCredentialAdapter {
+export class MemoryUserAdapter
+	extends UserAdapter
+	implements PasswordCredentialAdapter, OAuthIdentityAdapter
+{
 	#oauthIndex = new Map<string, string>()
 	#users = new Map<string, StoredUser>()
 
@@ -77,9 +81,9 @@ export class MemoryUserAdapter extends UserAdapter implements PasswordCredential
 		return null
 	}
 
-	async getUserByProviderId(provider: string, providerId: string): Promise<User | null> {
-		const userId = this.#oauthIndex.get(`${provider}:${providerId}`)
-		return userId ? this.getUserById(userId) : null
+	async getIdentity(provider: string, subject: string): Promise<OAuthIdentity | null> {
+		const userId = this.#oauthIndex.get(`${provider}:${subject}`)
+		return userId ? { userId, provider, subject } : null
 	}
 
 	async updateUser(id: string, data: Partial<User> & Record<string, unknown>): Promise<User> {
@@ -99,19 +103,46 @@ export class MemoryUserAdapter extends UserAdapter implements PasswordCredential
 
 	async deleteUser(id: string): Promise<void> {
 		this.#users.delete(id)
+		for (const [key, owner] of this.#oauthIndex.entries()) {
+			if (owner === id) this.#oauthIndex.delete(key)
+		}
 	}
 
-	async linkOAuthAccount(
-		userId: string,
-		provider: string,
-		providerAccountId: string
-	): Promise<void> {
-		const key = `${provider}:${providerAccountId}`
+	async listIdentities(userId: string): Promise<OAuthIdentity[]> {
+		return [...this.#oauthIndex.entries()].flatMap(([key, owner]) => {
+			if (owner !== userId) return []
+			const separator = key.indexOf(':')
+			return separator > 0
+				? [
+						{
+							userId,
+							provider: key.slice(0, separator),
+							subject: key.slice(separator + 1)
+						}
+					]
+				: []
+		})
+	}
+
+	async linkIdentity({ userId, provider, subject }: OAuthIdentity): Promise<void> {
+		const existingForUser = (await this.listIdentities(userId)).find(
+			(identity) => identity.provider === provider
+		)
+		if (existingForUser && existingForUser.subject !== subject) {
+			throw new Error('OAuth provider is already linked to this user')
+		}
+		const key = `${provider}:${subject}`
 		const owner = this.#oauthIndex.get(key)
 		if (owner && owner !== userId) {
 			throw new Error('OAuth provider account is already linked to another user')
 		}
 		this.#oauthIndex.set(key, userId)
+	}
+
+	async unlinkIdentity(userId: string, provider: string): Promise<void> {
+		for (const [key, owner] of this.#oauthIndex.entries()) {
+			if (owner === userId && key.startsWith(`${provider}:`)) this.#oauthIndex.delete(key)
+		}
 	}
 
 	async findPasswordCredential(

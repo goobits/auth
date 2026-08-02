@@ -85,7 +85,7 @@ type MagicLinkVerifyConfig = {
 	sessionAdapter: MagicLinkSessionAdapterLike
 	allowSignup?: boolean
 	createUser?: (email: string, event: RequestEventLike) => Promise<User>
-	onLogin?: AuthHooks['onLogin']
+	onAuthentication?: AuthHooks['onAuthentication']
 	getSessionMetadata?: AuthHooks['getSessionMetadata']
 	redirectAfterLogin?: string
 	isAuthenticated?: (locals: AuthLocals) => boolean
@@ -290,7 +290,7 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 		sessionAdapter,
 		allowSignup = false,
 		createUser,
-		onLogin,
+		onAuthentication,
 		getSessionMetadata,
 		redirectAfterLogin = '/',
 		isAuthenticated = (locals: AuthLocals) => !!locals.user,
@@ -467,17 +467,12 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 
 		let userId = user?.id ? String(user.id) : recordUserId
 
-		if (onLogin) {
-			const profileEmail = recordEmail || email
-			const profileName = user?.name || (profileEmail.split('@')[0] ?? '')
-			const profile = {
-				id: userId || profileEmail,
-				email: profileEmail,
-				name: profileName
-			}
-			const hookResult = await onLogin(event, profile, null, user)
-			if (hookResult?.userId) userId = String(hookResult.userId)
-		}
+		const lifecycleResult = await onAuthentication?.({
+			event,
+			method: { kind: 'magic-link', email: recordEmail || email },
+			user
+		})
+		if (lifecycleResult?.userId) userId = String(lifecycleResult.userId)
 		try {
 			userId = await ensureSessionAfterLogin({
 				event,
@@ -495,7 +490,13 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 		}
 
 		if (event.request.method === 'GET') {
-			throw redirect(302, redirectTo || redirectAfterLogin)
+			const lifecycleRedirect = lifecycleResult?.redirectTo
+			throw redirect(
+				302,
+				lifecycleRedirect && isSafeRedirectPath(lifecycleRedirect)
+					? lifecycleRedirect
+					: redirectTo || redirectAfterLogin
+			)
 		}
 
 		return jsonResponse({ ok: true, user: sanitizeUser(user) })

@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { createAuthClient, supportsPasskeys } from '../src/client/index.ts'
+import {
+	createAuthClient,
+	supportsConditionalPasskeys,
+	supportsPasskeys
+} from '../src/client/index.ts'
 
 function jsonResponse(body: unknown) {
 	return new Response(JSON.stringify(body), {
@@ -49,6 +53,22 @@ describe('auth client', () => {
 		vi.stubGlobal('PublicKeyCredential', class {})
 		vi.stubGlobal('navigator', { credentials: {} })
 		expect(supportsPasskeys()).toBe(true)
+	})
+
+	it('reports conditional passkey support only when the browser confirms it', async () => {
+		expect(await supportsConditionalPasskeys()).toBe(false)
+
+		const isConditionalMediationAvailable = vi.fn(async () => true)
+		vi.stubGlobal(
+			'PublicKeyCredential',
+			class {
+				static isConditionalMediationAvailable = isConditionalMediationAvailable
+			}
+		)
+		vi.stubGlobal('navigator', { credentials: {} })
+
+		await expect(supportsConditionalPasskeys()).resolves.toBe(true)
+		expect(isConditionalMediationAvailable).toHaveBeenCalledOnce()
 	})
 
 	it('does not attach a CSRF token to safe or cross-origin requests', async () => {
@@ -261,8 +281,35 @@ describe('auth client', () => {
 			'https://app.example/account/sessions',
 			'https://app.example/account/sessions/revoke'
 		])
-		expect(client.loginWithOAuth('google')).toBe('https://app.example/auth/google')
-		expect(() => client.loginWithOAuth('')).toThrow('Provider is required')
+		expect(client.loginWithOAuth('google')).toBe('https://app.example/auth/signin/google')
+		expect(client.linkOAuth('apple', '/settings/security')).toBe(
+			'https://app.example/auth/link/apple?returnTo=%2Fsettings%2Fsecurity'
+		)
+		expect(client.reauthenticateWithOAuth('google')).toBe('https://app.example/auth/reauth/google')
+		expect(() => client.loginWithOAuth('')).toThrow('Invalid OAuth provider')
+	})
+
+	it('uses the configured facade base path for API and OAuth routes', async () => {
+		const fetcher = createFetcher({ ok: true, sessions: [] })
+		const client = createAuthClient({
+			baseUrl: 'https://app.example',
+			basePath: '/account/identity/',
+			fetcher
+		})
+
+		await client.listSessions()
+		expect(client.loginWithOAuth('google')).toBe(
+			'https://app.example/account/identity/signin/google'
+		)
+		expect(vi.mocked(fetcher).mock.calls[0]?.[0]).toBe(
+			'https://app.example/account/identity/sessions'
+		)
+		expect(() => createAuthClient({ basePath: '//attacker.example' })).toThrow(
+			'Invalid auth base path'
+		)
+		expect(() => createAuthClient({ basePath: '/auth/%2e%2e/account' })).toThrow(
+			'Invalid auth base path'
+		)
 	})
 
 	it('converts WebAuthn options and credentials at the browser boundary', async () => {
@@ -390,6 +437,48 @@ describe('auth client', () => {
 		expect(getCredential).not.toHaveBeenCalled()
 	})
 
+	it('requests conditional mediation for passkey autofill when supported', async () => {
+		const getCredential = vi.fn(async () => ({
+			id: 'conditional-credential',
+			type: 'public-key',
+			rawId: new Uint8Array([1]),
+			response: {
+				authenticatorData: new Uint8Array([2]),
+				clientDataJSON: new Uint8Array([3]),
+				signature: new Uint8Array([4]),
+				userHandle: null
+			}
+		}))
+		vi.stubGlobal(
+			'PublicKeyCredential',
+			class {
+				static isConditionalMediationAvailable = vi.fn(async () => true)
+			}
+		)
+		vi.stubGlobal('navigator', { credentials: { get: getCredential } })
+		const controller = new AbortController()
+		const client = createAuthClient({
+			fetcher: createQueuedFetcher([
+				{
+					challengeId: 'conditional-challenge',
+					options: { challenge: 'AQ' }
+				},
+				{ ok: true }
+			])
+		})
+
+		await expect(
+			client.loginWithPasskey({ conditional: true, signal: controller.signal })
+		).resolves.toEqual({ success: true })
+		expect(getCredential).toHaveBeenCalledWith(
+			expect.objectContaining({
+				mediation: 'conditional',
+				signal: controller.signal,
+				publicKey: expect.objectContaining({ challenge: expect.any(Uint8Array) })
+			})
+		)
+	})
+
 	it('lists and removes passkeys through the owner-scoped management endpoint', async () => {
 		const fetcher = createQueuedFetcher([
 			{
@@ -439,6 +528,30 @@ describe('auth client', () => {
 			credentialId: 'credential-1',
 			currentPassword: 'current-password'
 		})
+	})
+
+	it('lists and unlinks OAuth identities through the owner-scoped endpoints', async () => {
+		const fetcher = createQueuedFetcher([
+			{ ok: true, providers: ['apple', 'google'] },
+			{ ok: true }
+		])
+		const client = createAuthClient({ fetcher })
+
+		await expect(client.listOAuthIdentities()).resolves.toEqual({
+			ok: true,
+			providers: ['apple', 'google']
+		})
+		await expect(client.unlinkOAuthIdentity('google')).resolves.toEqual({ ok: true })
+
+		expect(vi.mocked(fetcher).mock.calls.map(([url, init]) => [String(url), init?.method])).toEqual(
+			[
+				['/auth/oauth/identities', 'GET'],
+				['/auth/oauth/unlink', 'POST']
+			]
+		)
+		expect(
+			Object.fromEntries((vi.mocked(fetcher).mock.calls[1]?.[1]?.body as FormData).entries())
+		).toEqual({ provider: 'google' })
 	})
 
 	it('uses a browser passkey for session step-up', async () => {

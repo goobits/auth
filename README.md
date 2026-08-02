@@ -1,7 +1,8 @@
 # @goobits/auth
 
 Pluggable authentication for SvelteKit with a class-first API and durable
-adapters for sessions, users, credentials, OAuth tokens, MFA, and WebAuthn.
+adapters for sessions, users, credentials, OAuth identities and tokens, MFA,
+and WebAuthn.
 
 ## Start Here
 
@@ -38,7 +39,7 @@ counters remain owned by their `@goobits/security/*` entrypoints.
 
 ## Stability And Distribution
 
-Documented exports are stable for the `0.3.x` line. WebAuthn and MFA may receive
+Documented exports are stable for the `0.4.x` line. WebAuthn and MFA may receive
 additive options as browser and authenticator behavior evolves.
 
 - First-party TypeScript workspaces consume checked-out `src/` entrypoints so
@@ -64,8 +65,8 @@ additive options as browser and authenticator behavior evolves.
 - `requireAuthRole()` gates website/session roles; product permissions remain an
   application concern.
 - `drizzleAdapter()` returns the required session, user, and password-credential
-  capabilities plus optional token, magic-link, MFA, and WebAuthn capabilities
-  when their tables are configured.
+  capabilities plus optional OAuth identity/token, magic-link, MFA, and
+  WebAuthn capabilities when their tables are configured.
 - Password hashes are available only through `PasswordCredentialAdapter`, never
   through general user-profile methods.
 - Password-reset completion and token consumption require application-owned
@@ -74,6 +75,12 @@ additive options as browser and authenticator behavior evolves.
   managed-session APIs use separate opaque identifiers.
 - OAuth token storage requires a rotation-ready keyring or application-owned
   codec and a unique `(userId, provider)` constraint.
+- OAuth ownership uses a provider's stable subject through the dedicated
+  `OAuthIdentityAdapter`; mutable email claims never link accounts implicitly.
+- OAuth sign-in, provider linking, reauthentication, and unlinking are separate
+  flows. Identity changes require application-owned fresh authorization.
+- Applications must refuse an unlink that would remove the account's last
+  usable sign-in method.
 
 See the public API and migration guide for the complete capability contracts.
 
@@ -84,7 +91,10 @@ See the public API and migration guide for the complete capability contracts.
   `createAuthEventAuditEmitter()`.
 - Configure secure cookies, trusted proxy headers, alert delivery, encryption
   keys, and required database migrations before deployment.
-- Require fresh application authorization for MFA and passkey changes.
+- Require fresh application authorization for MFA, passkey, and OAuth identity
+  changes.
+- Offer conditional passkey autofill only after
+  `supportsConditionalPasskeys()` confirms browser support.
 - Rotate a current session through `rotateSessionAssurance()` after a trusted
   primary- or second-factor verification instead of rewriting session metadata
   in application code.
@@ -101,7 +111,9 @@ See the public API and migration guide for the complete capability contracts.
   and production responsibilities.
 - [`docs/schema.md`](docs/schema.md) — schema requirements.
 - [`docs/testing.md`](docs/testing.md) — test helpers and expectations.
-- [`docs/migrations/0.3-breaking.md`](docs/migrations/0.3-breaking.md) — migration
-  from pre-0.3 integrations.
+- [`docs/migrations/0.4-breaking.md`](docs/migrations/0.4-breaking.md) — OAuth
+  identity and authentication-lifecycle migration from 0.3.
+- [`docs/migrations/0.3-breaking.md`](docs/migrations/0.3-breaking.md) — earlier
+  migration from pre-0.3 integrations.
 - [`examples/sveltekit-quickstart/`](examples/sveltekit-quickstart/) — minimal
   application wiring.

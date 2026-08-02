@@ -1,7 +1,8 @@
 import { and, eq } from 'drizzle-orm'
 
-import type { OAuthProfile, User } from '../../types/index.ts'
+import type { OAuthIdentity, OAuthProfile, User } from '../../types/index.ts'
 import { toDrizzleUser as toUser } from '../_drizzleUser.ts'
+import type { OAuthIdentityAdapter } from '../oauth-identity/OAuthIdentityAdapter.ts'
 import { assertPublicUserData } from './publicUserData.ts'
 import {
 	type DrizzleDbLike,
@@ -34,7 +35,10 @@ function toDrizzleRow(values: Record<string, DrizzleJson>): DrizzleRow {
 }
 
 /** Drizzle user adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
-export class DrizzleUserAdapter extends UserAdapter implements PasswordCredentialAdapter {
+export class DrizzleUserAdapter
+	extends UserAdapter
+	implements PasswordCredentialAdapter, OAuthIdentityAdapter
+{
 	private db: DrizzleDbLike
 	private usersTable: UsersTable
 	private oauthAccountsTable: OAuthAccountsTable | null
@@ -119,25 +123,25 @@ export class DrizzleUserAdapter extends UserAdapter implements PasswordCredentia
 		return this.sanitizeUser(toUser(row ?? null))
 	}
 
-	async getUserByProviderId(provider: string, providerId: string): Promise<User | null> {
+	async getIdentity(provider: string, subject: string): Promise<OAuthIdentity | null> {
 		if (!this.oauthAccountsTable) {
 			throw new Error(
 				'OAuth accounts table not configured. Set oauthAccountsTable in adapter options.'
 			)
 		}
 		const [result] = await this.db
-			.select({ user: this.usersTable })
+			.select()
 			.from(this.oauthAccountsTable)
-			.innerJoin(this.usersTable, eq(this.oauthAccountsTable.userId, this.usersTable.id))
 			.where(
 				requireCondition(
 					and(
 						eq(this.oauthAccountsTable.provider, provider),
-						eq(this.oauthAccountsTable.providerAccountId, providerId)
+						eq(this.oauthAccountsTable.providerAccountId, subject)
 					)
 				)
 			)
-		return this.sanitizeUser(toUser(result?.['user'] ?? null))
+		const userId = result?.['userId']
+		return typeof userId === 'string' ? { userId, provider, subject } : null
 	}
 
 	async updateUser(id: string, data: Partial<User> & Record<string, DrizzleJson>): Promise<User> {
@@ -157,27 +161,66 @@ export class DrizzleUserAdapter extends UserAdapter implements PasswordCredentia
 		await this.db.delete(this.usersTable).where(eq(this.usersTable.id, id))
 	}
 
-	async linkOAuthAccount(
-		userId: string,
-		provider: string,
-		providerAccountId: string
-	): Promise<void> {
+	async listIdentities(userId: string): Promise<OAuthIdentity[]> {
 		if (!this.oauthAccountsTable) {
 			throw new Error(
 				'OAuth accounts table not configured. Set oauthAccountsTable in adapter options.'
 			)
 		}
+		const rows = await this.db
+			.select()
+			.from(this.oauthAccountsTable)
+			.where(eq(this.oauthAccountsTable.userId, userId))
+		return rows.flatMap((row) => {
+			const provider = row['provider']
+			const subject = row['providerAccountId']
+			return typeof provider === 'string' && typeof subject === 'string'
+				? [{ userId, provider, subject }]
+				: []
+		})
+	}
+
+	async linkIdentity({ userId, provider, subject }: OAuthIdentity): Promise<void> {
+		if (!this.oauthAccountsTable) {
+			throw new Error(
+				'OAuth accounts table not configured. Set oauthAccountsTable in adapter options.'
+			)
+		}
+		const existingForUser = (await this.listIdentities(userId)).find(
+			(identity) => identity.provider === provider
+		)
+		if (existingForUser && existingForUser.subject !== subject) {
+			throw new Error('OAuth provider is already linked to this user')
+		}
 		try {
 			await this.db.insert(this.oauthAccountsTable).values({
 				userId,
 				provider,
-				providerAccountId
+				providerAccountId: subject
 			})
 		} catch (error) {
-			const owner = await this.getUserByProviderId(provider, providerAccountId)
-			if (owner?.id === userId) return
+			const owner = await this.getIdentity(provider, subject)
+			if (owner?.userId === userId) return
 			throw error
 		}
+	}
+
+	async unlinkIdentity(userId: string, provider: string): Promise<void> {
+		if (!this.oauthAccountsTable) {
+			throw new Error(
+				'OAuth accounts table not configured. Set oauthAccountsTable in adapter options.'
+			)
+		}
+		await this.db
+			.delete(this.oauthAccountsTable)
+			.where(
+				requireCondition(
+					and(
+						eq(this.oauthAccountsTable.userId, userId),
+						eq(this.oauthAccountsTable.provider, provider)
+					)
+				)
+			)
 	}
 
 	async findPasswordCredential(

@@ -27,6 +27,7 @@ Custom user adapters should call `assertPublicUserData()` from
 SessionAdapter           — required (session lifecycle + cookie I/O)
 UserAdapter              — optional (needed for OAuth, magic links, passkeys)
 PasswordCredentialAdapter — optional (required for password sign-in/sign-up)
+OAuthIdentityAdapter     — optional (required when OAuth providers are configured)
 TokenAdapter             — optional (stores OAuth access/refresh tokens)
 VerificationTokenAdapter — optional (email verification, password reset)
 MagicLinkAdapter         — optional (required if magicLink config is set)
@@ -39,9 +40,9 @@ which features:
 - `adapter.session` is always required.
 - `adapter.magicLink` is required if you pass a `magicLink` config block.
 - `adapter.webauthn` is required if you pass a `webauthn` config block.
-- `adapter.user` is functionally required if you use OAuth providers, magic
-  links, or passkeys — the handlers fall back to "anonymous" only when no
-  `user` adapter is present, which is rarely useful.
+- `adapter.user` and `adapter.oauthIdentity` are required when any OAuth
+  provider is configured. Auth does not fall back to anonymous provisioning or
+  email-based account matching.
 
 ## Adapter contracts
 
@@ -88,10 +89,8 @@ Behavioral expectations:
 abstract createUser(profile: OAuthProfile, metadata?: Record<string, unknown>): Promise<User>
 abstract getUserById(id: string): Promise<User | null>
 abstract getUserByEmail(email: string): Promise<User | null>
-abstract getUserByProviderId(provider: string, providerId: string): Promise<User | null>
 abstract updateUser(id: string, data: Partial<User> & Record<string, unknown>): Promise<User>
 abstract deleteUser(id: string): Promise<void>
-abstract linkOAuthAccount(userId: string, provider: string, providerAccountId: string): Promise<void>
 
 // optional
 getUserByIdentifier?(identifier: string, field?: string): Promise<User | null>
@@ -102,13 +101,24 @@ Behavioral expectations:
 - Every `getUser*` and `create/update` method returns **sanitized** users —
   no password hashes and no internal-only fields. Password fields supplied to
   profile creation or updates must not cross this boundary.
-- `linkOAuthAccount` must be idempotent and enforce a unique
-  `(provider, providerAccountId)` owner. Link errors fail the callback closed;
-  they are never swallowed before session creation.
-- `requireVerifiedEmailForLinking` (default `true`) is enforced inside
-  `GoobitsAuth`, not in your adapter. Provider email claims must always be
-  explicitly verified before matching an existing account. The option controls
-  whether the existing local account must also already be verified.
+
+OAuth ownership is intentionally absent from this profile-only capability.
+Provider subjects and mutable profile/email data have different lifecycles.
+
+### `OAuthIdentityAdapter` (required for OAuth providers)
+
+```ts
+getIdentity(provider: string, subject: string): Promise<OAuthIdentity | null>
+listIdentities(userId: string): Promise<OAuthIdentity[]>
+linkIdentity(identity: OAuthIdentity): Promise<void>
+unlinkIdentity(userId: string, provider: string): Promise<void>
+```
+
+Enforce both unique `(provider, provider_account_id)` ownership and at most one
+identity per `(user_id, provider)`. `linkIdentity` must be idempotent only when
+the existing owner and subject are identical; it must never reassign an
+identity. Existing D1/Drizzle schemas keep the `providerAccountId` column
+mapping while this protocol port uses the standards term `subject`.
 
 ### `PasswordCredentialAdapter` (required for password credentials)
 
@@ -214,7 +224,8 @@ ciphertext envelope so old keys can decrypt during controlled rotation.
   exist; see `schema.md`.
 - It does not own redirect routing beyond `urls.login` /
   `urls.afterLogin` / `urls.afterLogout`. If your app needs a custom
-  post-login redirect dance, do it in `hooks.onLogin` or in your route
+  post-login redirect dance, return a safe path from `hooks.onAuthentication`
+  or handle it in your route
   handlers.
 - It does not own email delivery for magic links. You pass a
   `magicLink.send.email` callback; the package builds the link/OTP and

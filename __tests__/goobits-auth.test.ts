@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SessionAdapter } from '../src/adapters/session/SessionAdapter.ts'
+import { MemoryUserAdapter } from '../src/adapters/memory/user.ts'
 import { GoobitsAuth } from '../src/GoobitsAuth.ts'
 import type { OAuthProvider } from '../src/providers/OAuthProvider.ts'
 import type { AuthHandlers } from '../src/types/auth.ts'
@@ -18,8 +19,15 @@ function createProvider(): OAuthProvider {
 				scope: null,
 				accessTokenExpiresAt: new Date().toISOString()
 			}
-		}))
+		})),
+		refreshAccessToken: vi.fn(),
+		revokeTokens: vi.fn()
 	}
+}
+
+function createOAuthAdapters(session: SessionAdapter) {
+	const identity = new MemoryUserAdapter()
+	return { session, user: identity, oauthIdentity: identity }
 }
 
 function createSessionAdapter(validateResult: {
@@ -83,6 +91,10 @@ function createRoutingHarness(basePath = '/auth') {
 		sessions: {
 			list: handler('sessions.list'),
 			revoke: handler('sessions.revoke')
+		},
+		oauth: {
+			identities: handler('oauth.identities'),
+			unlink: handler('oauth.unlink')
 		}
 	}
 	const core = Reflect.get(auth, 'core') as { handlers: AuthHandlers }
@@ -138,8 +150,7 @@ describe('GoobitsAuth', () => {
 			expiresAt: new Date(Date.now() + 60_000)
 		}
 		const auth = new GoobitsAuth({
-			adapter: { session: createSessionAdapter({ session, user }) },
-			providers: { google: { provider: createProvider() } }
+			adapter: { session: createSessionAdapter({ session, user }) }
 		})
 		const event = createRequestEvent({ url: 'http://localhost/account' })
 		event.cookies.set('session', 's1')
@@ -155,10 +166,9 @@ describe('GoobitsAuth', () => {
 	})
 
 	it('dispatches /auth/signin/:provider via handlers', async () => {
+		const session = createSessionAdapter({ session: null, user: null })
 		const auth = new GoobitsAuth({
-			adapter: {
-				session: createSessionAdapter({ session: null, user: null })
-			},
+			adapter: createOAuthAdapters(session),
 			providers: { google: { provider: createProvider() } }
 		})
 
@@ -173,10 +183,9 @@ describe('GoobitsAuth', () => {
 	})
 
 	it('dispatches POST /auth/callback/:provider via handlers', async () => {
+		const session = createSessionAdapter({ session: null, user: null })
 		const auth = new GoobitsAuth({
-			adapter: {
-				session: createSessionAdapter({ session: null, user: null })
-			},
+			adapter: createOAuthAdapters(session),
 			providers: { apple: { provider: createProvider() } }
 		})
 
@@ -190,6 +199,49 @@ describe('GoobitsAuth', () => {
 		await expect(auth.handlers.POST(event as never)).rejects.not.toMatchObject({
 			status: 404
 		})
+	})
+
+	it('enforces CSRF before unlinking an OAuth identity', async () => {
+		const user: User = {
+			id: 'u-oauth',
+			email: 'oauth@example.com',
+			name: 'OAuth User',
+			avatar: null,
+			emailVerified: true
+		}
+		const session: Session = {
+			id: 's-oauth',
+			userId: user.id,
+			expiresAt: new Date(Date.now() + 60_000)
+		}
+		const adapters = createOAuthAdapters(createSessionAdapter({ session, user }))
+		const authorizeIdentityChange = vi.fn(async () => true)
+		const auth = new GoobitsAuth({
+			profile: 'basic',
+			adapter: adapters,
+			providers: { google: { provider: createProvider() } },
+			oauth: { authorizeIdentityChange },
+			security: {
+				csrf: { mode: 'required' },
+				rateLimit: { mode: 'off' },
+				audit: { mode: 'off' }
+			}
+		})
+		const event = createRequestEvent({
+			url: 'http://localhost/auth/oauth/unlink',
+			method: 'POST',
+			form: { provider: 'google' },
+			locals: { session, user }
+		})
+
+		const response = await auth.handlers.POST(event as never)
+
+		expect(response.status).toBe(403)
+		await expect(response.json()).resolves.toEqual({
+			ok: false,
+			error: 'Invalid CSRF token'
+		})
+		expect(authorizeIdentityChange).not.toHaveBeenCalled()
 	})
 
 	it('dispatches root-mounted handlers when basePath is empty', async () => {
@@ -207,7 +259,7 @@ describe('GoobitsAuth', () => {
 			}
 		})
 		const event = createRequestEvent({
-			url: 'http://localhost/logout',
+			url: 'http://localhost/signout',
 			method: 'POST'
 		})
 		event.locals.session = session
@@ -223,6 +275,8 @@ describe('GoobitsAuth', () => {
 		const { auth, invocations } = createRoutingHarness()
 		const cases = [
 			{ method: 'GET', path: '/auth/signin/google', handler: 'login', provider: 'google' },
+			{ method: 'GET', path: '/auth/link/google', handler: 'login', provider: 'google' },
+			{ method: 'GET', path: '/auth/reauth/apple', handler: 'login', provider: 'apple' },
 			{
 				method: 'POST',
 				path: '/auth/callback/apple',
@@ -230,7 +284,6 @@ describe('GoobitsAuth', () => {
 				provider: 'apple'
 			},
 			{ method: 'POST', path: '/auth/signout', handler: 'logout' },
-			{ method: 'POST', path: '/auth/logout', handler: 'logout' },
 			{ method: 'POST', path: '/auth/magic-link', handler: 'magicLink.request' },
 			{ method: 'GET', path: '/auth/magic-link/verify', handler: 'magicLink.verify' },
 			{ method: 'POST', path: '/auth/magic-link/verify', handler: 'magicLink.verify' },
@@ -282,8 +335,8 @@ describe('GoobitsAuth', () => {
 			{ method: 'POST', path: '/auth/mfa/step-up', handler: 'mfa.stepUp' },
 			{ method: 'GET', path: '/auth/sessions', handler: 'sessions.list' },
 			{ method: 'POST', path: '/auth/sessions', handler: 'sessions.revoke' },
-			{ method: 'GET', path: '/auth/google', handler: 'login', provider: 'google' },
-			{ method: 'GET', path: '/auth/apple/callback', handler: 'callback', provider: 'apple' }
+			{ method: 'GET', path: '/auth/oauth/identities', handler: 'oauth.identities' },
+			{ method: 'POST', path: '/auth/oauth/unlink', handler: 'oauth.unlink' }
 		] as const
 
 		for (const route of cases) {
@@ -302,7 +355,7 @@ describe('GoobitsAuth', () => {
 
 	it('enforces exact base paths, configured mounts, and allowed methods', async () => {
 		const { auth, invocations } = createRoutingHarness('/account/auth/')
-		const handlers = auth.createHandlers({ basePath: 'account/identity/' })
+		const handlers = auth.createHandlers({ basePath: '/account/identity/' })
 		const customEvent = createRequestEvent({
 			url: 'http://localhost/account/identity/mfa/status'
 		})
@@ -331,6 +384,12 @@ describe('GoobitsAuth', () => {
 		})
 		const missingEvent = createRequestEvent({ url: 'http://localhost/auth/mfa/status' })
 		expect((await unconfigured.handlers.GET(missingEvent as never)).status).toBe(404)
+		expect(() => auth.createHandlers({ basePath: 'account/identity' })).toThrow(
+			'Invalid auth base path'
+		)
+		expect(() => auth.createHandlers({ basePath: '/account/../identity' })).toThrow(
+			'Invalid auth base path'
+		)
 	})
 
 	it('caches resolved sessions on request locals', async () => {

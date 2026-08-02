@@ -59,6 +59,16 @@ export type OAuthProfile = {
 	verified_email?: boolean
 }
 
+/** Stable provider subject linked to exactly one application user. */
+export type OAuthIdentity = {
+	userId: string
+	provider: string
+	subject: string
+}
+
+/** Purpose of an OAuth authorization transaction. */
+export type OAuthFlowIntent = 'sign-in' | 'link' | 'reauth'
+
 /** Describes the auth domain record used for verification token. */
 export type VerificationToken = {
 	id: string

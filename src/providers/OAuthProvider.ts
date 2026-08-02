@@ -44,4 +44,7 @@ export abstract class OAuthProvider {
 	 * @param refreshToken - refresh token value.
 	 */
 	abstract refreshAccessToken(refreshToken: string): Promise<OAuthTokens>
+
+	/** Revoke retained provider credentials before an identity is unlinked. */
+	abstract revokeTokens(tokens: OAuthTokens): Promise<void>
 }

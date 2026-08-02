@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS auth_oauth_accounts (
 );
 
 CREATE INDEX IF NOT EXISTS auth_oauth_accounts_user_id_idx ON auth_oauth_accounts(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS auth_oauth_accounts_user_provider_idx
+	ON auth_oauth_accounts(user_id, provider);
 
 CREATE TABLE IF NOT EXISTS auth_sessions (
 	id TEXT PRIMARY KEY,

@@ -27,6 +27,9 @@ export {
 	TokenAdapter
 } from './oauth-token/index.ts'
 
+// Stable OAuth identities (separate from mutable provider email/profile data)
+export type { OAuthIdentityAdapter } from './oauth-identity/index.ts'
+
 // Verification Token Adapters (email verification, password reset, etc.)
 export {
 	D1VerificationTokenAdapter,

@@ -9,8 +9,10 @@ import { OAuthProvider } from './OAuthProvider.ts'
 
 const GOOGLE_AUTHORIZATION_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth'
 const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token'
-const GOOGLE_USERINFO_ENDPOINT = 'https://www.googleapis.com/oauth2/v1/userinfo?alt=json'
+const GOOGLE_USERINFO_ENDPOINT = 'https://openidconnect.googleapis.com/v1/userinfo'
+const GOOGLE_REVOCATION_ENDPOINT = 'https://oauth2.googleapis.com/revoke'
 const GOOGLE_USERINFO_MAX_BYTES = 64 * 1024
+const GOOGLE_IDENTITY_SCOPES = new Set(['openid', 'profile', 'email'])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -44,6 +46,7 @@ export class GoogleProvider extends OAuthProvider {
 		this.clientSecret = config.clientSecret
 		this.callbackUrl = config.callbackUrl
 		this.defaultScopes = config.scopes ?? ['openid', 'profile', 'email']
+		assertIdentityScopes(this.defaultScopes)
 	}
 
 	async createAuthorizationURL(
@@ -51,15 +54,14 @@ export class GoogleProvider extends OAuthProvider {
 		codeVerifier: string,
 		scopes: string[] = this.defaultScopes
 	): Promise<URL> {
+		const resolvedScopes = scopes.length > 0 ? scopes : this.defaultScopes
+		assertIdentityScopes(resolvedScopes)
 		const authorizationUrl = new URL(GOOGLE_AUTHORIZATION_ENDPOINT)
 		authorizationUrl.searchParams.set('response_type', 'code')
 		authorizationUrl.searchParams.set('client_id', this.clientId)
 		authorizationUrl.searchParams.set('redirect_uri', this.callbackUrl)
 		authorizationUrl.searchParams.set('state', state)
-		authorizationUrl.searchParams.set(
-			'scope',
-			(scopes.length > 0 ? scopes : this.defaultScopes).join(' ')
-		)
+		authorizationUrl.searchParams.set('scope', resolvedScopes.join(' '))
 		authorizationUrl.searchParams.set('code_challenge', await createS256CodeChallenge(codeVerifier))
 		authorizationUrl.searchParams.set('code_challenge_method', 'S256')
 		return authorizationUrl
@@ -101,21 +103,27 @@ export class GoogleProvider extends OAuthProvider {
 			}
 			if (
 				!isRecord(googleUser) ||
-				typeof googleUser['id'] !== 'string' ||
+				typeof googleUser['sub'] !== 'string' ||
+				googleUser['sub'].length === 0 ||
+				googleUser['sub'].length > 255 ||
 				typeof googleUser['email'] !== 'string' ||
-				typeof googleUser['name'] !== 'string' ||
+				googleUser['email'].length === 0 ||
+				googleUser['email'].length > 320 ||
+				(googleUser['name'] !== undefined && typeof googleUser['name'] !== 'string') ||
+				(typeof googleUser['name'] === 'string' && googleUser['name'].length > 512) ||
 				(googleUser['picture'] !== undefined && typeof googleUser['picture'] !== 'string') ||
-				typeof googleUser['verified_email'] !== 'boolean'
+				(typeof googleUser['picture'] === 'string' && googleUser['picture'].length > 2048) ||
+				typeof googleUser['email_verified'] !== 'boolean'
 			) {
 				throw new Error('Invalid Google user profile')
 			}
-			if (!googleUser['verified_email']) throw new Error('Google email not verified')
+			if (!googleUser['email_verified']) throw new Error('Google email not verified')
 
 			const profile: OAuthProfile = {
-				id: googleUser['id'],
+				id: googleUser['sub'],
 				email: googleUser['email'],
-				name: googleUser['name'],
 				verified_email: true,
+				...(googleUser['name'] ? { name: googleUser['name'] } : {}),
 				...(googleUser['picture'] ? { picture: googleUser['picture'] } : {})
 			}
 			return {
@@ -145,9 +153,33 @@ export class GoogleProvider extends OAuthProvider {
 		)
 		return {
 			accessToken: tokenSet.accessToken,
-			refreshToken: tokenSet.refreshToken,
+			refreshToken: tokenSet.refreshToken ?? refreshToken,
 			scope: tokenSet.scope,
 			accessTokenExpiresAt: new Date(Date.now() + tokenSet.expiresIn * 1000).toISOString()
 		}
+	}
+
+	async revokeTokens(tokens: OAuthTokens): Promise<void> {
+		const token = tokens.refreshToken ?? tokens.accessToken
+		const response = await fetch(GOOGLE_REVOCATION_ENDPOINT, {
+			method: 'POST',
+			headers: { 'content-type': 'application/x-www-form-urlencoded' },
+			body: new URLSearchParams({ token }),
+			signal: AbortSignal.timeout(10_000)
+		})
+		if (!response.ok) throw new Error(`Google token revocation failed (${response.status})`)
+	}
+}
+
+function assertIdentityScopes(scopes: readonly string[]): void {
+	if (
+		scopes.length === 0 ||
+		new Set(scopes).size !== scopes.length ||
+		scopes.some((scope) => !GOOGLE_IDENTITY_SCOPES.has(scope)) ||
+		!scopes.includes('openid') ||
+		!scopes.includes('profile') ||
+		!scopes.includes('email')
+	) {
+		throw new Error('GoogleProvider supports only the openid, profile, and email identity scopes')
 	}
 }

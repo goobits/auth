@@ -3,11 +3,14 @@ import { bytesToBase64Url, constantTimeEqual, randomBytes } from '@goobits/secur
 
 import type { OAuthProvider } from '../providers/OAuthProvider.ts'
 import type { RequestEventLike } from '../types/auth.ts'
-import type { OAuthProfile, OAuthTokens } from '../types/index.ts'
+import type { OAuthFlowIntent, OAuthProfile, OAuthTokens } from '../types/index.ts'
 
 type CookiesLike = Pick<Cookies, 'set' | 'get' | 'delete'>
 
-type CookieOptions = {
+type OAuthCookieOptions = {
+	intent: OAuthFlowIntent
+	userId: string | null
+	redirectTo?: string
 	secure?: boolean
 	maxAge?: number
 	sameSite?: 'lax' | 'strict' | 'none'
@@ -26,8 +29,18 @@ type OAuthCallbackOverrides = {
 }
 
 type OAuthCallbackHandlers = {
-	onAuthenticated?: (profile: OAuthProfile, tokens: OAuthTokens) => Promise<void> | void
+	onAuthenticated?: (
+		profile: OAuthProfile,
+		tokens: OAuthTokens,
+		context: OAuthFlowContext
+	) => Promise<void> | void
 	onError?: (error: unknown) => Promise<void> | void
+}
+
+export type OAuthFlowContext = {
+	intent: OAuthFlowIntent
+	userId: string | null
+	redirectTo: string
 }
 
 /**
@@ -42,9 +55,23 @@ type OAuthCallbackHandlers = {
 export function createOAuthCookies(
 	cookies: CookiesLike,
 	provider: string,
-	options: CookieOptions = {}
+	options: OAuthCookieOptions
 ): { state: string; codeVerifier: string } {
-	const { secure = true, maxAge = 30 * 60, sameSite = 'lax' } = options
+	const {
+		intent,
+		userId,
+		redirectTo = '',
+		secure = true,
+		maxAge = 30 * 60,
+		sameSite = 'lax'
+	} = options
+	if (
+		(intent === 'sign-in' && userId !== null) ||
+		(intent !== 'sign-in' && (!userId || userId.length > 512)) ||
+		redirectTo.length > 1024
+	) {
+		throw new Error('Invalid OAuth flow context')
+	}
 
 	const state = bytesToBase64Url(randomBytes(32))
 	const codeVerifier = bytesToBase64Url(randomBytes(32))
@@ -65,6 +92,11 @@ export function createOAuthCookies(
 		...cookieOptions,
 		secure
 	})
+	cookies.set(
+		`${provider}_oauth_context`,
+		JSON.stringify({ state, intent, userId, redirectTo }),
+		cookieOptions
+	)
 
 	return { state, codeVerifier }
 }
@@ -77,6 +109,44 @@ export function createOAuthCookies(
 function cleanupOAuthCookies(cookies: CookiesLike, provider: string): void {
 	cookies.delete(`${provider}_oauth_state`, { path: '/' })
 	cookies.delete(`${provider}_oauth_code_verifier`, { path: '/' })
+	cookies.delete(`${provider}_oauth_context`, { path: '/' })
+}
+
+function readOAuthFlowContext(
+	cookies: CookiesLike,
+	provider: string,
+	state: string | null
+): OAuthFlowContext {
+	const raw = cookies.get(`${provider}_oauth_context`)
+	if (!raw || raw.length > 2048) throw new Error('Invalid OAuth flow context')
+	let value: unknown
+	try {
+		value = JSON.parse(raw)
+	} catch {
+		throw new Error('Invalid OAuth flow context')
+	}
+	if (!value || typeof value !== 'object' || Array.isArray(value)) {
+		throw new Error('Invalid OAuth flow context')
+	}
+	const context = value as Record<string, unknown>
+	const intent = context['intent']
+	const userId = context['userId']
+	const redirectTo = context['redirectTo']
+	const storedContextState = context['state']
+	if (
+		(intent !== 'sign-in' && intent !== 'link' && intent !== 'reauth') ||
+		(userId !== null && typeof userId !== 'string') ||
+		(intent === 'sign-in' && userId !== null) ||
+		(intent !== 'sign-in' &&
+			(typeof userId !== 'string' || userId.length === 0 || userId.length > 512)) ||
+		typeof redirectTo !== 'string' ||
+		redirectTo.length > 1024 ||
+		typeof storedContextState !== 'string' ||
+		!constantTimeEqual(storedContextState, state ?? '')
+	) {
+		throw new Error('Invalid OAuth flow context')
+	}
+	return { intent, userId, redirectTo }
 }
 
 /**
@@ -158,6 +228,7 @@ export async function handleOAuthCallback({
 		if (!params.code || !params.storedCodeVerifier) {
 			throw new Error('Missing OAuth parameters')
 		}
+		const context = readOAuthFlowContext(cookies, provider, params.state)
 
 		// Fetch user profile from provider
 		let profile: { profile: OAuthProfile; tokens: OAuthTokens } | null = null
@@ -180,7 +251,7 @@ export async function handleOAuthCallback({
 
 		// Call user-provided authentication handler
 		if (callbacks.onAuthenticated) {
-			await callbacks.onAuthenticated(profile.profile, profile.tokens)
+			await callbacks.onAuthenticated(profile.profile, profile.tokens, context)
 		}
 
 		return profile

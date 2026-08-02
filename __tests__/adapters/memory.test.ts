@@ -87,18 +87,14 @@ describe('memory auth adapters', () => {
 			name: 'Owner'
 		})
 
-		await expect(
-			adapter.linkOAuthAccount('owner-1', 'google', 'provider-1')
-		).resolves.toBeUndefined()
-		await expect(
-			adapter.linkOAuthAccount('owner-1', 'google', 'provider-1')
-		).resolves.toBeUndefined()
-		await expect(adapter.linkOAuthAccount('owner-2', 'google', 'provider-1')).rejects.toThrow(
+		const identity = { userId: 'owner-1', provider: 'google', subject: 'provider-1' }
+		await expect(adapter.linkIdentity(identity)).resolves.toBeUndefined()
+		await expect(adapter.linkIdentity(identity)).resolves.toBeUndefined()
+		await expect(adapter.linkIdentity({ ...identity, userId: 'owner-2' })).rejects.toThrow(
 			'already linked'
 		)
-		await expect(adapter.getUserByProviderId('google', 'provider-1')).resolves.toMatchObject({
-			id: 'owner-1'
-		})
+		await expect(adapter.getIdentity('google', 'provider-1')).resolves.toEqual(identity)
+		await expect(adapter.listIdentities('owner-1')).resolves.toEqual([identity])
 	})
 
 	it('stores and consumes magic link tokens atomically', async () => {

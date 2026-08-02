@@ -40,6 +40,8 @@ describe('auth security profiles', () => {
 			{ name: 'registration:10-min', windowMs: 10 * 60_000, maxEvents: 3 },
 			{ name: 'registration:hour', windowMs: 60 * 60_000, maxEvents: 5 }
 		])
+		expect(resolved.routes['oauth.identities.list']?.csrf).toBe('off')
+		expect(resolved.routes['oauth.identity.unlink']?.csrf).toBe('required')
 	})
 
 	it('requires an explicit external boundary when secure CSRF is disabled', () => {

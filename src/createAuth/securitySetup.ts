@@ -191,9 +191,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			windows: rateLimitWindows,
 			keyPrefix: merged.rateLimit?.keyPrefix ?? 'auth',
 			trustedProxyHeaders: resolveTrustedProxyHeaders(merged.rateLimit),
-			...(forwardedForTrustedProxyHops !== undefined
-				? { forwardedForTrustedProxyHops }
-				: {}),
+			...(forwardedForTrustedProxyHops !== undefined ? { forwardedForTrustedProxyHops } : {}),
 			...(config.logger ? { logger: config.logger } : {}),
 			...(merged.rateLimit?.store ? { store: merged.rateLimit.store } : {})
 		},
@@ -210,6 +208,14 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			'oauth.callback': {
 				csrf: 'off',
 				rateLimit: 'optional',
+				rateLimitWindows: flowWindows('default')
+			},
+			'oauth.identities.list': {
+				csrf: 'off',
+				rateLimitWindows: flowWindows('default')
+			},
+			'oauth.identity.unlink': {
+				csrf: merged.csrf?.mode ?? 'optional',
 				rateLimitWindows: flowWindows('default')
 			},
 			'auth.logout': {
@@ -411,6 +417,20 @@ export function applyPolicies(handlers: AuthHandlers, security: ResolvedSecurity
 			revoke: applySecurityPolicy({
 				handler: handlers.sessions.revoke,
 				routeId: 'sessions.revoke',
+				settings: security
+			})
+		}
+	}
+	if (handlers.oauth) {
+		wrapped.oauth = {
+			identities: applySecurityPolicy({
+				handler: handlers.oauth.identities,
+				routeId: 'oauth.identities.list',
+				settings: security
+			}),
+			unlink: applySecurityPolicy({
+				handler: handlers.oauth.unlink,
+				routeId: 'oauth.identity.unlink',
 				settings: security
 			})
 		}

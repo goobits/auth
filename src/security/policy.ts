@@ -17,6 +17,8 @@ type PolicyMode = 'required' | 'optional' | 'off'
 type SecurityRouteId =
 	| 'oauth.login'
 	| 'oauth.callback'
+	| 'oauth.identities.list'
+	| 'oauth.identity.unlink'
 	| 'auth.logout'
 	| 'magic.request'
 	| 'magic.verify'

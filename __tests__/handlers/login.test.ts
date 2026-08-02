@@ -19,7 +19,9 @@ function createProvider(
 		getUserProfile: vi.fn(async () => ({
 			profile: { id: 'u1', email: 'u1@example.com' },
 			tokens: { accessToken: 'token' }
-		}))
+		})),
+		refreshAccessToken: vi.fn(),
+		revokeTokens: vi.fn()
 	}
 }
 
@@ -69,6 +71,48 @@ describe('createLoginHandler', () => {
 		expect(cookies._store.get('apple_oauth_state')?.options).toMatchObject({
 			secure: true,
 			sameSite: 'none'
+		})
+		expect(JSON.parse(cookies._store.get('apple_oauth_context')?.value ?? '')).toMatchObject({
+			intent: 'sign-in',
+			userId: null
+		})
+	})
+
+	it('binds explicit provider linking to the current principal and fresh authorization', async () => {
+		const authorizeIdentityChange = vi.fn(async () => true)
+		const handler = createLoginHandler({
+			providers: { google: { provider: createProvider() } },
+			authorizeIdentityChange
+		})
+		const cookies = createCookies()
+		const event = createRequestEvent({
+			url: 'https://app.example/auth/link/google?returnTo=%2Fsettings%2Fsecurity',
+			params: { provider: 'google', intent: 'link' },
+			cookies,
+			locals: {
+				user: {
+					id: 'user-1',
+					email: 'member@example.com',
+					name: 'Member',
+					avatar: null,
+					emailVerified: true
+				},
+				session: {
+					id: 'session-1',
+					userId: 'user-1',
+					expiresAt: new Date('2099-01-01T00:00:00.000Z')
+				}
+			}
+		})
+
+		await expect(handler(event)).rejects.toMatchObject({ status: 302 })
+		expect(authorizeIdentityChange).toHaveBeenCalledWith(
+			expect.objectContaining({ action: 'oauth.link', userId: 'user-1', provider: 'google' })
+		)
+		expect(JSON.parse(cookies._store.get('google_oauth_context')?.value ?? '')).toMatchObject({
+			intent: 'link',
+			userId: 'user-1',
+			redirectTo: '/settings/security'
 		})
 	})
 

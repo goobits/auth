@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { SessionAdapter } from '../src/adapters/session/SessionAdapter.ts'
 import { createAuth } from '../src/createAuth.ts'
-import type { OAuthProvider } from '../src/providers/OAuthProvider.ts'
 import type { RequestEventLike } from '../src/types/auth.ts'
 import type { Session } from '../src/types/index.ts'
 import { createRequestEvent } from './testKit.ts'
@@ -26,16 +25,6 @@ function createSessionAdapter({
 	}
 }
 
-function createProvider(): OAuthProvider {
-	return {
-		createAuthorizationURL: () => new URL('https://example.com/auth'),
-		getUserProfile: vi.fn(async () => ({
-			profile: { id: 'p1', email: 'p1@example.com' },
-			tokens: { accessToken: 'token' }
-		}))
-	}
-}
-
 describe('createAuth', () => {
 	it('throws when required config is missing', () => {
 		expect(() => createAuth({ adapters: {}, providers: { google: { provider: {} } } })).toThrow(
@@ -51,14 +40,22 @@ describe('createAuth', () => {
 		expect(auth.routes.logout().POST).toBeDefined()
 	})
 
+	it('rejects OAuth identity management without a provider', () => {
+		expect(() =>
+			createAuth({
+				adapters: { session: createSessionAdapter() },
+				oauth: { authorizeIdentityChange: async () => true }
+			})
+		).toThrow('createAuth oauth requires at least one OAuth provider')
+	})
+
 	it('clears cookie when session is invalid', async () => {
 		const sessionAdapter = createSessionAdapter({
 			cookieName: 'auth_session',
 			validateResult: { session: null, user: null }
 		})
 		const auth = createAuth({
-			adapters: { session: sessionAdapter },
-			providers: { google: { provider: createProvider() } }
+			adapters: { session: sessionAdapter }
 		})
 
 		const event = createRequestEvent()
@@ -81,8 +78,7 @@ describe('createAuth', () => {
 		})
 
 		const auth = createAuth({
-			adapters: { session: sessionAdapter },
-			providers: { google: { provider: createProvider() } }
+			adapters: { session: sessionAdapter }
 		})
 
 		const event = createRequestEvent()

@@ -1,4 +1,4 @@
-import type { OAuthProfile, User } from '../../types/index.ts'
+import type { OAuthIdentity, OAuthProfile, User } from '../../types/index.ts'
 import { assertPublicUserData } from '../database/publicUserData.ts'
 import { generateRandomUUID } from '../../utils/crypto.ts'
 import type {
@@ -6,6 +6,7 @@ import type {
 	PasswordCredentialAdapter
 } from '../database/PasswordCredentialAdapter.ts'
 import { UserAdapter } from '../database/UserAdapter.ts'
+import type { OAuthIdentityAdapter } from '../oauth-identity/OAuthIdentityAdapter.ts'
 import { normalizeEmail, recordValue, stringValue } from '../_inputValues.ts'
 import { type PgPoolLike, requireRow } from './query.ts'
 
@@ -23,7 +24,10 @@ export type UserRow = {
 }
 
 /** Postgres user adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
-export class PgUserAdapter extends UserAdapter implements PasswordCredentialAdapter {
+export class PgUserAdapter
+	extends UserAdapter
+	implements PasswordCredentialAdapter, OAuthIdentityAdapter
+{
 	#db: PgPoolLike
 
 	constructor({ db }: { db: PgPoolLike }) {
@@ -104,19 +108,18 @@ export class PgUserAdapter extends UserAdapter implements PasswordCredentialAdap
 		return row ? toUser(row) : null
 	}
 
-	async getUserByProviderId(provider: string, providerId: string): Promise<User | null> {
+	async getIdentity(provider: string, subject: string): Promise<OAuthIdentity | null> {
 		const row = (
-			await this.#db.query<UserRow>(
+			await this.#db.query<{ user_id: string }>(
 				`
-			SELECT u.*
-			FROM auth_users u
-			JOIN auth_oauth_accounts a ON a.user_id = u.id
-			WHERE a.provider = $1 AND a.provider_account_id = $2
+			SELECT user_id
+			FROM auth_oauth_accounts
+			WHERE provider = $1 AND provider_account_id = $2
 		`,
-				[provider, providerId]
+				[provider, subject]
 			)
 		).rows[0]
-		return row ? toUser(row) : null
+		return row ? { userId: row.user_id, provider, subject } : null
 	}
 
 	async updateUser(id: string, data: Partial<User> & Record<string, unknown>): Promise<User> {
@@ -157,11 +160,32 @@ export class PgUserAdapter extends UserAdapter implements PasswordCredentialAdap
 		await this.#db.query('DELETE FROM auth_users WHERE id = $1', [id])
 	}
 
-	async linkOAuthAccount(
-		userId: string,
-		provider: string,
-		providerAccountId: string
-	): Promise<void> {
+	async listIdentities(userId: string): Promise<OAuthIdentity[]> {
+		const rows = (
+			await this.#db.query<{ provider: string; provider_account_id: string }>(
+				`
+			SELECT provider, provider_account_id
+			FROM auth_oauth_accounts
+			WHERE user_id = $1
+			ORDER BY provider ASC
+		`,
+				[userId]
+			)
+		).rows
+		return rows.map((row) => ({
+			userId,
+			provider: row.provider,
+			subject: row.provider_account_id
+		}))
+	}
+
+	async linkIdentity({ userId, provider, subject }: OAuthIdentity): Promise<void> {
+		const existingForUser = (await this.listIdentities(userId)).find(
+			(identity) => identity.provider === provider
+		)
+		if (existingForUser && existingForUser.subject !== subject) {
+			throw new Error('OAuth provider is already linked to this user')
+		}
 		const owner = (
 			await this.#db.query<{ user_id: string }>(
 				`
@@ -171,12 +195,19 @@ export class PgUserAdapter extends UserAdapter implements PasswordCredentialAdap
 				SET user_id = auth_oauth_accounts.user_id
 			RETURNING user_id
 		`,
-				[provider, providerAccountId, userId]
+				[provider, subject, userId]
 			)
 		).rows[0]?.user_id
 		if (owner !== userId) {
 			throw new Error('OAuth provider account is already linked to another user')
 		}
+	}
+
+	async unlinkIdentity(userId: string, provider: string): Promise<void> {
+		await this.#db.query('DELETE FROM auth_oauth_accounts WHERE user_id = $1 AND provider = $2', [
+			userId,
+			provider
+		])
 	}
 
 	async findPasswordCredential(

@@ -21,11 +21,11 @@ function createProvider(logger = createLogger()) {
 
 function userInfo(overrides: Record<string, unknown> = {}) {
 	return {
-		id: 'google-user-1',
+		sub: 'google-user-1',
 		email: 'member@example.com',
 		name: 'BandAmp Member',
 		picture: 'https://images.example/member.png',
-		verified_email: true,
+		email_verified: true,
 		...overrides
 	}
 }
@@ -59,6 +59,9 @@ describe('GoogleProvider', () => {
 		expect(authorizationUrl.searchParams.get('scope')).toBe('openid profile email')
 		expect(authorizationUrl.searchParams.get('code_challenge_method')).toBe('S256')
 		expect(authorizationUrl.searchParams.get('code_challenge')).toMatch(/^[A-Za-z0-9_-]{43}$/u)
+		await expect(
+			provider.createAuthorizationURL('state', 'verifier', ['openid', 'calendar'])
+		).rejects.toThrow('only the openid, profile, and email')
 	})
 
 	it('exchanges an authorization code and returns a verified profile', async () => {
@@ -99,7 +102,7 @@ describe('GoogleProvider', () => {
 			before + 3_600_000
 		)
 		expect(fetcher).toHaveBeenLastCalledWith(
-			'https://www.googleapis.com/oauth2/v1/userinfo?alt=json',
+			'https://openidconnect.googleapis.com/v1/userinfo',
 			expect.objectContaining({
 				headers: { Authorization: 'Bearer access-token' }
 			})
@@ -123,7 +126,7 @@ describe('GoogleProvider', () => {
 
 		await expect(provider.refreshAccessToken('old-refresh-token')).resolves.toMatchObject({
 			accessToken: 'refreshed-access-token',
-			refreshToken: null,
+			refreshToken: 'old-refresh-token',
 			scope: 'openid email'
 		})
 	})
@@ -172,12 +175,25 @@ describe('GoogleProvider', () => {
 		},
 		{
 			name: 'malformed user profile',
-			response: Response.json({ id: 'google-user-1', verified_email: true }),
+			response: Response.json({ sub: 'google-user-1', email_verified: true }),
+			error: 'Invalid Google user profile'
+		},
+		{
+			name: 'oversized stable subject',
+			response: Response.json(userInfo({ sub: 'g'.repeat(256) })),
+			error: 'Invalid Google user profile'
+		},
+		{
+			name: 'legacy verification claim',
+			response: Response.json({
+				...userInfo({ email_verified: undefined }),
+				verified_email: true
+			}),
 			error: 'Invalid Google user profile'
 		},
 		{
 			name: 'unverified email',
-			response: Response.json(userInfo({ verified_email: false })),
+			response: Response.json(userInfo({ email_verified: false })),
 			error: 'Google email not verified'
 		}
 	])('rejects a $name without logging secrets', async ({ response, error }) => {
@@ -196,5 +212,30 @@ describe('GoogleProvider', () => {
 			errorType: 'Error'
 		})
 		expect(JSON.stringify(logger.error.mock.calls)).not.toContain(secret)
+	})
+
+	it('accepts an OIDC profile that omits optional display claims', async () => {
+		const { provider } = createProvider()
+		vi.stubGlobal(
+			'fetch',
+			vi
+				.fn()
+				.mockResolvedValueOnce(Response.json({ access_token: 'access-token', expires_in: 60 }))
+				.mockResolvedValueOnce(
+					Response.json({
+						sub: 'google-user-1',
+						email: 'member@example.com',
+						email_verified: true
+					})
+				)
+		)
+
+		await expect(provider.getUserProfile('code', 'verifier')).resolves.toMatchObject({
+			profile: {
+				id: 'google-user-1',
+				email: 'member@example.com',
+				verified_email: true
+			}
+		})
 	})
 })

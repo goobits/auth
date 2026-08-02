@@ -3,6 +3,7 @@ import { DrizzleUserAdapter } from '../database/DrizzleUserAdapter.ts'
 import type { UserAdapterBundle } from '../database/PasswordCredentialAdapter.ts'
 import type { DrizzleDbLike, DrizzleTable } from '../drizzleTypes.ts'
 import { DrizzleMagicLinkAdapter } from '../magic-link/DrizzleMagicLinkAdapter.ts'
+import type { OAuthIdentityAdapter } from '../oauth-identity/OAuthIdentityAdapter.ts'
 import { DrizzleTokenAdapter } from '../oauth-token/DrizzleTokenAdapter.ts'
 import type { OAuthTokenEncryptionOptions } from '../oauth-token/OAuthTokenCodec.ts'
 import { DrizzleSessionAdapter } from '../session/DrizzleSessionAdapter.ts'
@@ -75,6 +76,7 @@ export type DrizzleAdapterOptions<TSchema extends DrizzleAuthSchema = DrizzleAut
 /** Drizzle Adapter Bundle typed model for runtime integration. */
 export type DrizzleAdapterBundle = UserAdapterBundle & {
 	session: DrizzleSessionAdapter
+	oauthIdentity?: OAuthIdentityAdapter
 	oauthToken?: DrizzleTokenAdapter
 	verificationToken?: DrizzleVerificationTokenAdapter
 	magicLink?: DrizzleMagicLinkAdapter
@@ -105,7 +107,8 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 	const usersTable = requireTable('users', options) as UserTableShape
 	const sessionsTable = requireTable('sessions', options) as SessionTableShape
 	const oauthAccountsTable = getTable('oauthAccounts', options) as
-		OAuthAccountsTableShape | undefined
+		| OAuthAccountsTableShape
+		| undefined
 
 	const user = new DrizzleUserAdapter(db, {
 		usersTable,
@@ -140,7 +143,8 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 		: undefined
 
 	const verificationTokensTable = getTable('verificationTokens', options) as
-		VerificationTokensTableShape | undefined
+		| VerificationTokensTableShape
+		| undefined
 	const verificationToken = verificationTokensTable
 		? new DrizzleVerificationTokenAdapter(db, {
 				tokensTable: verificationTokensTable,
@@ -167,6 +171,7 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 		session,
 		user,
 		passwordCredential: user,
+		...(oauthAccountsTable ? { oauthIdentity: user } : {}),
 		...(oauthToken ? { oauthToken } : {}),
 		...(verificationToken ? { verificationToken } : {}),
 		...(magicLink ? { magicLink } : {}),

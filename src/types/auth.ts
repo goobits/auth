@@ -4,6 +4,7 @@ import type { UserAdapter } from '../adapters/database/UserAdapter.ts'
 import type { PasswordCredentialAdapter } from '../adapters/database/PasswordCredentialAdapter.ts'
 import type { MagicLinkAdapter } from '../adapters/magic-link/MagicLinkAdapter.ts'
 import type { MfaAdapter } from '../adapters/mfa/MfaAdapter.ts'
+import type { OAuthIdentityAdapter } from '../adapters/oauth-identity/OAuthIdentityAdapter.ts'
 import type { TokenAdapter } from '../adapters/oauth-token/TokenAdapter.ts'
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.ts'
@@ -16,6 +17,7 @@ import type { AuthEventEmitter } from '../security/events.ts'
 import type { RateLimitStore, RateLimitWindow } from '@goobits/security/rate-limit'
 import type { Logger } from '@goobits/security/logger'
 import type {
+	OAuthFlowIntent,
 	OAuthProfile,
 	OAuthTokens,
 	Session,
@@ -61,10 +63,30 @@ export type AuthCookiesConfig = {
 	secure?: boolean
 }
 
-/** Defines auth login result options for wiring providers, adapters, cookies, hooks, and route handlers. */
-export type AuthLoginResult = { userId: string | number } | void
 /** Defines on login mode options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type OnLoginMode = 'augment' | 'manual'
+
+/** Verified authentication method passed through the shared lifecycle hook. */
+export type AuthenticationMethod =
+	| { kind: 'magic-link'; email: string }
+	| { kind: 'passkey'; credentialId: string; userId: string }
+	| {
+			kind: 'oauth'
+			intent: OAuthFlowIntent
+			provider: string
+			profile: OAuthProfile
+			tokens: OAuthTokens
+	  }
+
+/** Shared input for application-owned authentication policy and auditing. */
+export type AuthenticationLifecycleInput = {
+	event: RequestEventLike
+	method: AuthenticationMethod
+	user: User | null
+}
+
+/** Resolve a principal or continue through a safe application-owned pending route. */
+export type AuthenticationLifecycleResult = { userId?: string | number; redirectTo?: string } | void
 
 /** Defines auth hooks options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthHooks = {
@@ -77,12 +99,9 @@ export type AuthHooks = {
 		session: Session,
 		user: User
 	) => Promise<void> | void
-	onLogin?: (
-		event: RequestEventLike,
-		profile: OAuthProfile,
-		tokens: OAuthTokens | null,
-		user?: User | null
-	) => Promise<AuthLoginResult> | AuthLoginResult
+	onAuthentication?: (
+		input: AuthenticationLifecycleInput
+	) => Promise<AuthenticationLifecycleResult> | AuthenticationLifecycleResult
 
 	// "augment" keeps framework-managed session creation (default).
 	// "manual" lets advanced callers fully manage session creation.
@@ -128,7 +147,6 @@ export type MagicLinkConfig = {
 		verify?: (key: string) => Promise<{ allowed: boolean }>
 	}
 	hooks?: {
-		onLogin?: AuthHooks['onLogin']
 		getMetadata?: (event: RequestEventLike) => Promise<Record<string, unknown>>
 		createUser?: (email: string, event: RequestEventLike) => Promise<User>
 		sanitizeUser?: (user: User | null) => User | null
@@ -152,7 +170,6 @@ export type WebAuthnConfig = {
 	attestation?: 'none' | 'indirect' | 'direct' | 'enterprise'
 	maxCredentialsPerUser?: number
 	hooks?: {
-		onLogin?: AuthHooks['onLogin']
 		onCredentialCreated?: (input: WebAuthnCredentialLifecycleInput) => Promise<void> | void
 		onCredentialDeleted?: (input: WebAuthnCredentialLifecycleInput) => Promise<void> | void
 	}
@@ -187,6 +204,36 @@ export type TotpMfaConfig = {
 /** Defines sessions config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type SessionsConfig = {
 	listLimit?: number
+}
+
+/** Security-sensitive OAuth identity mutation. */
+export type OAuthIdentityChangeAction = 'oauth.link' | 'oauth.unlink'
+
+/** Application-owned fresh-assurance policy for linking and unlinking providers. */
+export type AuthorizeOAuthIdentityChange = (input: {
+	action: OAuthIdentityChangeAction
+	request: Request
+	userId: string
+	session: Session | null
+	provider: string
+}) => boolean | Promise<boolean>
+
+/** OAuth connection lifecycle configuration. */
+export type OAuthIdentityConfig = {
+	authorizeIdentityChange: AuthorizeOAuthIdentityChange
+	hooks?: {
+		onLinked?: (input: {
+			userId: string
+			provider: string
+			subject: string
+			event: RequestEventLike
+		}) => Promise<void> | void
+		onUnlinked?: (input: {
+			userId: string
+			provider: string
+			event: RequestEventLike
+		}) => Promise<void> | void
+	}
 }
 
 /** Defines security profile options for wiring providers, adapters, cookies, hooks, and route handlers. */
@@ -240,6 +287,7 @@ export type AuthSecurityConfig = {
 export type AuthAdapters = {
 	session: SessionAdapter
 	user?: UserAdapter
+	oauthIdentity?: OAuthIdentityAdapter
 	passwordCredential?: PasswordCredentialAdapter
 	oauthToken?: TokenAdapter
 	verificationToken?: VerificationTokenAdapter
@@ -254,12 +302,12 @@ type CommonAuthConfigFields = {
 	cookies?: AuthCookiesConfig
 	hooks?: AuthHooks
 	autoCreateSession?: boolean
-	requireVerifiedEmailForLinking?: boolean
 	isAuthenticated?: (locals: AuthLocals) => boolean
 	sanitizeUser?: (user: User | null) => User | null
 	profile?: SecurityProfile
 	security?: AuthSecurityConfig
 	sessions?: SessionsConfig
+	oauth?: OAuthIdentityConfig
 	mfa?: TotpMfaConfig
 	logger?: Logger
 }
@@ -333,12 +381,16 @@ export type AuthHandlers = {
 		list: AuthRequestHandler
 		revoke: AuthRequestHandler
 	}
+	oauth?: {
+		identities: AuthRequestHandler
+		unlink: AuthRequestHandler
+	}
 }
 
 /** Defines auth routes options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthRoutes = {
 	login: () => { GET: AuthRequestHandler }
-	callback: () => { GET: AuthRequestHandler }
+	callback: () => { GET: AuthRequestHandler; POST: AuthRequestHandler }
 	logout: () => { POST: AuthRequestHandler }
 	magicLink: () => { POST: AuthRequestHandler }
 	magicLinkVerify: () => { GET: AuthRequestHandler; POST: AuthRequestHandler }
@@ -356,6 +408,8 @@ export type AuthRoutes = {
 	mfaBackupCode: () => { POST: AuthRequestHandler }
 	mfaStepUp: () => { POST: AuthRequestHandler }
 	sessions: () => { GET: AuthRequestHandler; POST: AuthRequestHandler }
+	oauthIdentities: () => { GET: AuthRequestHandler }
+	oauthUnlink: () => { POST: AuthRequestHandler }
 }
 
 /** Defines auth form actions for wiring handlers into SvelteKit pages. */

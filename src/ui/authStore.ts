@@ -1,5 +1,7 @@
 import { derived, writable } from 'svelte/store'
 
+import { AUTH_ROUTE_PATHS, resolveAuthRoutePath } from '../_routePaths.ts'
+
 type AuthUser = Record<string, unknown> | null
 type AuthSession = Record<string, unknown> | null
 
@@ -30,7 +32,7 @@ type AuthStoreOptions = {
 const DEFAULT_ENDPOINTS = {
 	login: '/auth/login',
 	register: '/auth/register',
-	logout: '/auth/logout',
+	logout: resolveAuthRoutePath('/auth', AUTH_ROUTE_PATHS.signOut),
 	session: '/auth/session',
 	updateProfile: '/auth/profile'
 }

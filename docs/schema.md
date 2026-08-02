@@ -1,5 +1,24 @@
 # Schema
 
+## OAuth identities
+
+```sql
+CREATE TABLE oauth_accounts (
+  user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  provider_account_id TEXT NOT NULL,
+  PRIMARY KEY (provider, provider_account_id)
+);
+
+CREATE UNIQUE INDEX oauth_accounts_user_provider_idx
+  ON oauth_accounts (user_id, provider);
+```
+
+`provider_account_id` stores the provider's stable subject, never an email or
+display name. The second constraint prevents one local user from connecting two
+subjects for the same provider. Keep both constraints race-safe in the database;
+adapter preflight reads are only for clear errors and idempotency.
+
 ## Verification tokens
 
 ```sql
