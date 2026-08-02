@@ -38,9 +38,14 @@ describe('Drizzle Adapters Integration', () => {
 
 		tokenAdapter = new DrizzleTokenAdapter(db, {
 			tokensTable: drizzleOauthTokensTable,
-			encryptionKey:
-				process.env.TOKEN_ENCRYPTION_KEY ||
-				'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+			encryptionKeyringJson:
+				process.env.TOKEN_ENCRYPTION_KEYRING ||
+				JSON.stringify({
+					activeKeyId: 'current',
+					keys: {
+						current: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+					}
+				})
 		})
 	})
 

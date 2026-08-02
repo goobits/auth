@@ -8,14 +8,6 @@ import { z } from 'zod'
 
 import { isValidCredentialCounter } from '../adapters/webauthn/_credentialCounter.ts'
 
-type ChallengeRecord = {
-	id: string
-	userId: string | null
-	challenge: string
-	type: string
-	expiresAt: string | number | Date
-}
-
 type CredentialRecord = {
 	credentialId: string
 	userId: string
@@ -84,35 +76,6 @@ export const loginVerifyRequestSchema = z.object({
 export const removeCredentialRequestSchema = z.object({
 	credentialId: z.string().min(1)
 })
-
-export function toChallengeRecord(value: Record<string, unknown> | null): ChallengeRecord | null {
-	if (!value) return null
-	const id = value['id'] ?? value['challengeId']
-	const userId = value['userId']
-	const challenge = value['challenge']
-	const type = value['type']
-	const expiresAt = value['expiresAt']
-	if (typeof id !== 'string') return null
-	if (userId !== null && userId !== undefined && typeof userId !== 'string') {
-		return null
-	}
-	if (typeof challenge !== 'string') return null
-	if (typeof type !== 'string') return null
-	if (
-		typeof expiresAt !== 'string' &&
-		typeof expiresAt !== 'number' &&
-		!(expiresAt instanceof Date)
-	) {
-		return null
-	}
-	return {
-		id,
-		userId: userId ?? null,
-		challenge,
-		type,
-		expiresAt
-	}
-}
 
 export function toCredentialRecord(value: Record<string, unknown> | null): CredentialRecord | null {
 	if (!value) return null

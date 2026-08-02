@@ -65,7 +65,14 @@ describe('drizzleAdapter', () => {
 
 		const adapters = drizzleAdapter(db, {
 			schema,
-			oauthTokenEncryptionKey: '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
+			oauthTokenEncryption: {
+				encryptionKeyringJson: JSON.stringify({
+					activeKeyId: 'current',
+					keys: {
+						current: '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
+					}
+				})
+			}
 		})
 
 		expect(adapters.session).toBeDefined()

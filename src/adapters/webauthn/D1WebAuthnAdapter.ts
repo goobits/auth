@@ -1,49 +1,27 @@
 import type { WebAuthnCredential } from '../../types/index.ts'
+import type { D1DatabasePort, D1Result, D1Row } from '../_d1Port.ts'
 import { assertD1Identifiers } from '../_d1Sql.ts'
 import {
 	WebAuthnAdapter,
 	type AdvanceWebAuthnCredentialCounterInput,
 	type CreateWebAuthnChallengeInput,
 	type CreateWebAuthnCredentialInput,
-	type DeleteWebAuthnCredentialInput
+	type DeleteWebAuthnCredentialInput,
+	type WebAuthnChallengeRecord
 } from './WebAuthnAdapter.ts'
 import {
 	assertCredentialCounterTransition,
 	isValidCredentialCounter
 } from './_credentialCounter.ts'
 
-type D1Value = string | number | boolean | null
-type D1Row = Record<string, D1Value>
-
-type D1DatabaseLike = {
-	prepare: (sql: string) => {
-		bind: (...args: D1Value[]) => {
-			run: () => Promise<unknown>
-			first: () => Promise<D1Row | null>
-			all: () => Promise<{ results?: D1Row[] }>
-		}
-	}
-}
-
-type WebAuthnChallengeRecord = {
-	id: string
-	userId: string | null
-	challenge: string
-	type: string
-	expiresAt: Date
-}
-
-function changedRows(result: unknown): number {
-	if (!result || typeof result !== 'object') return 0
-	const meta = (result as { meta?: unknown }).meta
-	if (!meta || typeof meta !== 'object') return 0
-	const changes = (meta as { changes?: unknown }).changes
+function changedRows(result: D1Result): number {
+	const changes = result.meta?.changes
 	return typeof changes === 'number' && Number.isSafeInteger(changes) ? changes : 0
 }
 
 /** Cloudflare D1 web authn adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class D1WebAuthnAdapter extends WebAuthnAdapter {
-	private db: D1DatabaseLike
+	private db: D1DatabasePort
 	private credentialsTable: string
 	private challengesTable: string
 	private columns: {
@@ -63,7 +41,7 @@ export class D1WebAuthnAdapter extends WebAuthnAdapter {
 	}
 
 	constructor(
-		db: D1DatabaseLike,
+		db: D1DatabasePort,
 		options: {
 			credentialsTable?: string
 			challengesTable?: string

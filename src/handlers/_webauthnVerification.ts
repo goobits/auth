@@ -9,7 +9,6 @@ import {
 	encodeCredential,
 	loginVerifyRequestSchema,
 	toAuthenticatorTransports,
-	toChallengeRecord,
 	toCredentialRecord,
 	toUint8Array
 } from './webauthnUtils.ts'
@@ -29,8 +28,7 @@ export type WebAuthnVerificationConfig = {
 type AuthenticationPurpose = 'authentication' | 'step-up'
 
 type CredentialVerificationResult =
-	| { verified: true; credential: { userId: string } }
-	| { verified: false; response: Response }
+	{ verified: true; credential: { userId: string } } | { verified: false; response: Response }
 
 async function authenticationFailure(
 	emitter: AuthEventEmitter | undefined,
@@ -66,9 +64,7 @@ export async function verifyWebAuthnCredential(
 		)
 	}
 
-	const challenge = toChallengeRecord(
-		await config.webauthnAdapter.consumeChallenge(data.challengeId)
-	)
+	const challenge = await config.webauthnAdapter.consumeChallenge(data.challengeId)
 	if (!challenge) {
 		await emitRequestAuthEvent(config.emitSecurityEvent, event, {
 			name: 'webauthn.challenge_missing',

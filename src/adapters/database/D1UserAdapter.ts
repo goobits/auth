@@ -1,20 +1,9 @@
 import type { User } from '../../types/index.ts'
+import type { D1DatabasePort, D1Row, D1Value } from '../_d1Port.ts'
 import { assertD1Identifiers } from '../_d1Sql.ts'
 import { assertPublicUserData } from './publicUserData.ts'
 import type { PasswordCredential, PasswordCredentialAdapter } from './PasswordCredentialAdapter.ts'
 import { UserAdapter } from './UserAdapter.ts'
-
-type D1Value = string | number | boolean | null
-type D1Row = Record<string, D1Value>
-
-type D1DatabaseLike = {
-	prepare: (sql: string) => {
-		bind: (...args: D1Value[]) => {
-			run: () => Promise<{ meta?: { last_row_id?: string | number } } | undefined>
-			first: () => Promise<D1Row | null>
-		}
-	}
-}
 
 type D1UserAdapterOptions = {
 	usersTable?: string
@@ -27,7 +16,7 @@ type D1UserAdapterOptions = {
 
 /** Cloudflare D1 user adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class D1UserAdapter extends UserAdapter implements PasswordCredentialAdapter {
-	db: D1DatabaseLike
+	db: D1DatabasePort
 	usersTable: string
 	oauthAccountsTable: string
 	sanitizeUser: (user: User | null) => User | null
@@ -50,7 +39,7 @@ export class D1UserAdapter extends UserAdapter implements PasswordCredentialAdap
 	}
 	allowedFields: string[]
 
-	constructor(db: D1DatabaseLike, options: D1UserAdapterOptions = {}) {
+	constructor(db: D1DatabasePort, options: D1UserAdapterOptions = {}) {
 		super()
 		this.db = db
 		this.usersTable = options.usersTable || 'users'

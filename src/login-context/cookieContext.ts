@@ -2,7 +2,8 @@ import type { Cookies } from '@sveltejs/kit'
 
 type CookiesLike = Pick<Cookies, 'set' | 'get' | 'delete'>
 
-type LoginContextCookieOptions = {
+/** Cookie Login Context Runtime Options typed model for runtime integration. */
+export type CookieLoginContextRuntimeOptions = {
 	secure?: boolean
 	maxAge?: number
 	sameSite?: 'lax' | 'strict' | 'none'
@@ -12,15 +13,12 @@ type LoginContextCookieOptions = {
 /** Cookie Login Context Config typed model for runtime integration. */
 export type CookieLoginContextConfig<Key extends string> = {
 	cookies: Record<Key, string>
-	options?: LoginContextCookieOptions
+	options?: CookieLoginContextRuntimeOptions
 }
 
-/** Cookie Login Context Runtime Options typed model for runtime integration. */
-export type CookieLoginContextRuntimeOptions = LoginContextCookieOptions
-
 function buildCookieOptions(
-	defaults: LoginContextCookieOptions | undefined,
-	overrides: LoginContextCookieOptions | undefined
+	defaults: CookieLoginContextRuntimeOptions | undefined,
+	overrides: CookieLoginContextRuntimeOptions | undefined
 ) {
 	return {
 		httpOnly: true,

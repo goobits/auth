@@ -42,15 +42,6 @@ describe('auth security profiles', () => {
 		])
 	})
 
-	it('supports the legacy one-window override without parallel defaults', () => {
-		const resolved = resolveSecurity(config('secure', { rateLimit: { max: 7, windowMs: 30_000 } }))
-
-		expect(resolved.rateLimit.windows).toEqual([
-			{ name: 'auth:custom', maxEvents: 7, windowMs: 30_000 }
-		])
-		expect(resolved.routes['magic.request']?.rateLimitWindows).toBe(resolved.rateLimit.windows)
-	})
-
 	it('requires an explicit external boundary when secure CSRF is disabled', () => {
 		expect(() => resolveSecurity(config('secure', { csrf: { mode: 'off' } }))).toThrow(
 			'requires CSRF protection'

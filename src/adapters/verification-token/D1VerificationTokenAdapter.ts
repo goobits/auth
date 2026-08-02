@@ -1,24 +1,11 @@
 import type { User, VerificationToken } from '../../types/index.ts'
+import type { D1DatabasePort, D1Row, D1Value } from '../_d1Port.ts'
 import { assertD1Identifiers } from '../_d1Sql.ts'
 import { generateRandomUUID } from '../../utils/crypto.ts'
-import { VerificationTokenAdapter } from './VerificationTokenAdapter.ts'
-
-type D1Value = string | number | boolean | null
-type D1Row = Record<string, D1Value>
-
-type D1DatabaseLike = {
-	prepare: (sql: string) => {
-		bind: (...args: unknown[]) => {
-			run: () => Promise<unknown>
-			first: <T = D1Row>() => Promise<T | null>
-		}
-	}
-}
-
-type TokenUserRecord = {
-	token: VerificationToken
-	user: User
-}
+import {
+	VerificationTokenAdapter,
+	type VerificationTokenRecord
+} from './VerificationTokenAdapter.ts'
 
 function isUnknownRecord(value: unknown): value is Record<string, unknown> {
 	return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -47,7 +34,7 @@ function coerceTokenDate(value: D1Value | undefined): Date | null {
 
 /** Cloudflare D1 verification token adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
-	private db: D1DatabaseLike
+	private db: D1DatabasePort
 	private tokensTable: string
 	private usersTable: string
 	private columns: {
@@ -67,7 +54,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 	}
 
 	constructor(
-		db: D1DatabaseLike,
+		db: D1DatabasePort,
 		options: {
 			tokensTable?: string
 			usersTable?: string
@@ -107,7 +94,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 		return /^\d+$/.test(id) ? Number(id) : id
 	}
 
-	private mapTokenAndUser(row: D1Row | null): TokenUserRecord | null {
+	private mapTokenAndUser(row: D1Row | null): VerificationTokenRecord<User> | null {
 		if (!row) return null
 		const tokenId = row['token_id'] ?? row[this.columns.id]
 		const tokenUserId = row['token_user_id'] ?? row[this.columns.userId]
@@ -263,7 +250,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 	}: {
 		token: string
 		type: string
-	}): Promise<TokenUserRecord | null> {
+	}): Promise<VerificationTokenRecord<User> | null> {
 		const createdAtSelect = this.columns.createdAt
 			? `, t.${this.columns.createdAt} AS token_created_at`
 			: ''
@@ -302,7 +289,7 @@ export class D1VerificationTokenAdapter extends VerificationTokenAdapter {
 	}: {
 		token: string
 		type: string
-	}): Promise<TokenUserRecord | null> {
+	}): Promise<VerificationTokenRecord<User> | null> {
 		// Atomic delete-returning closes the TOCTOU race: only one caller
 		// gets the row back, even under concurrent verifies. We then look
 		// up the user — only the winner of the delete reaches this point.

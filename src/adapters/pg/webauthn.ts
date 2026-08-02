@@ -4,7 +4,8 @@ import {
 	type AdvanceWebAuthnCredentialCounterInput,
 	type CreateWebAuthnChallengeInput,
 	type CreateWebAuthnCredentialInput,
-	type DeleteWebAuthnCredentialInput
+	type DeleteWebAuthnCredentialInput,
+	type WebAuthnChallengeRecord
 } from '../webauthn/WebAuthnAdapter.ts'
 import {
 	assertCredentialCounterTransition,
@@ -61,7 +62,7 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		)
 	}
 
-	async getChallenge(challengeId: string): Promise<Record<string, unknown> | null> {
+	async getChallenge(challengeId: string): Promise<WebAuthnChallengeRecord | null> {
 		const row = (
 			await this.#db.query<WebAuthnChallengeRow>(
 				'SELECT * FROM auth_webauthn_challenges WHERE id = $1',
@@ -83,7 +84,7 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 		return result.rows.length
 	}
 
-	async consumeChallenge(challengeId: string): Promise<Record<string, unknown> | null> {
+	async consumeChallenge(challengeId: string): Promise<WebAuthnChallengeRecord | null> {
 		const row = (
 			await this.#db.query<WebAuthnChallengeRow>(
 				'DELETE FROM auth_webauthn_challenges WHERE id = $1 RETURNING *',
@@ -170,7 +171,7 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 	}
 }
 
-function toWebAuthnChallenge(row: WebAuthnChallengeRow): Record<string, unknown> {
+function toWebAuthnChallenge(row: WebAuthnChallengeRow): WebAuthnChallengeRecord {
 	return {
 		challenge: row.challenge,
 		expiresAt: row.expires_at,

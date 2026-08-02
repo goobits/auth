@@ -4,9 +4,6 @@ import { TokenAdapter } from '../oauth-token/TokenAdapter.ts'
 import { MemorySessionAdapter } from './session.ts'
 import { MemoryUserAdapter } from './user.ts'
 
-/** Test user adapter backed by the memory implementation. */
-export class MockUserAdapter extends MemoryUserAdapter {}
-
 /** Test session adapter with no-op cookie writes. */
 export class MockSessionAdapter extends MemorySessionAdapter {
 	#users: MemoryUserAdapter

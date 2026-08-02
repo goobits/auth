@@ -391,7 +391,12 @@ describe('D1 adapters', () => {
 
 	it('stores and retrieves oauth tokens', async () => {
 		const db = createMockDb()
-		const tokenAdapter = new D1TokenAdapter(db, { encryptionKey: 'a'.repeat(64) })
+		const tokenAdapter = new D1TokenAdapter(db, {
+			encryptionKeyringJson: JSON.stringify({
+				activeKeyId: 'current',
+				keys: { current: 'a'.repeat(64) }
+			})
+		})
 		await tokenAdapter.storeTokens('1', 'google', {
 			accessToken: 'x',
 			refreshToken: null,
@@ -416,7 +421,10 @@ describe('D1 adapters', () => {
 			() =>
 				new D1TokenAdapter(createMockDb(), {
 					tokensTable: 'oauth_tokens; DROP TABLE users',
-					encryptionKey: 'a'.repeat(64)
+					encryptionKeyringJson: JSON.stringify({
+						activeKeyId: 'current',
+						keys: { current: 'a'.repeat(64) }
+					})
 				})
 		).toThrow(/invalid D1 SQL identifier/)
 	})

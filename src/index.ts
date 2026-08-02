@@ -3,7 +3,6 @@ export {
 	AuthPrincipalResolutionError
 } from './errors/AuthPrincipalResolutionError.ts'
 export type {
-	Auth,
 	AuthSecurityEventInput,
 	GoobitsAuthConfig,
 	GoobitsAuthRoutingConfig

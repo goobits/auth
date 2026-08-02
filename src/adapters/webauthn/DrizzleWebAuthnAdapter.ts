@@ -13,7 +13,8 @@ import {
 	type AdvanceWebAuthnCredentialCounterInput,
 	type CreateWebAuthnChallengeInput,
 	type CreateWebAuthnCredentialInput,
-	type DeleteWebAuthnCredentialInput
+	type DeleteWebAuthnCredentialInput,
+	type WebAuthnChallengeRecord
 } from './WebAuthnAdapter.ts'
 import {
 	assertCredentialCounterTransition,
@@ -22,14 +23,6 @@ import {
 
 type CredentialsTable = DrizzleTable
 type ChallengesTable = DrizzleTable
-
-type ChallengeRecord = {
-	id: string
-	userId: string | null
-	challenge: string
-	type: string
-	expiresAt: Date
-}
 
 function mapChallengeRow(
 	row: DrizzleRow | null,
@@ -40,7 +33,7 @@ function mapChallengeRow(
 		challengeType: string
 		challengeExpiresAt: string
 	}
-): ChallengeRecord | null {
+): WebAuthnChallengeRecord | null {
 	if (!row) return null
 	const id = row[columns.challengeId]
 	const userId = row[columns.challengeUserId] ?? null
@@ -200,7 +193,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 		})
 	}
 
-	async getChallenge(challengeId: string): Promise<ChallengeRecord | null> {
+	async getChallenge(challengeId: string): Promise<WebAuthnChallengeRecord | null> {
 		const [row] = await this.db
 			.select()
 			.from(this.challengesTable)
@@ -323,7 +316,7 @@ export class DrizzleWebAuthnAdapter extends WebAuthnAdapter {
 			.where(eq(requireColumn(this.credentialsTable, this.columns.userId), userId))
 	}
 
-	override async consumeChallenge(challengeId: string): Promise<ChallengeRecord | null> {
+	override async consumeChallenge(challengeId: string): Promise<WebAuthnChallengeRecord | null> {
 		const rows = await this.db
 			.delete(this.challengesTable)
 			.where(eq(requireColumn(this.challengesTable, this.columns.challengeId), challengeId))

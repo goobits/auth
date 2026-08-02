@@ -4,7 +4,7 @@ import {
 	VerificationTokenAdapter,
 	type VerificationTokenRecord
 } from '../verification-token/VerificationTokenAdapter.ts'
-import { type PgPoolLike, requireRow } from './query.ts'
+import type { PgPoolLike } from './query.ts'
 import { type UserRow, toUser } from './user.ts'
 
 type VerificationTokenRow = {
