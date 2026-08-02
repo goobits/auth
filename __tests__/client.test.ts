@@ -282,6 +282,9 @@ describe('auth client', () => {
 			'https://app.example/account/sessions/revoke'
 		])
 		expect(client.loginWithOAuth('google')).toBe('https://app.example/auth/signin/google')
+		expect(client.loginWithOAuth('google', '/library?view=recent')).toBe(
+			'https://app.example/auth/signin/google?returnTo=%2Flibrary%3Fview%3Drecent'
+		)
 		expect(client.linkOAuth('apple', '/settings/security')).toBe(
 			'https://app.example/auth/link/apple?returnTo=%2Fsettings%2Fsecurity'
 		)

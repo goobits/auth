@@ -213,7 +213,9 @@ oauth: {
 Use `createAuthClient()` from `@goobits/auth/client` for canonical OAuth URLs,
 identity listing/unlinking, and WebAuthn ceremonies. Set `basePath` when the
 facade is mounted somewhere other than `/auth`; API and OAuth URLs share that
-one source. Conditional passkey
+one source. `loginWithOAuth(provider, returnTo?)`, `linkOAuth(provider,
+returnTo?)`, and `reauthenticateWithOAuth(provider, returnTo?)` preserve only
+application-relative return paths at the server boundary. Conditional passkey
 autofill is opt-in through `loginWithPasskey({ conditional: true, signal })`;
 gate it with `supportsConditionalPasskeys()`. Put `webauthn` last after a normal
 autocomplete token, for example

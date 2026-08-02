@@ -1,6 +1,6 @@
 # Changelog
 
-<!-- CHANGELOG audit cutoff: 2026-08-02. commit 6d5e6c52 on main. -->
+<!-- CHANGELOG audit cutoff: 2026-08-02. commit b3c11447 on main. -->
 
 ## [Unreleased]
 
@@ -28,6 +28,8 @@
 
 ### 🔧 Changed
 
+- 🧭 `loginWithOAuth` now accepts the same optional application-relative return
+  path as provider linking and reauthentication.
 - 👤 ⚠️ Managed authentication hooks now use one typed `onAuthentication`
   lifecycle, and OAuth persistence uses the dedicated `OAuthIdentityAdapter`.
 - 👤 ⚠️ OAuth uses only canonical sign-in, link, reauthentication, callback,

@@ -383,8 +383,14 @@ export function createAuthClient({
 	})
 
 	return {
-		loginWithOAuth(provider: string) {
-			const url = oauthRedirectUrl(baseUrl, authBasePath, AUTH_ROUTE_PATHS.oauthSignIn, provider)
+		loginWithOAuth(provider: string, returnTo?: string) {
+			const url = oauthRedirectUrl(
+				baseUrl,
+				authBasePath,
+				AUTH_ROUTE_PATHS.oauthSignIn,
+				provider,
+				returnTo
+			)
 			if (typeof window !== 'undefined') {
 				window.location.assign(url)
 			}
