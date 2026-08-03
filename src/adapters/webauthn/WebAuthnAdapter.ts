@@ -6,6 +6,14 @@ export type CreateWebAuthnChallengeInput = {
 	expiresAt: Date
 }
 
+export type WebAuthnChallengeRecord = {
+	id: string
+	userId: string | null
+	challenge: string
+	type: string
+	expiresAt: Date
+}
+
 export type CreateWebAuthnCredentialInput = {
 	userId: string
 	credentialId: string
@@ -55,7 +63,7 @@ export abstract class WebAuthnAdapter {
 	 * @param {string} challengeId - Identifier to use.
 	 * @returns {Promise<Object|null>}
 	 */
-	abstract getChallenge(challengeId: string): Promise<Record<string, unknown> | null>
+	abstract getChallenge(challengeId: string): Promise<WebAuthnChallengeRecord | null>
 
 	/**
 	 * Delete challenge by ID
@@ -130,5 +138,5 @@ export abstract class WebAuthnAdapter {
 	 *
 	 * @param challengeId - Identifier to use.
 	 */
-	abstract consumeChallenge(challengeId: string): Promise<Record<string, unknown> | null>
+	abstract consumeChallenge(challengeId: string): Promise<WebAuthnChallengeRecord | null>
 }

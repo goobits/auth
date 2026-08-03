@@ -1,6 +1,6 @@
 {
 	"name": "@goobits/auth",
-	"version": "0.3.1",
+	"version": "0.4.0",
 	"description": "Pluggable authentication system for SvelteKit applications",
 	"type": "module",
 	"main": "./src/index.ts",
@@ -67,6 +67,14 @@
 				"browser": "./dist/worker/adapters/oauth-token/index.js",
 				"node": "./dist/node/adapters/oauth-token/index.js",
 				"default": "./dist/worker/adapters/oauth-token/index.js"
+			},
+			"./adapters/oauth-identity": {
+				"types": "./dist/types/adapters/oauth-identity/index.d.ts",
+				"workerd": "./dist/worker/adapters/oauth-identity/index.js",
+				"worker": "./dist/worker/adapters/oauth-identity/index.js",
+				"browser": "./dist/worker/adapters/oauth-identity/index.js",
+				"node": "./dist/node/adapters/oauth-identity/index.js",
+				"default": "./dist/worker/adapters/oauth-identity/index.js"
 			},
 			"./adapters/drizzle": {
 				"types": "./dist/types/adapters/drizzle/index.d.ts",
@@ -293,6 +301,7 @@
 		"./adapters/database": "./src/adapters/database/index.ts",
 		"./adapters/session": "./src/adapters/session/index.ts",
 		"./adapters/oauth-token": "./src/adapters/oauth-token/index.ts",
+		"./adapters/oauth-identity": "./src/adapters/oauth-identity/index.ts",
 		"./adapters/drizzle": "./src/adapters/drizzle/index.ts",
 		"./adapters/memory": "./src/adapters/memory/index.ts",
 		"./adapters/pg": {
@@ -376,12 +385,11 @@
 		}
 	},
 	"dependencies": {
-		"@goobits/keyboard": "workspace:*",
 		"@goobits/security": "workspace:*",
-		"@lucide/svelte": "^1.28.0",
+		"@lucide/svelte": "^1.26.0",
 		"@simplewebauthn/server": "^13.3.2",
-		"arctic": "3.7.0",
 		"hash-wasm": "^4.12.0",
+		"jose": "^6.2.4",
 		"uqr": "^0.1.3",
 		"zod": "^4.4.3"
 	},
@@ -389,13 +397,13 @@
 		"@node-rs/argon2": "^2.0.2"
 	},
 	"devDependencies": {
-		"@sveltejs/kit": "^2.70.2",
-		"@types/node": "^26.1.2",
+		"@sveltejs/kit": "^2.70.1",
+		"@types/node": "^26.1.1",
 		"@vitest/coverage-v8": "^4.1.10",
 		"pg-mem": "^3.0.14",
 		"postgres": "^3.4.9",
 		"svelte": "^5.56.8",
-		"svelte-check": "^4.7.4",
+		"svelte-check": "^4.7.3",
 		"tsup": "^8.5.1",
 		"typescript": "^6.0.3",
 		"vitest": "^4.1.10"

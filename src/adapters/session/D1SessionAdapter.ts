@@ -2,25 +2,13 @@ import type { Cookies } from '@sveltejs/kit'
 
 import type { SessionMetadata, SessionSummary, User } from '../../types/index.ts'
 import { AuthAdapterCapabilityError } from '../../errors/AuthPrincipalResolutionError.ts'
+import type { D1DatabasePort, D1Row, D1Value } from '../_d1Port.ts'
 import { assertD1Identifiers } from '../_d1Sql.ts'
 import { normalizeSessionMetadata } from './_sessionMetadata.ts'
 import { clearSessionCookie, writeSessionCookie } from './_sessionCookie.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
 import { parseMfaVerifiedAt, parseSessionTimestamp } from './sessionAssurance.ts'
 import { createSessionToken, generateSessionId, hashSessionToken } from './sessionId.ts'
-
-type D1Value = string | number | boolean | null
-type D1Row = Record<string, D1Value>
-
-type D1DatabaseLike = {
-	prepare: (sql: string) => {
-		bind: (...args: D1Value[]) => {
-			run: () => Promise<unknown>
-			first: () => Promise<D1Row | null>
-			all: () => Promise<{ results?: D1Row[] }>
-		}
-	}
-}
 
 type D1SessionOptions = {
 	sessionsTable?: string
@@ -59,7 +47,7 @@ type D1SessionOptions = {
 
 /** Cloudflare D1 session adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class D1SessionAdapter extends SessionAdapter {
-	private db: D1DatabaseLike
+	private db: D1DatabasePort
 	private sessionsTable: string
 	private usersTable: string
 	private sessionLifetime: number
@@ -94,7 +82,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		updatedAt: string
 	}
 
-	constructor(db: D1DatabaseLike, options: D1SessionOptions = {}) {
+	constructor(db: D1DatabasePort, options: D1SessionOptions = {}) {
 		super()
 		this.db = db
 		this.sessionsTable = options.sessionsTable || 'sessions'

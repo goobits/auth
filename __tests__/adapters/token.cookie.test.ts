@@ -4,13 +4,16 @@ import { CookieTokenAdapter } from '../../src/adapters/oauth-token/CookieTokenAd
 import { createCookies } from '../testKit.ts'
 
 describe('CookieTokenAdapter', () => {
-	it('requires encryption key', () => {
-		expect(() => new CookieTokenAdapter({})).toThrow(/encryptionKey/)
+	it('requires an encryption keyring', () => {
+		expect(() => new CookieTokenAdapter({})).toThrow(/encryptionKeyringJson/)
 	})
 
 	it('stores and retrieves encrypted tokens', async () => {
 		const adapter = new CookieTokenAdapter({
-			encryptionKey: 'a'.repeat(64),
+			encryptionKeyringJson: JSON.stringify({
+				activeKeyId: 'current',
+				keys: { current: 'a'.repeat(64) }
+			}),
 			secureCookies: false
 		})
 		const cookies = createCookies()
@@ -27,7 +30,12 @@ describe('CookieTokenAdapter', () => {
 	})
 
 	it('throws if cookies not set', async () => {
-		const adapter = new CookieTokenAdapter({ encryptionKey: 'b'.repeat(64) })
+		const adapter = new CookieTokenAdapter({
+			encryptionKeyringJson: JSON.stringify({
+				activeKeyId: 'current',
+				keys: { current: 'b'.repeat(64) }
+			})
+		})
 		await expect(adapter.getTokens('u1', 'google')).rejects.toThrow(/Cookies not set/)
 	})
 })

@@ -1,7 +1,8 @@
 import { redirect } from '@sveltejs/kit'
 
 import type { OAuthProvider } from '../providers/OAuthProvider.ts'
-import type { AuthLocals, RequestEventLike } from '../types/auth.ts'
+import type { AuthorizeOAuthIdentityChange, AuthLocals, RequestEventLike } from '../types/auth.ts'
+import type { OAuthFlowIntent } from '../types/core.ts'
 import { createOAuthCookies } from '../utils/oauth.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 
@@ -10,6 +11,7 @@ type LoginHandlerConfig = {
 	redirectAfterLogin?: string
 	secureCookies?: boolean
 	isAuthenticated?: (locals: AuthLocals) => boolean
+	authorizeIdentityChange?: AuthorizeOAuthIdentityChange
 }
 
 /**
@@ -23,14 +25,14 @@ type LoginHandlerConfig = {
  * @returns {import('@sveltejs/kit').RequestHandler}
  *
  * @example
- * // In src/routes/auth/[provider]/+server.ts
+ * // In src/routes/auth/signin/[provider]/+server.ts
  * import { createLoginHandler } from '@goobits/auth/handlers';
  * import { GoogleProvider, AppleProvider } from '@goobits/auth/providers';
  *
  * const googleProvider = new GoogleProvider({
  *   clientId: env.GOOGLE_CLIENT_ID,
  *   clientSecret: env.GOOGLE_CLIENT_SECRET,
- *   callbackUrl: `${APP_URL}/auth/google/callback`
+ *   callbackUrl: `${APP_URL}/auth/callback/google`
  * });
  *
  * export const GET = createLoginHandler({
@@ -46,13 +48,25 @@ export function createLoginHandler(config: LoginHandlerConfig) {
 		providers,
 		redirectAfterLogin = '/',
 		secureCookies = true,
-		isAuthenticated = (locals: AuthLocals) => !!locals.user
+		isAuthenticated = (locals: AuthLocals) => !!locals.user,
+		authorizeIdentityChange
 	} = config
 
-	return async ({ cookies, params, locals }: RequestEventLike) => {
-		// Check if already authenticated
-		if (isAuthenticated(locals)) {
+	return async (event: RequestEventLike) => {
+		const { cookies, params, locals } = event
+		const intent = resolveOAuthIntent(params['intent'])
+		const authenticated = isAuthenticated(locals)
+		if (intent === 'sign-in' && authenticated) {
 			throw redirect(302, isSafeRedirectPath(redirectAfterLogin) ? redirectAfterLogin : '/')
+		}
+		if (
+			intent !== 'sign-in' &&
+			(!authenticated ||
+				!locals.user?.id ||
+				!locals.session ||
+				locals.session.userId !== locals.user.id)
+		) {
+			return new Response('Authentication required', { status: 401 })
 		}
 
 		const providerName = String(params['provider'] ?? '')
@@ -61,23 +75,49 @@ export function createLoginHandler(config: LoginHandlerConfig) {
 		if (!providerConfig) {
 			return new Response('Invalid OAuth provider', { status: 400 })
 		}
+		if (
+			intent === 'link' &&
+			(!authorizeIdentityChange ||
+				!(await authorizeIdentityChange({
+					action: 'oauth.link',
+					request: event.request,
+					userId: locals.user!.id,
+					session: locals.session ?? null,
+					provider: providerName
+				})))
+		) {
+			return new Response('Fresh authentication required', { status: 403 })
+		}
 
 		const { provider, scopes } = providerConfig
+		if (provider.callbackMode === 'form_post' && !secureCookies) {
+			return new Response('Form-post OAuth callbacks require secure cookies', { status: 500 })
+		}
 
 		// Generate state and code verifier cookies
 		const { state, codeVerifier } = createOAuthCookies(cookies, providerName, {
+			intent,
+			userId: intent === 'sign-in' ? null : locals.user!.id,
+			redirectTo: resolveReturnPath(event.url, redirectAfterLogin),
 			secure: secureCookies,
-			sameSite: 'lax'
+			sameSite: provider.callbackMode === 'form_post' ? 'none' : 'lax'
 		})
 
 		// Create authorization URL
-		const authUrl = provider.createAuthorizationURL(state, codeVerifier, scopes || [])
-
-		// Special handling for Apple
-		if (providerName === 'apple') {
-			authUrl.searchParams.set('response_mode', 'form_post')
-		}
+		const authUrl = await provider.createAuthorizationURL(state, codeVerifier, scopes || [])
 
 		throw redirect(302, authUrl)
 	}
+}
+
+function resolveOAuthIntent(value: string | undefined): OAuthFlowIntent {
+	if (value === undefined || value === 'sign-in') return 'sign-in'
+	if (value === 'link' || value === 'reauth') return value
+	throw new Error('Invalid OAuth flow intent')
+}
+
+function resolveReturnPath(url: URL, fallback: string): string {
+	const requested = url.searchParams.get('returnTo') ?? ''
+	if (isSafeRedirectPath(requested)) return requested
+	return isSafeRedirectPath(fallback) ? fallback : '/'
 }

@@ -1,4 +1,5 @@
 import type { UserAdapterBundle } from '../database/PasswordCredentialAdapter.ts'
+import type { OAuthIdentityAdapter } from '../oauth-identity/OAuthIdentityAdapter.ts'
 import type { MfaSecretCodec } from '../mfa/MfaAdapter.ts'
 import { PgMagicLinkAdapter } from './magicLink.ts'
 import { PgMfaAdapter } from './mfa.ts'
@@ -28,6 +29,7 @@ type PgAuthAdapterInput = {
 
 type PgAuthAdapters = UserAdapterBundle & {
 	magicLink: PgMagicLinkAdapter
+	oauthIdentity: OAuthIdentityAdapter
 	session: PgSessionAdapter
 	verificationToken: PgVerificationTokenAdapter
 	webauthn: PgWebAuthnAdapter
@@ -43,6 +45,7 @@ export function createPgAuthAdapters<T extends MfaSecretCodec | undefined = unde
 	const user = new PgUserAdapter({ db: input.db })
 	const adapters: PgAuthAdapters = {
 		magicLink: new PgMagicLinkAdapter({ db: input.db }),
+		oauthIdentity: user,
 		passwordCredential: user,
 		session: new PgSessionAdapter(input),
 		user,

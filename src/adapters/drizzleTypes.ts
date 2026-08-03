@@ -1,12 +1,12 @@
 import type { SQLWrapper } from 'drizzle-orm'
 
-export type DrizzleScalar = string | number | boolean | Date | null
+type DrizzleScalar = string | number | boolean | Date | null
 export type DrizzleJson = DrizzleScalar | DrizzleJson[] | { [key: string]: DrizzleJson }
 export type DrizzleRow = Record<string, DrizzleJson>
 
 export type DrizzleTable = Record<string, SQLWrapper>
 
-export type SelectQuery<T> = {
+type SelectQuery<T> = {
 	from: (table: DrizzleTable) => {
 		where: (condition: SQLWrapper) => Promise<T[]>
 		innerJoin: (
@@ -28,11 +28,11 @@ export type InsertConflictQuery = {
 	}
 }
 
-export type InsertQuery = {
+type InsertQuery = {
 	values: (values: DrizzleRow) => Promise<void> | InsertConflictQuery
 }
 
-export type UpdateQuery = {
+type UpdateQuery = {
 	set: (values: DrizzleRow) => {
 		where: (condition: SQLWrapper) => Promise<void> & {
 			returning: () => Promise<DrizzleRow[]>
@@ -44,7 +44,7 @@ type DeleteWhereResult = Promise<void> & {
 	returning: () => Promise<DrizzleRow[]>
 }
 
-export type DeleteQuery = {
+type DeleteQuery = {
 	where: (condition: SQLWrapper) => DeleteWhereResult
 }
 

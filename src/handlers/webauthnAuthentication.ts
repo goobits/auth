@@ -7,15 +7,11 @@ import { redirect } from '@sveltejs/kit'
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
-import type {
-	AuthHooks,
-	AuthRequestHandler,
-	OnLoginMode,
-	RequestEventLike
-} from '../types/auth.ts'
+import type { AuthHooks, AuthRequestHandler, OnLoginMode, RequestEventLike } from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { generateRandomUUID } from '../utils/crypto.ts'
 import { jsonResponse } from '../utils/http.ts'
+import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 import { type AssuredSessionAdapter, rotateSessionAssurance } from './_assuredSession.ts'
 import {
@@ -36,7 +32,7 @@ export type WebAuthnLoginVerifyHandlerConfig = WebAuthnVerificationConfig & {
 	sessionAdapter: Pick<SessionAdapter, 'createSession' | 'setSessionCookie'>
 	getSessionMetadata?: AuthHooks['getSessionMetadata']
 	redirectAfterLogin?: string
-	onLogin?: AuthHooks['onLogin']
+	onAuthentication?: AuthHooks['onAuthentication']
 	sanitizeUser?: (user: User | null) => User | null
 	autoCreateSession?: boolean
 	onLoginMode?: OnLoginMode
@@ -92,7 +88,7 @@ export function createWebAuthnLoginVerifyHandler(
 		sessionAdapter,
 		getSessionMetadata,
 		redirectAfterLogin = '/',
-		onLogin,
+		onAuthentication,
 		sanitizeUser = defaultSanitizeUser,
 		autoCreateSession = true,
 		onLoginMode = 'augment'
@@ -106,21 +102,21 @@ export function createWebAuthnLoginVerifyHandler(
 		if (!result.verified) return result.response
 
 		const user = userAdapter ? await userAdapter.getUserById(result.credential.userId) : null
-		if (!user && !onLogin) {
+		if (!user && !onAuthentication) {
 			return jsonResponse({ ok: false, error: 'Unable to resolve authenticated principal' }, 401)
 		}
 		let userId = result.credential.userId
-		if (onLogin) {
-			const hookResult = await onLogin(
-				event,
-				{
-					id: userId,
-					email: user?.email ?? '',
-					...(user?.name ? { name: user.name } : {})
-				},
-				null,
-				user
-			)
+		const lifecycleResult = await onAuthentication?.({
+			event,
+			method: {
+				kind: 'passkey',
+				credentialId: result.credential.credentialId,
+				userId
+			},
+			user
+		})
+		if (lifecycleResult) {
+			const hookResult = lifecycleResult
 			if (hookResult?.userId && String(hookResult.userId) !== userId) {
 				return jsonResponse({ ok: false, error: 'Unable to resolve authenticated principal' }, 401)
 			}
@@ -142,7 +138,10 @@ export function createWebAuthnLoginVerifyHandler(
 			}
 			throw error
 		}
-		if (event.request.method === 'GET') throw redirect(302, redirectAfterLogin)
+		if (event.request.method === 'GET') {
+			const requestedRedirect = lifecycleResult?.redirectTo ?? redirectAfterLogin
+			throw redirect(302, isSafeRedirectPath(requestedRedirect) ? requestedRedirect : '/')
+		}
 		return jsonResponse({ ok: true, user: sanitizeUser(user) })
 	}
 }

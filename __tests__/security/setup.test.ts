@@ -40,15 +40,8 @@ describe('auth security profiles', () => {
 			{ name: 'registration:10-min', windowMs: 10 * 60_000, maxEvents: 3 },
 			{ name: 'registration:hour', windowMs: 60 * 60_000, maxEvents: 5 }
 		])
-	})
-
-	it('supports the legacy one-window override without parallel defaults', () => {
-		const resolved = resolveSecurity(config('secure', { rateLimit: { max: 7, windowMs: 30_000 } }))
-
-		expect(resolved.rateLimit.windows).toEqual([
-			{ name: 'auth:custom', maxEvents: 7, windowMs: 30_000 }
-		])
-		expect(resolved.routes['magic.request']?.rateLimitWindows).toBe(resolved.rateLimit.windows)
+		expect(resolved.routes['oauth.identities.list']?.csrf).toBe('off')
+		expect(resolved.routes['oauth.identity.unlink']?.csrf).toBe('required')
 	})
 
 	it('requires an explicit external boundary when secure CSRF is disabled', () => {

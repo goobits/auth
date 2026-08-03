@@ -38,8 +38,6 @@ export interface OAuthTokenEncryptionOptions {
 	tokenCodec?: OAuthTokenCodec
 	encryptionKeyringJson?: string | null
 	legacyEncryptionKeyId?: string
-	/** @deprecated Prefer `encryptionKeyringJson` for online rotation. */
-	encryptionKey?: string | null
 }
 
 /** Rotation and record-binding options for the built-in AES-GCM token codec. */

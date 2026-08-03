@@ -28,14 +28,6 @@ export abstract class UserAdapter {
 	abstract getUserByEmail(email: string): Promise<User | null>
 
 	/**
-	 * Get user by OAuth provider ID (returns SANITIZED user)
-	 * @param {string} provider - Provider name (e.g., 'google', 'apple')
-	 * @param {string} providerId - Provider-specific user ID
-	 * @returns {Promise<import('../../types/core.ts').User | null>}
-	 */
-	abstract getUserByProviderId(provider: string, providerId: string): Promise<User | null>
-
-	/**
 	 * Update user (returns SANITIZED user)
 	 * @param {string} id - User ID
 	 * @param {Partial<import('../../types/core.ts').User>} data - Fields to update
@@ -49,19 +41,6 @@ export abstract class UserAdapter {
 	 * @returns {Promise<void>}
 	 */
 	abstract deleteUser(id: string): Promise<void>
-
-	/**
-	 * Link OAuth account to user
-	 * @param {string} userId - User ID
-	 * @param {string} provider - Provider name
-	 * @param {string} providerAccountId - Provider account ID
-	 * @returns {Promise<void>}
-	 */
-	abstract linkOAuthAccount(
-		userId: string,
-		provider: string,
-		providerAccountId: string
-	): Promise<void>
 
 	/**
 	 * OPTIONAL: Get user by identifier (returns SANITIZED user)

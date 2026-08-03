@@ -3,6 +3,7 @@ import { DrizzleUserAdapter } from '../database/DrizzleUserAdapter.ts'
 import type { UserAdapterBundle } from '../database/PasswordCredentialAdapter.ts'
 import type { DrizzleDbLike, DrizzleTable } from '../drizzleTypes.ts'
 import { DrizzleMagicLinkAdapter } from '../magic-link/DrizzleMagicLinkAdapter.ts'
+import type { OAuthIdentityAdapter } from '../oauth-identity/OAuthIdentityAdapter.ts'
 import { DrizzleTokenAdapter } from '../oauth-token/DrizzleTokenAdapter.ts'
 import type { OAuthTokenEncryptionOptions } from '../oauth-token/OAuthTokenCodec.ts'
 import { DrizzleSessionAdapter } from '../session/DrizzleSessionAdapter.ts'
@@ -63,10 +64,6 @@ export type DrizzleAdapterOptions<TSchema extends DrizzleAuthSchema = DrizzleAut
 	schema?: TSchema
 	tables?: Partial<Record<TableKey, DrizzleTable>>
 	oauthTokenEncryption?: OAuthTokenEncryptionOptions
-	/** @deprecated Prefer `oauthTokenEncryption.encryptionKeyringJson`. */
-	oauthTokenEncryptionKey?: string | null
-	/** @deprecated Prefer `oauthTokenEncryption.encrypt`. */
-	oauthTokenEncrypt?: boolean
 	session?: {
 		sessionLifetime?: number
 		sessionRefreshThreshold?: number
@@ -76,29 +73,10 @@ export type DrizzleAdapterOptions<TSchema extends DrizzleAuthSchema = DrizzleAut
 	sanitizeUser?: (user: User | null) => User | null
 }
 
-function resolveOAuthTokenEncryptionOptions(
-	options: DrizzleAdapterOptions
-): OAuthTokenEncryptionOptions {
-	if (
-		options.oauthTokenEncryption &&
-		(options.oauthTokenEncryptionKey !== undefined || options.oauthTokenEncrypt !== undefined)
-	) {
-		throw new Error(
-			'drizzleAdapter accepts oauthTokenEncryption or legacy flat OAuth token options, not both'
-		)
-	}
-	if (options.oauthTokenEncryption) return options.oauthTokenEncryption
-	return {
-		...(options.oauthTokenEncryptionKey !== undefined
-			? { encryptionKey: options.oauthTokenEncryptionKey }
-			: {}),
-		...(options.oauthTokenEncrypt !== undefined ? { encrypt: options.oauthTokenEncrypt } : {})
-	}
-}
-
 /** Drizzle Adapter Bundle typed model for runtime integration. */
 export type DrizzleAdapterBundle = UserAdapterBundle & {
 	session: DrizzleSessionAdapter
+	oauthIdentity?: OAuthIdentityAdapter
 	oauthToken?: DrizzleTokenAdapter
 	verificationToken?: DrizzleVerificationTokenAdapter
 	magicLink?: DrizzleMagicLinkAdapter
@@ -160,7 +138,7 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 	const oauthToken = oauthTokensTable
 		? new DrizzleTokenAdapter(db, {
 				tokensTable: oauthTokensTable,
-				...resolveOAuthTokenEncryptionOptions(options)
+				...(options.oauthTokenEncryption ?? {})
 			})
 		: undefined
 
@@ -193,6 +171,7 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 		session,
 		user,
 		passwordCredential: user,
+		...(oauthAccountsTable ? { oauthIdentity: user } : {}),
 		...(oauthToken ? { oauthToken } : {}),
 		...(verificationToken ? { verificationToken } : {}),
 		...(magicLink ? { magicLink } : {}),

@@ -1,27 +1,16 @@
 import type { MagicLinkToken } from '../../types/index.ts'
+import type { D1DatabasePort, D1Row, D1Value } from '../_d1Port.ts'
 import { assertD1Identifiers } from '../_d1Sql.ts'
 import { generateRandomUUID } from '../../utils/crypto.ts'
 import { MagicLinkAdapter } from './MagicLinkAdapter.ts'
-
-type D1Value = string | number | boolean | null
-type D1Row = Record<string, D1Value>
 
 function readRowValue(row: D1Row, column: string, fallback: string): D1Value | undefined {
 	return Object.hasOwn(row, column) ? row[column] : row[fallback]
 }
 
-type D1DatabaseLike = {
-	prepare: (sql: string) => {
-		bind: (...args: D1Value[]) => {
-			run: () => Promise<void>
-			first: () => Promise<D1Row | null>
-		}
-	}
-}
-
 /** Cloudflare D1 magic link adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class D1MagicLinkAdapter extends MagicLinkAdapter {
-	private db: D1DatabaseLike
+	private db: D1DatabasePort
 	private tokensTable: string
 	private columns: {
 		id: string
@@ -34,7 +23,7 @@ export class D1MagicLinkAdapter extends MagicLinkAdapter {
 	}
 
 	constructor(
-		db: D1DatabaseLike,
+		db: D1DatabasePort,
 		options: {
 			tokensTable?: string
 			columns?: Partial<Record<string, string>>

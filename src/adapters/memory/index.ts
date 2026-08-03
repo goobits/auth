@@ -8,7 +8,7 @@ import { MemoryWebAuthnAdapter } from './webauthn.ts'
 export { MemoryMagicLinkAdapter } from './magicLink.ts'
 export { MemoryMfaAdapter } from './mfa.ts'
 export { MemorySessionAdapter } from './session.ts'
-export { MockSessionAdapter, MockTokenAdapter, MockUserAdapter } from './testing.ts'
+export { MockSessionAdapter, MockTokenAdapter } from './testing.ts'
 export { MemoryUserAdapter } from './user.ts'
 export { MemoryWebAuthnAdapter } from './webauthn.ts'
 
@@ -20,6 +20,7 @@ export function createMemoryAuthAdapters(input: {
 	sessionLifetimeMs?: number
 }): UserAdapterBundle & {
 	magicLink: MemoryMagicLinkAdapter
+	oauthIdentity: MemoryUserAdapter
 	session: MemorySessionAdapter
 	mfa: MemoryMfaAdapter
 	webauthn: MemoryWebAuthnAdapter
@@ -27,6 +28,7 @@ export function createMemoryAuthAdapters(input: {
 	const user = new MemoryUserAdapter()
 	return {
 		magicLink: new MemoryMagicLinkAdapter(),
+		oauthIdentity: user,
 		passwordCredential: user,
 		session: new MemorySessionAdapter({
 			...(input.cookieDomain ? { cookieDomain: input.cookieDomain } : {}),

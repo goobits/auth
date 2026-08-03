@@ -1,4 +1,5 @@
 import type { AuthConfig, AuthLocals } from '../types/auth.ts'
+import { isOAuthProviderName } from '../_routePaths.ts'
 
 export type ResolvedDefaults = {
 	urlConfig: {
@@ -10,7 +11,6 @@ export type ResolvedDefaults = {
 		secure: boolean
 	}
 	autoCreateSession: boolean
-	requireVerifiedEmailForLinking: boolean
 	isAuthenticated: (locals: AuthLocals) => boolean
 }
 
@@ -27,6 +27,19 @@ export function validateConfig(config: AuthConfig): void {
 	if (config.mfa && !config.adapters.mfa) {
 		throw new Error('createAuth mfa requires adapters.mfa')
 	}
+	if (config.oauth && (!config.providers || Object.keys(config.providers).length === 0)) {
+		throw new Error('createAuth oauth requires at least one OAuth provider')
+	}
+	if (config.providers && Object.keys(config.providers).length > 0) {
+		if (!config.adapters.user || !config.adapters.oauthIdentity) {
+			throw new Error('createAuth OAuth providers require adapters.user and adapters.oauthIdentity')
+		}
+		for (const provider of Object.keys(config.providers)) {
+			if (!isOAuthProviderName(provider)) {
+				throw new Error(`createAuth OAuth provider name is invalid: ${provider}`)
+			}
+		}
+	}
 }
 
 export function resolveDefaults(config: AuthConfig): ResolvedDefaults {
@@ -40,7 +53,6 @@ export function resolveDefaults(config: AuthConfig): ResolvedDefaults {
 			secure: config.cookies?.secure ?? true
 		},
 		autoCreateSession: config.autoCreateSession ?? true,
-		requireVerifiedEmailForLinking: config.requireVerifiedEmailForLinking ?? true,
 		isAuthenticated: config.isAuthenticated ?? ((locals: AuthLocals) => !!locals.user)
 	}
 }

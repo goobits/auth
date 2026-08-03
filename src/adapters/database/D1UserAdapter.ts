@@ -1,20 +1,10 @@
-import type { User } from '../../types/index.ts'
+import type { OAuthIdentity, User } from '../../types/index.ts'
+import type { D1DatabasePort, D1Row, D1Value } from '../_d1Port.ts'
 import { assertD1Identifiers } from '../_d1Sql.ts'
+import type { OAuthIdentityAdapter } from '../oauth-identity/OAuthIdentityAdapter.ts'
 import { assertPublicUserData } from './publicUserData.ts'
 import type { PasswordCredential, PasswordCredentialAdapter } from './PasswordCredentialAdapter.ts'
 import { UserAdapter } from './UserAdapter.ts'
-
-type D1Value = string | number | boolean | null
-type D1Row = Record<string, D1Value>
-
-type D1DatabaseLike = {
-	prepare: (sql: string) => {
-		bind: (...args: D1Value[]) => {
-			run: () => Promise<{ meta?: { last_row_id?: string | number } } | undefined>
-			first: () => Promise<D1Row | null>
-		}
-	}
-}
 
 type D1UserAdapterOptions = {
 	usersTable?: string
@@ -26,8 +16,11 @@ type D1UserAdapterOptions = {
 }
 
 /** Cloudflare D1 user adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
-export class D1UserAdapter extends UserAdapter implements PasswordCredentialAdapter {
-	db: D1DatabaseLike
+export class D1UserAdapter
+	extends UserAdapter
+	implements PasswordCredentialAdapter, OAuthIdentityAdapter
+{
+	db: D1DatabasePort
 	usersTable: string
 	oauthAccountsTable: string
 	sanitizeUser: (user: User | null) => User | null
@@ -50,7 +43,7 @@ export class D1UserAdapter extends UserAdapter implements PasswordCredentialAdap
 	}
 	allowedFields: string[]
 
-	constructor(db: D1DatabaseLike, options: D1UserAdapterOptions = {}) {
+	constructor(db: D1DatabasePort, options: D1UserAdapterOptions = {}) {
 		super()
 		this.db = db
 		this.usersTable = options.usersTable || 'users'
@@ -279,12 +272,14 @@ export class D1UserAdapter extends UserAdapter implements PasswordCredentialAdap
 		return this.sanitizeUser(this.mapUser(row))
 	}
 
-	async getUserByProviderId(provider: string, providerId: string): Promise<User | null> {
-		const sql = `SELECT u.* FROM ${this.oauthAccountsTable} o
-			JOIN ${this.usersTable} u ON o.${this.oauthColumns.userId} = u.${this.columns.id}
-			WHERE o.${this.oauthColumns.provider} = ? AND o.${this.oauthColumns.providerAccountId} = ? LIMIT 1`
-		const row = await this.db.prepare(sql).bind(provider, providerId).first()
-		return this.sanitizeUser(this.mapUser(row))
+	async getIdentity(provider: string, subject: string): Promise<OAuthIdentity | null> {
+		const sql = `SELECT ${this.oauthColumns.userId} AS user_id
+			FROM ${this.oauthAccountsTable}
+			WHERE ${this.oauthColumns.provider} = ? AND ${this.oauthColumns.providerAccountId} = ? LIMIT 1`
+		const row = await this.db.prepare(sql).bind(provider, subject).first()
+		const userId = row?.['user_id']
+		if (typeof userId !== 'string' && typeof userId !== 'number') return null
+		return { userId: String(userId), provider, subject }
 	}
 
 	async updateUser(id: string, data: Partial<User> & Record<string, unknown>): Promise<User> {
@@ -320,19 +315,44 @@ export class D1UserAdapter extends UserAdapter implements PasswordCredentialAdap
 			.run()
 	}
 
-	async linkOAuthAccount(
-		userId: string,
-		provider: string,
-		providerAccountId: string
-	): Promise<void> {
+	async listIdentities(userId: string): Promise<OAuthIdentity[]> {
+		const sql = `SELECT ${this.oauthColumns.provider} AS provider, ${this.oauthColumns.providerAccountId} AS subject
+			FROM ${this.oauthAccountsTable}
+			WHERE ${this.oauthColumns.userId} = ? ORDER BY ${this.oauthColumns.provider} ASC`
+		const result = await this.db.prepare(sql).bind(this.coerceDbId(userId)).all()
+		return (result.results ?? []).flatMap((row) => {
+			const provider = row['provider']
+			const subject = row['subject']
+			return typeof provider === 'string' && typeof subject === 'string'
+				? [{ userId, provider, subject }]
+				: []
+		})
+	}
+
+	async linkIdentity({ userId, provider, subject }: OAuthIdentity): Promise<void> {
+		const existingForUser = (await this.listIdentities(userId)).find(
+			(identity) => identity.provider === provider
+		)
+		if (existingForUser && existingForUser.subject !== subject) {
+			throw new Error('OAuth provider is already linked to this user')
+		}
 		const sql = `INSERT INTO ${this.oauthAccountsTable} (${this.oauthColumns.userId}, ${this.oauthColumns.provider}, ${this.oauthColumns.providerAccountId}) VALUES (?, ?, ?)`
 		try {
-			await this.db.prepare(sql).bind(this.coerceDbId(userId), provider, providerAccountId).run()
+			await this.db.prepare(sql).bind(this.coerceDbId(userId), provider, subject).run()
 		} catch (error) {
-			const owner = await this.getUserByProviderId(provider, providerAccountId)
-			if (owner?.id === userId) return
+			const owner = await this.getIdentity(provider, subject)
+			if (owner?.userId === userId) return
 			throw error
 		}
+	}
+
+	async unlinkIdentity(userId: string, provider: string): Promise<void> {
+		await this.db
+			.prepare(
+				`DELETE FROM ${this.oauthAccountsTable} WHERE ${this.oauthColumns.userId} = ? AND ${this.oauthColumns.provider} = ?`
+			)
+			.bind(this.coerceDbId(userId), provider)
+			.run()
 	}
 
 	async findPasswordCredential(

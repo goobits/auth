@@ -7,16 +7,14 @@ import {
 	MemoryUserAdapter,
 	MemoryWebAuthnAdapter,
 	MockSessionAdapter,
-	MockTokenAdapter,
-	MockUserAdapter
+	MockTokenAdapter
 } from '../../src/adapters/memory/index.ts'
 import { MemoryMagicLinkAdapter as DirectMagicLinkAdapter } from '../../src/adapters/memory/magicLink.ts'
 import { MemoryMfaAdapter as DirectMfaAdapter } from '../../src/adapters/memory/mfa.ts'
 import { MemorySessionAdapter as DirectSessionAdapter } from '../../src/adapters/memory/session.ts'
 import {
 	MockSessionAdapter as DirectMockSessionAdapter,
-	MockTokenAdapter as DirectMockTokenAdapter,
-	MockUserAdapter as DirectMockUserAdapter
+	MockTokenAdapter as DirectMockTokenAdapter
 } from '../../src/adapters/memory/testing.ts'
 import { MemoryUserAdapter as DirectUserAdapter } from '../../src/adapters/memory/user.ts'
 import { MemoryWebAuthnAdapter as DirectWebAuthnAdapter } from '../../src/adapters/memory/webauthn.ts'
@@ -27,7 +25,7 @@ const owners = {
 	'magicLink.ts': ['StoredMagicLinkToken', 'MemoryMagicLinkAdapter'],
 	'mfa.ts': ['MemoryMfaAdapter'],
 	'session.ts': ['MemorySessionAdapter'],
-	'testing.ts': ['MockUserAdapter', 'MockSessionAdapter', 'MockTokenAdapter'],
+	'testing.ts': ['MockSessionAdapter', 'MockTokenAdapter'],
 	'user.ts': ['StoredUser', 'MemoryUserAdapter', 'sanitizeUser'],
 	'webauthn.ts': ['MemoryWebAuthnAdapter']
 } as const
@@ -41,7 +39,6 @@ describe('memory auth adapter boundaries', () => {
 		expect(MemoryWebAuthnAdapter).toBe(DirectWebAuthnAdapter)
 		expect(MockSessionAdapter).toBe(DirectMockSessionAdapter)
 		expect(MockTokenAdapter).toBe(DirectMockTokenAdapter)
-		expect(MockUserAdapter).toBe(DirectMockUserAdapter)
 	})
 
 	it('keeps every memory adapter concept with one owner', async () => {

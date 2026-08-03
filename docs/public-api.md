@@ -1,4 +1,4 @@
-# Public API (0.3.x)
+# Public API (0.4.x)
 
 Primary API: `new GoobitsAuth(...)`
 
@@ -11,7 +11,7 @@ outside SvelteKit should prefer low-level subpaths such as
 
 ## Stability
 
-The documented exports are stable for the `0.3.x` line. WebAuthn and MFA may
+The documented exports are stable for the `0.4.x` line. WebAuthn and MFA may
 receive additive options as platform behavior evolves.
 
 ## Main Entrypoint
@@ -37,6 +37,16 @@ declared through the executable
 - `auth.requireAuthRole(event, authRole | authRole[])`
 - `auth.emitSecurityEvent(event)` for custom auth-route outcomes
 - `auth.adapter` (raw adapters for advanced/manual usage)
+
+The catch-all facade accepts only canonical OAuth paths:
+
+- `GET /auth/signin/:provider`
+- `GET /auth/link/:provider`
+- `GET /auth/reauth/:provider`
+- `GET|POST /auth/callback/:provider`
+- `GET /auth/oauth/identities`
+- `POST /auth/oauth/unlink`
+- `POST /auth/signout`
 
 `requireAuthRole()` is for website/session route gates. It is not a product
 permission check for Spaces, Zones, Goobits, agents, or wormholes.
@@ -68,13 +78,13 @@ export const GET = async (event) => {
 `drizzleAdapter(db, { schema })` returns a single bundle with:
 
 - required: `session`, `user`, `passwordCredential`
-- optional (when tables exist): `oauthToken`, `verificationToken`, `magicLink`, `webauthn`
+- optional (when tables exist): `oauthIdentity`, `oauthToken`,
+  `verificationToken`, `magicLink`, `webauthn`
 
 When `oauthTokens` exists, configure `oauthTokenEncryption` with either a
 rotation-ready `encryptionKeyringJson` or an application `tokenCodec`. The table
 must enforce one row per `(userId, provider)` so stores and lazy key rotation use
-an atomic upsert. The old `oauthTokenEncryptionKey` option remains only as a
-migration bridge.
+an atomic upsert.
 
 Session adapters return bearer tokens only from `createSession()` and persist
 only their verifiers. Import `createSessionToken` and `hashSessionToken` from
@@ -156,6 +166,60 @@ lower product-specific limit, but not a higher one.
 Unknown and passwordless identifiers run one dummy-hash verification by default.
 Provide a precomputed `dummyPasswordHash` when cold-start latency matters, and
 always retain route-level rate limiting.
+
+## Authentication lifecycle
+
+`hooks.onAuthentication({ event, method, user })` is the shared application
+boundary for OAuth, magic-link, and passkey authentication. `method` is a
+discriminated union and includes the stable provider profile/tokens for OAuth,
+the verified email for magic links, or the verified credential ID and owner ID
+for passkeys.
+
+Known identities arrive with `user`. An unknown OAuth sign-in must return a
+real application user ID or a safe pending route. Auth never creates or links a
+user from a matching email claim. Provider linking is a separate authenticated
+flow configured with `oauth.authorizeIdentityChange`.
+That callback must also enforce the application's account-recovery policy,
+including refusing to unlink the account's last usable sign-in method.
+
+A pending OAuth route is application-owned: the lifecycle hook must first save
+a bounded, short-lived, single-use onboarding record and bind it to the browser
+session. Returning a route alone intentionally does not retain provider tokens
+or create identity ownership.
+
+`AppleProvider.verifyServerNotification(jwt)` verifies Apple's signed
+server-to-server account events and returns a bounded normalized event. The
+application must durably deduplicate `jwtId`, apply events only in increasing
+`eventTime` order for that stable subject, and own email, session, and account
+deletion policy.
+
+```ts
+hooks: {
+	onAuthentication: async ({ method, user }) => {
+		if (user) return { userId: user.id }
+		if (method.kind === 'oauth' && method.intent === 'sign-in') {
+			return { redirectTo: '/finish-signup' }
+		}
+	}
+},
+oauth: {
+	authorizeIdentityChange: ({ session, userId }) =>
+		session?.userId === userId &&
+		(hasRecentPrimaryAuthentication(session, { maxAgeMs: 5 * 60_000 }) ||
+			hasRecentMfaVerification(session, { maxAgeMs: 5 * 60_000 }))
+}
+```
+
+Use `createAuthClient()` from `@goobits/auth/client` for canonical OAuth URLs,
+identity listing/unlinking, and WebAuthn ceremonies. Set `basePath` when the
+facade is mounted somewhere other than `/auth`; API and OAuth URLs share that
+one source. `loginWithOAuth(provider, returnTo?)`, `linkOAuth(provider,
+returnTo?)`, and `reauthenticateWithOAuth(provider, returnTo?)` preserve only
+application-relative return paths at the server boundary. Conditional passkey
+autofill is opt-in through `loginWithPasskey({ conditional: true, signal })`;
+gate it with `supportsConditionalPasskeys()`. Put `webauthn` last after a normal
+autocomplete token, for example
+`autocomplete="username webauthn"`.
 
 Credential MFA is a two-step flow:
 

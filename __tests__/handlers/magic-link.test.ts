@@ -329,7 +329,7 @@ describe('magic link handlers', () => {
 		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
 	})
 
-	it('creates a session when onLogin returns a userId', async () => {
+	it('creates a session when the authentication lifecycle returns a userId', async () => {
 		const magicLinkAdapter = createMagicLinkAdapter()
 		const sendEmail = vi.fn()
 		const sessionAdapter = {
@@ -349,10 +349,11 @@ describe('magic link handlers', () => {
 		expect(await requestResponse.json()).toEqual({ ok: true })
 		const token = sendEmail.mock.calls[0]?.[0].token
 
+		const onAuthentication = vi.fn(async () => ({ userId: 'hook-user' }))
 		const verifyHandler = createTestMagicLinkVerifyHandler({
 			magicLinkAdapter,
 			sessionAdapter,
-			onLogin: async () => ({ userId: 'hook-user' }),
+			onAuthentication,
 			requireUserConfirmation: false
 		})
 
@@ -360,6 +361,12 @@ describe('magic link handlers', () => {
 		const payload = await verifyResponse.json()
 
 		expect(payload.ok).toBe(true)
+		expect(onAuthentication).toHaveBeenCalledWith(
+			expect.objectContaining({
+				method: { kind: 'magic-link', email: 'hook@example.com' },
+				user: null
+			})
+		)
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith('hook-user')
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
 	})
@@ -387,7 +394,7 @@ describe('magic link handlers', () => {
 		const verifyHandler = createTestMagicLinkVerifyHandler({
 			magicLinkAdapter,
 			sessionAdapter,
-			onLogin: async () => undefined,
+			onAuthentication: async () => undefined,
 			requireUserConfirmation: false
 		})
 

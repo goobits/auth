@@ -20,7 +20,7 @@ export class CookieTokenAdapter extends TokenAdapter {
 	/**
 	 * @param {Object} options - Configuration options
 	 * @param {string} options.cookieName - Cookie name for storing tokens
-	 * @param {string} options.encryptionKeyringJson - Rotation-ready AES-GCM keyring JSON
+	 * @param {string} options.encryptionKeyringJson - Rotation-ready AES-GCM keyring JSON.
 	 * @param {boolean} [options.secureCookies=true] - Use secure cookies
 	 * @param {number} [options.maxAge=604800] - Cookie max age in seconds (default: 7 days)
 	 */

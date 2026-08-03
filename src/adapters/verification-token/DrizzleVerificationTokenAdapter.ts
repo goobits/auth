@@ -11,7 +11,10 @@ import {
 	requireColumn,
 	requireCondition
 } from '../drizzleTypes.ts'
-import { VerificationTokenAdapter } from './VerificationTokenAdapter.ts'
+import {
+	VerificationTokenAdapter,
+	type VerificationTokenRecord
+} from './VerificationTokenAdapter.ts'
 
 type TokensTable = DrizzleTable & {
 	id: DrizzleTable[string]
@@ -24,11 +27,6 @@ type TokensTable = DrizzleTable & {
 
 type UsersTable = DrizzleTable & {
 	id: DrizzleTable[string]
-}
-
-type TokenUserRecord = {
-	token: VerificationToken
-	user: User
 }
 
 function isDrizzleJson(value: unknown): value is DrizzleJson {
@@ -192,7 +190,7 @@ export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
 	}: {
 		token: string
 		type: string
-	}): Promise<TokenUserRecord | null> {
+	}): Promise<VerificationTokenRecord<User> | null> {
 		const [record] = await this.db
 			.select({
 				token: this.tokensTable,
@@ -231,7 +229,7 @@ export class DrizzleVerificationTokenAdapter extends VerificationTokenAdapter {
 	}: {
 		token: string
 		type: string
-	}): Promise<TokenUserRecord | null> {
+	}): Promise<VerificationTokenRecord<User> | null> {
 		// Atomic delete-returning closes the TOCTOU race: only one caller
 		// gets the row back, even under concurrent verifies.
 		const rows = await this.db

@@ -1,18 +1,44 @@
 # Changelog
 
-<!-- CHANGELOG audit cutoff: 2026-06-24. commit 9037d71 on main. -->
+<!-- CHANGELOG audit cutoff: 2026-08-02. commit 6d654d5c on main. -->
 
 ## [Unreleased]
 
-### UI
+### 🌟 Highlights
 
-- Added `@goobits/auth/ui/qr-code` so QR-only consumers do not initialize the auth session store.
-- Backup-code dialogs now contain keyboard focus through `@goobits/keyboard`,
-  restore the opener focus, reset transient state on every opening, expose a
-  labelled dialog, and provide 44px minimum action targets.
+- 👤 OAuth identity ownership now uses stable provider subjects and explicit
+  sign-in, link, reauthentication, and unlink flows.
+- 👤 Sessions persist only bearer-token verifiers and expose separate
+  management handles.
+- 👤 Password hashes cross only the dedicated credential capability.
+- 👤 MFA, passkey, and OAuth identity changes require application-owned fresh
+  authorization.
+- 📦 Node and Worker distributions publish compiled runtime entrypoints with
+  package smoke coverage.
+
+### ✨ Added
+
+- 🧩 The `@goobits/auth/ui/qr-code` subpath lets QR-only consumers avoid
+  initializing the auth session store.
+- 🪟 Backup-code dialogs now contain keyboard focus through their package-private
+  modal boundary, restore the opener focus, reset transient state on every
+  opening, expose a labelled dialog, and provide 44px minimum action targets.
+- 👤 Conditional passkey mediation is available through a capability probe and
+  abortable client login ceremony.
+
+### 🔧 Changed
+
+- 🧭 `loginWithOAuth` now accepts the same optional application-relative return
+  path as provider linking and reauthentication.
+- 👤 ⚠️ Managed authentication hooks now use one typed `onAuthentication`
+  lifecycle, and OAuth persistence uses the dedicated `OAuthIdentityAdapter`.
+- 👤 ⚠️ OAuth uses only canonical sign-in, link, reauthentication, callback,
+  identity-management, and signout routes.
 
 ### 🔒 Security
 
+- 🪪 OAuth callbacks reject provider subjects whose surrounding whitespace would
+  change stable identity ownership.
 - 🔄 Added a principal-bound session-assurance rotator that refreshes primary
   or MFA verification independently while preserving trusted session context.
 - 🍪 Built-in session adapters now persist only SHA-256 verifiers, return bearer
@@ -86,8 +112,17 @@
   undersized chains fail closed.
 - 🧱 Managed forms use Security's canonical `csrf_token` field. Optional CSRF
   mode now validates unsafe requests whenever its CSRF cookie is present.
-- 🍎 Apple sign-in rejects both boolean and string forms of an explicitly
-  unverified email claim.
+- 🍎 Apple sign-in requires a signed email-verification claim in either the
+  boolean or string form Apple emits.
+- 👤 OAuth sign-in never selects an account by email; provider linking and
+  unlinking require fresh authorization and revoke retained tokens first.
+- 🍎 Apple ID tokens are verified with issuer, audience, time, nonce, and
+  bounded JWKS checks; Google identity is sourced from the OIDC `sub` claim.
+- 🍎 Apple server-to-server account notifications have one verified, bounded
+  parser while applications retain durable replay, ordering, and deletion policy.
+- 🧭 OAuth state, PKCE, Google exchange, and Apple client-secret signing now use
+  Web Crypto and bounded Fetch requests; the deprecated `arctic` dependency
+  and its compatibility branches were removed.
 - 📦 Node request streams now use Security's shared bounded body reader with a
   1 MiB default ceiling.
 

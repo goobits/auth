@@ -6,6 +6,7 @@ const commonEntries = [
 	'src/adapters/database/index.ts',
 	'src/adapters/session/index.ts',
 	'src/adapters/oauth-token/index.ts',
+	'src/adapters/oauth-identity/index.ts',
 	'src/adapters/drizzle/index.ts',
 	'src/adapters/memory/index.ts',
 	'src/adapters/verification-token/index.ts',

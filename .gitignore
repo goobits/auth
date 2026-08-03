@@ -29,7 +29,9 @@ Thumbs.db
 # Test coverage
 coverage
 .nyc_output
-.codeatlas
+.codeatlas/*
+!.codeatlas/baselines/
+!.codeatlas/baselines/public-api.json
 playwright-report
 test-results
 

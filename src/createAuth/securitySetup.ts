@@ -69,17 +69,6 @@ function resolveRateLimitWindows(
 	override: AuthSecurityConfig['rateLimit']
 ) {
 	if (override?.windows) return override.windows.map((window) => ({ ...window }))
-	if (override?.max !== undefined || override?.windowMs !== undefined) {
-		const fallback = base?.windows?.[0] ?? getAuthRateLimitWindows('login')[0]
-		if (!fallback) throw new Error('Auth rate-limit policy requires at least one window')
-		return [
-			{
-				name: 'auth:custom',
-				maxEvents: override.max ?? fallback.maxEvents,
-				windowMs: override.windowMs ?? fallback.windowMs
-			}
-		]
-	}
 	return (base?.windows ?? getAuthRateLimitWindows('login')).map((window) => ({ ...window }))
 }
 
@@ -130,11 +119,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 	const profile = config.profile ?? 'secure'
 	const base = PROFILE_DEFAULTS[profile]
 	const rateLimitWindows = resolveRateLimitWindows(base.rateLimit, config.security?.rateLimit)
-	const hasCustomRateLimitWindows = Boolean(
-		config.security?.rateLimit?.windows ||
-		config.security?.rateLimit?.max !== undefined ||
-		config.security?.rateLimit?.windowMs !== undefined
-	)
+	const hasCustomRateLimitWindows = Boolean(config.security?.rateLimit?.windows)
 	const flowWindows = (flow: Parameters<typeof getAuthRateLimitWindows>[0]) =>
 		hasCustomRateLimitWindows ? rateLimitWindows : getAuthRateLimitWindows(flow)
 	const merged: AuthSecurityConfig = {
@@ -206,9 +191,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			windows: rateLimitWindows,
 			keyPrefix: merged.rateLimit?.keyPrefix ?? 'auth',
 			trustedProxyHeaders: resolveTrustedProxyHeaders(merged.rateLimit),
-			...(forwardedForTrustedProxyHops !== undefined
-				? { forwardedForTrustedProxyHops }
-				: {}),
+			...(forwardedForTrustedProxyHops !== undefined ? { forwardedForTrustedProxyHops } : {}),
 			...(config.logger ? { logger: config.logger } : {}),
 			...(merged.rateLimit?.store ? { store: merged.rateLimit.store } : {})
 		},
@@ -225,6 +208,14 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			'oauth.callback': {
 				csrf: 'off',
 				rateLimit: 'optional',
+				rateLimitWindows: flowWindows('default')
+			},
+			'oauth.identities.list': {
+				csrf: 'off',
+				rateLimitWindows: flowWindows('default')
+			},
+			'oauth.identity.unlink': {
+				csrf: merged.csrf?.mode ?? 'optional',
 				rateLimitWindows: flowWindows('default')
 			},
 			'auth.logout': {
@@ -426,6 +417,20 @@ export function applyPolicies(handlers: AuthHandlers, security: ResolvedSecurity
 			revoke: applySecurityPolicy({
 				handler: handlers.sessions.revoke,
 				routeId: 'sessions.revoke',
+				settings: security
+			})
+		}
+	}
+	if (handlers.oauth) {
+		wrapped.oauth = {
+			identities: applySecurityPolicy({
+				handler: handlers.oauth.identities,
+				routeId: 'oauth.identities.list',
+				settings: security
+			}),
+			unlink: applySecurityPolicy({
+				handler: handlers.oauth.unlink,
+				routeId: 'oauth.identity.unlink',
 				settings: security
 			})
 		}

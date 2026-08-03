@@ -30,6 +30,9 @@ describe('pg auth adapters', () => {
 			'ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS mfa_verified_at'
 		)
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_oauth_accounts')
+		expect(pgAuthSchemaSql).toContain(
+			'CREATE UNIQUE INDEX IF NOT EXISTS auth_oauth_accounts_user_provider_idx'
+		)
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_mfa_factors')
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_mfa_backup_codes')
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_webauthn_challenges')
@@ -123,6 +126,9 @@ describe('pg auth adapters', () => {
 	it('never reassigns an existing PostgreSQL OAuth identity', async () => {
 		const db: PgPoolLike = {
 			async query(text) {
+				if (text.includes('SELECT provider, provider_account_id')) {
+					return { rows: [] }
+				}
 				if (text.includes('INSERT INTO auth_oauth_accounts')) {
 					return { rows: [{ user_id: 'owner-1' }] }
 				}
@@ -137,11 +143,19 @@ describe('pg auth adapters', () => {
 		})
 
 		await expect(
-			adapters.user.linkOAuthAccount('owner-1', 'google', 'provider-1')
+			adapters.oauthIdentity.linkIdentity({
+				userId: 'owner-1',
+				provider: 'google',
+				subject: 'provider-1'
+			})
 		).resolves.toBeUndefined()
-		await expect(adapters.user.linkOAuthAccount('owner-2', 'google', 'provider-1')).rejects.toThrow(
-			'already linked'
-		)
+		await expect(
+			adapters.oauthIdentity.linkIdentity({
+				userId: 'owner-2',
+				provider: 'google',
+				subject: 'provider-1'
+			})
+		).rejects.toThrow('already linked')
 	})
 
 	it('atomically consumes postgres verification tokens', async () => {

@@ -12,7 +12,7 @@ export type PasswordHashScheme = {
 }
 
 /** Result consumed by CredentialsProvider for transparent hash upgrades. */
-export type PasswordMigrationVerificationResult = {
+export type PasswordVerificationResult = {
 	valid: boolean
 	needsRehash?: boolean
 }
@@ -25,7 +25,7 @@ export type PasswordMigrationVerificationResult = {
 export function createPasswordMigrationVerifier(options: {
 	current: PasswordHashScheme
 	legacy?: readonly PasswordHashScheme[]
-}): (storedHash: string, password: string) => Promise<PasswordMigrationVerificationResult> {
+}): (storedHash: string, password: string) => Promise<PasswordVerificationResult> {
 	const schemes = [options.current, ...(options.legacy ?? [])]
 
 	return async (storedHash, password) => {

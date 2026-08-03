@@ -7,7 +7,7 @@ export {
 	createPasswordMigrationVerifier,
 	type PasswordHashScheme,
 	type PasswordHashVerifier,
-	type PasswordMigrationVerificationResult
+	type PasswordVerificationResult
 } from './migration.ts'
 
 /**

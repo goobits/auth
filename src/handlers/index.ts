@@ -2,6 +2,10 @@
 export { createCallbackHandler } from './callback.ts'
 export { createLoginHandler } from './login.ts'
 export { createLogoutAction, createLogoutHandler } from './logout.ts'
+export {
+	createOAuthIdentityListHandler,
+	createOAuthIdentityUnlinkHandler
+} from './oauthIdentities.ts'
 
 // Credentials handlers
 export {

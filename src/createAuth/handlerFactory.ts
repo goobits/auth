@@ -15,8 +15,13 @@ import {
 	createMfaVerifyHandler
 } from '../handlers/mfa.ts'
 import { ensureSessionAfterLogin } from '../handlers/sessionLifecycle.ts'
+import { rotateSessionAssurance } from '../handlers/_assuredSession.ts'
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
 import { createSessionListHandler, createSessionRevokeHandler } from '../handlers/sessions.ts'
+import {
+	createOAuthIdentityListHandler,
+	createOAuthIdentityUnlinkHandler
+} from '../handlers/oauthIdentities.ts'
 import { createSvelteKitCsrf } from '@goobits/security/csrf/sveltekit'
 import {
 	createWebAuthnLoginOptionsHandler,
@@ -42,7 +47,6 @@ import type {
 	AuthConfig,
 	AuthHandlers,
 	AuthLocals,
-	AuthLoginResult,
 	AuthRoutes,
 	MagicLinkConfig,
 	OAuthProviderConfig,
@@ -50,19 +54,11 @@ import type {
 	RequestEventLike
 } from '../types/auth.ts'
 import type { User } from '../types/index.ts'
+import type { OAuthFlowContext } from '../utils/oauth.ts'
 import { jsonResponse } from '../utils/http.ts'
+import { isSafeRedirectPath } from '../utils/redirect.ts'
 import type { ResolvedDefaults } from './config.ts'
 import type { ResolvedSecurity } from './securitySetup.ts'
-
-function resolveOnLoginUserId(
-	hookResult: AuthLoginResult,
-	fallbackUserId: string | null
-): string | null {
-	if (hookResult && typeof hookResult === 'object' && hookResult['userId']) {
-		return String(hookResult['userId'])
-	}
-	return fallbackUserId
-}
 
 function normalizeMagicLinkConfig(
 	magicLink: MagicLinkConfig,
@@ -102,8 +98,8 @@ function normalizeMagicLinkConfig(
 		...(hooks.sanitizeUser !== undefined ? { sanitizeUser: hooks.sanitizeUser } : {}),
 		...(settings.key !== undefined ? { key: settings.key } : {})
 	}
-	const onLogin = hooks.onLogin ?? globalHooks?.onLogin
-	return onLogin ? { ...normalized, onLogin } : normalized
+	const onAuthentication = globalHooks?.onAuthentication
+	return onAuthentication ? { ...normalized, onAuthentication } : normalized
 }
 
 function asJsonHandler(
@@ -127,15 +123,14 @@ export function createHandlers(
 		sessions,
 		sanitizeUser = (user: User | null) => user
 	} = config
-	const {
-		urlConfig,
-		cookieConfig,
-		autoCreateSession,
-		requireVerifiedEmailForLinking,
-		isAuthenticated
-	} = defaults
+	const { urlConfig, cookieConfig, autoCreateSession, isAuthenticated } = defaults
 	const onLoginMode: OnLoginMode = hooks.onLoginMode ?? 'augment'
 	const hasProviders = Object.keys(providers).length > 0
+	const providerInstances = Object.fromEntries(
+		Object.entries(providers as Record<string, OAuthProviderConfig>).map(
+			([name, providerConfig]) => [name, providerConfig.provider]
+		)
+	)
 	const csrf = createSvelteKitCsrf({
 		cookieName: security.csrf.cookieName,
 		headerName: security.csrf.headerName,
@@ -154,77 +149,149 @@ export function createHandlers(
 	let callbackHandler: AuthHandlers['callback']
 
 	if (hasProviders) {
+		const userAdapter = adapters.user!
+		const identityAdapter = adapters.oauthIdentity!
 		loginHandler = createLoginHandler({
 			providers,
 			redirectAfterLogin: urlConfig.afterLogin,
 			secureCookies: cookieConfig.secure,
-			isAuthenticated
+			isAuthenticated,
+			...(config.oauth ? { authorizeIdentityChange: config.oauth.authorizeIdentityChange } : {})
 		})
 
 		const callbackConfig: Parameters<typeof createCallbackHandler>[0] = {
-			providers: Object.fromEntries(
-				Object.entries(providers as Record<string, OAuthProviderConfig>).map(
-					([name, providerConfig]) => [name, providerConfig.provider]
-				)
-			),
+			providers: providerInstances,
 			redirectAfterLogin: urlConfig.afterLogin,
-			isAuthenticated,
 			...(config.logger ? { logger: config.logger } : {}),
-			onAuthenticated: async (event, profile, tokens) => {
+			onAuthenticated: async (event, profile, tokens, context: OAuthFlowContext) => {
 				const providerName = String(event.params['provider'] ?? '')
-				let user = null
-				let needsProviderLink = false
+				const subject = profile.id.trim()
+				if (!subject || subject !== profile.id || subject.length > 512) {
+					throw new AuthPrincipalResolutionError('Invalid provider subject', 400)
+				}
+				const currentUser = event.locals.user ?? null
+				const currentSession = event.locals.session ?? null
+				const identity = await identityAdapter.getIdentity(providerName, subject)
+				let user = identity ? await userAdapter.getUserById(identity.userId) : null
+				if (identity && !user) throw new AuthPrincipalResolutionError()
 
-				if (adapters.user) {
-					user = await adapters.user.getUserByProviderId(providerName, profile.id)
-					needsProviderLink = !user
-
-					if (!user && profile.email) {
-						const existingByEmail = await adapters.user.getUserByEmail(profile.email)
-						if (existingByEmail) {
-							if (profile.verified_email !== true) {
-								throw new AuthPrincipalResolutionError(
-									'Provider must verify the email before OAuth account linking',
-									403
-								)
-							}
-							if (requireVerifiedEmailForLinking && existingByEmail.emailVerified !== true) {
-								throw new AuthPrincipalResolutionError(
-									'Existing account email must be verified before OAuth linking',
-									403
-								)
-							}
-							user = existingByEmail
+				if (context.intent === 'sign-in') {
+					if (isAuthenticated(event.locals)) {
+						throw new AuthPrincipalResolutionError('Sign-in session changed; try again', 409)
+					}
+				} else {
+					if (
+						!currentUser ||
+						!currentSession ||
+						currentSession.userId !== currentUser.id ||
+						context.userId !== currentUser.id
+					) {
+						throw new AuthPrincipalResolutionError('Authentication required', 401)
+					}
+					if (context.intent === 'reauth') {
+						if (!identity || identity.userId !== currentUser.id) {
+							throw new AuthPrincipalResolutionError('Provider is not connected', 403)
 						}
-					}
-					if (!user) {
-						user = await adapters.user.createUser(profile)
-					}
-					if (user && needsProviderLink && adapters.user.linkOAuthAccount) {
-						await adapters.user.linkOAuthAccount(user.id, providerName, profile.id)
+						user = currentUser
+					} else {
+						if (!config.oauth) {
+							throw new AuthPrincipalResolutionError('Provider linking is unavailable', 403)
+						}
+						if (
+							!(await config.oauth.authorizeIdentityChange({
+								action: 'oauth.link',
+								request: event.request,
+								userId: currentUser.id,
+								session: currentSession,
+								provider: providerName
+							}))
+						) {
+							throw new AuthPrincipalResolutionError('Fresh authentication required', 403)
+						}
+						if (identity && identity.userId !== currentUser.id) {
+							throw new AuthPrincipalResolutionError(
+								'Provider is already connected to another account',
+								409
+							)
+						}
+						user = currentUser
 					}
 				}
 
-				let userId = user?.id ? String(user.id) : null
-				if (hooks.onLogin) {
-					const hookResult = await hooks.onLogin(event, profile, tokens, user)
-					userId = resolveOnLoginUserId(hookResult, userId)
+				const lifecycleResult = await hooks.onAuthentication?.({
+					event,
+					method: {
+						kind: 'oauth',
+						intent: context.intent,
+						provider: providerName,
+						profile,
+						tokens
+					},
+					user
+				})
+				const resolvedUserId = lifecycleResult?.userId
+					? String(lifecycleResult.userId)
+					: (user?.id ?? null)
+				const redirectTo = lifecycleResult?.redirectTo
+				if (redirectTo && !isSafeRedirectPath(redirectTo)) {
+					throw new AuthPrincipalResolutionError('Invalid authentication redirect', 400)
 				}
-				if (adapters.oauthToken) {
-					if (!userId) {
+
+				if (!resolvedUserId) {
+					if (redirectTo) return redirectTo
+					throw new AuthPrincipalResolutionError()
+				}
+				if (identity && identity.userId !== resolvedUserId) {
+					throw new AuthPrincipalResolutionError()
+				}
+				if (context.intent !== 'sign-in' && resolvedUserId !== currentUser?.id) {
+					throw new AuthPrincipalResolutionError()
+				}
+
+				let linked = false
+				if (!identity) {
+					const resolvedUser = user ?? (await userAdapter.getUserById(resolvedUserId))
+					if (!resolvedUser || resolvedUser.id !== resolvedUserId) {
 						throw new AuthPrincipalResolutionError()
 					}
-					await adapters.oauthToken.storeTokens(userId, providerName, tokens)
+					await identityAdapter.linkIdentity({
+						userId: resolvedUserId,
+						provider: providerName,
+						subject
+					})
+					linked = true
+				}
+				if (adapters.oauthToken) {
+					await adapters.oauthToken.storeTokens(resolvedUserId, providerName, tokens)
+				}
+				if (linked) {
+					await config.oauth?.hooks?.onLinked?.({
+						userId: resolvedUserId,
+						provider: providerName,
+						subject,
+						event
+					})
 				}
 
-				await ensureSessionAfterLogin({
-					event,
-					sessionAdapter: adapters.session,
-					userId,
-					...(hooks.getSessionMetadata ? { getSessionMetadata: hooks.getSessionMetadata } : {}),
-					autoCreateSession,
-					onLoginMode
-				})
+				if (context.intent === 'sign-in') {
+					await ensureSessionAfterLogin({
+						event,
+						sessionAdapter: adapters.session,
+						userId: resolvedUserId,
+						...(hooks.getSessionMetadata ? { getSessionMetadata: hooks.getSessionMetadata } : {}),
+						autoCreateSession,
+						onLoginMode
+					})
+				} else if (context.intent === 'reauth' && currentSession) {
+					await rotateSessionAssurance({
+						sessionAdapter: adapters.session,
+						assurance: 'primary',
+						cookies: event.cookies,
+						currentSession,
+						userId: resolvedUserId
+					})
+				}
+				return redirectTo
 			},
 			...(hooks.onError
 				? {
@@ -368,9 +435,8 @@ export function createHandlers(
 			...(security.audit.emitter ? { emitSecurityEvent: security.audit.emitter } : {}),
 			...(adapters.user ? { userAdapter: adapters.user } : {})
 		}
-		const webauthnOnLogin = webauthn.hooks?.onLogin ?? hooks.onLogin
-		if (webauthnOnLogin) {
-			loginVerifyConfig.onLogin = webauthnOnLogin
+		if (hooks.onAuthentication) {
+			loginVerifyConfig.onAuthentication = hooks.onAuthentication
 		}
 		const listCredentialsConfig: WebAuthnListCredentialsHandlerConfig = {
 			webauthnAdapter: adapters.webauthn!
@@ -446,6 +512,21 @@ export function createHandlers(
 		}
 	}
 
+	if (hasProviders && config.oauth) {
+		handlers.oauth = {
+			identities: createOAuthIdentityListHandler({
+				identityAdapter: adapters.oauthIdentity!
+			}),
+			unlink: createOAuthIdentityUnlinkHandler({
+				identityAdapter: adapters.oauthIdentity!,
+				providers: providerInstances,
+				authorizeIdentityChange: config.oauth.authorizeIdentityChange,
+				...(adapters.oauthToken ? { tokenAdapter: adapters.oauthToken } : {}),
+				...(config.oauth.hooks ? { hooks: config.oauth.hooks } : {})
+			})
+		}
+	}
+
 	return handlers
 }
 
@@ -457,7 +538,7 @@ export function buildRoutes(handlers: AuthHandlers): AuthRoutes {
 		},
 		callback: () => {
 			if (!handlers.callback) throw new Error('OAuth callback handler not configured')
-			return { GET: handlers.callback }
+			return { GET: handlers.callback, POST: handlers.callback }
 		},
 		logout: () => ({ POST: handlers.logout }),
 		magicLink: () => {
@@ -526,6 +607,14 @@ export function buildRoutes(handlers: AuthHandlers): AuthRoutes {
 		sessions: () => {
 			if (!handlers.sessions) throw new Error('Session handlers not configured')
 			return { GET: handlers.sessions.list, POST: handlers.sessions.revoke }
+		},
+		oauthIdentities: () => {
+			if (!handlers.oauth) throw new Error('OAuth identity handlers not configured')
+			return { GET: handlers.oauth.identities }
+		},
+		oauthUnlink: () => {
+			if (!handlers.oauth) throw new Error('OAuth identity handlers not configured')
+			return { POST: handlers.oauth.unlink }
 		}
 	}
 }

@@ -86,6 +86,55 @@ describe('WebAuthn authentication', () => {
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalledOnce()
 	})
 
+	it('passes the verified credential owner through the shared lifecycle', async () => {
+		const adapter = createWebAuthnAdapter()
+		await addCredential(adapter)
+		await adapter.createChallenge({
+			challengeId: 'login-lifecycle',
+			userId: null,
+			challenge: 'authentication-challenge',
+			type: 'authentication',
+			expiresAt: new Date(Date.now() + 60_000)
+		})
+		const sessionAdapter = {
+			createSession: vi.fn(async (userId: string) => ({ id: 'new-session', userId })),
+			setSessionCookie: vi.fn()
+		}
+		const onAuthentication = vi.fn(async () => ({ userId: TEST_USER.id }))
+		const handler = createWebAuthnLoginVerifyHandler({
+			webauthnAdapter: adapter,
+			sessionAdapter,
+			onAuthentication,
+			rpID: 'example.com',
+			origin: 'http://localhost'
+		})
+
+		const response = await handler(
+			createEvent({
+				body: {
+					challengeId: 'login-lifecycle',
+					credential: { id: 'AQIDBAcI', response: {} }
+				}
+			})
+		)
+
+		expect(response.status).toBe(200)
+		expect(onAuthentication).toHaveBeenCalledWith(
+			expect.objectContaining({
+				method: {
+					kind: 'passkey',
+					credentialId: 'AQIDBAcI',
+					userId: TEST_USER.id
+				},
+				user: null
+			})
+		)
+		expect(sessionAdapter.createSession).toHaveBeenCalledWith(
+			TEST_USER.id,
+			expect.objectContaining({ mfaVerifiedAt: expect.any(Date) })
+		)
+	})
+
 	it('rejects principal-bound login challenges and counter regressions', async () => {
 		const adapter = createWebAuthnAdapter()
 		await addCredential(adapter, { counter: 7 })

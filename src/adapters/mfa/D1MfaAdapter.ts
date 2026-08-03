@@ -1,30 +1,7 @@
 import type { MfaStatus } from '../../types/core.ts'
+import { isD1BatchDatabasePort, type D1BatchDatabasePort, type D1DatabasePort } from '../_d1Port.ts'
 import { assertD1Identifiers } from '../_d1Sql.ts'
 import { MfaAdapter, type MfaSecretCodec } from './MfaAdapter.ts'
-
-type D1Row = Record<string, unknown>
-
-type D1Result<T = D1Row> = {
-	results?: T[]
-	success?: boolean
-	meta?: { changes?: number }
-}
-
-type D1PreparedStatement = {
-	bind: (...args: unknown[]) => D1PreparedStatement
-	first: <T = D1Row>() => Promise<T | null>
-	all: <T = D1Row>() => Promise<{ results?: T[] }>
-	run: () => Promise<{ meta: { last_row_id: number; changes: number } }>
-}
-
-type D1DatabaseLike = {
-	prepare: (sql: string) => D1PreparedStatement
-	batch: <T = D1Row>(statements: D1PreparedStatement[]) => Promise<D1Result<T>[]>
-}
-
-type D1DatabaseInput = Omit<D1DatabaseLike, 'batch'> & {
-	batch?: D1DatabaseLike['batch']
-}
 
 type D1MfaAdapterOptions = {
 	secretCodec: MfaSecretCodec
@@ -52,7 +29,7 @@ function parseDate(value: unknown): Date | null {
 
 /** Cloudflare D1 MFA adapter with atomic factor changes and encrypted TOTP secrets. */
 export class D1MfaAdapter extends MfaAdapter {
-	private readonly db: D1DatabaseLike
+	private readonly db: D1BatchDatabasePort
 	private readonly secretCodec: MfaSecretCodec
 	private readonly factorsTable: string
 	private readonly backupCodesTable: string
@@ -68,9 +45,9 @@ export class D1MfaAdapter extends MfaAdapter {
 		createdAt: string
 	}
 
-	constructor(db: D1DatabaseInput, options: D1MfaAdapterOptions) {
+	constructor(db: D1DatabasePort, options: D1MfaAdapterOptions) {
 		super()
-		if (typeof db?.batch !== 'function') {
+		if (!isD1BatchDatabasePort(db)) {
 			throw new Error('@goobits/auth: D1MfaAdapter requires transactional batch support')
 		}
 		if (
@@ -79,7 +56,7 @@ export class D1MfaAdapter extends MfaAdapter {
 		) {
 			throw new Error('@goobits/auth: D1MfaAdapter requires an MFA secret encryption codec')
 		}
-		this.db = db as D1DatabaseLike
+		this.db = db
 		this.secretCodec = options.secretCodec
 		this.factorsTable = options.factorsTable ?? 'auth_mfa_factors'
 		this.backupCodesTable = options.backupCodesTable ?? 'auth_mfa_backup_codes'

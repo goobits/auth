@@ -1,33 +1,22 @@
 import type { OAuthTokens } from '../../types/index.ts'
 import { resolveLogger, type Logger } from '../../_internal/logger.ts'
+import type { D1DatabasePort } from '../_d1Port.ts'
 import { assertD1Identifier } from '../_d1Sql.ts'
 import type { OAuthTokenCodec, OAuthTokenEncryptionOptions } from './OAuthTokenCodec.ts'
 import { resolveOAuthTokenCodec } from './_tokenEncryption.ts'
 import { openOAuthTokens, serializeOAuthTokens } from './_tokenPayload.ts'
 import { TokenAdapter } from './TokenAdapter.ts'
 
-type D1Value = string | number | boolean | null
-type D1Row = Record<string, D1Value>
-
-type D1DatabaseLike = {
-	prepare: (sql: string) => {
-		bind: (...args: D1Value[]) => {
-			run: () => Promise<void>
-			first: () => Promise<D1Row | null>
-		}
-	}
-}
-
 /** Cloudflare D1 token adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class D1TokenAdapter extends TokenAdapter {
-	private db: D1DatabaseLike
+	private db: D1DatabasePort
 	private tokensTable: string
 	private readonly tokenCodec: OAuthTokenCodec | null
 	private columns: { userId: string; provider: string; tokens: string }
 	private readonly logger: Logger
 
 	constructor(
-		db: D1DatabaseLike,
+		db: D1DatabasePort,
 		options: OAuthTokenEncryptionOptions & {
 			tokensTable?: string
 			columns?: Partial<Record<string, string>>
