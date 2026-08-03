@@ -19,6 +19,12 @@
   instances. Custom providers must call `super(name)` and retain credentials in
   ECMAScript `#private` fields.
 
+### 📦 Distribution
+
+- Node server bundlers can import `ARGON2_NATIVE_PACKAGE_IDS` from the
+  node-only `@goobits/auth/password/native-packages` subpath to externalize the
+  exact native Argon2 package set without duplicating dependency knowledge.
+
 ### 🔒 Security
 
 - 🍎 Apple JWKS refreshes now occur only for an unknown key ID, share one

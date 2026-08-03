@@ -39,7 +39,12 @@ const toEntryMap = (entries: string[], overrides: Record<string, string> = {}) =
 	)
 
 const nodeEntries = toEntryMap(
-	[...commonEntries, 'src/adapters/pg/index.ts', 'src/node/index.ts'],
+	[
+		...commonEntries,
+		'src/adapters/pg/index.ts',
+		'src/node/index.ts',
+		'src/password/nativePackages.ts'
+	],
 	{ 'password/index': 'src/password/index.node.ts' }
 )
 const workerEntries = toEntryMap(commonEntries, {

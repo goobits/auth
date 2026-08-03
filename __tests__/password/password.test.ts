@@ -8,6 +8,7 @@ import {
 	validatePasswordStrength,
 	verifyPassword
 } from '../../src/password/index.ts'
+import { ARGON2_NATIVE_PACKAGE_IDS } from '../../src/password/nativePackages.ts'
 
 const callHashPasswordUnsafe = (password: unknown) =>
 	Reflect.apply(hashPassword, undefined, [password]) as Promise<string>
@@ -20,6 +21,15 @@ const callValidatePasswordStrengthUnsafe = (password: unknown) =>
 	}
 
 describe('Password Utilities', () => {
+	it('publishes immutable native Argon2 package metadata for Node bundlers', () => {
+		expect(Object.isFrozen(ARGON2_NATIVE_PACKAGE_IDS)).toBe(true)
+		expect(ARGON2_NATIVE_PACKAGE_IDS[0]).toBe('@node-rs/argon2')
+		expect(new Set(ARGON2_NATIVE_PACKAGE_IDS).size).toBe(ARGON2_NATIVE_PACKAGE_IDS.length)
+		expect(
+			ARGON2_NATIVE_PACKAGE_IDS.every((packageId) => packageId.startsWith('@node-rs/argon2'))
+		).toBe(true)
+	})
+
 	describe('createPasswordMigrationVerifier', () => {
 		const verifier = createPasswordMigrationVerifier({
 			current: {
