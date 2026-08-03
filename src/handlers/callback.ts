@@ -1,4 +1,5 @@
 import { error, redirect } from '@sveltejs/kit'
+import { BodyTooLargeError } from '@goobits/security/request-body'
 
 import { OAuth2RequestError } from '../_internal/oauth2.ts'
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
@@ -7,6 +8,7 @@ import type { OAuthProvider } from '../providers/OAuthProvider.ts'
 import type { RequestEventLike } from '../types/auth.ts'
 import type { OAuthProfile, OAuthTokens } from '../types/index.ts'
 import { handleOAuthCallback, type OAuthFlowContext } from '../utils/oauth.ts'
+import { readRequestFormData } from '../utils/http.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 
 type CallbackConfig = {
@@ -82,7 +84,7 @@ export function createCallbackHandler(config: CallbackConfig) {
 			let appleUserData: string | null = null
 			let overrideParams: { code: string | null; state: string | null } | null = null
 			if (providerInstance.callbackMode === 'form_post' && event.request.method === 'POST') {
-				const formData = await event.request.formData()
+				const formData = await readRequestFormData(event.request)
 				appleUserData = formData.get('user')?.toString() ?? null
 				overrideParams = {
 					code: formData.get('code')?.toString() ?? null,
@@ -115,6 +117,9 @@ export function createCallbackHandler(config: CallbackConfig) {
 
 			throw redirect(302, isSafeRedirectPath(resolvedRedirect) ? resolvedRedirect : '/')
 		} catch (err) {
+			if (err instanceof BodyTooLargeError) {
+				error(413, 'Request body too large')
+			}
 			// Handle OAuth2 errors
 			if (err instanceof OAuth2RequestError) {
 				error(400, 'OAuth authentication failed')

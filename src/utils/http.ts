@@ -1,9 +1,17 @@
 import { z } from 'zod'
+import { BodyTooLargeError, readFormDataBody, readJsonBody } from '@goobits/security/request-body'
+
+/** Reads an authentication form through Security's bounded Fetch-body owner. */
+export const readRequestFormData = (request: Request): Promise<FormData> =>
+	readFormDataBody(request)
 
 export async function parseRequestData(request: Request): Promise<Record<string, unknown>> {
 	const contentType = request.headers.get('content-type') || ''
 	if (contentType.includes('application/json')) {
-		const data = await request.json().catch(() => ({}))
+		const data = await readJsonBody(request).catch((error: unknown) => {
+			if (error instanceof BodyTooLargeError) throw error
+			return {}
+		})
 		if (!data || typeof data !== 'object') return {}
 		return data as Record<string, unknown>
 	}
@@ -11,7 +19,7 @@ export async function parseRequestData(request: Request): Promise<Record<string,
 		contentType.includes('application/x-www-form-urlencoded') ||
 		contentType.includes('multipart/form-data')
 	) {
-		const form = await request.formData()
+		const form = await readRequestFormData(request)
 		return Object.fromEntries(form.entries())
 	}
 	return {}

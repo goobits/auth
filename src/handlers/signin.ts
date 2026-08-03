@@ -7,6 +7,7 @@ import type { CredentialsProvider } from '../providers/CredentialsProvider.ts'
 import type { RequestEventLike } from '../types/auth.ts'
 import type { SessionMetadata, User } from '../types/index.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
+import { readRequestFormData } from '../utils/http.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 import { beginMfaLoginChallenge, type MfaLoginConfig } from './mfa.ts'
 import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
@@ -131,7 +132,7 @@ export function createSigninHandler(
 			}
 		}
 
-		const formData = await event.request.formData()
+		const formData = await readRequestFormData(event.request)
 		const identifierFieldName = fields?.identifier ?? identifierField ?? fields?.email ?? 'email'
 		const emailFieldName = fields?.email ?? 'email'
 		const passwordFieldName = fields?.password ?? 'password'

@@ -40,6 +40,8 @@
 
 ### 🔒 Security
 
+- 📦 Managed JSON and form endpoints now parse through Security's bounded
+  request-body readers and return an audited `413` when the limit is exceeded.
 - 🪪 OAuth callbacks reject provider subjects whose surrounding whitespace would
   change stable identity ownership.
 - 🔄 Added a principal-bound session-assurance rotator that refreshes primary

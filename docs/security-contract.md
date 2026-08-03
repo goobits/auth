@@ -38,6 +38,10 @@ Built-in forms use the Security-owned defaults: cookie `csrf-token`, header
 cookie-less unsafe requests alone, but once the CSRF cookie exists it requires a
 matching token instead of silently bypassing validation.
 
+Managed JSON, URL-encoded, and multipart form bodies are buffered only through
+Security's bounded Fetch readers. Requests over the shared limit receive `413`
+before an authentication handler processes their fields.
+
 ## Responsibilities
 
 - Library provides:

@@ -2,6 +2,7 @@ import { error as httpError, redirect } from '@sveltejs/kit'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MemoryCsrfStore } from '@goobits/security/csrf'
+import { BodyTooLargeError } from '@goobits/security/request-body'
 import { applySecurityPolicy } from '../../src/security/policy.ts'
 import type { RequestEventLike } from '../../src/types/auth.ts'
 import { createCookies, createRequestEvent } from '../testKit.ts'
@@ -400,6 +401,25 @@ describe('security policy wrapper', () => {
 		})
 		expect(emitter).toHaveBeenCalledWith(
 			expect.objectContaining({ name: 'auth.failure', severity: 'warn', status: 403 })
+		)
+	})
+
+	it('returns and audits bounded request-body failures as 413', async () => {
+		const emitter = vi.fn()
+		const handler = applySecurityPolicy({
+			handler: async () => {
+				throw new BodyTooLargeError(1_048_576)
+			},
+			routeId: 'webauthn.login.verify',
+			settings: createAuditSettings(emitter)
+		})
+
+		const response = await handler(createEvent() as Parameters<typeof handler>[0])
+
+		expect(response.status).toBe(413)
+		expect(await response.json()).toEqual({ ok: false, error: 'Request body too large' })
+		expect(emitter).toHaveBeenCalledWith(
+			expect.objectContaining({ name: 'auth.failure', severity: 'warn', status: 413 })
 		)
 	})
 })

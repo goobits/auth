@@ -8,7 +8,7 @@ import type {
 	CredentialMutationPort,
 	OAuthIdentityConfig
 } from '../types/auth.ts'
-import { jsonResponse } from '../utils/http.ts'
+import { jsonResponse, readRequestFormData } from '../utils/http.ts'
 
 type OAuthIdentityHandlerConfig = {
 	identityAdapter: OAuthIdentityAdapter
@@ -55,7 +55,7 @@ export function createOAuthIdentityUnlinkHandler(
 			return jsonResponse({ ok: false, error: 'Unauthorized' }, 401)
 		}
 		const authorizationRequest = event.request.clone()
-		const form = await event.request.formData()
+		const form = await readRequestFormData(event.request)
 		const provider = form.get('provider')?.toString() ?? ''
 		const providerInstance = config.providers[provider]
 		if (!providerInstance) {

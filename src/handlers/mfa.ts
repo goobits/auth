@@ -12,6 +12,7 @@ import {
 import { type AssuredSessionAdapter, rotateSessionAssurance } from './_assuredSession.ts'
 import { consumeMfaCredentialProof, verifyMfaCredential } from './_mfaCredential.ts'
 import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
+import { readRequestFormData } from '../utils/http.ts'
 
 const DEFAULT_LOGIN_CHALLENGE_COOKIE = 'goobits_mfa_login'
 const DEFAULT_LOGIN_CHALLENGE_TTL_MS = 5 * 60 * 1000
@@ -194,7 +195,7 @@ export function createMfaLoginVerifyHandler(
 
 		const userId = userIdFromRecord(inspected.user)
 		if (!userId) return { success: false, error: 'Invalid or expired login challenge' }
-		const formData = await event.request.formData()
+		const formData = await readRequestFormData(event.request)
 		const token = formData.get('token')?.toString() ?? ''
 		const backupCode = formData.get('backupCode')?.toString() ?? ''
 		const proof = await verifyMfaCredential({
@@ -312,7 +313,7 @@ export function createMfaVerifyHandler(
 		if (config.sessionAdapter && (!currentSession || currentSession.userId !== userId)) {
 			return { success: false, error: 'Unauthorized' }
 		}
-		const formData = await event.request.formData()
+		const formData = await readRequestFormData(event.request)
 		const token = formData.get('token')?.toString()
 		const secret = await store.getSecret(userId)
 		if (!secret) return { success: false, error: 'MFA enrollment not started' }
@@ -353,7 +354,7 @@ export function createMfaDisableHandler(config: MfaSecurityChangeConfig) {
 			return { success: false, error: 'Reauthentication required' }
 		}
 
-		const formData = await event.request.formData()
+		const formData = await readRequestFormData(event.request)
 		const token = formData.get('token')?.toString() ?? ''
 		const backupCode = formData.get('backupCode')?.toString() ?? ''
 		const proof = await verifyMfaCredential({ store, userId, token, backupCode })
@@ -378,7 +379,7 @@ export function createMfaStepUpHandler(
 		if (!userId || !currentSession || currentSession.userId !== userId) {
 			return { success: false, error: 'Unauthorized' }
 		}
-		const formData = await event.request.formData()
+		const formData = await readRequestFormData(event.request)
 		const proof = await verifyMfaCredential({
 			store: config.store,
 			userId,
@@ -406,7 +407,7 @@ export function createMfaBackupCodeHandler(config: MfaConfig) {
 	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
 		if (!userId) return { success: false, error: 'Unauthorized' }
-		const formData = await event.request.formData()
+		const formData = await readRequestFormData(event.request)
 		const code = formData.get('code')?.toString()
 		const hashedCodes = await store.getBackupCodes(userId)
 		const result = await verifyBackupCode({ code: code ?? '', hashedCodes })

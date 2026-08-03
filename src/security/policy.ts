@@ -8,6 +8,7 @@ import {
 import type { Logger } from '@goobits/security/logger'
 import type { CsrfTokenStore } from '@goobits/security/csrf'
 import { createSvelteKitCsrf } from '@goobits/security/csrf/sveltekit'
+import { BodyTooLargeError } from '@goobits/security/request-body'
 import type { AuthRequestHandler, RequestEventLike, TrustedProxyHeader } from '../types/auth.ts'
 import { resolvePlatformClientAddress } from '../utils/clientAddress.ts'
 import { type AuthEventEmitter, createAuthEvent } from './events.ts'
@@ -199,6 +200,10 @@ export function applySecurityPolicy({ handler, routeId, settings }: ApplyPolicyI
 			if (isRedirect(error)) {
 				await emit('auth.success', 'info', error.status)
 				throw error
+			}
+			if (error instanceof BodyTooLargeError) {
+				await emit('auth.failure', 'warn', 413, 'Request body too large')
+				return jsonError(413, 'Request body too large')
 			}
 
 			const status = isHttpError(error) ? error.status : 500

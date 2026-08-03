@@ -6,6 +6,7 @@ import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts
 import type { RequestEventLike } from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
+import { readRequestFormData } from '../utils/http.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 import { createVerificationToken, VERIFICATION_TOKEN_TYPES } from '../verification/index.ts'
 import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
@@ -127,7 +128,7 @@ export function createSignupHandler(
 			}
 		}
 
-		const formData = await event.request.formData()
+		const formData = await readRequestFormData(event.request)
 		const emailFieldName = fields?.email ?? 'email'
 		const passwordFieldName = fields?.password ?? 'password'
 		const nameFieldName = fields?.name ?? 'name'

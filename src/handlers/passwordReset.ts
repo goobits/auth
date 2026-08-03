@@ -18,6 +18,7 @@ import type { RequestEventLike } from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
+import { readRequestFormData } from '../utils/http.ts'
 import {
 	createVerificationToken,
 	hashVerificationToken,
@@ -94,7 +95,7 @@ export function createPasswordResetRequestHandler(
 			}
 		}
 
-		const formData = await event.request.formData()
+		const formData = await readRequestFormData(event.request)
 		const email = formData.get('email')?.toString()
 		const identifier = formData.get('identifier')?.toString().trim() || null
 
@@ -209,7 +210,7 @@ export function createPasswordResetConfirmHandler(
 			}
 		}
 
-		const formData = await event.request.formData()
+		const formData = await readRequestFormData(event.request)
 		const token = formData.get('token')?.toString()
 		const newPassword = formData.get('password')?.toString()
 
