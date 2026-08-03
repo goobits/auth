@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import type { SessionAdapter } from '../src/adapters/session/SessionAdapter.ts'
+import type { WebAuthnAdapter } from '../src/adapters/webauthn/WebAuthnAdapter.ts'
 import { MemoryUserAdapter } from '../src/adapters/memory/user.ts'
-import { GoobitsAuth } from '../src/GoobitsAuth.ts'
+import { GoobitsAuth, type GoobitsAuthConfig } from '../src/GoobitsAuth.ts'
 import type { OAuthProvider } from '../src/providers/OAuthProvider.ts'
 import type { AuthHandlers } from '../src/types/auth.ts'
 import type { Session, User } from '../src/types/index.ts'
@@ -103,6 +104,27 @@ function createRoutingHarness(basePath = '/auth') {
 }
 
 describe('GoobitsAuth', () => {
+	it('rejects storage-only WebAuthn adapters at the facade and runtime boundaries', () => {
+		const storageOnlyWebAuthn = {} as WebAuthnAdapter
+		const invalidConfig = {
+			adapter: {
+				session: createSessionAdapter({ session: null, user: null }),
+				webauthn: storageOnlyWebAuthn
+			},
+			webauthn: {
+				authorizeSecurityChange: async () => true,
+				origin: 'https://example.com',
+				rpID: 'example.com',
+				rpName: 'Example'
+			}
+		}
+
+		expectTypeOf(invalidConfig).not.toMatchTypeOf<GoobitsAuthConfig>()
+		expect(() => new GoobitsAuth(invalidConfig as never)).toThrow(
+			'atomic createCredentialWithinLimit adapter capability'
+		)
+	})
+
 	it('exposes named route factories from the core auth instance', () => {
 		const auth = new GoobitsAuth({
 			adapter: { session: createSessionAdapter({ session: null, user: null }) }

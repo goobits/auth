@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-08-03
+
+### 🔒 Security
+
+- 🔑 The primary `GoobitsAuthConfig` facade now preserves the feature-to-adapter
+  type correlation, and runtime configuration fails at startup when passkey
+  registration receives a storage-only adapter without the atomic credential
+  creation capability.
+
 ## [0.5.0] - 2026-08-03
 
 ### ⚠️ Breaking

@@ -28,12 +28,18 @@ export type GoobitsAuthRoutingConfig = {
 }
 
 /** Configuration for the high-level Goobits auth facade. */
-export type GoobitsAuthConfig = Omit<AuthConfig, 'adapters'> & {
-	adapter: AuthConfig['adapters']
+type GoobitsAuthFacadeOptions = {
 	/** Trusted application resolver for website/session authorization roles. */
 	resolveAuthRoles?: AuthRoleResolver
 	routing?: GoobitsAuthRoutingConfig
 }
+
+type GoobitsAuthConfigFor<T extends AuthConfig> = T extends AuthConfig
+	? Omit<T, 'adapters'> & { adapter: T['adapters'] } & GoobitsAuthFacadeOptions
+	: never
+
+/** Configuration for the high-level Goobits auth facade. */
+export type GoobitsAuthConfig = GoobitsAuthConfigFor<AuthConfig>
 
 /** Application-owned auth event accepted by the configured audit and alert pipeline. */
 export type AuthSecurityEventInput = Omit<AuthEvent, 'timestamp'>

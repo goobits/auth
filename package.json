@@ -1,6 +1,6 @@
 {
 	"name": "@goobits/auth",
-	"version": "0.5.0",
+	"version": "0.5.1",
 	"description": "Pluggable authentication system for SvelteKit applications",
 	"type": "module",
 	"main": "./src/index.ts",

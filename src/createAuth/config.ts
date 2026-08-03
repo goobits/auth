@@ -1,4 +1,5 @@
 import type { AuthConfig, AuthLocals } from '../types/auth.ts'
+import type { WebAuthnCredentialCreationAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
 import { isOAuthProviderName } from '../_routePaths.ts'
 
 export type ResolvedDefaults = {
@@ -21,8 +22,19 @@ export function validateConfig(config: AuthConfig): void {
 	if (config.magicLink && !config.adapters.magicLink) {
 		throw new Error('createAuth magicLink requires adapters.magicLink')
 	}
-	if (config.webauthn && !config.adapters.webauthn) {
-		throw new Error('createAuth webauthn requires adapters.webauthn')
+	if (config.webauthn) {
+		const adapter = config.adapters.webauthn as
+			| (NonNullable<typeof config.adapters.webauthn> &
+					Partial<WebAuthnCredentialCreationAdapter>)
+			| undefined
+		if (!adapter) {
+			throw new Error('createAuth webauthn requires adapters.webauthn')
+		}
+		if (typeof adapter.createCredentialWithinLimit !== 'function') {
+			throw new Error(
+				'createAuth webauthn requires an atomic createCredentialWithinLimit adapter capability'
+			)
+		}
 	}
 	if (config.mfa && !config.adapters.mfa) {
 		throw new Error('createAuth mfa requires adapters.mfa')
