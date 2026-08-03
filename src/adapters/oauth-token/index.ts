@@ -7,6 +7,7 @@ export {
 	type OpenedOAuthTokenPayload,
 	createAesGcmOAuthTokenCodec
 } from './OAuthTokenCodec.ts'
+export { openOAuthTokens, serializeOAuthTokens } from './_tokenPayload.ts'
 export { CookieTokenAdapter } from './CookieTokenAdapter.ts'
 export { D1TokenAdapter } from './D1TokenAdapter.ts'
 export { DrizzleTokenAdapter } from './DrizzleTokenAdapter.ts'

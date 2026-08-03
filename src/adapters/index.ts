@@ -24,6 +24,8 @@ export {
 	createAesGcmOAuthTokenCodec,
 	D1TokenAdapter,
 	DrizzleTokenAdapter,
+	openOAuthTokens,
+	serializeOAuthTokens,
 	TokenAdapter
 } from './oauth-token/index.ts'
 

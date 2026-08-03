@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { createAesGcmOAuthTokenCodec } from '../../src/adapters/oauth-token/OAuthTokenCodec.ts'
+import {
+	createAesGcmOAuthTokenCodec,
+	openOAuthTokens,
+	serializeOAuthTokens
+} from '../../src/adapters/oauth-token/index.ts'
 import { KVTokenAdapter } from '../../src/adapters/oauth-token/KVTokenAdapter.ts'
 import { encryptTokens } from '../../src/utils/crypto.ts'
 
@@ -32,6 +36,16 @@ function createNamespace() {
 }
 
 describe('AES-GCM OAuth token codec', () => {
+	it('exposes record-bound payload helpers for application-owned transactions', async () => {
+		const codec = createAesGcmOAuthTokenCodec({
+			keyringJson: keyring('current', { current: CURRENT_KEY })
+		})
+		const context = { userId: 'u1', provider: 'google' }
+		const ciphertext = await serializeOAuthTokens(TOKENS, codec, context)
+
+		await expect(openOAuthTokens({ value: ciphertext, codec, context })).resolves.toEqual(TOKENS)
+	})
+
 	it('binds ciphertext to its user and provider record', async () => {
 		const codec = createAesGcmOAuthTokenCodec({
 			keyringJson: keyring('current', { current: CURRENT_KEY })

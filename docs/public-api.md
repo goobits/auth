@@ -86,6 +86,12 @@ rotation-ready `encryptionKeyringJson` or an application `tokenCodec`. The table
 must enforce one row per `(userId, provider)` so stores and lazy key rotation use
 an atomic upsert.
 
+Application-owned credential transactions can import `openOAuthTokens` and
+`serializeOAuthTokens` from `@goobits/auth/adapters/oauth-token`. Those helpers
+apply the same payload validation, record-bound encryption context, and key
+rotation signal used by Auth's built-in token adapters without owning database
+persistence.
+
 Session adapters return bearer tokens only from `createSession()` and persist
 only their verifiers. Import `createSessionToken` and `hashSessionToken` from
 `@goobits/auth/adapters/session` when implementing a custom store. Never expose
