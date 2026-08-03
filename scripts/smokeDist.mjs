@@ -4,16 +4,19 @@ import {
 	access,
 	cp,
 	copyFile,
+	lstat,
 	mkdir,
 	mkdtemp,
 	readFile,
+	realpath,
 	readdir,
 	rm,
 	symlink,
+	unlink,
 	writeFile
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { isAbsolute, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const rootUrl = new URL('../', import.meta.url)
@@ -340,12 +343,35 @@ async function assertPackedPackage() {
 	}
 }
 
-await assertWorkspaceMap()
-await assertPublishedMap()
-await assertDistPackageScope()
-await assertRuntimeSeparation()
-await assertUiDistribution()
-await assertSvelteDistribution()
-await assertPackedPackage()
+async function linkExternalDistDependencies() {
+	const distRoot = await realpath(join(root, 'dist'))
+	const relativeDist = relative(root, distRoot)
+	const isExternal = relativeDist.startsWith('..') || isAbsolute(relativeDist)
+	if (!isExternal) return async () => {}
+
+	const dependencyLink = join(distRoot, 'node_modules')
+	try {
+		await lstat(dependencyLink)
+		return async () => {}
+	} catch (error) {
+		if (error?.code !== 'ENOENT') throw error
+	}
+
+	await symlink(join(root, 'node_modules'), dependencyLink, 'dir')
+	return () => unlink(dependencyLink)
+}
+
+const unlinkExternalDistDependencies = await linkExternalDistDependencies()
+try {
+	await assertWorkspaceMap()
+	await assertPublishedMap()
+	await assertDistPackageScope()
+	await assertRuntimeSeparation()
+	await assertUiDistribution()
+	await assertSvelteDistribution()
+	await assertPackedPackage()
+} finally {
+	await unlinkExternalDistDependencies()
+}
 
 console.log('workspace source and published package smoke passed')
