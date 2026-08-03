@@ -4,8 +4,12 @@ import {
 	type AdvanceWebAuthnCredentialCounterInput,
 	type CreateWebAuthnChallengeInput,
 	type CreateWebAuthnCredentialInput,
+	type CreateWebAuthnCredentialWithinLimitInput,
 	type DeleteWebAuthnCredentialInput,
-	type WebAuthnChallengeRecord
+	type WebAuthnChallengeRecord,
+	type WebAuthnCredentialCreationAdapter,
+	type WebAuthnCredentialCreationOutcome,
+	resolveWebAuthnCredentialLimit
 } from '../webauthn/WebAuthnAdapter.ts'
 import {
 	assertCredentialCounterTransition,
@@ -13,7 +17,10 @@ import {
 } from '../webauthn/_credentialCounter.ts'
 
 /** In-memory WebAuthn adapter for challenges and credentials. */
-export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
+export class MemoryWebAuthnAdapter
+	extends WebAuthnAdapter
+	implements WebAuthnCredentialCreationAdapter
+{
 	#challenges = new Map<string, WebAuthnChallengeRecord>()
 	#credentials = new Map<string, WebAuthnCredential>()
 
@@ -89,6 +96,22 @@ export class MemoryWebAuthnAdapter extends WebAuthnAdapter {
 			userId
 		})
 		return true
+	}
+
+	async createCredentialWithinLimit({
+		maxCredentialsPerUser,
+		...credential
+	}: CreateWebAuthnCredentialWithinLimitInput): Promise<WebAuthnCredentialCreationOutcome> {
+		const limit = resolveWebAuthnCredentialLimit(maxCredentialsPerUser)
+		let credentialCount = 0
+		for (const existing of this.#credentials.values()) {
+			if (existing.userId === credential.userId) credentialCount += 1
+		}
+		if (credentialCount >= limit) return 'limit-reached'
+
+		// No await occurs between the in-memory count and insert, so concurrent
+		// calls cannot interleave this process-local mutation.
+		return (await this.createCredential(credential)) ? 'created' : 'duplicate'
 	}
 
 	async getCredential(credentialId: string): Promise<WebAuthnCredential | null> {

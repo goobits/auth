@@ -3,7 +3,9 @@ export {
 	WebAuthnAdapter,
 	resolveWebAuthnCredentialLimit,
 	type CreateWebAuthnCredentialWithinLimitInput,
-	type WebAuthnCredentialCreationOutcome
+	type WebAuthnCredentialCreationAdapter,
+	type WebAuthnCredentialCreationOutcome,
+	type WebAuthnRegistrationAdapter
 } from './WebAuthnAdapter.ts'
 export { D1WebAuthnAdapter } from './D1WebAuthnAdapter.ts'
 export { DrizzleWebAuthnAdapter } from './DrizzleWebAuthnAdapter.ts'

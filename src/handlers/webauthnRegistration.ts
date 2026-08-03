@@ -6,7 +6,7 @@ import {
 } from '@simplewebauthn/server'
 import {
 	resolveWebAuthnCredentialLimit,
-	type WebAuthnAdapter
+	type WebAuthnRegistrationAdapter
 } from '../adapters/webauthn/WebAuthnAdapter.ts'
 import { isValidCredentialCounter } from '../adapters/webauthn/_credentialCounter.ts'
 import { emitRequestAuthEvent, type AuthEventEmitter } from '../security/events.ts'
@@ -26,7 +26,7 @@ import {
 } from './webauthnUtils.ts'
 
 type RegistrationAdapter = Pick<
-	WebAuthnAdapter,
+	WebAuthnRegistrationAdapter,
 	| 'listCredentials'
 	| 'createChallenge'
 	| 'consumeChallenge'
@@ -223,14 +223,17 @@ export function createWebAuthnRegisterVerifyHandler(
 					: null,
 			name: data.name ?? null
 		})
-		if (creation === 'limit-reached') {
-			return jsonResponse({ ok: false, error: 'Passkey limit reached' }, 409)
-		}
-		if (creation === 'owner-unavailable') {
-			return jsonResponse({ ok: false, error: 'Credential owner is unavailable' }, 403)
-		}
-		if (creation === 'duplicate') {
-			return jsonResponse({ ok: false, error: 'Credential is already registered' }, 409)
+		switch (creation) {
+			case 'created':
+				break
+			case 'limit-reached':
+				return jsonResponse({ ok: false, error: 'Passkey limit reached' }, 409)
+			case 'owner-unavailable':
+				return jsonResponse({ ok: false, error: 'Credential owner is unavailable' }, 403)
+			case 'duplicate':
+				return jsonResponse({ ok: false, error: 'Credential is already registered' }, 409)
+			default:
+				throw new TypeError('WebAuthn adapter returned an invalid credential creation outcome')
 		}
 
 		try {

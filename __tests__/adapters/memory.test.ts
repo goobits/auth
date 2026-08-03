@@ -169,6 +169,25 @@ describe('memory auth adapters', () => {
 		).resolves.toBe(true)
 	})
 
+	it('enforces the WebAuthn credential cap under concurrent registration', async () => {
+		const adapter = new MemoryWebAuthnAdapter()
+		const outcomes = await Promise.all(
+			Array.from({ length: 20 }, (_, index) =>
+				adapter.createCredentialWithinLimit({
+					userId: 'user-1',
+					credentialId: `credential-${index}`,
+					publicKey: `public-key-${index}`,
+					counter: 0,
+					maxCredentialsPerUser: 3
+				})
+			)
+		)
+
+		expect(outcomes.filter((outcome) => outcome === 'created')).toHaveLength(3)
+		expect(outcomes.filter((outcome) => outcome === 'limit-reached')).toHaveLength(17)
+		await expect(adapter.listCredentials('user-1')).resolves.toHaveLength(3)
+	})
+
 	it('removes only expired in-memory WebAuthn challenges', async () => {
 		const adapter = new MemoryWebAuthnAdapter()
 		await adapter.createChallenge({

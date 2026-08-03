@@ -43,6 +43,19 @@ export type WebAuthnCredentialCreationOutcome =
 	| 'limit-reached'
 	| 'owner-unavailable'
 
+/**
+ * Persistence capability for registration-time credential creation.
+ *
+ * Implementations must serialize the owner eligibility check, credential cap,
+ * and insert in one transaction or lock boundary. A list-then-insert sequence
+ * does not satisfy this contract.
+ */
+export interface WebAuthnCredentialCreationAdapter {
+	createCredentialWithinLimit(
+		input: CreateWebAuthnCredentialWithinLimitInput
+	): Promise<WebAuthnCredentialCreationOutcome>
+}
+
 export type AdvanceWebAuthnCredentialCounterInput = {
 	credentialId: string
 	userId: string
@@ -117,19 +130,6 @@ export abstract class WebAuthnAdapter {
 	}: CreateWebAuthnCredentialInput): Promise<boolean>
 
 	/**
-	 * Creates one credential while enforcing the owner cap at the persistence boundary.
-	 * Stateful adapters should override this method with their native transaction or lock.
-	 */
-	async createCredentialWithinLimit({
-		maxCredentialsPerUser,
-		...credential
-	}: CreateWebAuthnCredentialWithinLimitInput): Promise<WebAuthnCredentialCreationOutcome> {
-		const limit = resolveWebAuthnCredentialLimit(maxCredentialsPerUser)
-		if ((await this.listCredentials(credential.userId)).length >= limit) return 'limit-reached'
-		return (await this.createCredential(credential)) ? 'created' : 'duplicate'
-	}
-
-	/**
 	 * Get a credential by ID
 	 *
 	 * @param {string} credentialId - Identifier to use.
@@ -173,3 +173,6 @@ export abstract class WebAuthnAdapter {
 	 */
 	abstract consumeChallenge(challengeId: string): Promise<WebAuthnChallengeRecord | null>
 }
+
+/** Full adapter contract required when passkey registration is enabled. */
+export type WebAuthnRegistrationAdapter = WebAuthnAdapter & WebAuthnCredentialCreationAdapter

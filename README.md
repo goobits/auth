@@ -39,7 +39,7 @@ counters remain owned by their `@goobits/security/*` entrypoints.
 
 ## Stability And Distribution
 
-Documented exports are stable for the `0.4.x` line. WebAuthn and MFA may receive
+Documented exports are stable for the `0.5.x` line. WebAuthn and MFA may receive
 additive options as browser and authenticator behavior evolves.
 
 - First-party TypeScript workspaces consume checked-out `src/` entrypoints so
@@ -66,7 +66,9 @@ additive options as browser and authenticator behavior evolves.
   application concern.
 - `drizzleAdapter()` returns the required session, user, and password-credential
   capabilities plus optional OAuth identity/token, magic-link, MFA, and
-  WebAuthn capabilities when their tables are configured.
+  WebAuthn storage capabilities when their tables are configured. Enabling
+  passkey registration additionally requires an application-owned atomic
+  `createCredentialWithinLimit()` capability.
 - Password hashes are available only through `PasswordCredentialAdapter`, never
   through general user-profile methods.
 - Password-reset completion and token consumption require application-owned
@@ -114,6 +116,8 @@ See the public API and migration guide for the complete capability contracts.
   and production responsibilities.
 - [`docs/schema.md`](docs/schema.md) — schema requirements.
 - [`docs/testing.md`](docs/testing.md) — test helpers and expectations.
+- [`docs/migrations/0.5-breaking.md`](docs/migrations/0.5-breaking.md) — atomic
+  passkey-registration adapter migration from 0.4.
 - [`docs/migrations/0.4-breaking.md`](docs/migrations/0.4-breaking.md) — OAuth
   identity and authentication-lifecycle migration from 0.3.
 - [`docs/migrations/0.3-breaking.md`](docs/migrations/0.3-breaking.md) — earlier

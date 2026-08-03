@@ -1,4 +1,4 @@
-# Public API (0.4.x)
+# Public API (0.5.x)
 
 Primary API: `new GoobitsAuth(...)`
 
@@ -20,7 +20,7 @@ consumer's content security policy.
 
 ## Stability
 
-The documented exports are stable for the `0.4.x` line. WebAuthn and MFA may
+The documented exports are stable for the `0.5.x` line. WebAuthn and MFA may
 receive additive options as platform behavior evolves.
 
 ## Main Entrypoint
@@ -89,6 +89,12 @@ export const GET = async (event) => {
 - required: `session`, `user`, `passwordCredential`
 - optional (when tables exist): `oauthIdentity`, `oauthToken`,
   `verificationToken`, `magicLink`, `webauthn`
+
+The bundled database WebAuthn adapter owns challenge, credential, counter, and
+deletion storage. It does not claim that a generic ORM port can atomically
+enforce application account eligibility and credential caps. Before enabling a
+`webauthn` config block, compose it with the
+`WebAuthnCredentialCreationAdapter` capability documented in the 0.5 migration.
 
 When `oauthTokens` exists, configure `oauthTokenEncryption` with either a
 rotation-ready `encryptionKeyringJson` or an application `tokenCodec`. The table
@@ -290,6 +296,9 @@ Passkey registration uses the same callback with the
 authenticated principal, and verification rejects a challenge completed under
 a different or missing principal. Applications can satisfy the callback from a
 recent-authentication session marker or another fresh credential check.
+The configured adapter must also satisfy `WebAuthnRegistrationAdapter` by
+serializing owner eligibility, the per-owner credential cap, and insertion at
+the persistence boundary.
 
 Sessions created by the MFA verification handler receive
 `Session.mfaVerifiedAt`. Persistent session adapters must store and restore this

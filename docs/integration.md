@@ -31,7 +31,8 @@ OAuthIdentityAdapter     — optional (required when OAuth providers are configu
 TokenAdapter             — optional (stores OAuth access/refresh tokens)
 VerificationTokenAdapter — optional (email verification, password reset)
 MagicLinkAdapter         — optional (required if magicLink config is set)
-WebAuthnAdapter          — optional (required if webauthn config is set)
+WebAuthnAdapter          — optional storage/authentication capability
+WebAuthnCredentialCreationAdapter — required if webauthn registration is enabled
 ```
 
 The `GoobitsAuth` constructor validates which adapters are required for
@@ -39,7 +40,8 @@ which features:
 
 - `adapter.session` is always required.
 - `adapter.magicLink` is required if you pass a `magicLink` config block.
-- `adapter.webauthn` is required if you pass a `webauthn` config block.
+- `adapter.webauthn` must satisfy `WebAuthnRegistrationAdapter` if you pass a
+  `webauthn` config block.
 - `adapter.user` and `adapter.oauthIdentity` are required when any OAuth
   provider is configured. Auth does not fall back to anonymous provisioning or
   email-based account matching.
@@ -157,6 +159,24 @@ these are bearer credentials.
 These follow the same shape — abstract base in `adapters/<feature>/base.ts`,
 prebuilt Drizzle and D1 implementations alongside. Read the base file; the
 JSDoc on each abstract method describes the expected behavior.
+
+Database-backed WebAuthn adapters intentionally expose storage and
+authentication operations without pretending a generic database port owns
+application account policy. Passkey registration additionally requires:
+
+```ts
+interface WebAuthnCredentialCreationAdapter {
+  createCredentialWithinLimit(
+    input: CreateWebAuthnCredentialWithinLimitInput
+  ): Promise<'created' | 'duplicate' | 'limit-reached' | 'owner-unavailable'>
+}
+```
+
+Implement that capability with one transaction or owner-scoped lock covering
+account eligibility, the credential count, and the insert. A list-then-insert
+sequence is not atomic. `MemoryWebAuthnAdapter` supplies the full contract for
+single-process development; durable adapters must be composed with the host
+application's transaction boundary before registration is enabled.
 
 For schema requirements (magic link tokens, WebAuthn credentials, session
 metadata columns), see [`schema.md`](./schema.md).

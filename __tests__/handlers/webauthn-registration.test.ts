@@ -183,6 +183,34 @@ describe('WebAuthn registration', () => {
 		expect(await adapter.listCredentials('u1')).toEqual([])
 	})
 
+	it('fails closed when an adapter returns an unknown creation outcome', async () => {
+		const adapter = createWebAuthnAdapter()
+		await adapter.createChallenge({
+			challengeId: 'register-invalid-outcome',
+			userId: 'u1',
+			challenge: 'registration-challenge',
+			type: 'registration',
+			expiresAt: new Date(Date.now() + 60_000)
+		})
+		vi.spyOn(adapter, 'createCredentialWithinLimit').mockResolvedValue('unexpected' as never)
+		const handler = createWebAuthnRegisterVerifyHandler({
+			webauthnAdapter: adapter,
+			rpID: 'example.com',
+			origin: 'http://localhost'
+		})
+
+		await expect(
+			handler(
+				createEvent({
+					body: {
+						challengeId: 'register-invalid-outcome',
+						credential: { id: 'AQIDBAcI' }
+					}
+				})
+			)
+		).rejects.toThrow('invalid credential creation outcome')
+	})
+
 	it('rolls back a new credential when its application lifecycle fails', async () => {
 		const adapter = createWebAuthnAdapter()
 		await adapter.createChallenge({

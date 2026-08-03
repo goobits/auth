@@ -4,6 +4,17 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-03
+
+### ⚠️ Breaking
+
+- 🔑 Passkey registration now requires a `WebAuthnRegistrationAdapter` with an
+  application-owned `createCredentialWithinLimit()` persistence capability.
+  The race-prone base list-then-insert fallback was removed. Database-backed
+  adapters remain reusable for authentication and management, but must be
+  composed with an atomic transaction or lock before registration is enabled.
+  See [`docs/migrations/0.5-breaking.md`](docs/migrations/0.5-breaking.md).
+
 ### 🌟 Highlights
 
 - 👤 OAuth identity ownership now uses stable provider subjects and explicit
@@ -66,7 +77,7 @@
   reauthentication and rejects challenge verification under a different principal.
 - 🔑 Passkey credentials are insert-only by credential ID, signature counters
   advance through owner-bound compare-and-swap operations, and invalid or
-  regressing counters fail before session creation. Registration adapters can
+  regressing counters fail before session creation. Registration adapters must
   enforce account caps atomically, and failed application lifecycle hooks roll
   back the newly stored credential.
 - ✉️ Magic-link URLs require a canonical HTTPS origin; optional numeric codes

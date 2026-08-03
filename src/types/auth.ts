@@ -8,7 +8,10 @@ import type { OAuthIdentityAdapter } from '../adapters/oauth-identity/OAuthIdent
 import type { TokenAdapter } from '../adapters/oauth-token/TokenAdapter.ts'
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.ts'
-import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
+import type {
+	WebAuthnAdapter,
+	WebAuthnRegistrationAdapter
+} from '../adapters/webauthn/WebAuthnAdapter.ts'
 import type { OAuthProvider } from '../providers/OAuthProvider.ts'
 import type { WebhookChannelOptions } from '@goobits/security/alerting'
 import type { CsrfTokenStore } from '@goobits/security/csrf'
@@ -385,7 +388,7 @@ type AuthConfigWithMagicLink = CommonAuthConfigFields & {
 }
 
 type AuthConfigWithWebAuthn = CommonAuthConfigFields & {
-	adapters: AuthAdapters & { webauthn: WebAuthnAdapter }
+	adapters: AuthAdapters & { webauthn: WebAuthnRegistrationAdapter }
 	magicLink?: undefined
 	webauthn: WebAuthnConfig
 }
@@ -393,7 +396,7 @@ type AuthConfigWithWebAuthn = CommonAuthConfigFields & {
 type AuthConfigWithBoth = CommonAuthConfigFields & {
 	adapters: AuthAdapters & {
 		magicLink: MagicLinkAdapter
-		webauthn: WebAuthnAdapter
+		webauthn: WebAuthnRegistrationAdapter
 	}
 	magicLink: MagicLinkConfig
 	webauthn: WebAuthnConfig
