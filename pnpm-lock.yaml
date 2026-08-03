@@ -16,7 +16,7 @@ importers:
   .:
     dependencies:
       '@goobits/security':
-        specifier: workspace:*
+        specifier: workspace:^4.0.0
         version: link:../security
       '@lucide/svelte':
         specifier: ^1.26.0

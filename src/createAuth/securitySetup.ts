@@ -19,6 +19,7 @@ export type ResolvedSecurity = SecurityPolicySettings & {
 
 const PROFILE_DEFAULTS: Record<SecurityProfile, AuthSecurityConfig> = {
 	basic: {
+		requestOrigin: { mode: 'off' },
 		csrf: { mode: 'off' },
 		rateLimit: {
 			mode: 'optional',
@@ -28,12 +29,14 @@ const PROFILE_DEFAULTS: Record<SecurityProfile, AuthSecurityConfig> = {
 		audit: { mode: 'optional' }
 	},
 	secure: {
+		requestOrigin: { mode: 'required' },
 		csrf: { mode: 'required', checkExpiry: false },
 		rateLimit: { mode: 'required', windows: getAuthRateLimitWindows('login'), keyPrefix: 'auth' },
 		audit: { mode: 'required' },
 		alerts: { enabled: true }
 	},
 	strict: {
+		requestOrigin: { mode: 'required' },
 		csrf: { mode: 'required', checkExpiry: true },
 		rateLimit: { mode: 'required', windows: getAuthRateLimitWindows('login'), keyPrefix: 'auth' },
 		audit: { mode: 'required' },
@@ -73,25 +76,24 @@ function resolveRateLimitWindows(
 }
 
 function assertProfileRequirements(profile: SecurityProfile, security: AuthSecurityConfig): void {
-	if (profile === 'basic') return
-	const csrfMode = security.csrf?.mode ?? 'required'
-	const externalCsrfBoundary = security.csrf?.validateExternalSecurityBoundary
-
-	if (profile === 'strict' && (csrfMode !== 'required' || externalCsrfBoundary)) {
+	const requestOriginMode = security.requestOrigin?.mode ?? (profile === 'basic' ? 'off' : 'required')
+	const csrfMode = security.csrf?.mode ?? (profile === 'basic' ? 'off' : 'required')
+	if (security.requestOrigin?.validate && requestOriginMode === 'off') {
+		throw new Error("requestOrigin.validate cannot be used when requestOrigin.mode is 'off'")
+	}
+	if (profile !== 'basic' && requestOriginMode !== 'required') {
+		throw new Error(`${profile} auth profile requires request-origin verification`)
+	}
+	if (profile === 'strict' && csrfMode !== 'required') {
 		throw new Error('The strict auth profile requires built-in CSRF protection')
 	}
-	if (
-		profile === 'secure' &&
-		csrfMode !== 'required' &&
-		!(csrfMode === 'off' && externalCsrfBoundary)
-	) {
-		throw new Error(
-			"The secure auth profile requires CSRF protection or csrf.validateExternalSecurityBoundary with mode 'off'"
-		)
+	if (profile === 'secure' && csrfMode !== 'required' && csrfMode !== 'off') {
+		throw new Error("The secure auth profile requires csrf.mode 'required' or 'off'")
 	}
-	if (externalCsrfBoundary && csrfMode !== 'off') {
-		throw new Error("csrf.validateExternalSecurityBoundary may only be used with csrf.mode 'off'")
+	if (csrfMode !== 'off' && !security.csrf?.secret) {
+		throw new Error('Auth CSRF protection requires security.csrf.secret')
 	}
+	if (profile === 'basic') return
 	if (security.rateLimit?.mode !== 'required') {
 		throw new Error(`${profile} auth profile requires rate limiting`)
 	}
@@ -123,6 +125,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 	const flowWindows = (flow: Parameters<typeof getAuthRateLimitWindows>[0]) =>
 		hasCustomRateLimitWindows ? rateLimitWindows : getAuthRateLimitWindows(flow)
 	const merged: AuthSecurityConfig = {
+		requestOrigin: { ...base.requestOrigin, ...config.security?.requestOrigin },
 		csrf: { ...base.csrf, ...config.security?.csrf },
 		rateLimit: { ...base.rateLimit, ...config.security?.rateLimit },
 		audit: { ...base.audit, ...config.security?.audit },
@@ -135,7 +138,8 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 	if (config.magicLink && isProductionRuntime() && !merged.audit?.emitter) {
 		throw new Error('Production magic-link auth requires an explicit audit emitter')
 	}
-	const csrfStore = merged.csrf?.store ?? new MemoryCsrfStore()
+	const csrfStore =
+		merged.csrf?.mode === 'off' ? undefined : (merged.csrf?.store ?? new MemoryCsrfStore())
 	const webhook = merged.alerts?.webhook
 	const fallbackWebhookUrl =
 		typeof process !== 'undefined' ? process.env['SECURITY_WEBHOOK_URL'] : undefined
@@ -173,18 +177,22 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 	const forwardedForTrustedProxyHops = resolveForwardedForTrustedProxyHops(merged.rateLimit)
 	return {
 		profile,
+		requestOrigin: {
+			mode: merged.requestOrigin?.mode ?? 'off',
+			allowedOrigins: [...(merged.requestOrigin?.allowedOrigins ?? [])],
+			...(merged.requestOrigin?.validate
+				? { validate: merged.requestOrigin.validate }
+				: {})
+		},
 		csrf: {
 			mode: merged.csrf?.mode ?? 'optional',
-			...(merged.csrf?.validateExternalSecurityBoundary
-				? {
-						validateExternalSecurityBoundary: merged.csrf.validateExternalSecurityBoundary
-					}
-				: {}),
+			...(merged.csrf?.secret ? { secret: merged.csrf.secret } : {}),
 			cookieName: merged.csrf?.cookieName ?? CSRF_COOKIE_NAME,
 			headerName: merged.csrf?.headerName ?? CSRF_HEADER_NAME,
 			checkExpiry: merged.csrf?.checkExpiry ?? false,
 			httpOnly: merged.csrf?.httpOnly ?? false,
-			store: csrfStore
+			secureCookies: config.cookies?.secure ?? true,
+			...(csrfStore ? { store: csrfStore } : {})
 		},
 		rateLimit: {
 			mode: merged.rateLimit?.mode ?? 'optional',
@@ -206,6 +214,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 				rateLimitWindows: flowWindows('login')
 			},
 			'oauth.callback': {
+				requestOrigin: 'off',
 				csrf: 'off',
 				rateLimit: 'optional',
 				rateLimitWindows: flowWindows('default')

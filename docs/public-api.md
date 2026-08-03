@@ -1,4 +1,4 @@
-# Public API (0.5.x)
+# Public API (0.6.x)
 
 Primary API: `new GoobitsAuth(...)`
 
@@ -20,7 +20,7 @@ consumer's content security policy.
 
 ## Stability
 
-The documented exports are stable for the `0.5.x` line. WebAuthn and MFA may
+The documented exports are stable for the `0.6.x` line. WebAuthn and MFA may
 receive additive options as platform behavior evolves.
 
 ## Main Entrypoint
@@ -30,10 +30,12 @@ instance, provider, hook, and catch-all route setup lives in
 [`quickstart.md`](quickstart.md); this file documents the resulting public
 surface without maintaining a second setup recipe.
 
-`secure` is the default profile. It requires CSRF, production rate limiting,
-and an awaited audit emitter. An equivalent outer request boundary must be
-declared through the executable
-`validateExternalSecurityBoundary` callback; a boolean opt-out is not accepted.
+`secure` is the default profile. It requires request-origin verification,
+production rate limiting, and an awaited audit emitter. Its default
+session-bound CSRF layer requires `security.csrf.secret`. Applications with one
+canonical outer origin guard may use
+`requestOrigin: { mode: 'required', validate }` with `csrf: { mode: 'off' }`;
+`strict` always requires both layers.
 
 ## `GoobitsAuth` surface
 
@@ -46,6 +48,8 @@ declared through the executable
 - `auth.requireAuthRole(event, authRole | authRole[])`
 - `auth.emitSecurityEvent(event)` for custom auth-route outcomes
 - `auth.adapter` (raw adapters for advanced/manual usage)
+- `auth.providers` (frozen, secret-free `{ name, callbackMode }` metadata keyed
+  by configured provider name)
 
 The catch-all facade accepts only canonical OAuth paths:
 
@@ -255,6 +259,13 @@ provider, and unknown failures remain fail-closed. `GoogleProvider` defaults
 to online access. Set `accessType: 'offline'` only when the application has a
 documented server-side refresh or future-revocation requirement and securely
 stores the returned refresh credential.
+
+Provider instances never flow through the `auth.providers` facade. Built-in
+Google and Apple credentials live in ECMAScript `#private` fields, and the
+facade returns only frozen metadata. Custom `OAuthProvider` subclasses must use
+the same runtime-private-field rule for client secrets, signing keys, and any
+other credential-bearing state; TypeScript's `private` modifier alone does not
+prevent object serialization.
 
 Use `createAuthClient()` from `@goobits/auth/client` for canonical OAuth URLs,
 identity listing/unlinking, and WebAuthn ceremonies. Set `basePath` when the

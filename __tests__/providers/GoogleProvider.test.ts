@@ -66,6 +66,17 @@ describe('GoogleProvider', () => {
 		).rejects.toThrow('only the openid, profile, and email')
 	})
 
+	it('exposes only secret-free provider metadata to runtime serialization', () => {
+		const { provider } = createProvider()
+
+		expect(JSON.parse(JSON.stringify(provider))).toEqual({
+			callbackMode: 'query',
+			name: 'google'
+		})
+		expect('config' in provider).toBe(false)
+		expect(JSON.stringify(provider)).not.toContain('google-secret')
+	})
+
 	it('requests an offline refresh credential only when explicitly configured', async () => {
 		const { provider } = createProvider(createLogger(), 'offline')
 		const authorizationUrl = await provider.createAuthorizationURL('state', 'verifier')

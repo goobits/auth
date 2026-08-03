@@ -46,6 +46,7 @@ export const auth = new GoobitsAuth({
 				hasRecentMfaVerification(session, { maxAgeMs: 5 * 60_000 }))
 	},
 	security: {
+		csrf: { secret: env.AUTH_CSRF_SECRET },
 		rateLimit: { store: rateLimitStore },
 		audit: { emitter: auditEmitter },
 		alerts: {

@@ -5,11 +5,14 @@ This package enforces authentication primitives and secure defaults, while autho
 ## Profiles
 
 - `basic`:
-  CSRF `off`, rate limit `optional`, audit `optional`.
+  request origin `off`, CSRF `off`, rate limit `optional`, audit `optional`.
 - `secure` (recommended default):
-  CSRF `required`, rate limit `required`, audit `required`, alerts enabled.
+  request origin `required`, CSRF `required` by default, rate limit `required`,
+  audit `required`, alerts enabled. The token layer may be explicitly disabled
+  only while request-origin verification remains required.
 - `strict`:
-  CSRF `required`, rate limit `required`, audit `required`, alerts enabled.
+  request origin `required`, CSRF `required`, rate limit `required`, audit
+  `required`, alerts enabled.
 
 ## Security configuration
 
@@ -18,6 +21,7 @@ fragment below shows only the security-specific options:
 
 ```ts
 security: {
+	csrf: { secret: env.AUTH_CSRF_SECRET },
 	rateLimit: { store: sharedRateLimitStore },
 	audit: { emitter: auditEmitter },
 	alerts: {
@@ -27,16 +31,28 @@ security: {
 }
 ```
 
-Applications with a single, application-wide request-origin guard may use
-`csrf: { mode: 'off', validateExternalSecurityBoundary: verifyOrigin }` under
-the `secure` profile. Auth executes that validator for every unsafe request and
-fails closed when it rejects. The `strict` profile always requires built-in
-CSRF.
+Auth applies `@goobits/security/request-origin` to every managed unsafe route by
+default. Applications with a canonical outer origin guard may replace that
+check under the `secure` profile while explicitly disabling token CSRF:
+
+```ts
+security: {
+	requestOrigin: { mode: 'required', validate: verifyOrigin },
+	csrf: { mode: 'off' }
+}
+```
+
+Auth executes the validator for every unsafe managed route and fails closed
+when it rejects. Apple's cross-site `form_post` callback is explicitly exempt;
+its single-use state and nonce own that callback boundary. The `strict` profile
+always requires both request-origin verification and built-in CSRF.
 
 Built-in forms use the Security-owned defaults: cookie `csrf-token`, header
-`X-CSRF-Token`, and form or JSON field `csrf_token`. Optional mode leaves
-cookie-less unsafe requests alone, but once the CSRF cookie exists it requires a
-matching token instead of silently bypassing validation.
+`X-CSRF-Token`, and form or JSON field `csrf_token`. Tokens are HMAC-signed and
+bound to the validated Auth session; anonymous requests use Security's
+protected host binding cookie. Optional mode leaves cookie-less unsafe requests
+alone, but once the CSRF cookie exists it requires a valid bound token instead
+of silently bypassing validation.
 
 Managed JSON, URL-encoded, and multipart form bodies are buffered only through
 Security's bounded Fetch readers. Requests over the shared limit receive `413`
@@ -52,7 +68,8 @@ before an authentication handler processes their fields.
   - one normalized credential-mutation port for OAuth connection changes and
     passkey removal
   - session-level MFA assurance metadata after a successful second factor
-  - CSRF/rate-limit policy wiring powered by `@goobits/security`
+  - request-origin, CSRF, and rate-limit policy wiring powered by
+    `@goobits/security`
   - auth event emission + threshold alerts
   - authorization helper primitives
 - Application must provide:
@@ -74,8 +91,8 @@ before an authentication handler processes their fields.
     before privileged routes rely on it
   - when TOTP is enabled, an MFA secret codec backed by
     `@goobits/security/crypto` or a managed KMS, including key rotation
-  - a shared production rate-limit store; strict or expiry-checked CSRF also
-    requires a shared CSRF store
+  - a shared 32-byte-or-longer CSRF signing secret and production rate-limit
+    store; strict or expiry-checked CSRF also requires a shared CSRF store
   - CSRF plus rate limiting for standalone credential handlers, or one
     executable application boundary that enforces equivalent controls before
     every request
@@ -125,7 +142,8 @@ rate-limit their login/signup routes aggressively to compensate.
 2. Allowlist only proxy headers that the trusted edge overwrites; standalone
    handler key callbacks must enforce the same boundary.
 3. Enable an alert sink with `security.alerts.webhook` or `security.alerts.onAlert`.
-4. Validate secrets at deploy-time (`TOKEN_ENCRYPTION_KEYRING`, OAuth secrets).
+4. Validate secrets at deploy-time (`AUTH_CSRF_SECRET`,
+   `TOKEN_ENCRYPTION_KEYRING`, OAuth secrets).
 5. Keep dependency and secret scanning enabled in CI.
 6. Configure shared rate-limit state before using `secure` or `strict` in production.
 7. Configure an awaited audit emitter before using `secure` or `strict` in production.

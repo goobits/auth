@@ -1,5 +1,7 @@
 import type { RequestEventLike } from '../src/types/auth.ts'
 
+export const TEST_CSRF_SECRET = 'auth-test-csrf-secret-that-is-at-least-32-bytes'
+
 type CookieOptions = Record<string, unknown>
 
 export function createCookies(initial: Record<string, string> = {}) {

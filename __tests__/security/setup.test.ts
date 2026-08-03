@@ -6,6 +6,8 @@ import { resolveSecurity } from '../../src/createAuth/securitySetup.ts'
 import { createSecurityAlertObserver } from '../../src/security/alerts.ts'
 import type { AuthConfig, AuthSecurityConfig, SecurityProfile } from '../../src/types/auth.ts'
 
+const CSRF_SECRET = 'auth-test-csrf-secret-that-is-at-least-32-bytes'
+
 function config(
 	profile: SecurityProfile = 'secure',
 	security: AuthSecurityConfig = {}
@@ -13,7 +15,10 @@ function config(
 	return {
 		adapters: { session: {} as never },
 		profile,
-		security
+		security: {
+			...security,
+			csrf: { secret: CSRF_SECRET, ...security.csrf }
+		}
 	}
 }
 
@@ -25,8 +30,9 @@ describe('auth security profiles', () => {
 	it('enables built-in CSRF and rate limiting for the secure profile', () => {
 		const resolved = resolveSecurity(config())
 
+		expect(resolved.requestOrigin.mode).toBe('required')
 		expect(resolved.csrf.mode).toBe('required')
-		expect(resolved.csrf.validateExternalSecurityBoundary).toBeUndefined()
+		expect(resolved.csrf.secret).toBe(CSRF_SECRET)
 		expect(resolved.rateLimit.mode).toBe('required')
 		expect(resolved.rateLimit.windows).toEqual([
 			{ name: 'login:burst', windowMs: 60_000, maxEvents: 5 },
@@ -44,26 +50,37 @@ describe('auth security profiles', () => {
 		expect(resolved.routes['oauth.identity.unlink']?.csrf).toBe('required')
 	})
 
-	it('requires an explicit external boundary when secure CSRF is disabled', () => {
-		expect(() => resolveSecurity(config('secure', { csrf: { mode: 'off' } }))).toThrow(
-			'requires CSRF protection'
-		)
-
-		const validateExternalSecurityBoundary = async () => true
+	it('keeps request-origin verification required when secure CSRF is disabled', () => {
+		const validate = async () => true
 		const resolved = resolveSecurity(
-			config('secure', { csrf: { mode: 'off', validateExternalSecurityBoundary } })
+			config('secure', {
+				csrf: { mode: 'off' },
+				requestOrigin: { mode: 'required', validate }
+			})
 		)
-		expect(resolved.csrf).toMatchObject({ mode: 'off', validateExternalSecurityBoundary })
+		expect(resolved.csrf.mode).toBe('off')
+		expect(resolved.requestOrigin).toMatchObject({ mode: 'required', validate })
 	})
 
 	it('does not allow the strict profile to delegate its CSRF boundary', () => {
 		expect(() =>
 			resolveSecurity(
-				config('strict', {
-					csrf: { mode: 'off', validateExternalSecurityBoundary: async () => true }
-				})
+				config('strict', { csrf: { mode: 'off' } })
 			)
 		).toThrow('strict auth profile requires built-in CSRF protection')
+	})
+
+	it('requires a CSRF secret and rejects disabled custom origin validation', () => {
+		expect(() =>
+			resolveSecurity({ adapters: { session: {} as never }, profile: 'secure' })
+		).toThrow('security.csrf.secret')
+		expect(() =>
+			resolveSecurity(
+				config('secure', {
+					requestOrigin: { mode: 'off', validate: async () => true }
+				})
+			)
+		).toThrow('requestOrigin.validate')
 	})
 
 	it('treats unknown runtime modes as production-safe', () => {

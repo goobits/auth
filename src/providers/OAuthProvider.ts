@@ -1,17 +1,21 @@
 import type { OAuthProfile, OAuthTokens } from '../types/core.ts'
 
+/** Secret-free provider metadata safe to expose through Auth facades. */
+export type OAuthProviderMetadata = Readonly<{
+	name: string
+	callbackMode: 'query' | 'form_post'
+}>
+
 /**
  * Base OAuth Provider Interface.
  * All OAuth providers must extend this class and implement its abstract methods.
  */
 export abstract class OAuthProvider {
-	name: string
-	config: Record<string, unknown>
-	readonly callbackMode?: 'query' | 'form_post' = 'query'
+	readonly name: string
+	readonly callbackMode: 'query' | 'form_post' = 'query'
 
-	constructor(name: string, config: Record<string, unknown>) {
+	constructor(name: string) {
 		this.name = name
-		this.config = config
 	}
 
 	/**

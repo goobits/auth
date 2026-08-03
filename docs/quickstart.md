@@ -64,6 +64,7 @@ export const auth = new GoobitsAuth({
 				hasRecentMfaVerification(session, { maxAgeMs: 5 * 60_000 }))
 	},
 	security: {
+		csrf: { secret: env.AUTH_CSRF_SECRET },
 		rateLimit: { store: sharedRateLimitStore },
 		audit: { emitter: auditEmitter }
 	}
@@ -72,8 +73,10 @@ export const auth = new GoobitsAuth({
 
 Use one durable rate-limit store across production instances and bridge an
 awaited `@goobits/security/audit` logger with `createAuthEventAuditEmitter`.
-The secure profile issues CSRF tokens on safe requests, and
-`createAuthClient()` echoes them on unsafe same-origin requests automatically.
+`AUTH_CSRF_SECRET` must contain at least 32 bytes and remain identical across
+all application instances. The secure profile verifies request origin, issues
+session-bound CSRF tokens on safe requests, and `createAuthClient()` echoes them
+on unsafe same-origin requests automatically.
 The onboarding hook above is intentionally application-owned: replace it with
 your invite, collision, and profile-completion policy. `session.createdAt` must
 come from verified primary authentication, while passkey/MFA step-up records

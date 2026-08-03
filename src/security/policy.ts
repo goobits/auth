@@ -7,8 +7,12 @@ import {
 } from '@goobits/security/rate-limit'
 import type { Logger } from '@goobits/security/logger'
 import type { CsrfTokenStore } from '@goobits/security/csrf'
-import { createSvelteKitCsrf } from '@goobits/security/csrf/sveltekit'
+import {
+	createSvelteKitCsrf,
+	type SvelteKitCsrf
+} from '@goobits/security/csrf/sveltekit'
 import { BodyTooLargeError } from '@goobits/security/request-body'
+import { verifyRequestOrigin } from '@goobits/security/request-origin'
 import type { AuthRequestHandler, RequestEventLike, TrustedProxyHeader } from '../types/auth.ts'
 import { resolvePlatformClientAddress } from '../utils/clientAddress.ts'
 import { type AuthEventEmitter, createAuthEvent } from './events.ts'
@@ -41,6 +45,7 @@ type SecurityRouteId =
 	| 'sessions.revoke'
 
 type SecurityRoutePolicy = {
+	requestOrigin?: PolicyMode
 	csrf?: PolicyMode
 	rateLimit?: PolicyMode
 	rateLimitWindows?: readonly RateLimitWindow[]
@@ -48,13 +53,19 @@ type SecurityRoutePolicy = {
 }
 
 export type SecurityPolicySettings = {
+	requestOrigin: {
+		mode: PolicyMode
+		allowedOrigins: readonly string[]
+		validate?: (event: RequestEventLike) => boolean | Promise<boolean>
+	}
 	csrf: {
 		mode: PolicyMode
-		validateExternalSecurityBoundary?: (event: RequestEventLike) => boolean | Promise<boolean>
+		secret?: string | Uint8Array
 		cookieName: string
 		headerName: string
 		checkExpiry: boolean
-		httpOnly?: boolean
+		httpOnly: boolean
+		secureCookies: boolean
 		store?: CsrfTokenStore
 	}
 	rateLimit: {
@@ -71,6 +82,29 @@ export type SecurityPolicySettings = {
 		emitter?: AuthEventEmitter
 	}
 	routes: Partial<Record<SecurityRouteId, SecurityRoutePolicy>>
+}
+
+/** Creates Auth's single canonical session-bound CSRF adapter configuration. */
+export function createAuthCsrf(settings: SecurityPolicySettings): SvelteKitCsrf {
+	const secret = settings.csrf.secret
+	if (!secret) throw new Error('Auth CSRF protection requires security.csrf.secret')
+	return createSvelteKitCsrf({
+		secret,
+		cookieName: settings.csrf.cookieName,
+		headerName: settings.csrf.headerName,
+		checkExpiry: settings.csrf.checkExpiry,
+		trackExpiry: settings.csrf.checkExpiry,
+		getSessionBinding: (event) =>
+			(event as unknown as RequestEventLike).locals.session?.id ?? null,
+		cookieOptions: {
+			httpOnly: settings.csrf.httpOnly,
+			secure: settings.csrf.secureCookies,
+			sameSite: 'lax',
+			path: '/',
+			maxAge: 60 * 60
+		},
+		...(settings.csrf.store ? { tokenStore: settings.csrf.store } : {})
+	})
 }
 
 type ApplyPolicyInput = {
@@ -117,15 +151,11 @@ export function applySecurityPolicy({ handler, routeId, settings }: ApplyPolicyI
 		...(settings.rateLimit.logger ? { logger: settings.rateLimit.logger } : {}),
 		...(settings.rateLimit.store ? { store: settings.rateLimit.store } : {})
 	})
-	const csrf = createSvelteKitCsrf({
-		cookieName: settings.csrf.cookieName,
-		headerName: settings.csrf.headerName,
-		checkExpiry: settings.csrf.checkExpiry,
-		...(settings.csrf.store ? { tokenStore: settings.csrf.store } : {})
-	})
+	const csrf = settings.csrf.mode === 'off' ? null : createAuthCsrf(settings)
 
 	return async (event: RequestEventLike): Promise<Response> => {
 		const method = event.request.method.toUpperCase()
+		const requestOriginMode = routePolicy.requestOrigin ?? settings.requestOrigin.mode
 		const csrfMode = routePolicy.csrf ?? settings.csrf.mode
 		const rateMode = routePolicy.rateLimit ?? settings.rateLimit.mode
 		const auditMode = routePolicy.audit ?? settings.audit.mode
@@ -153,6 +183,25 @@ export function applySecurityPolicy({ handler, routeId, settings }: ApplyPolicyI
 			await settings.audit.emitter(createAuthEvent(payload))
 		}
 
+		const isStateChanging =
+			method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE'
+		if (isStateChanging && requestOriginMode !== 'off') {
+			const validOrigin = settings.requestOrigin.validate
+				? await settings.requestOrigin.validate(event)
+				: verifyRequestOrigin({
+						request: event.request,
+						requestUrl: event.url,
+						allowedOrigins: settings.requestOrigin.allowedOrigins,
+						allowMissingBrowserContext: requestOriginMode === 'optional'
+					}).ok
+			if (!validOrigin) {
+				await emit('auth.csrf_failed', 'warn', 403, 'Invalid request origin', {
+					boundary: 'request-origin'
+				})
+				return jsonError(403, 'Invalid request origin')
+			}
+		}
+
 		if (rateMode !== 'off') {
 			const key = `${routeId}:${ip}`
 			const result = await limiter.check(key)
@@ -164,29 +213,17 @@ export function applySecurityPolicy({ handler, routeId, settings }: ApplyPolicyI
 			}
 		}
 
-		const isStateChanging =
-			method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE'
 		const enforceCsrf =
 			isStateChanging &&
 			csrfMode !== 'off' &&
 			(csrfMode === 'required' || Boolean(event.cookies.get(settings.csrf.cookieName)))
 		if (enforceCsrf) {
-			const valid = await csrf.validateRequest(event.request, event.cookies)
+			const valid = csrf ? await csrf.validate(event as never) : false
 			if (!valid) {
 				await emit('auth.csrf_failed', 'warn', 403, 'Invalid CSRF token')
 				return jsonError(403, 'Invalid CSRF token')
 			}
 		}
-		if (
-			isStateChanging &&
-			csrfMode === 'off' &&
-			settings.csrf.validateExternalSecurityBoundary &&
-			!(await settings.csrf.validateExternalSecurityBoundary(event))
-		) {
-			await emit('auth.csrf_failed', 'warn', 403, 'Invalid external security boundary')
-			return jsonError(403, 'Invalid security boundary')
-		}
-
 		await emit('auth.request', 'info')
 		try {
 			const response = await handler(event)

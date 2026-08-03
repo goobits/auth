@@ -39,7 +39,7 @@ counters remain owned by their `@goobits/security/*` entrypoints.
 
 ## Stability And Distribution
 
-Documented exports are stable for the `0.5.x` line. WebAuthn and MFA may receive
+Documented exports are stable for the `0.6.x` line. WebAuthn and MFA may receive
 additive options as browser and authenticator behavior evolves.
 
 - First-party TypeScript workspaces consume checked-out `src/` entrypoints so
@@ -59,9 +59,11 @@ additive options as browser and authenticator behavior evolves.
 
 - `GoobitsAuth` owns the SvelteKit handle, managed handlers, named route
   factories, session lookup, route-role guards, and security-event pipeline.
-- The `secure` profile requires CSRF, shared production rate limiting, and an
-  awaited audit emitter. An application-wide origin guard is valid only through
-  the executable `validateExternalSecurityBoundary` callback.
+- The `secure` profile requires request-origin verification, shared production
+  rate limiting, and an awaited audit emitter. Signed CSRF tokens additionally
+  require `security.csrf.secret`; secure deployments may explicitly disable the
+  token layer only while origin verification remains required. `strict`
+  requires both boundaries.
 - `requireAuthRole()` gates website/session roles; product permissions remain an
   application concern.
 - `drizzleAdapter()` returns the required session, user, and password-credential
@@ -116,6 +118,8 @@ See the public API and migration guide for the complete capability contracts.
   and production responsibilities.
 - [`docs/schema.md`](docs/schema.md) — schema requirements.
 - [`docs/testing.md`](docs/testing.md) — test helpers and expectations.
+- [`docs/migrations/0.6-breaking.md`](docs/migrations/0.6-breaking.md) —
+  session-bound CSRF, request-origin, and secret-safe provider migration.
 - [`docs/migrations/0.5-breaking.md`](docs/migrations/0.5-breaking.md) — atomic
   passkey-registration adapter migration from 0.4.
 - [`docs/migrations/0.4-breaking.md`](docs/migrations/0.4-breaking.md) — OAuth

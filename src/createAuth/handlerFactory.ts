@@ -22,7 +22,6 @@ import {
 	createOAuthIdentityListHandler,
 	createOAuthIdentityUnlinkHandler
 } from '../handlers/oauthIdentities.ts'
-import { createSvelteKitCsrf } from '@goobits/security/csrf/sveltekit'
 import {
 	createWebAuthnLoginOptionsHandler,
 	createWebAuthnLoginVerifyHandler,
@@ -63,6 +62,7 @@ import {
 	createDefaultWebAuthnCredentialMutation
 } from './credentialMutations.ts'
 import type { ResolvedSecurity } from './securitySetup.ts'
+import { createAuthCsrf } from '../security/policy.ts'
 
 function normalizeMagicLinkConfig(
 	magicLink: MagicLinkConfig,
@@ -143,20 +143,7 @@ export function createHandlers(
 				...(config.oauth?.hooks ? { hooks: config.oauth.hooks } : {})
 			}))
 		: null
-	const csrf = createSvelteKitCsrf({
-		cookieName: security.csrf.cookieName,
-		headerName: security.csrf.headerName,
-		checkExpiry: security.csrf.checkExpiry,
-		trackExpiry: security.csrf.checkExpiry,
-		cookieOptions: {
-			httpOnly: security.csrf.httpOnly ?? false,
-			secure: defaults.cookieConfig.secure,
-			sameSite: 'lax',
-			path: '/',
-			maxAge: 60 * 60
-		},
-		...(security.csrf.store ? { tokenStore: security.csrf.store } : {})
-	})
+	const csrf = security.csrf.mode === 'off' ? null : createAuthCsrf(security)
 	let loginHandler: AuthHandlers['login']
 	let callbackHandler: AuthHandlers['callback']
 
@@ -327,17 +314,15 @@ export function createHandlers(
 	const handleHooks: AuthHandlers['hooks'] = async ({ event, resolve }) => {
 		const method = event.request.method.toUpperCase()
 		const safeMethod = method === 'GET' || method === 'HEAD' || method === 'OPTIONS'
-		if (safeMethod && security.csrf.mode !== 'off') {
-			const existingToken = event.cookies.get(security.csrf.cookieName)
-			if (!existingToken) {
-				await csrf.issue(event.cookies)
-			}
+		const resolveWithCsrf = async () => {
+			if (safeMethod && csrf) await csrf.getOrCreate(event as never)
+			return resolve(event)
 		}
 		const sessionId = event.cookies.get(adapters.session.cookieName)
 		if (!sessionId) {
 			event.locals.session = null
 			event.locals.user = null
-			return resolve(event)
+			return resolveWithCsrf()
 		}
 		const { session, user } = await adapters.session.validateSession(sessionId)
 		event.locals.session = session
@@ -352,7 +337,7 @@ export function createHandlers(
 		} else {
 			adapters.session.deleteSessionCookie?.(event.cookies)
 		}
-		return resolve(event)
+		return resolveWithCsrf()
 	}
 
 	const handlers: AuthHandlers = {

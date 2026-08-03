@@ -30,45 +30,45 @@ type GoogleProviderConfig = {
 
 /** Google OAuth 2.0 provider with PKCE authorization-code exchange. */
 export class GoogleProvider extends OAuthProvider {
-	private readonly clientId: string
-	private readonly clientSecret: string
-	private readonly callbackUrl: string
-	private readonly defaultScopes: string[]
-	private readonly accessType: 'online' | 'offline'
-	private readonly logger: Logger
+	readonly #clientId: string
+	readonly #clientSecret: string
+	readonly #callbackUrl: string
+	readonly #defaultScopes: string[]
+	readonly #accessType: 'online' | 'offline'
+	readonly #logger: Logger
 
 	constructor(config: GoogleProviderConfig) {
-		super('google', config)
-		this.logger = resolveLogger(config.logger)
+		super('google')
+		this.#logger = resolveLogger(config.logger)
 
 		if (!config.clientId || !config.clientSecret || !config.callbackUrl) {
 			throw new Error('GoogleProvider requires clientId, clientSecret, and callbackUrl')
 		}
 
-		this.clientId = config.clientId
-		this.clientSecret = config.clientSecret
-		this.callbackUrl = config.callbackUrl
-		this.defaultScopes = config.scopes ?? ['openid', 'profile', 'email']
-		this.accessType = config.accessType ?? 'online'
-		assertIdentityScopes(this.defaultScopes)
+		this.#clientId = config.clientId
+		this.#clientSecret = config.clientSecret
+		this.#callbackUrl = config.callbackUrl
+		this.#defaultScopes = config.scopes ?? ['openid', 'profile', 'email']
+		this.#accessType = config.accessType ?? 'online'
+		assertIdentityScopes(this.#defaultScopes)
 	}
 
 	async createAuthorizationURL(
 		state: string,
 		codeVerifier: string,
-		scopes: string[] = this.defaultScopes
+		scopes: string[] = this.#defaultScopes
 	): Promise<URL> {
-		const resolvedScopes = scopes.length > 0 ? scopes : this.defaultScopes
+		const resolvedScopes = scopes.length > 0 ? scopes : this.#defaultScopes
 		assertIdentityScopes(resolvedScopes)
 		const authorizationUrl = new URL(GOOGLE_AUTHORIZATION_ENDPOINT)
 		authorizationUrl.searchParams.set('response_type', 'code')
-		authorizationUrl.searchParams.set('client_id', this.clientId)
-		authorizationUrl.searchParams.set('redirect_uri', this.callbackUrl)
+		authorizationUrl.searchParams.set('client_id', this.#clientId)
+		authorizationUrl.searchParams.set('redirect_uri', this.#callbackUrl)
 		authorizationUrl.searchParams.set('state', state)
 		authorizationUrl.searchParams.set('scope', resolvedScopes.join(' '))
 		authorizationUrl.searchParams.set('code_challenge', await createS256CodeChallenge(codeVerifier))
 		authorizationUrl.searchParams.set('code_challenge_method', 'S256')
-		if (this.accessType === 'offline') authorizationUrl.searchParams.set('access_type', 'offline')
+		if (this.#accessType === 'offline') authorizationUrl.searchParams.set('access_type', 'offline')
 		return authorizationUrl
 	}
 
@@ -82,10 +82,10 @@ export class GoogleProvider extends OAuthProvider {
 				new URLSearchParams({
 					grant_type: 'authorization_code',
 					code,
-					redirect_uri: this.callbackUrl,
+					redirect_uri: this.#callbackUrl,
 					code_verifier: codeVerifier,
-					client_id: this.clientId,
-					client_secret: this.clientSecret
+					client_id: this.#clientId,
+					client_secret: this.#clientSecret
 				})
 			)
 			const googleUserResponse = await fetch(GOOGLE_USERINFO_ENDPOINT, {
@@ -141,7 +141,7 @@ export class GoogleProvider extends OAuthProvider {
 				}
 			}
 		} catch (error) {
-			this.logger.error('Error in GoogleProvider.getUserProfile', errorContext(error))
+			this.#logger.error('Error in GoogleProvider.getUserProfile', errorContext(error))
 			throw error
 		}
 	}
@@ -152,8 +152,8 @@ export class GoogleProvider extends OAuthProvider {
 			new URLSearchParams({
 				grant_type: 'refresh_token',
 				refresh_token: refreshToken,
-				client_id: this.clientId,
-				client_secret: this.clientSecret
+				client_id: this.#clientId,
+				client_secret: this.#clientSecret
 			})
 		)
 		return {

@@ -4,8 +4,9 @@ This example shows the minimum SvelteKit wiring expected by `@goobits/auth`.
 
 It is intentionally small and uses placeholder imports for your app database,
 schema, and durable audit emitter. Replace the process-local rate-limit store
-before production. To test against a local package tarball, publish or pack the
-auth package first, then install it into a SvelteKit app:
+before production, and supply a shared `AUTH_CSRF_SECRET` containing at least
+32 bytes. To test against a local package tarball, publish or pack the auth
+package first, then install it into a SvelteKit app:
 
 ```sh
 cd ../../

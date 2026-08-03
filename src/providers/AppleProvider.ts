@@ -68,6 +68,9 @@ const APPLE_REVOCATION_ENDPOINT = 'https://appleid.apple.com/auth/revoke'
 const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys'
 const APPLE_CLOCK_SKEW_SECONDS = 5 * 60
 const APPLE_JWKS_MAX_BYTES = 128 * 1024
+const APPLE_JWKS_TTL_MS = 60 * 60 * 1000
+const APPLE_JWKS_UNKNOWN_KEY_COOLDOWN_MS = 60 * 1000
+const APPLE_JWKS_FAILURE_BACKOFF_MS = 30 * 1000
 const APPLE_EVENTS_MAX_BYTES = 8 * 1024
 const APPLE_MILLISECONDS_THRESHOLD = 10_000_000_000
 const APPLE_IDENTITY_SCOPES = new Set(['name', 'email'])
@@ -78,6 +81,9 @@ const APPLE_NOTIFICATION_TYPES = new Set<AppleServerNotificationType>([
 	'account-deleted'
 ])
 let cachedAppleJwks: { keys: AppleJwk[]; expiresAt: number } | null = null
+let appleJwksFetchPromise: Promise<{ keys: AppleJwk[] }> | null = null
+let nextForcedAppleJwksRefreshAt = 0
+let nextAppleJwksFetchAt = 0
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -89,13 +95,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  */
 export class AppleProvider extends OAuthProvider {
 	override readonly callbackMode = 'form_post' as const
-	private readonly clientId: string
-	private readonly teamId: string
-	private readonly keyId: string
-	private readonly privateKeyBytes: Uint8Array
-	private readonly callbackUrl: string
-	private readonly logger: Logger
-	private signingKeyPromise: Promise<CryptoKey> | null = null
+	readonly #clientId: string
+	readonly #teamId: string
+	readonly #keyId: string
+	readonly #privateKeyBytes: Uint8Array
+	readonly #callbackUrl: string
+	readonly #logger: Logger
+	#signingKeyPromise: Promise<CryptoKey> | null = null
 
 	/**
 	 * @param {Object} config - Configuration
@@ -106,8 +112,8 @@ export class AppleProvider extends OAuthProvider {
 	 * @param {string} config.callbackUrl - OAuth callback URL
 	 */
 	constructor(config: AppleProviderConfig) {
-		super('apple', config)
-		this.logger = resolveLogger(config.logger)
+		super('apple')
+		this.#logger = resolveLogger(config.logger)
 
 		if (
 			!config.clientId ||
@@ -119,11 +125,11 @@ export class AppleProvider extends OAuthProvider {
 			throw new Error('AppleProvider requires clientId, teamId, keyId, privateKey, and callbackUrl')
 		}
 
-		this.clientId = config.clientId
-		this.teamId = config.teamId
-		this.keyId = config.keyId
-		this.privateKeyBytes = this._decodePrivateKey(config.privateKey)
-		this.callbackUrl = config.callbackUrl
+		this.#clientId = config.clientId
+		this.#teamId = config.teamId
+		this.#keyId = config.keyId
+		this.#privateKeyBytes = this.#decodePrivateKey(config.privateKey)
+		this.#callbackUrl = config.callbackUrl
 	}
 
 	/**
@@ -132,7 +138,7 @@ export class AppleProvider extends OAuthProvider {
 	 * @returns {Uint8Array}
 	 * @private
 	 */
-	_decodePrivateKey(privateKey: string): Uint8Array {
+	#decodePrivateKey(privateKey: string): Uint8Array {
 		try {
 			const cleaned = privateKey
 				.replace('-----BEGIN PRIVATE KEY-----', '')
@@ -143,7 +149,7 @@ export class AppleProvider extends OAuthProvider {
 
 			return base64UrlToBytes(cleaned.replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/u, ''))
 		} catch (error) {
-			this.logger.error('Error decoding Apple private key', errorContext(error))
+			this.#logger.error('Error decoding Apple private key', errorContext(error))
 			throw new Error('Invalid Apple private key format')
 		}
 	}
@@ -158,8 +164,8 @@ export class AppleProvider extends OAuthProvider {
 		const authorizationUrl = new URL(APPLE_AUTHORIZATION_ENDPOINT)
 		authorizationUrl.searchParams.set('response_type', 'code')
 		authorizationUrl.searchParams.set('response_mode', 'form_post')
-		authorizationUrl.searchParams.set('client_id', this.clientId)
-		authorizationUrl.searchParams.set('redirect_uri', this.callbackUrl)
+		authorizationUrl.searchParams.set('client_id', this.#clientId)
+		authorizationUrl.searchParams.set('redirect_uri', this.#callbackUrl)
 		authorizationUrl.searchParams.set('state', state)
 		authorizationUrl.searchParams.set('nonce', codeVerifier)
 		authorizationUrl.searchParams.set('scope', resolvedScopes.join(' '))
@@ -179,11 +185,11 @@ export class AppleProvider extends OAuthProvider {
 		userData: string | null = null
 	): Promise<{ profile: OAuthProfile; tokens: OAuthTokens }> {
 		try {
-			const tokens = await this.requestTokens(
+			const tokens = await this.#requestTokens(
 				new URLSearchParams({
 					grant_type: 'authorization_code',
 					code,
-					redirect_uri: this.callbackUrl
+					redirect_uri: this.#callbackUrl
 				})
 			)
 			if (!tokens.idToken) throw new Error('Missing Apple ID token')
@@ -192,7 +198,7 @@ export class AppleProvider extends OAuthProvider {
 				email,
 				email_verified: emailVerified,
 				sub: appleUserId
-			} = await this.verifyIdToken(tokens.idToken, codeVerifier)
+			} = await this.#verifyIdToken(tokens.idToken, codeVerifier)
 
 			if (!email || !appleUserId) {
 				throw new Error('Invalid token data from Apple')
@@ -223,7 +229,7 @@ export class AppleProvider extends OAuthProvider {
 						if (fullName && fullName.length <= 512) name = fullName
 					}
 				} catch (error) {
-					this.logger.warn('Could not parse Apple user data', errorContext(error))
+					this.#logger.warn('Could not parse Apple user data', errorContext(error))
 				}
 			}
 
@@ -242,37 +248,37 @@ export class AppleProvider extends OAuthProvider {
 				}
 			}
 		} catch (error) {
-			this.logger.error('Error in AppleProvider.getUserProfile', errorContext(error))
+			this.#logger.error('Error in AppleProvider.getUserProfile', errorContext(error))
 			throw error
 		}
 	}
 
-	private async requestTokens(parameters: URLSearchParams) {
-		parameters.set('client_id', this.clientId)
-		parameters.set('client_secret', await this.createClientSecret())
+	async #requestTokens(parameters: URLSearchParams) {
+		parameters.set('client_id', this.#clientId)
+		parameters.set('client_secret', await this.#createClientSecret())
 		return requestOAuthTokens(APPLE_TOKEN_ENDPOINT, parameters)
 	}
 
-	private async createClientSecret(): Promise<string> {
+	async #createClientSecret(): Promise<string> {
 		const now = Math.floor(Date.now() / 1000)
 		const header = bytesToBase64Url(
-			textToBytes(JSON.stringify({ alg: 'ES256', kid: this.keyId, typ: 'JWT' }))
+			textToBytes(JSON.stringify({ alg: 'ES256', kid: this.#keyId, typ: 'JWT' }))
 		)
 		const claims = bytesToBase64Url(
 			textToBytes(
 				JSON.stringify({
-					iss: this.teamId,
+					iss: this.#teamId,
 					iat: now,
 					exp: now + 5 * 60,
 					aud: APPLE_ISSUER,
-					sub: this.clientId
+					sub: this.#clientId
 				})
 			)
 		)
 		const signingInput = `${header}.${claims}`
 		const signature = await crypto.subtle.sign(
 			{ name: 'ECDSA', hash: 'SHA-256' },
-			await this.getSigningKey(),
+			await this.#getSigningKey(),
 			Uint8Array.from(textToBytes(signingInput)).buffer
 		)
 		const signatureBytes = new Uint8Array(signature)
@@ -282,22 +288,22 @@ export class AppleProvider extends OAuthProvider {
 		return `${signingInput}.${bytesToBase64Url(signatureBytes)}`
 	}
 
-	private getSigningKey(): Promise<CryptoKey> {
-		this.signingKeyPromise ??= crypto.subtle.importKey(
+	#getSigningKey(): Promise<CryptoKey> {
+		this.#signingKeyPromise ??= crypto.subtle.importKey(
 			'pkcs8',
-			Uint8Array.from(this.privateKeyBytes).buffer,
+			Uint8Array.from(this.#privateKeyBytes).buffer,
 			{ name: 'ECDSA', namedCurve: 'P-256' },
 			false,
 			['sign']
 		)
-		return this.signingKeyPromise
+		return this.#signingKeyPromise
 	}
 
-	private async verifyIdToken(
+	async #verifyIdToken(
 		idTokenValue: string,
 		expectedNonce: string
 	): Promise<AppleIdTokenPayload> {
-		const payload = (await this.verifySignedApplePayload(idTokenValue, {
+		const payload = (await this.#verifySignedApplePayload(idTokenValue, {
 			requiredClaims: ['iss', 'aud', 'sub', 'iat', 'exp', 'email', 'email_verified', 'nonce'],
 			maxTokenAge: '10 minutes',
 			errorMessage: 'Invalid Apple ID token'
@@ -316,7 +322,7 @@ export class AppleProvider extends OAuthProvider {
 		return payload
 	}
 
-	private async verifySignedApplePayload(
+	async #verifySignedApplePayload(
 		token: string,
 		options: {
 			requiredClaims: readonly string[]
@@ -325,20 +331,27 @@ export class AppleProvider extends OAuthProvider {
 		}
 	): Promise<Record<string, unknown>> {
 		if (!token || token.length > 16 * 1024) throw new Error(options.errorMessage)
-		let jwks = await getAppleJwks()
+		const readJwks = async (forceRefresh = false) => {
+			try {
+				return await getAppleJwks(forceRefresh)
+			} catch {
+				throw new Error(options.errorMessage)
+			}
+		}
+		let jwks = await readJwks()
 		const verify = (keySet: { keys: AppleJwk[] }) =>
 			verifyJwtWithJwks(token, {
 				jwks: keySet,
 				algorithms: ['RS256'],
 				issuer: APPLE_ISSUER,
-				audience: this.clientId,
+				audience: this.#clientId,
 				requiredClaims: options.requiredClaims,
 				clockTolerance: APPLE_CLOCK_SKEW_SECONDS,
 				...(options.maxTokenAge === undefined ? {} : { maxTokenAge: options.maxTokenAge })
 			})
 		let verification = await verify(jwks)
-		if (!verification.ok && verification.reason !== 'expired') {
-			jwks = await getAppleJwks(true)
+		if (!verification.ok && verification.reason === 'key-not-found') {
+			jwks = await readJwks(true)
 			verification = await verify(jwks)
 		}
 		if (!verification.ok) throw new Error(options.errorMessage)
@@ -347,7 +360,7 @@ export class AppleProvider extends OAuthProvider {
 
 	/** Verifies and normalizes a Sign in with Apple server-to-server notification JWT. */
 	async verifyServerNotification(token: string): Promise<AppleServerNotification> {
-		const payload = (await this.verifySignedApplePayload(token, {
+		const payload = (await this.#verifySignedApplePayload(token, {
 			requiredClaims: ['iss', 'aud', 'iat', 'jti', 'events'],
 			errorMessage: 'Invalid Apple server notification'
 		})) as AppleServerNotificationPayload
@@ -396,7 +409,7 @@ export class AppleProvider extends OAuthProvider {
 	}
 
 	async refreshAccessToken(refreshToken: string): Promise<OAuthTokens> {
-		const newTokens = await this.requestTokens(
+		const newTokens = await this.#requestTokens(
 			new URLSearchParams({
 				grant_type: 'refresh_token',
 				refresh_token: refreshToken
@@ -416,8 +429,8 @@ export class AppleProvider extends OAuthProvider {
 		await requestOAuthTokenRevocation({
 			endpoint: APPLE_REVOCATION_ENDPOINT,
 			parameters: new URLSearchParams({
-				client_id: this.clientId,
-				client_secret: await this.createClientSecret(),
+				client_id: this.#clientId,
+				client_secret: await this.#createClientSecret(),
 				token,
 				token_type_hint: tokens.refreshToken ? 'refresh_token' : 'access_token'
 			}),
@@ -431,6 +444,31 @@ async function getAppleJwks(forceRefresh = false): Promise<{ keys: AppleJwk[] }>
 	if (!forceRefresh && cachedAppleJwks && cachedAppleJwks.expiresAt > now) {
 		return { keys: cachedAppleJwks.keys }
 	}
+	if (appleJwksFetchPromise) return appleJwksFetchPromise
+	if (now < nextAppleJwksFetchAt) {
+		if (cachedAppleJwks) return { keys: cachedAppleJwks.keys }
+		throw new Error('Apple JWKS fetch is temporarily unavailable')
+	}
+	if (forceRefresh && cachedAppleJwks && now < nextForcedAppleJwksRefreshAt) {
+		return { keys: cachedAppleJwks.keys }
+	}
+	if (forceRefresh) nextForcedAppleJwksRefreshAt = now + APPLE_JWKS_UNKNOWN_KEY_COOLDOWN_MS
+
+	const stale = cachedAppleJwks
+	const pending = fetchAppleJwks()
+	appleJwksFetchPromise = pending
+	try {
+		return await pending
+	} catch (error) {
+		nextAppleJwksFetchAt = Date.now() + APPLE_JWKS_FAILURE_BACKOFF_MS
+		if (!stale) throw error
+		return { keys: stale.keys }
+	} finally {
+		if (appleJwksFetchPromise === pending) appleJwksFetchPromise = null
+	}
+}
+
+async function fetchAppleJwks(): Promise<{ keys: AppleJwk[] }> {
 	const response = await fetch(APPLE_JWKS_URL, {
 		signal: AbortSignal.timeout(5000),
 		headers: { accept: 'application/json' }
@@ -456,7 +494,9 @@ async function getAppleJwks(forceRefresh = false): Promise<{ keys: AppleJwk[] }>
 				.slice(0, 10)
 		: []
 	if (keys.length === 0) throw new Error('Apple JWKS response contained no signing keys')
-	cachedAppleJwks = { keys, expiresAt: now + 60 * 60 * 1000 }
+	cachedAppleJwks = { keys, expiresAt: Date.now() + APPLE_JWKS_TTL_MS }
+	nextAppleJwksFetchAt = 0
+	nextForcedAppleJwksRefreshAt = Date.now() + APPLE_JWKS_UNKNOWN_KEY_COOLDOWN_MS
 	return { keys }
 }
 

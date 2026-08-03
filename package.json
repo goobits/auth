@@ -1,6 +1,6 @@
 {
 	"name": "@goobits/auth",
-	"version": "0.5.1",
+	"version": "0.6.0",
 	"description": "Pluggable authentication system for SvelteKit applications",
 	"type": "module",
 	"main": "./src/index.ts",
@@ -377,7 +377,7 @@
 		}
 	},
 	"dependencies": {
-		"@goobits/security": "workspace:*",
+		"@goobits/security": "workspace:^4.0.0",
 		"@lucide/svelte": "^1.26.0",
 		"@simplewebauthn/server": "^13.3.2",
 		"hash-wasm": "^4.12.0",

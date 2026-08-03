@@ -10,8 +10,11 @@ function base64UrlJson(value: unknown): string {
 	return Buffer.from(JSON.stringify(value)).toString('base64url')
 }
 
-async function appleToken(payload: Record<string, unknown>): Promise<string> {
-	const signingInput = `${base64UrlJson({ alg: 'RS256', kid: 'apple-key-1' })}.${base64UrlJson(payload)}`
+async function appleToken(
+	payload: Record<string, unknown>,
+	keyId = 'apple-key-1'
+): Promise<string> {
+	const signingInput = `${base64UrlJson({ alg: 'RS256', kid: keyId })}.${base64UrlJson(payload)}`
 	const signature = await crypto.subtle.sign(
 		'RSASSA-PKCS1-v1_5',
 		appleSigningPrivateKey,
@@ -20,8 +23,8 @@ async function appleToken(payload: Record<string, unknown>): Promise<string> {
 	return `${signingInput}.${Buffer.from(signature).toString('base64url')}`
 }
 
-function createProvider() {
-	return new AppleProvider({
+function createProvider(Provider: typeof AppleProvider = AppleProvider) {
+	return new Provider({
 		clientId: 'com.example.web',
 		teamId: 'TEAM123',
 		keyId: 'KEY123',
@@ -85,6 +88,7 @@ beforeAll(async () => {
 })
 
 afterEach(() => {
+	vi.useRealTimers()
 	vi.restoreAllMocks()
 	vi.unstubAllGlobals()
 })
@@ -109,6 +113,16 @@ describe('AppleProvider identity verification', () => {
 		expect(() => createProvider().createAuthorizationURL('state', 'verifier', ['name'])).toThrow(
 			'only the name and email'
 		)
+	})
+
+	it('exposes only secret-free provider metadata to runtime serialization', () => {
+		const provider = createProvider()
+		const serialized = JSON.stringify(provider)
+
+		expect(JSON.parse(serialized)).toEqual({ callbackMode: 'form_post', name: 'apple' })
+		expect('config' in provider).toBe(false)
+		expect(serialized).not.toContain('TEAM123')
+		expect(serialized).not.toContain(clientPrivateKey)
 	})
 
 	it('rejects object-shaped ID token data instead of bypassing signature verification', async () => {
@@ -274,6 +288,141 @@ describe('AppleProvider identity verification', () => {
 		await expect(provider.getUserProfile('code', 'verifier')).rejects.toThrow(
 			'Invalid Apple ID token identity'
 		)
+	})
+
+	it('refreshes JWKS only for unknown key IDs with single-flight and cooldown', async () => {
+		vi.useFakeTimers()
+		vi.setSystemTime(new Date('2026-08-03T12:00:00.000Z'))
+		vi.resetModules()
+		const { AppleProvider: FreshAppleProvider } = await import(
+			'../../src/providers/AppleProvider.ts'
+		)
+		const provider = createProvider(FreshAppleProvider)
+		const now = Math.floor(Date.now() / 1000)
+		const knownKeyToken = await appleToken({
+			iss: 'https://appleid.apple.com',
+			aud: 'com.example.web',
+			iat: now,
+			jti: 'known-key-notification',
+			events: { type: 'account-deleted', sub: 'apple-user-1', event_time: now }
+		})
+		const unknownKeyToken = await appleToken(
+			{
+				iss: 'https://appleid.apple.com',
+				aud: 'com.example.web',
+				iat: now,
+				jti: 'unknown-key-notification',
+				events: { type: 'account-deleted', sub: 'apple-user-1', event_time: now }
+			},
+			'unknown-key'
+		)
+		const fetcher = vi.fn(async () =>
+			Response.json({
+				keys: [{ ...appleSigningPublicJwk, kid: 'apple-key-1', use: 'sig', alg: 'RS256' }]
+			})
+		)
+		vi.stubGlobal('fetch', fetcher)
+
+		await expect(provider.verifyServerNotification(knownKeyToken)).resolves.toMatchObject({
+			jwtId: 'known-key-notification'
+		})
+		vi.advanceTimersByTime(60 * 1000 + 1)
+		const concurrent = await Promise.allSettled([
+			provider.verifyServerNotification(unknownKeyToken),
+			provider.verifyServerNotification(unknownKeyToken)
+		])
+		expect(concurrent.every((result) => result.status === 'rejected')).toBe(true)
+		await expect(provider.verifyServerNotification(unknownKeyToken)).rejects.toThrow(
+			'Invalid Apple server notification'
+		)
+		expect(fetcher).toHaveBeenCalledTimes(2)
+	})
+
+	it('does not refresh JWKS for a known-key signature failure', async () => {
+		vi.resetModules()
+		const { AppleProvider: FreshAppleProvider } = await import(
+			'../../src/providers/AppleProvider.ts'
+		)
+		const provider = createProvider(FreshAppleProvider)
+		const now = Math.floor(Date.now() / 1000)
+		const signed = await appleToken({
+			iss: 'https://appleid.apple.com',
+			aud: 'com.example.web',
+			iat: now,
+			jti: 'tampered-notification',
+			events: { type: 'account-deleted', sub: 'apple-user-1', event_time: now }
+		})
+		const [header, claims, signature] = signed.split('.')
+		if (!header || !claims || !signature) throw new Error('Malformed test JWT')
+		const tamperedSignature = `${signature.startsWith('A') ? 'B' : 'A'}${signature.slice(1)}`
+		const tampered = `${header}.${claims}.${tamperedSignature}`
+		const fetcher = vi.fn(async () =>
+			Response.json({
+				keys: [{ ...appleSigningPublicJwk, kid: 'apple-key-1', use: 'sig', alg: 'RS256' }]
+			})
+		)
+		vi.stubGlobal('fetch', fetcher)
+
+		await expect(provider.verifyServerNotification(tampered)).rejects.toThrow(
+			'Invalid Apple server notification'
+		)
+		expect(fetcher).toHaveBeenCalledOnce()
+	})
+
+	it('uses stale JWKS during a bounded provider outage', async () => {
+		vi.useFakeTimers()
+		vi.setSystemTime(new Date('2026-08-03T12:00:00.000Z'))
+		vi.resetModules()
+		const { AppleProvider: FreshAppleProvider } = await import(
+			'../../src/providers/AppleProvider.ts'
+		)
+		const provider = createProvider(FreshAppleProvider)
+		const now = Math.floor(Date.now() / 1000)
+		const notification = await appleToken({
+			iss: 'https://appleid.apple.com',
+			aud: 'com.example.web',
+			iat: now,
+			jti: 'stale-cache-notification',
+			events: { type: 'account-deleted', sub: 'apple-user-1', event_time: now }
+		})
+		const fetcher = vi
+			.fn()
+			.mockResolvedValueOnce(
+				Response.json({
+					keys: [{ ...appleSigningPublicJwk, kid: 'apple-key-1', use: 'sig', alg: 'RS256' }]
+				})
+			)
+			.mockRejectedValueOnce(new Error('provider unavailable'))
+		vi.stubGlobal('fetch', fetcher)
+
+		await expect(provider.verifyServerNotification(notification)).resolves.toMatchObject({
+			jwtId: 'stale-cache-notification'
+		})
+		vi.advanceTimersByTime(60 * 60 * 1000 + 1)
+		await expect(provider.verifyServerNotification(notification)).resolves.toMatchObject({
+			jwtId: 'stale-cache-notification'
+		})
+		expect(fetcher).toHaveBeenCalledTimes(2)
+	})
+
+	it('backs off repeated JWKS fetches when no cache is available', async () => {
+		vi.resetModules()
+		const { AppleProvider: FreshAppleProvider } = await import(
+			'../../src/providers/AppleProvider.ts'
+		)
+		const provider = createProvider(FreshAppleProvider)
+		const fetcher = vi.fn(async () => {
+			throw new Error('provider unavailable')
+		})
+		vi.stubGlobal('fetch', fetcher)
+
+		await expect(provider.verifyServerNotification('invalid-token')).rejects.toThrow(
+			'Invalid Apple server notification'
+		)
+		await expect(provider.verifyServerNotification('invalid-token')).rejects.toThrow(
+			'Invalid Apple server notification'
+		)
+		expect(fetcher).toHaveBeenCalledOnce()
 	})
 
 	it('treats an already-invalid retained credential as terminally revoked', async () => {

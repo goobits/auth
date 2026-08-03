@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { RequestEventLike } from '../src/types/auth.ts'
+import type { AuthConfig, RequestEventLike } from '../src/types/auth.ts'
 import type {
 	OAuthFlowIntent,
 	OAuthProfile,
@@ -10,6 +10,7 @@ import type {
 } from '../src/types/index.ts'
 import type { OAuthFlowContext } from '../src/utils/oauth.ts'
 import { MemoryUserAdapter, MockSessionAdapter, MockTokenAdapter } from '../src/testing/index.ts'
+import { TEST_CSRF_SECRET } from './testKit.ts'
 
 type OAuthCallback = (
 	event: RequestEventLike,
@@ -27,7 +28,17 @@ vi.mock('../src/handlers/callback.ts', () => ({
 	}
 }))
 
-import { createAuth } from '../src/createAuth.ts'
+import { createAuth as createAuthCore } from '../src/createAuth.ts'
+
+function createAuth(config: AuthConfig) {
+	return createAuthCore({
+		...config,
+		security: {
+			...config.security,
+			csrf: { secret: TEST_CSRF_SECRET, ...config.security?.csrf }
+		}
+	})
+}
 
 const profile: OAuthProfile = {
 	id: 'google-subject',
@@ -45,6 +56,8 @@ const tokens: OAuthTokens = {
 
 function createProvider() {
 	return {
+		name: 'google',
+		callbackMode: 'query' as const,
 		createAuthorizationURL: () => new URL('https://example.com/auth'),
 		getUserProfile: vi.fn(async () => ({ profile, tokens })),
 		refreshAccessToken: vi.fn(),

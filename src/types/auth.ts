@@ -311,10 +311,17 @@ export type AuthAlertWebhookConfig = Omit<WebhookChannelOptions, 'url'> & {
 
 /** Defines auth security config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthSecurityConfig = {
+	requestOrigin?: {
+		mode?: SecurityMode
+		/** Additional trusted browser origins beyond the current request URL origin. */
+		allowedOrigins?: string[]
+		/** Application-owned replacement for the built-in Security origin verifier. */
+		validate?: (event: RequestEventLike) => boolean | Promise<boolean>
+	}
 	csrf?: {
 		mode?: SecurityMode
-		/** Executable application-owned request boundary used only when built-in CSRF is off. */
-		validateExternalSecurityBoundary?: (event: RequestEventLike) => boolean | Promise<boolean>
+		/** HMAC secret for session-bound CSRF tokens. Must contain at least 32 bytes. */
+		secret?: string | Uint8Array
 		cookieName?: string
 		headerName?: string
 		checkExpiry?: boolean

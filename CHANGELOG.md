@@ -4,6 +4,34 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-03
+
+### ⚠️ Breaking
+
+- 🔒 Managed CSRF now requires `security.csrf.secret` and Security 4. Tokens
+  are HMAC-signed and rotate when the validated Auth session changes.
+- 🧭 Managed unsafe routes now enforce Security's request-origin verifier by
+  default. Replace `csrf.validateExternalSecurityBoundary` with
+  `requestOrigin.validate`; Apple OAuth callbacks remain state/nonce-bound and
+  are explicitly exempt from same-origin enforcement for `form_post`.
+- 🔑 `OAuthProvider.config` was removed. `auth.providers` now exposes frozen,
+  secret-free `{ name, callbackMode }` metadata instead of live provider
+  instances. Custom providers must call `super(name)` and retain credentials in
+  ECMAScript `#private` fields.
+
+### 🔒 Security
+
+- 🍎 Apple JWKS refreshes now occur only for an unknown key ID, share one
+  in-flight fetch, apply cooldown/backoff, and retain stale keys during bounded
+  provider outages. Invalid known-key signatures no longer trigger network I/O.
+- 🔐 Google client secrets and Apple signing keys are held only in
+  runtime-private fields and cannot leak through ordinary object or Auth facade
+  serialization.
+- 🧱 Secure and strict profiles enforce request-origin validation independently
+  of token CSRF; strict continues to require both boundaries.
+
+See [`docs/migrations/0.6-breaking.md`](docs/migrations/0.6-breaking.md).
+
 ## [0.5.1] - 2026-08-03
 
 ### 🔒 Security

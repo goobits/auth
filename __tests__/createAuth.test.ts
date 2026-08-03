@@ -4,7 +4,9 @@ import type { SessionAdapter } from '../src/adapters/session/SessionAdapter.ts'
 import { createAuth } from '../src/createAuth.ts'
 import type { RequestEventLike } from '../src/types/auth.ts'
 import type { Session } from '../src/types/index.ts'
-import { createRequestEvent } from './testKit.ts'
+import { createRequestEvent, TEST_CSRF_SECRET } from './testKit.ts'
+
+const TEST_SECURITY = { csrf: { secret: TEST_CSRF_SECRET } }
 
 function createSessionAdapter({
 	cookieName = 'session',
@@ -33,7 +35,10 @@ describe('createAuth', () => {
 	})
 
 	it('allows auth without OAuth providers', () => {
-		const auth = createAuth({ adapters: { session: createSessionAdapter() } })
+		const auth = createAuth({
+			adapters: { session: createSessionAdapter() },
+			security: TEST_SECURITY
+		})
 		expect(auth.handlers.login).toBeUndefined()
 		expect(auth.handlers.callback).toBeUndefined()
 		expect(auth.actions.logout().default).toBeDefined()
@@ -49,13 +54,42 @@ describe('createAuth', () => {
 		).toThrow('createAuth oauth requires at least one OAuth provider')
 	})
 
+	it('exposes frozen provider metadata without provider instances or secrets', () => {
+		const provider = {
+			name: 'google',
+			callbackMode: 'query' as const,
+			clientSecret: 'must-not-leak',
+			createAuthorizationURL: () => new URL('https://provider.example/auth'),
+			getUserProfile: vi.fn(),
+			refreshAccessToken: vi.fn(),
+			revokeTokens: vi.fn()
+		}
+		const auth = createAuth({
+			adapters: {
+				session: createSessionAdapter(),
+				user: {} as never,
+				oauthIdentity: {} as never
+			},
+			providers: { google: { provider } },
+			security: TEST_SECURITY
+		})
+
+		expect(auth.providers).toEqual({
+			google: { name: 'google', callbackMode: 'query' }
+		})
+		expect(Object.isFrozen(auth.providers)).toBe(true)
+		expect(Object.isFrozen(auth.providers.google)).toBe(true)
+		expect(JSON.stringify(auth.providers)).not.toContain(provider.clientSecret)
+	})
+
 	it('clears cookie when session is invalid', async () => {
 		const sessionAdapter = createSessionAdapter({
 			cookieName: 'auth_session',
 			validateResult: { session: null, user: null }
 		})
 		const auth = createAuth({
-			adapters: { session: sessionAdapter }
+			adapters: { session: sessionAdapter },
+			security: TEST_SECURITY
 		})
 
 		const event = createRequestEvent()
@@ -78,7 +112,8 @@ describe('createAuth', () => {
 		})
 
 		const auth = createAuth({
-			adapters: { session: sessionAdapter }
+			adapters: { session: sessionAdapter },
+			security: TEST_SECURITY
 		})
 
 		const event = createRequestEvent()
@@ -99,7 +134,10 @@ describe('createAuth', () => {
 		const sessionAdapter = createSessionAdapter({
 			validateResult: { session: currentSession, user }
 		})
-		const auth = createAuth({ adapters: { session: sessionAdapter } })
+		const auth = createAuth({
+			adapters: { session: sessionAdapter },
+			security: TEST_SECURITY
+		})
 		const events = [createRequestEvent(), createRequestEvent()]
 		for (const event of events) event.cookies.set('session', 'previous-session')
 

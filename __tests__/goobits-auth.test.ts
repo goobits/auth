@@ -3,14 +3,31 @@ import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import type { SessionAdapter } from '../src/adapters/session/SessionAdapter.ts'
 import type { WebAuthnAdapter } from '../src/adapters/webauthn/WebAuthnAdapter.ts'
 import { MemoryUserAdapter } from '../src/adapters/memory/user.ts'
-import { GoobitsAuth, type GoobitsAuthConfig } from '../src/GoobitsAuth.ts'
+import {
+	GoobitsAuth as CoreGoobitsAuth,
+	type GoobitsAuthConfig
+} from '../src/GoobitsAuth.ts'
 import type { OAuthProvider } from '../src/providers/OAuthProvider.ts'
 import type { AuthHandlers } from '../src/types/auth.ts'
 import type { Session, User } from '../src/types/index.ts'
-import { createRequestEvent } from './testKit.ts'
+import { createRequestEvent, TEST_CSRF_SECRET } from './testKit.ts'
+
+class GoobitsAuth extends CoreGoobitsAuth {
+	constructor(config: GoobitsAuthConfig) {
+		super({
+			...config,
+			security: {
+				...config.security,
+				csrf: { secret: TEST_CSRF_SECRET, ...config.security?.csrf }
+			}
+		} as GoobitsAuthConfig)
+	}
+}
 
 function createProvider(): OAuthProvider {
 	return {
+		name: 'google',
+		callbackMode: 'query',
 		createAuthorizationURL: () => new URL('https://provider.example/auth'),
 		getUserProfile: vi.fn(async () => ({
 			profile: { id: 'p1', email: 'p1@example.com' },
@@ -277,7 +294,8 @@ describe('GoobitsAuth', () => {
 			profile: 'secure',
 			adapter: { session: sessionAdapter },
 			security: {
-				csrf: { mode: 'off', validateExternalSecurityBoundary: async () => true }
+				requestOrigin: { mode: 'required', validate: async () => true },
+				csrf: { mode: 'off' }
 			}
 		})
 		const event = createRequestEvent({
