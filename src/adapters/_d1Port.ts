@@ -10,7 +10,7 @@ export interface D1Result<Row extends D1Row = D1Row> {
 	}
 }
 
-export interface D1PreparedStatement {
+interface D1PreparedStatement {
 	bind(...values: D1Value[]): D1PreparedStatement
 	first<Row extends D1Row = D1Row>(): Promise<Row | null>
 	all<Row extends D1Row = D1Row>(): Promise<D1Result<Row>>
