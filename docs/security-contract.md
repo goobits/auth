@@ -85,6 +85,9 @@ should supply `credentialMutations.oauth` and/or
 `credentialMutations.webauthn`. Those methods receive an `authorize`
 callback and must invoke it inside the same serialized boundary as the final
 recovery read and mutation. Auth handlers do not run a second mutation path.
+The OAuth connection method must likewise validate `expectedIdentityUserId`
+against its locked read and invoke `completeAuthentication()` before releasing
+that boundary, so a stale callback cannot create a session after unlink.
 
 ## Defaults
 

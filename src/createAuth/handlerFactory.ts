@@ -270,29 +270,33 @@ export function createHandlers(
 					userId: resolvedUserId,
 					provider: providerName,
 					subject,
+					expectedIdentityUserId: identity?.userId ?? null,
 					tokens,
 					intent: context.intent,
-					event
+					event,
+					completeAuthentication: async () => {
+						if (context.intent === 'sign-in') {
+							await ensureSessionAfterLogin({
+								event,
+								sessionAdapter: adapters.session,
+								userId: resolvedUserId,
+								...(hooks.getSessionMetadata
+									? { getSessionMetadata: hooks.getSessionMetadata }
+									: {}),
+								autoCreateSession,
+								onLoginMode
+							})
+						} else if (context.intent === 'reauth' && currentSession) {
+							await rotateSessionAssurance({
+								sessionAdapter: adapters.session,
+								assurance: 'primary',
+								cookies: event.cookies,
+								currentSession,
+								userId: resolvedUserId
+							})
+						}
+					}
 				})
-
-				if (context.intent === 'sign-in') {
-					await ensureSessionAfterLogin({
-						event,
-						sessionAdapter: adapters.session,
-						userId: resolvedUserId,
-						...(hooks.getSessionMetadata ? { getSessionMetadata: hooks.getSessionMetadata } : {}),
-						autoCreateSession,
-						onLoginMode
-					})
-				} else if (context.intent === 'reauth' && currentSession) {
-					await rotateSessionAssurance({
-						sessionAdapter: adapters.session,
-						assurance: 'primary',
-						cookies: event.cookies,
-						currentSession,
-						userId: resolvedUserId
-					})
-				}
 				return redirectTo
 			},
 			...(hooks.onError

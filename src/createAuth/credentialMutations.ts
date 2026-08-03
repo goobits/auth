@@ -48,6 +48,7 @@ export function createDefaultOAuthCredentialMutations(
 					event: input.event
 				})
 			}
+			await input.completeAuthentication()
 			return { linked }
 		},
 		unlink: async (input) => {

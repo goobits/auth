@@ -314,6 +314,7 @@ describe('createAuth OAuth lifecycle', () => {
 
 	it('delegates connection persistence to one application mutation port', async () => {
 		const session = new MockSessionAdapter()
+		const createSession = vi.spyOn(session, 'createSession')
 		const identity = new MemoryUserAdapter()
 		const user = await createUser(identity, 'resolved-user')
 		const oauthToken = new MockTokenAdapter()
@@ -324,6 +325,7 @@ describe('createAuth OAuth lifecycle', () => {
 				provider: input.provider,
 				subject: input.subject
 			})
+			await input.completeAuthentication()
 			return { linked: true }
 		})
 
@@ -346,11 +348,13 @@ describe('createAuth OAuth lifecycle', () => {
 				userId: user.id,
 				provider: 'google',
 				subject: profile.id,
+				expectedIdentityUserId: null,
 				tokens,
 				intent: 'sign-in'
 			})
 		)
 		expect(storeTokens).not.toHaveBeenCalled()
+		expect(createSession).toHaveBeenCalledOnce()
 	})
 
 	it('reauthenticates only through an identity already owned by the current user', async () => {

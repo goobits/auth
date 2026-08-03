@@ -53,9 +53,11 @@ export type OAuthConnectCredentialMutationInput = {
 	userId: string
 	provider: string
 	subject: string
+	expectedIdentityUserId: string | null
 	tokens: OAuthTokens
 	intent: OAuthFlowIntent
 	event: RequestEventLike
+	completeAuthentication: () => Promise<void>
 }
 
 /** OAuth unlink context whose authorization must execute inside the mutation boundary. */

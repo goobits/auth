@@ -227,6 +227,12 @@ final recovery read under one per-user lock or transaction. Return
 `'forbidden'`, `'not-found'`, or `'success'`; Auth retains HTTP response
 and security-event ownership.
 
+OAuth connection inputs expose `expectedIdentityUserId`, the ownership observed
+before the lifecycle hook, and `completeAuthentication()`. A custom port must
+reject stale ownership and call `completeAuthentication()` after its durable
+connection commit but before releasing its serialized boundary. This keeps
+session creation or assurance rotation ordered with a concurrent unlink.
+
 Provider token endpoint failures are exposed as structured
 `OAuth2RequestError` values from `@goobits/auth/providers`. Known
 already-invalid revocation responses are idempotent successes; network,
