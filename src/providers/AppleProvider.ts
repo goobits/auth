@@ -68,6 +68,8 @@ const APPLE_REVOCATION_ENDPOINT = 'https://appleid.apple.com/auth/revoke'
 const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys'
 const APPLE_CLOCK_SKEW_SECONDS = 5 * 60
 const APPLE_JWKS_MAX_BYTES = 128 * 1024
+const APPLE_EVENTS_MAX_BYTES = 8 * 1024
+const APPLE_MILLISECONDS_THRESHOLD = 10_000_000_000
 const APPLE_IDENTITY_SCOPES = new Set(['name', 'email'])
 const APPLE_NOTIFICATION_TYPES = new Set<AppleServerNotificationType>([
 	'email-disabled',
@@ -349,12 +351,12 @@ export class AppleProvider extends OAuthProvider {
 			requiredClaims: ['iss', 'aud', 'iat', 'jti', 'events'],
 			errorMessage: 'Invalid Apple server notification'
 		})) as AppleServerNotificationPayload
-		const events = payload.events
-		const type = isRecord(events) ? events['type'] : null
-		const subject = isRecord(events) ? events['sub'] : null
-		const eventTime = isRecord(events) ? events['event_time'] : null
-		const email = isRecord(events) ? events['email'] : undefined
-		const privateEmail = isRecord(events) ? events['is_private_email'] : undefined
+		const events = parseAppleEvents(payload.events)
+		const type = events?.['type']
+		const subject = events?.['sub']
+		const eventTime = normalizeAppleEventTime(events?.['event_time'])
+		const email = events?.['email']
+		const privateEmail = events?.['is_private_email']
 		const now = Math.floor(Date.now() / 1000)
 		if (
 			typeof payload.iat !== 'number' ||
@@ -369,9 +371,7 @@ export class AppleProvider extends OAuthProvider {
 			typeof subject !== 'string' ||
 			subject.length === 0 ||
 			subject.length > 255 ||
-			typeof eventTime !== 'number' ||
-			!Number.isSafeInteger(eventTime) ||
-			eventTime <= 0 ||
+			eventTime === null ||
 			eventTime > now + APPLE_CLOCK_SKEW_SECONDS ||
 			(email !== undefined &&
 				(typeof email !== 'string' || email.length === 0 || email.length > 320)) ||
@@ -475,4 +475,23 @@ function parseAppleBoolean(value: unknown): boolean | undefined {
 	if (value === true || value === 'true') return true
 	if (value === false || value === 'false') return false
 	return undefined
+}
+
+function parseAppleEvents(value: unknown): Record<string, unknown> | null {
+	if (isRecord(value)) return value
+	if (typeof value !== 'string' || value.length === 0 || value.length > APPLE_EVENTS_MAX_BYTES) {
+		return null
+	}
+	try {
+		const parsed: unknown = JSON.parse(value)
+		return isRecord(parsed) ? parsed : null
+	} catch {
+		return null
+	}
+}
+
+/** Normalizes Apple's documented seconds and legacy millisecond event timestamps. */
+function normalizeAppleEventTime(value: unknown): number | null {
+	if (typeof value !== 'number' || !Number.isSafeInteger(value) || value <= 0) return null
+	return value >= APPLE_MILLISECONDS_THRESHOLD ? Math.floor(value / 1000) : value
 }
