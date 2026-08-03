@@ -106,23 +106,21 @@ export function createWebAuthnLoginVerifyHandler(
 			return jsonResponse({ ok: false, error: 'Unable to resolve authenticated principal' }, 401)
 		}
 		let userId = result.credential.userId
-		const lifecycleResult = await onAuthentication?.({
-			event,
-			method: {
-				kind: 'passkey',
-				credentialId: result.credential.credentialId,
-				userId
-			},
-			user
-		})
-		if (lifecycleResult) {
-			const hookResult = lifecycleResult
-			if (hookResult?.userId && String(hookResult.userId) !== userId) {
+		let lifecycleResult
+		try {
+			lifecycleResult = await onAuthentication?.({
+				event,
+				method: {
+					kind: 'passkey',
+					credentialId: result.credential.credentialId,
+					userId
+				},
+				user
+			})
+			if (lifecycleResult?.userId && String(lifecycleResult.userId) !== userId) {
 				return jsonResponse({ ok: false, error: 'Unable to resolve authenticated principal' }, 401)
 			}
-		}
 
-		try {
 			userId = await ensureSessionAfterLogin({
 				event,
 				sessionAdapter,

@@ -7,6 +7,7 @@ import {
 	createWebAuthnStepUpOptionsHandler,
 	createWebAuthnStepUpVerifyHandler
 } from '../../src/handlers/webauthn.ts'
+import { AuthPrincipalResolutionError } from '../../src/index.ts'
 import { addCredential, createEvent, createWebAuthnAdapter, TEST_USER } from './_webauthnTestKit.ts'
 
 vi.mock('@simplewebauthn/server', () => ({
@@ -133,6 +134,45 @@ describe('WebAuthn authentication', () => {
 			TEST_USER.id,
 			expect.objectContaining({ mfaVerifiedAt: expect.any(Date) })
 		)
+	})
+
+	it('returns lifecycle policy denials without creating a session', async () => {
+		const adapter = createWebAuthnAdapter()
+		await addCredential(adapter)
+		await adapter.createChallenge({
+			challengeId: 'login-denied',
+			userId: null,
+			challenge: 'authentication-challenge',
+			type: 'authentication',
+			expiresAt: new Date(Date.now() + 60_000)
+		})
+		const sessionAdapter = { createSession: vi.fn(), setSessionCookie: vi.fn() }
+		const handler = createWebAuthnLoginVerifyHandler({
+			webauthnAdapter: adapter,
+			userAdapter: { getUserById: vi.fn(async () => TEST_USER) },
+			sessionAdapter,
+			onAuthentication: async () => {
+				throw new AuthPrincipalResolutionError()
+			},
+			rpID: 'example.com',
+			origin: 'http://localhost'
+		})
+
+		const response = await handler(
+			createEvent({
+				body: {
+					challengeId: 'login-denied',
+					credential: { id: 'AQIDBAcI', response: {} }
+				}
+			})
+		)
+
+		expect(response.status).toBe(401)
+		expect(await response.json()).toEqual({
+			ok: false,
+			error: 'Unable to resolve authenticated principal'
+		})
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
 	})
 
 	it('rejects principal-bound login challenges and counter regressions', async () => {
