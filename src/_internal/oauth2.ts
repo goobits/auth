@@ -141,3 +141,40 @@ export async function requestOAuthTokens(
 		idToken: optionalString(responseBody['id_token'])
 	}
 }
+
+/** Revokes one OAuth credential with bounded, structured, idempotent error handling. */
+export async function requestOAuthTokenRevocation(options: {
+	endpoint: string
+	parameters: URLSearchParams
+	terminalErrorCodes: readonly string[]
+}): Promise<void> {
+	const response = await fetch(options.endpoint, {
+		method: 'POST',
+		headers: {
+			accept: 'application/json',
+			'content-type': 'application/x-www-form-urlencoded'
+		},
+		body: options.parameters,
+		signal: AbortSignal.timeout(OAUTH_REQUEST_TIMEOUT_MS)
+	})
+	if (response.ok) return
+
+	const responseText = await readBoundedResponseText(
+		response,
+		OAUTH_RESPONSE_MAX_BYTES,
+		'OAuth revocation response'
+	)
+	let code = `http_${response.status}`
+	let description: string | null = null
+	try {
+		const body: unknown = JSON.parse(responseText)
+		if (isRecord(body)) {
+			code = optionalString(body['error']) ?? code
+			description = optionalString(body['error_description'])
+		}
+	} catch {
+		// A non-JSON provider failure retains the bounded HTTP status code.
+	}
+	if (response.status === 400 && options.terminalErrorCodes.includes(code)) return
+	throw new OAuth2RequestError(code, description, response.status)
+}

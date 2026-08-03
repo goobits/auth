@@ -45,6 +45,63 @@ export type RequestEventLike = Omit<
 /** Auth-owned request handler that is independent of a consumer's ambient SvelteKit locals. */
 export type AuthRequestHandler = (event: RequestEventLike) => Response | Promise<Response>
 
+/** Standard result for an application-owned destructive credential mutation. */
+export type CredentialMutationOutcome = 'success' | 'not-found' | 'forbidden'
+
+/** Verified OAuth connection material supplied to application-owned persistence. */
+export type OAuthConnectCredentialMutationInput = {
+	userId: string
+	provider: string
+	subject: string
+	tokens: OAuthTokens
+	intent: OAuthFlowIntent
+	event: RequestEventLike
+}
+
+/** OAuth unlink context whose authorization must execute inside the mutation boundary. */
+export type OAuthUnlinkCredentialMutationInput = {
+	userId: string
+	provider: string
+	session: Session
+	authorizationRequest: Request
+	event: RequestEventLike
+	authorize: () => boolean | Promise<boolean>
+	revokeTokens: (tokens: OAuthTokens) => Promise<void>
+}
+
+/** Passkey removal context whose authorization must execute inside the mutation boundary. */
+export type WebAuthnRemoveCredentialMutationInput = {
+	userId: string
+	credentialId: string
+	session: Session
+	authorizationRequest: Request
+	event: RequestEventLike
+	authorize: () => boolean | Promise<boolean>
+}
+
+/**
+ * Optional application transaction boundary for credential mutations.
+ *
+ * Applications with multiple credential stores can replace the adapter-backed
+ * defaults so authorization, recovery policy, persistence, session revocation,
+ * and audit state share one serialized operation.
+ */
+export type CredentialMutationPort = {
+	oauth?: {
+		connect: (
+			input: OAuthConnectCredentialMutationInput
+		) => Promise<{ linked: boolean }> | { linked: boolean }
+		unlink: (
+			input: OAuthUnlinkCredentialMutationInput
+		) => Promise<CredentialMutationOutcome> | CredentialMutationOutcome
+	}
+	webauthn?: {
+		remove: (
+			input: WebAuthnRemoveCredentialMutationInput
+		) => Promise<CredentialMutationOutcome> | CredentialMutationOutcome
+	}
+}
+
 /** Defines oauth provider config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type OAuthProviderConfig = {
 	provider: OAuthProvider
@@ -308,6 +365,7 @@ type CommonAuthConfigFields = {
 	security?: AuthSecurityConfig
 	sessions?: SessionsConfig
 	oauth?: OAuthIdentityConfig
+	credentialMutations?: CredentialMutationPort
 	mfa?: TotpMfaConfig
 	logger?: Logger
 }

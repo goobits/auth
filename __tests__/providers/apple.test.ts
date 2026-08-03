@@ -251,4 +251,21 @@ describe('AppleProvider identity verification', () => {
 			'Invalid Apple ID token identity'
 		)
 	})
+
+	it('treats an already-invalid retained credential as terminally revoked', async () => {
+		const provider = createProvider()
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => Response.json({ error: 'invalid_grant' }, { status: 400 }))
+		)
+
+		await expect(
+			provider.revokeTokens({
+				accessToken: 'access-token',
+				refreshToken: 'refresh-token',
+				scope: null,
+				accessTokenExpiresAt: '2026-01-01T00:00:00.000Z'
+			})
+		).resolves.toBeUndefined()
+	})
 })

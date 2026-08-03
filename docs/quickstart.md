@@ -131,6 +131,14 @@ export const POST = async (event) => {
 
 ## Notes
 
+- Google uses online access by default. Applications that promise later
+  server-side revocation may set `accessType: 'offline'`, retain the refresh
+  credential in encrypted storage, and handle provider invalidation.
+- The adapter-backed mutation path is appropriate when all recovery state
+  shares one atomic store. If password, OAuth, and passkey state span stores,
+  configure `credentialMutations` so its supplied `authorize()` callback,
+  final recovery check, mutation, session revocation, and audit record share
+  one application-owned serialized boundary.
 - `auth.handle()` populates `event.locals.user`, `event.locals.session`, and `event.locals.auth`.
 - `auth.handlers` supports canonical sign-in, link, reauthentication, callback,
   identity-management, signout, magic-link, passkey, MFA, and session routes.

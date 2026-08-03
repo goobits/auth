@@ -138,4 +138,28 @@ describe('OAuth identity management handlers', () => {
 		expect(deleteTokens).not.toHaveBeenCalled()
 		expect(unlinkIdentity).not.toHaveBeenCalled()
 	})
+
+	it('runs authorization inside an application-owned unlink mutation', async () => {
+		const authorizeIdentityChange = vi.fn(async () => true)
+		const mutation = vi.fn(async (input) => {
+			expect(authorizeIdentityChange).not.toHaveBeenCalled()
+			expect(await input.authorize()).toBe(true)
+			return 'success' as const
+		})
+		const handler = createOAuthIdentityUnlinkHandler({
+			identityAdapter: {
+				getIdentity: vi.fn(),
+				linkIdentity: vi.fn(),
+				listIdentities: vi.fn(),
+				unlinkIdentity: vi.fn()
+			},
+			providers: { google: { revokeTokens: vi.fn() } as never },
+			authorizeIdentityChange,
+			mutation
+		})
+
+		expect(await (await handler(authenticatedEvent())).json()).toEqual({ ok: true })
+		expect(mutation).toHaveBeenCalledOnce()
+		expect(authorizeIdentityChange).toHaveBeenCalledOnce()
+	})
 })

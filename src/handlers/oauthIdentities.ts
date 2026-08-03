@@ -1,9 +1,11 @@
 import type { OAuthIdentityAdapter } from '../adapters/oauth-identity/OAuthIdentityAdapter.ts'
 import type { TokenAdapter } from '../adapters/oauth-token/TokenAdapter.ts'
 import type { OAuthProvider } from '../providers/OAuthProvider.ts'
+import { createDefaultOAuthCredentialMutations } from '../createAuth/credentialMutations.ts'
 import type {
 	AuthorizeOAuthIdentityChange,
 	AuthRequestHandler,
+	CredentialMutationPort,
 	OAuthIdentityConfig
 } from '../types/auth.ts'
 import { jsonResponse } from '../utils/http.ts'
@@ -14,6 +16,7 @@ type OAuthIdentityHandlerConfig = {
 	authorizeIdentityChange: AuthorizeOAuthIdentityChange
 	tokenAdapter?: TokenAdapter
 	hooks?: OAuthIdentityConfig['hooks']
+	mutation?: NonNullable<CredentialMutationPort['oauth']>['unlink']
 }
 
 /** Lists connected providers without exposing stable provider subjects. */
@@ -38,6 +41,13 @@ export function createOAuthIdentityListHandler(
 export function createOAuthIdentityUnlinkHandler(
 	config: OAuthIdentityHandlerConfig
 ): AuthRequestHandler {
+	const mutation =
+		config.mutation ??
+		createDefaultOAuthCredentialMutations({
+			identityAdapter: config.identityAdapter,
+			...(config.tokenAdapter ? { tokenAdapter: config.tokenAdapter } : {}),
+			...(config.hooks ? { hooks: config.hooks } : {})
+		}).unlink
 	return async (event) => {
 		const user = event.locals.user
 		const session = event.locals.session
@@ -51,29 +61,28 @@ export function createOAuthIdentityUnlinkHandler(
 		if (!providerInstance) {
 			return jsonResponse({ ok: false, error: 'Invalid OAuth provider' }, 400)
 		}
-		if (
-			!(await config.authorizeIdentityChange({
-				action: 'oauth.unlink',
-				request: authorizationRequest,
-				userId: user.id,
-				session,
-				provider
-			}))
-		) {
+		const outcome = await mutation({
+			userId: user.id,
+			provider,
+			session,
+			authorizationRequest,
+			event,
+			authorize: () =>
+				config.authorizeIdentityChange({
+					action: 'oauth.unlink',
+					request: authorizationRequest,
+					userId: user.id,
+					session,
+					provider
+				}),
+			revokeTokens: (tokens) => providerInstance.revokeTokens(tokens)
+		})
+		if (outcome === 'forbidden') {
 			return jsonResponse({ ok: false, error: 'Fresh authentication required' }, 403)
 		}
-		const identity = (await config.identityAdapter.listIdentities(user.id)).find(
-			(candidate) => candidate.provider === provider
-		)
-		if (!identity) return jsonResponse({ ok: false, error: 'Provider is not connected' }, 404)
-
-		if (config.tokenAdapter) {
-			const tokens = await config.tokenAdapter.getTokens(user.id, provider)
-			if (tokens) await providerInstance.revokeTokens(tokens)
-			await config.tokenAdapter.deleteTokens(user.id, provider)
+		if (outcome === 'not-found') {
+			return jsonResponse({ ok: false, error: 'Provider is not connected' }, 404)
 		}
-		await config.identityAdapter.unlinkIdentity(user.id, provider)
-		await config.hooks?.onUnlinked?.({ userId: user.id, provider, event })
 		return jsonResponse({ ok: true })
 	}
 }

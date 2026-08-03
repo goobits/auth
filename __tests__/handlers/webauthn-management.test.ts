@@ -92,4 +92,25 @@ describe('WebAuthn credential management', () => {
 		).toBe(404)
 		expect(await adapter.listCredentials('u1')).toHaveLength(1)
 	})
+
+	it('delegates authorization and removal to one application mutation', async () => {
+		const adapter = createWebAuthnAdapter()
+		const authorizeSecurityChange = vi.fn(async () => true)
+		const mutation = vi.fn(async (input) => {
+			expect(authorizeSecurityChange).not.toHaveBeenCalled()
+			expect(await input.authorize()).toBe(true)
+			return 'success' as const
+		})
+		const handler = createWebAuthnRemoveCredentialHandler({
+			webauthnAdapter: adapter,
+			authorizeSecurityChange,
+			mutation
+		})
+		const form = new FormData()
+		form.set('credentialId', 'AQIDBAcI')
+
+		expect((await handler(createEvent({ body: form }))).status).toBe(200)
+		expect(mutation).toHaveBeenCalledOnce()
+		expect(authorizeSecurityChange).toHaveBeenCalledOnce()
+	})
 })

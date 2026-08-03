@@ -312,6 +312,47 @@ describe('createAuth OAuth lifecycle', () => {
 		expect(order).toEqual(['tokens', 'session'])
 	})
 
+	it('delegates connection persistence to one application mutation port', async () => {
+		const session = new MockSessionAdapter()
+		const identity = new MemoryUserAdapter()
+		const user = await createUser(identity, 'resolved-user')
+		const oauthToken = new MockTokenAdapter()
+		const storeTokens = vi.spyOn(oauthToken, 'storeTokens')
+		const connect = vi.fn(async (input) => {
+			await identity.linkIdentity({
+				userId: input.userId,
+				provider: input.provider,
+				subject: input.subject
+			})
+			return { linked: true }
+		})
+
+		createAuth({
+			adapters: { session, user: identity, oauthIdentity: identity, oauthToken },
+			providers: { google: { provider: createProvider() } },
+			credentialMutations: {
+				oauth: {
+					connect,
+					unlink: vi.fn(async () => 'success')
+				}
+			},
+			hooks: { onAuthentication: async () => ({ userId: user.id }) }
+		})
+
+		await callback()(createEvent(), profile, tokens, context('sign-in'))
+
+		expect(connect).toHaveBeenCalledWith(
+			expect.objectContaining({
+				userId: user.id,
+				provider: 'google',
+				subject: profile.id,
+				tokens,
+				intent: 'sign-in'
+			})
+		)
+		expect(storeTokens).not.toHaveBeenCalled()
+	})
+
 	it('reauthenticates only through an identity already owned by the current user', async () => {
 		const sessionAdapter = new MockSessionAdapter()
 		const createSessionSpy = vi.spyOn(sessionAdapter, 'createSession')

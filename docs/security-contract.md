@@ -45,6 +45,8 @@ matching token instead of silently bypassing validation.
   - credential MFA challenges that create no session before the second factor
   - stable-subject OAuth lookup with explicit sign-in, link, reauthentication,
     and unlink flows
+  - one normalized credential-mutation port for OAuth connection changes and
+    passkey removal
   - session-level MFA assurance metadata after a successful second factor
   - CSRF/rate-limit policy wiring powered by `@goobits/security`
   - auth event emission + threshold alerts
@@ -58,7 +60,8 @@ matching token instead of silently bypassing validation.
   - fresh reauthentication for OAuth identity linking and unlinking through
     `oauth.authorizeIdentityChange`
   - account-recovery policy that refuses to unlink the last usable sign-in
-    method for an account
+    method for an account; applications with multiple credential stores must
+    enforce it inside `credentialMutations`
   - explicit application policy for unknown OAuth identities; provider email
     claims never select an existing local account
   - durable Apple notification replay protection and per-subject event ordering
@@ -75,6 +78,13 @@ matching token instead of silently bypassing validation.
   - generic route audit logging through `@goobits/security/audit`
   - security headers, TLS/HSTS/CSP at app/edge layer
   - secrets management and key rotation
+
+The default credential-mutation port composes Auth's configured adapters and
+hooks. Applications whose recovery methods span multiple tables or stores
+should supply `credentialMutations.oauth` and/or
+`credentialMutations.webauthn`. Those methods receive an `authorize`
+callback and must invoke it inside the same serialized boundary as the final
+recovery read and mutation. Auth handlers do not run a second mutation path.
 
 ## Defaults
 

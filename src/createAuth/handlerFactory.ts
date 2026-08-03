@@ -58,6 +58,10 @@ import type { OAuthFlowContext } from '../utils/oauth.ts'
 import { jsonResponse } from '../utils/http.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 import type { ResolvedDefaults } from './config.ts'
+import {
+	createDefaultOAuthCredentialMutations,
+	createDefaultWebAuthnCredentialMutation
+} from './credentialMutations.ts'
 import type { ResolvedSecurity } from './securitySetup.ts'
 
 function normalizeMagicLinkConfig(
@@ -131,6 +135,14 @@ export function createHandlers(
 			([name, providerConfig]) => [name, providerConfig.provider]
 		)
 	)
+	const oauthCredentialMutations = hasProviders
+		? (config.credentialMutations?.oauth ??
+			createDefaultOAuthCredentialMutations({
+				identityAdapter: adapters.oauthIdentity!,
+				...(adapters.oauthToken ? { tokenAdapter: adapters.oauthToken } : {}),
+				...(config.oauth?.hooks ? { hooks: config.oauth.hooks } : {})
+			}))
+		: null
 	const csrf = createSvelteKitCsrf({
 		cookieName: security.csrf.cookieName,
 		headerName: security.csrf.headerName,
@@ -248,30 +260,20 @@ export function createHandlers(
 					throw new AuthPrincipalResolutionError()
 				}
 
-				let linked = false
 				if (!identity) {
 					const resolvedUser = user ?? (await userAdapter.getUserById(resolvedUserId))
 					if (!resolvedUser || resolvedUser.id !== resolvedUserId) {
 						throw new AuthPrincipalResolutionError()
 					}
-					await identityAdapter.linkIdentity({
-						userId: resolvedUserId,
-						provider: providerName,
-						subject
-					})
-					linked = true
 				}
-				if (adapters.oauthToken) {
-					await adapters.oauthToken.storeTokens(resolvedUserId, providerName, tokens)
-				}
-				if (linked) {
-					await config.oauth?.hooks?.onLinked?.({
-						userId: resolvedUserId,
-						provider: providerName,
-						subject,
-						event
-					})
-				}
+				await oauthCredentialMutations!.connect({
+					userId: resolvedUserId,
+					provider: providerName,
+					subject,
+					tokens,
+					intent: context.intent,
+					event
+				})
 
 				if (context.intent === 'sign-in') {
 					await ensureSessionAfterLogin({
@@ -393,6 +395,14 @@ export function createHandlers(
 	}
 
 	if (webauthn) {
+		const removeCredentialMutation =
+			config.credentialMutations?.webauthn?.remove ??
+			createDefaultWebAuthnCredentialMutation({
+				webauthnAdapter: adapters.webauthn!,
+				...(webauthn.hooks?.onCredentialDeleted
+					? { onCredentialDeleted: webauthn.hooks.onCredentialDeleted }
+					: {})
+			})
 		const attestationType = webauthn.attestation === 'indirect' ? 'none' : webauthn.attestation
 		const registerOptionsConfig: WebAuthnRegisterOptionsHandlerConfig = {
 			authorizeSecurityChange: webauthn.authorizeSecurityChange,
@@ -444,9 +454,7 @@ export function createHandlers(
 		const removeCredentialConfig: WebAuthnRemoveCredentialHandlerConfig = {
 			webauthnAdapter: adapters.webauthn!,
 			authorizeSecurityChange: webauthn.authorizeSecurityChange,
-			...(webauthn.hooks?.onCredentialDeleted
-				? { onCredentialDeleted: webauthn.hooks.onCredentialDeleted }
-				: {}),
+			mutation: removeCredentialMutation,
 			...(security.audit.emitter ? { emitSecurityEvent: security.audit.emitter } : {})
 		}
 		const stepUpOptionsConfig: WebAuthnStepUpOptionsHandlerConfig = {
@@ -521,6 +529,7 @@ export function createHandlers(
 				identityAdapter: adapters.oauthIdentity!,
 				providers: providerInstances,
 				authorizeIdentityChange: config.oauth.authorizeIdentityChange,
+				mutation: oauthCredentialMutations!.unlink,
 				...(adapters.oauthToken ? { tokenAdapter: adapters.oauthToken } : {}),
 				...(config.oauth.hooks ? { hooks: config.oauth.hooks } : {})
 			})

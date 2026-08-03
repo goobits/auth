@@ -2,7 +2,11 @@ import { base64UrlToBytes, bytesToBase64Url, textToBytes } from '@goobits/securi
 import { verifyJwtWithJwks } from '@goobits/security/jwt'
 
 import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
-import { readBoundedResponseText, requestOAuthTokens } from '../_internal/oauth2.ts'
+import {
+	readBoundedResponseText,
+	requestOAuthTokenRevocation,
+	requestOAuthTokens
+} from '../_internal/oauth2.ts'
 import type { OAuthProfile, OAuthTokens } from '../types/index.ts'
 import { OAuthProvider } from './OAuthProvider.ts'
 
@@ -409,18 +413,16 @@ export class AppleProvider extends OAuthProvider {
 
 	async revokeTokens(tokens: OAuthTokens): Promise<void> {
 		const token = tokens.refreshToken ?? tokens.accessToken
-		const response = await fetch(APPLE_REVOCATION_ENDPOINT, {
-			method: 'POST',
-			headers: { 'content-type': 'application/x-www-form-urlencoded' },
-			body: new URLSearchParams({
+		await requestOAuthTokenRevocation({
+			endpoint: APPLE_REVOCATION_ENDPOINT,
+			parameters: new URLSearchParams({
 				client_id: this.clientId,
 				client_secret: await this.createClientSecret(),
 				token,
 				token_type_hint: tokens.refreshToken ? 'refresh_token' : 'access_token'
 			}),
-			signal: AbortSignal.timeout(10_000)
+			terminalErrorCodes: ['invalid_grant', 'invalid_token']
 		})
-		if (!response.ok) throw new Error(`Apple token revocation failed (${response.status})`)
 	}
 }
 

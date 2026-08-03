@@ -1,19 +1,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { OAuth2RequestError } from '../../src/_internal/oauth2.ts'
+import { OAuth2RequestError } from '../../src/providers/index.ts'
 import { GoogleProvider } from '../../src/providers/GoogleProvider.ts'
 
 function createLogger() {
 	return { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }
 }
 
-function createProvider(logger = createLogger()) {
+function createProvider(logger = createLogger(), accessType?: 'online' | 'offline') {
 	return {
 		logger,
 		provider: new GoogleProvider({
 			clientId: 'google-client',
 			clientSecret: 'google-secret',
 			callbackUrl: 'https://bandamp.test/auth/callback/google',
+			...(accessType ? { accessType } : {}),
 			logger
 		})
 	}
@@ -59,9 +60,18 @@ describe('GoogleProvider', () => {
 		expect(authorizationUrl.searchParams.get('scope')).toBe('openid profile email')
 		expect(authorizationUrl.searchParams.get('code_challenge_method')).toBe('S256')
 		expect(authorizationUrl.searchParams.get('code_challenge')).toMatch(/^[A-Za-z0-9_-]{43}$/u)
+		expect(authorizationUrl.searchParams.get('access_type')).toBeNull()
 		await expect(
 			provider.createAuthorizationURL('state', 'verifier', ['openid', 'calendar'])
 		).rejects.toThrow('only the openid, profile, and email')
+	})
+
+	it('requests an offline refresh credential only when explicitly configured', async () => {
+		const { provider } = createProvider(createLogger(), 'offline')
+		const authorizationUrl = await provider.createAuthorizationURL('state', 'verifier')
+
+		expect(authorizationUrl.searchParams.get('access_type')).toBe('offline')
+		expect(authorizationUrl.searchParams.get('scope')).toBe('openid profile email')
 	})
 
 	it('exchanges an authorization code and returns a verified profile', async () => {
@@ -128,6 +138,67 @@ describe('GoogleProvider', () => {
 			accessToken: 'refreshed-access-token',
 			refreshToken: 'old-refresh-token',
 			scope: 'openid email'
+		})
+	})
+
+	it('treats an already-invalid retained token as terminally revoked', async () => {
+		const { provider } = createProvider()
+		const fetcher = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+			const body = init?.body as URLSearchParams
+			expect(body.get('token')).toBe('refresh-token')
+			return Response.json({ error: 'invalid_token' }, { status: 400 })
+		})
+		vi.stubGlobal('fetch', fetcher)
+
+		await expect(
+			provider.revokeTokens({
+				accessToken: 'access-token',
+				refreshToken: 'refresh-token',
+				scope: 'openid email',
+				accessTokenExpiresAt: '2026-01-01T00:00:00.000Z'
+			})
+		).resolves.toBeUndefined()
+	})
+
+	it('keeps retryable revocation failures structured and fail-closed', async () => {
+		const { provider } = createProvider()
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => Response.json({ error: 'temporarily_unavailable' }, { status: 503 }))
+		)
+
+		await expect(
+			provider.revokeTokens({
+				accessToken: 'access-token',
+				refreshToken: null,
+				scope: 'openid email',
+				accessTokenExpiresAt: '2026-01-01T00:00:00.000Z'
+			})
+		).rejects.toMatchObject<Partial<OAuth2RequestError>>({
+			name: 'OAuth2RequestError',
+			code: 'temporarily_unavailable',
+			status: 503
+		})
+	})
+
+	it('does not accept a terminal error code on a transient revocation response', async () => {
+		const { provider } = createProvider()
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => Response.json({ error: 'invalid_token' }, { status: 503 }))
+		)
+
+		await expect(
+			provider.revokeTokens({
+				accessToken: 'access-token',
+				refreshToken: null,
+				scope: 'openid email',
+				accessTokenExpiresAt: '2026-01-01T00:00:00.000Z'
+			})
+		).rejects.toMatchObject<Partial<OAuth2RequestError>>({
+			name: 'OAuth2RequestError',
+			code: 'invalid_token',
+			status: 503
 		})
 	})
 

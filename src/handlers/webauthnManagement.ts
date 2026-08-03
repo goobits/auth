@@ -1,8 +1,10 @@
 import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
+import { createDefaultWebAuthnCredentialMutation } from '../createAuth/credentialMutations.ts'
 import { emitRequestAuthEvent, type AuthEventEmitter } from '../security/events.ts'
 import type {
 	AuthRequestHandler,
 	AuthorizeSecurityChange,
+	CredentialMutationPort,
 	RequestEventLike,
 	WebAuthnCredentialLifecycleInput
 } from '../types/auth.ts'
@@ -20,6 +22,7 @@ export type WebAuthnListCredentialsHandlerConfig = {
 export type WebAuthnRemoveCredentialHandlerConfig = WebAuthnListCredentialsHandlerConfig & {
 	authorizeSecurityChange: AuthorizeSecurityChange
 	onCredentialDeleted?: (input: WebAuthnCredentialLifecycleInput) => Promise<void> | void
+	mutation?: NonNullable<CredentialMutationPort['webauthn']>['remove']
 	emitSecurityEvent?: AuthEventEmitter
 }
 
@@ -77,35 +80,40 @@ export function createWebAuthnRemoveCredentialHandler(
 	config: WebAuthnRemoveCredentialHandlerConfig
 ): AuthRequestHandler {
 	const getUser = config.getUser ?? ((event: RequestEventLike) => event.locals.user ?? null)
+	const mutation =
+		config.mutation ??
+		createDefaultWebAuthnCredentialMutation({
+			webauthnAdapter: config.webauthnAdapter,
+			...(config.onCredentialDeleted ? { onCredentialDeleted: config.onCredentialDeleted } : {})
+		})
 	return async (event: RequestEventLike) => {
 		const user = await authenticatedUser(event, getUser)
 		if (!user) return jsonResponse({ ok: false, error: 'Unauthorized' }, 401)
-		if (
-			!(await config.authorizeSecurityChange({
-				action: 'webauthn.remove',
-				request: event.request.clone(),
-				userId: user.id,
-				session: event.locals.session ?? null
-			}))
-		) {
-			return jsonResponse({ ok: false, error: 'Reauthentication required' }, 403)
-		}
+		const session = event.locals.session
+		if (!session) return jsonResponse({ ok: false, error: 'Unauthorized' }, 401)
+		const authorizationRequest = event.request.clone()
 		const data = await parseRequestDataWithSchema(event.request, removeCredentialRequestSchema)
 		if (!data) return jsonResponse({ ok: false, error: 'Invalid request' }, 400)
-		if (
-			!(await config.webauthnAdapter.deleteCredential({
-				userId: user.id,
-				credentialId: data.credentialId
-			}))
-		) {
-			return jsonResponse({ ok: false, error: 'Passkey not found' }, 404)
-		}
-
-		await config.onCredentialDeleted?.({
+		const outcome = await mutation({
 			userId: user.id,
 			credentialId: data.credentialId,
-			event
+			session,
+			authorizationRequest,
+			event,
+			authorize: () =>
+				config.authorizeSecurityChange({
+					action: 'webauthn.remove',
+					request: authorizationRequest,
+					userId: user.id,
+					session
+				})
 		})
+		if (outcome === 'forbidden') {
+			return jsonResponse({ ok: false, error: 'Reauthentication required' }, 403)
+		}
+		if (outcome === 'not-found') {
+			return jsonResponse({ ok: false, error: 'Passkey not found' }, 404)
+		}
 		await emitRequestAuthEvent(config.emitSecurityEvent, event, {
 			name: 'webauthn.credential_removed',
 			severity: 'info',

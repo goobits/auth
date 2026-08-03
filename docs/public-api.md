@@ -179,8 +179,10 @@ Known identities arrive with `user`. An unknown OAuth sign-in must return a
 real application user ID or a safe pending route. Auth never creates or links a
 user from a matching email claim. Provider linking is a separate authenticated
 flow configured with `oauth.authorizeIdentityChange`.
-That callback must also enforce the application's account-recovery policy,
-including refusing to unlink the account's last usable sign-in method.
+The callback owns fresh assurance. A simple single-store application may also
+enforce recovery there; an application whose password, provider, and passkey
+state span multiple tables must enforce recovery atomically through
+`credentialMutations`.
 
 A pending OAuth route is application-owned: the lifecycle hook must first save
 a bounded, short-lived, single-use onboarding record and bind it to the browser
@@ -209,6 +211,23 @@ oauth: {
 			hasRecentMfaVerification(session, { maxAgeMs: 5 * 60_000 }))
 }
 ```
+
+`credentialMutations` is the application transaction port for destructive
+credential changes. Auth composes its ordinary adapters into the same port by
+default. A custom OAuth port owns verified connection persistence and unlink
+orchestration; a custom WebAuthn port owns removal. Destructive inputs include
+an `authorize()` callback so the application can execute assurance and its
+final recovery read under one per-user lock or transaction. Return
+`'forbidden'`, `'not-found'`, or `'success'`; Auth retains HTTP response
+and security-event ownership.
+
+Provider token endpoint failures are exposed as structured
+`OAuth2RequestError` values from `@goobits/auth/providers`. Known
+already-invalid revocation responses are idempotent successes; network,
+provider, and unknown failures remain fail-closed. `GoogleProvider` defaults
+to online access. Set `accessType: 'offline'` only when the application has a
+documented server-side refresh or future-revocation requirement and securely
+stores the returned refresh credential.
 
 Use `createAuthClient()` from `@goobits/auth/client` for canonical OAuth URLs,
 identity listing/unlinking, and WebAuthn ceremonies. Set `basePath` when the

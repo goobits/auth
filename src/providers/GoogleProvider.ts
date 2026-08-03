@@ -1,6 +1,7 @@
 import {
 	createS256CodeChallenge,
 	readBoundedResponseText,
+	requestOAuthTokenRevocation,
 	requestOAuthTokens
 } from '../_internal/oauth2.ts'
 import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
@@ -23,6 +24,7 @@ type GoogleProviderConfig = {
 	clientSecret: string
 	callbackUrl: string
 	scopes?: string[]
+	accessType?: 'online' | 'offline'
 	logger?: Logger
 }
 
@@ -32,6 +34,7 @@ export class GoogleProvider extends OAuthProvider {
 	private readonly clientSecret: string
 	private readonly callbackUrl: string
 	private readonly defaultScopes: string[]
+	private readonly accessType: 'online' | 'offline'
 	private readonly logger: Logger
 
 	constructor(config: GoogleProviderConfig) {
@@ -46,6 +49,7 @@ export class GoogleProvider extends OAuthProvider {
 		this.clientSecret = config.clientSecret
 		this.callbackUrl = config.callbackUrl
 		this.defaultScopes = config.scopes ?? ['openid', 'profile', 'email']
+		this.accessType = config.accessType ?? 'online'
 		assertIdentityScopes(this.defaultScopes)
 	}
 
@@ -64,6 +68,7 @@ export class GoogleProvider extends OAuthProvider {
 		authorizationUrl.searchParams.set('scope', resolvedScopes.join(' '))
 		authorizationUrl.searchParams.set('code_challenge', await createS256CodeChallenge(codeVerifier))
 		authorizationUrl.searchParams.set('code_challenge_method', 'S256')
+		if (this.accessType === 'offline') authorizationUrl.searchParams.set('access_type', 'offline')
 		return authorizationUrl
 	}
 
@@ -161,13 +166,11 @@ export class GoogleProvider extends OAuthProvider {
 
 	async revokeTokens(tokens: OAuthTokens): Promise<void> {
 		const token = tokens.refreshToken ?? tokens.accessToken
-		const response = await fetch(GOOGLE_REVOCATION_ENDPOINT, {
-			method: 'POST',
-			headers: { 'content-type': 'application/x-www-form-urlencoded' },
-			body: new URLSearchParams({ token }),
-			signal: AbortSignal.timeout(10_000)
+		await requestOAuthTokenRevocation({
+			endpoint: GOOGLE_REVOCATION_ENDPOINT,
+			parameters: new URLSearchParams({ token }),
+			terminalErrorCodes: ['invalid_token']
 		})
-		if (!response.ok) throw new Error(`Google token revocation failed (${response.status})`)
 	}
 }
 

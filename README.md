@@ -81,6 +81,9 @@ additive options as browser and authenticator behavior evolves.
   flows. Identity changes require application-owned fresh authorization.
 - Applications must refuse an unlink that would remove the account's last
   usable sign-in method.
+- `credentialMutations` lets applications put assurance, cross-store recovery
+  checks, credential persistence, session revocation, and audit state behind
+  one serialized transaction boundary.
 
 See the public API and migration guide for the complete capability contracts.
 
