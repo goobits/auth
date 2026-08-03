@@ -18,6 +18,9 @@
 
 ### ✨ Added
 
+- 🎨 `OAuthProviderButton` provides one localized, accessible Google and
+  Apple brand treatment through `@goobits/auth/ui` for login and account-linking
+  surfaces.
 - 🧩 The `@goobits/auth/ui/qr-code` subpath lets QR-only consumers avoid
   initializing the auth session store.
 - 🪟 Backup-code dialogs now contain keyboard focus through their package-private

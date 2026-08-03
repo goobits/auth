@@ -9,6 +9,15 @@ outside SvelteKit should prefer low-level subpaths such as
 `@goobits/auth/adapters/pg`. Verification-token helpers live at
 `@goobits/auth/verification`.
 
+## UI helpers
+
+`OAuthProviderButton` is exported from `@goobits/auth/ui`. Pass an `apple` or
+`google` provider plus a localized provider-approved label such as
+`Continue with Apple` or `Continue with Google`; the component owns the current
+provider proportions, colors, and artwork. Its provider-hosted artwork and
+Google Sans font require `https:` images and `https://fonts.gstatic.com` in a
+consumer's content security policy.
+
 ## Stability
 
 The documented exports are stable for the `0.4.x` line. WebAuthn and MFA may
