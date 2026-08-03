@@ -55,6 +55,7 @@ export function createLoginHandler(config: LoginHandlerConfig) {
 	return async (event: RequestEventLike) => {
 		const { cookies, params, locals } = event
 		const intent = resolveOAuthIntent(params['intent'])
+		if (!intent) return new Response('Invalid OAuth flow intent', { status: 400 })
 		const authenticated = isAuthenticated(locals)
 		if (intent === 'sign-in' && authenticated) {
 			throw redirect(302, isSafeRedirectPath(redirectAfterLogin) ? redirectAfterLogin : '/')
@@ -110,10 +111,10 @@ export function createLoginHandler(config: LoginHandlerConfig) {
 	}
 }
 
-function resolveOAuthIntent(value: string | undefined): OAuthFlowIntent {
+function resolveOAuthIntent(value: string | undefined): OAuthFlowIntent | null {
 	if (value === undefined || value === 'sign-in') return 'sign-in'
 	if (value === 'link' || value === 'reauth') return value
-	throw new Error('Invalid OAuth flow intent')
+	return null
 }
 
 function resolveReturnPath(url: URL, fallback: string): string {

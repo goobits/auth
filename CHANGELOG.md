@@ -44,6 +44,8 @@
   request-body readers and return an audited `413` when the limit is exceeded.
 - 🪪 OAuth callbacks reject provider subjects whose surrounding whitespace would
   change stable identity ownership.
+- 🧭 Unknown OAuth flow intents now return `400` instead of surfacing as server
+  errors.
 - 🔄 Added a principal-bound session-assurance rotator that refreshes primary
   or MFA verification independently while preserving trusted session context.
 - 🍪 Built-in session adapters now persist only SHA-256 verifiers, return bearer

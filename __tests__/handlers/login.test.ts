@@ -32,6 +32,18 @@ describe('createLoginHandler', () => {
 		expect(response.status).toBe(400)
 	})
 
+	it('rejects an unknown OAuth intent as a bad request', async () => {
+		const handler = createLoginHandler({
+			providers: { google: { provider: createProvider() } }
+		})
+		const response = await handler(
+			createRequestEvent({ params: { provider: 'google', intent: 'tampered' } })
+		)
+
+		expect(response).toMatchObject({ status: 400 })
+		await expect(response.text()).resolves.toBe('Invalid OAuth flow intent')
+	})
+
 	it('redirects if already authenticated', async () => {
 		const handler = createLoginHandler({
 			providers: { google: { provider: createProvider(() => new URL('https://example.com')) } },
