@@ -23,6 +23,26 @@ export type CreateWebAuthnCredentialInput = {
 	name?: string | null
 }
 
+export const DEFAULT_WEBAUTHN_CREDENTIAL_LIMIT = 10
+
+export function resolveWebAuthnCredentialLimit(value: number | undefined): number {
+	const limit = value ?? DEFAULT_WEBAUTHN_CREDENTIAL_LIMIT
+	if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+		throw new RangeError('WebAuthn credential limit must be an integer between 1 and 100')
+	}
+	return limit
+}
+
+export type CreateWebAuthnCredentialWithinLimitInput = CreateWebAuthnCredentialInput & {
+	maxCredentialsPerUser: number
+}
+
+export type WebAuthnCredentialCreationOutcome =
+	| 'created'
+	| 'duplicate'
+	| 'limit-reached'
+	| 'owner-unavailable'
+
 export type AdvanceWebAuthnCredentialCounterInput = {
 	credentialId: string
 	userId: string
@@ -95,6 +115,19 @@ export abstract class WebAuthnAdapter {
 		transports,
 		name
 	}: CreateWebAuthnCredentialInput): Promise<boolean>
+
+	/**
+	 * Creates one credential while enforcing the owner cap at the persistence boundary.
+	 * Stateful adapters should override this method with their native transaction or lock.
+	 */
+	async createCredentialWithinLimit({
+		maxCredentialsPerUser,
+		...credential
+	}: CreateWebAuthnCredentialWithinLimitInput): Promise<WebAuthnCredentialCreationOutcome> {
+		const limit = resolveWebAuthnCredentialLimit(maxCredentialsPerUser)
+		if ((await this.listCredentials(credential.userId)).length >= limit) return 'limit-reached'
+		return (await this.createCredential(credential)) ? 'created' : 'duplicate'
+	}
 
 	/**
 	 * Get a credential by ID

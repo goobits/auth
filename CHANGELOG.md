@@ -64,7 +64,9 @@
   reauthentication and rejects challenge verification under a different principal.
 - 🔑 Passkey credentials are insert-only by credential ID, signature counters
   advance through owner-bound compare-and-swap operations, and invalid or
-  regressing counters fail before session creation.
+  regressing counters fail before session creation. Registration adapters can
+  enforce account caps atomically, and failed application lifecycle hooks roll
+  back the newly stored credential.
 - ✉️ Magic-link URLs require a canonical HTTPS origin; optional numeric codes
   are HMAC-bound to their normalized email with a deployment secret, and raw
   credentials reach only the configured delivery callback.

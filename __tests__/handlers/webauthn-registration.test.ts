@@ -156,4 +156,58 @@ describe('WebAuthn registration', () => {
 		expect(response.status).toBe(403)
 		expect(await adapter.listCredentials('u1')).toEqual([])
 	})
+
+	it('honors the persistence-bound credential limit after challenge verification', async () => {
+		const adapter = createWebAuthnAdapter()
+		await adapter.createChallenge({
+			challengeId: 'register-limit',
+			userId: 'u1',
+			challenge: 'registration-challenge',
+			type: 'registration',
+			expiresAt: new Date(Date.now() + 60_000)
+		})
+		vi.spyOn(adapter, 'createCredentialWithinLimit').mockResolvedValue('limit-reached')
+		const handler = createWebAuthnRegisterVerifyHandler({
+			webauthnAdapter: adapter,
+			rpID: 'example.com',
+			origin: 'http://localhost'
+		})
+
+		const response = await handler(
+			createEvent({
+				body: { challengeId: 'register-limit', credential: { id: 'AQIDBAcI' } }
+			})
+		)
+
+		expect(response.status).toBe(409)
+		expect(await adapter.listCredentials('u1')).toEqual([])
+	})
+
+	it('rolls back a new credential when its application lifecycle fails', async () => {
+		const adapter = createWebAuthnAdapter()
+		await adapter.createChallenge({
+			challengeId: 'register-lifecycle',
+			userId: 'u1',
+			challenge: 'registration-challenge',
+			type: 'registration',
+			expiresAt: new Date(Date.now() + 60_000)
+		})
+		const handler = createWebAuthnRegisterVerifyHandler({
+			webauthnAdapter: adapter,
+			rpID: 'example.com',
+			origin: 'http://localhost',
+			onCredentialCreated: async () => {
+				throw new Error('session revocation failed')
+			}
+		})
+
+		await expect(
+			handler(
+				createEvent({
+					body: { challengeId: 'register-lifecycle', credential: { id: 'AQIDBAcI' } }
+				})
+			)
+		).rejects.toThrow('session revocation failed')
+		expect(await adapter.listCredentials('u1')).toEqual([])
+	})
 })

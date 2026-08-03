@@ -4,7 +4,10 @@ import {
 	type GenerateRegistrationOptionsOpts,
 	verifyRegistrationResponse
 } from '@simplewebauthn/server'
-import type { WebAuthnAdapter } from '../adapters/webauthn/WebAuthnAdapter.ts'
+import {
+	resolveWebAuthnCredentialLimit,
+	type WebAuthnAdapter
+} from '../adapters/webauthn/WebAuthnAdapter.ts'
 import { isValidCredentialCounter } from '../adapters/webauthn/_credentialCounter.ts'
 import { emitRequestAuthEvent, type AuthEventEmitter } from '../security/events.ts'
 import type {
@@ -22,14 +25,14 @@ import {
 	registerVerifyRequestSchema
 } from './webauthnUtils.ts'
 
-const DEFAULT_CREDENTIAL_LIMIT = 10
-
 type RegistrationAdapter = Pick<
 	WebAuthnAdapter,
 	| 'listCredentials'
 	| 'createChallenge'
 	| 'consumeChallenge'
 	| 'createCredential'
+	| 'createCredentialWithinLimit'
+	| 'deleteCredential'
 	| 'deleteExpiredChallenges'
 >
 
@@ -59,14 +62,6 @@ export type WebAuthnRegisterVerifyHandlerConfig = {
 	emitSecurityEvent?: AuthEventEmitter
 }
 
-function resolveCredentialLimit(value: number | undefined): number {
-	const limit = value ?? DEFAULT_CREDENTIAL_LIMIT
-	if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
-		throw new RangeError('WebAuthn credential limit must be an integer between 1 and 100')
-	}
-	return limit
-}
-
 /** Creates discoverable, user-verifying registration options for an authenticated principal. */
 export function createWebAuthnRegisterOptionsHandler(
 	config: WebAuthnRegisterOptionsHandlerConfig
@@ -82,7 +77,7 @@ export function createWebAuthnRegisterOptionsHandler(
 		supportedAlgorithmIDs,
 		getUser = (event: RequestEventLike) => event.locals.user ?? null
 	} = config
-	const maxCredentialsPerUser = resolveCredentialLimit(config.maxCredentialsPerUser)
+	const maxCredentialsPerUser = resolveWebAuthnCredentialLimit(config.maxCredentialsPerUser)
 
 	if (!rpID || !rpName) {
 		throw new Error('createWebAuthnRegisterOptionsHandler requires rpID and rpName')
@@ -162,7 +157,7 @@ export function createWebAuthnRegisterVerifyHandler(
 		onCredentialCreated,
 		emitSecurityEvent
 	} = config
-	const maxCredentialsPerUser = resolveCredentialLimit(config.maxCredentialsPerUser)
+	const maxCredentialsPerUser = resolveWebAuthnCredentialLimit(config.maxCredentialsPerUser)
 
 	if (!rpID || !origin) {
 		throw new Error('createWebAuthnRegisterVerifyHandler requires rpID and origin')
@@ -216,22 +211,41 @@ export function createWebAuthnRegisterVerifyHandler(
 			return jsonResponse({ ok: false, error: 'Invalid credential' }, 400)
 		}
 
-		const created = await webauthnAdapter.createCredential({
+		const creation = await webauthnAdapter.createCredentialWithinLimit({
 			userId: user.id,
 			credentialId,
 			publicKey,
 			counter,
+			maxCredentialsPerUser,
 			transports:
 				data.credential.response && 'transports' in data.credential.response
 					? (data.credential.response.transports ?? null)
 					: null,
 			name: data.name ?? null
 		})
-		if (!created) {
+		if (creation === 'limit-reached') {
+			return jsonResponse({ ok: false, error: 'Passkey limit reached' }, 409)
+		}
+		if (creation === 'owner-unavailable') {
+			return jsonResponse({ ok: false, error: 'Credential owner is unavailable' }, 403)
+		}
+		if (creation === 'duplicate') {
 			return jsonResponse({ ok: false, error: 'Credential is already registered' }, 409)
 		}
 
-		await onCredentialCreated?.({ userId: user.id, credentialId, event })
+		try {
+			await onCredentialCreated?.({ userId: user.id, credentialId, event })
+		} catch (lifecycleError) {
+			try {
+				await webauthnAdapter.deleteCredential({ userId: user.id, credentialId })
+			} catch (rollbackError) {
+				throw new AggregateError(
+					[lifecycleError, rollbackError],
+					'WebAuthn credential lifecycle and rollback both failed'
+				)
+			}
+			throw lifecycleError
+		}
 		await emitRequestAuthEvent(emitSecurityEvent, event, {
 			name: 'webauthn.credential_registered',
 			severity: 'info',
