@@ -377,6 +377,7 @@ describe('pg auth adapters', () => {
 	it('keeps postgres WebAuthn owners immutable and advances counters with compare-and-swap', async () => {
 		const credential = { counter: 0, owner: 'user-1' }
 		let inserted = false
+		let insertedTransports: unknown
 		const db: PgPoolLike = {
 			async query(text, values = []) {
 				if (text.includes('INSERT INTO auth_webauthn_credentials')) {
@@ -384,6 +385,7 @@ describe('pg auth adapters', () => {
 					inserted = true
 					credential.owner = String(values[0])
 					credential.counter = Number(values[3])
+					insertedTransports = values[4]
 					return { rows: [{ credential_id: values[1] }] }
 				}
 				if (text.includes('UPDATE auth_webauthn_credentials')) {
@@ -419,6 +421,7 @@ describe('pg auth adapters', () => {
 		}
 
 		await expect(adapters.webauthn.createCredential(registration)).resolves.toBe(true)
+		expect(insertedTransports).toBeNull()
 		await expect(
 			adapters.webauthn.createCredential({ ...registration, userId: 'attacker' })
 		).resolves.toBe(false)

@@ -113,7 +113,7 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 			ON CONFLICT (credential_id) DO NOTHING
 			RETURNING credential_id
 		`,
-			[userId, credentialId, publicKey, counter, JSON.stringify(transports ?? null), name ?? null]
+			[userId, credentialId, publicKey, counter, transports ? JSON.stringify(transports) : null, name ?? null]
 		)
 		return result.rows.length === 1
 	}
