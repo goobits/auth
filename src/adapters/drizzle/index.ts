@@ -1,7 +1,7 @@
 import type { User } from '../../types/index.ts'
 import { DrizzleUserAdapter } from '../database/DrizzleUserAdapter.ts'
 import type { UserAdapterBundle } from '../database/PasswordCredentialAdapter.ts'
-import type { DrizzleDbLike, DrizzleTable } from '../drizzleTypes.ts'
+import type { DrizzleDbLike, DrizzleRow, DrizzleTable } from '../drizzleTypes.ts'
 import { DrizzleMagicLinkAdapter } from '../magic-link/DrizzleMagicLinkAdapter.ts'
 import type { OAuthIdentityAdapter } from '../oauth-identity/OAuthIdentityAdapter.ts'
 import { DrizzleTokenAdapter } from '../oauth-token/DrizzleTokenAdapter.ts'
@@ -69,6 +69,7 @@ export type DrizzleAdapterOptions<TSchema extends DrizzleAuthSchema = DrizzleAut
 		sessionRefreshThreshold?: number
 		cookieName?: string
 		secureCookies?: boolean
+		mapUser?: (row: DrizzleRow | null) => User | null
 	}
 	sanitizeUser?: (user: User | null) => User | null
 }
@@ -131,6 +132,7 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 		...(options.session?.secureCookies !== undefined
 			? { secureCookies: options.session.secureCookies }
 			: {}),
+		...(options.session?.mapUser ? { mapUser: options.session.mapUser } : {}),
 		...(options.sanitizeUser ? { sanitizeUser: options.sanitizeUser } : {})
 	})
 

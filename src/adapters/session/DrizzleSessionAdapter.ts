@@ -69,6 +69,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 	cookieName: string
 	private secureCookies: boolean
 	private sanitizeUser: (user: User | null) => User | null
+	private mapUser: (row: DrizzleRow | null) => User | null
 
 	constructor(
 		db: DrizzleDbLike,
@@ -80,6 +81,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 			cookieName?: string
 			secureCookies?: boolean
 			sanitizeUser?: (user: User | null) => User | null
+			mapUser?: (row: DrizzleRow | null) => User | null
 		} = {}
 	) {
 		super()
@@ -94,6 +96,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		this.cookieName = options.cookieName || 'session'
 		this.secureCookies = options.secureCookies !== false
 		this.sanitizeUser = options.sanitizeUser || this._defaultSanitizeUser
+		this.mapUser = options.mapUser || toUser
 	}
 
 	_defaultSanitizeUser(user: User | null): User | null {
@@ -164,7 +167,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		}
 		return {
 			session: { ...session, id: sessionId },
-			user: this.sanitizeUser(toUser(result['user'] ?? null))
+			user: this.sanitizeUser(this.mapUser(result['user'] ?? null))
 		}
 	}
 

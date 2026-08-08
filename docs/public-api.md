@@ -105,6 +105,12 @@ rotation-ready `encryptionKeyringJson` or an application `tokenCodec`. The table
 must enforce one row per `(userId, provider)` so stores and lazy key rotation use
 an atomic upsert.
 
+Applications that keep additional safe profile fields on the joined user row
+can set `session.mapUser` in the Drizzle options. The mapper runs only for
+session validation and must return an auth `User` without passwords, tokens, or
+other private fields. The default mapper remains the package's narrow auth-user
+projection.
+
 Application-owned credential transactions can import `openOAuthTokens` and
 `serializeOAuthTokens` from `@goobits/auth/adapters/oauth-token`. Those helpers
 apply the same payload validation, record-bound encryption context, and key

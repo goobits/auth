@@ -111,6 +111,48 @@ describe('DrizzleSessionAdapter', () => {
 		expect(result.user?.email).toBe('test@example.com')
 	})
 
+	it('can map application profile fields from the joined session user row', async () => {
+		mockDb.select = () => ({
+			from: () => ({
+				innerJoin: () => ({
+					where: () => Promise.resolve([{
+						session: {
+							id: 'session-123',
+							userId: 'user-123',
+							expiresAt: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000)
+						},
+						user: {
+							id: 'user-123',
+							email: 'test@example.com',
+							name: 'Test User',
+							settings: { theme: 'dark' }
+						}
+					}])
+				})
+			})
+		})
+		const mapUser = vi.fn((row) => ({
+			id: String(row?.['id']),
+			email: String(row?.['email']),
+			name: String(row?.['name']),
+			avatar: null,
+			emailVerified: true,
+			settings: row?.['settings'] as Record<string, unknown>
+		}))
+		const mappedAdapter = new DrizzleSessionAdapter(mockDb as never, {
+			sessionsTable: drizzleSessionsTable,
+			usersTable: drizzleUsersTable,
+			mapUser
+		})
+
+		const result = await mappedAdapter.validateSession('session-123')
+
+		expect(mapUser).toHaveBeenCalledWith(expect.objectContaining({
+			settings: { theme: 'dark' }
+		}))
+		expect(result.user?.settings).toEqual({ theme: 'dark' })
+	})
+
 	it('sets and clears cookies with expected attributes', async () => {
 		const cookies = {
 			set: vi.fn(),
