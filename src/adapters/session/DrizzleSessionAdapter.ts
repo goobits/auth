@@ -62,6 +62,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 	private db: DrizzleDbLike
 	private sessionsTable: SessionsTable
 	private usersTable: UsersTable
+	private userSelection: DrizzleTable
 	private sessionLifetime: number
 	private sessionRefreshThreshold: number
 
@@ -76,6 +77,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		options: {
 			sessionsTable?: SessionsTable
 			usersTable?: UsersTable
+			userSelection?: DrizzleTable
 			sessionLifetime?: number
 			sessionRefreshThreshold?: number
 			cookieName?: string
@@ -91,6 +93,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		this.db = db
 		this.sessionsTable = options.sessionsTable
 		this.usersTable = options.usersTable
+		this.userSelection = options.userSelection || options.usersTable
 		this.sessionLifetime = options.sessionLifetime || 30 * 24 * 60 * 60 * 1000
 		this.sessionRefreshThreshold = options.sessionRefreshThreshold || this.sessionLifetime / 2
 		this.cookieName = options.cookieName || 'session'
@@ -142,7 +145,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		const verifier = await hashSessionToken(sessionId)
 		const [result] = await this.db
 			.select({
-				user: this.usersTable,
+				user: this.userSelection,
 				session: this.sessionsTable
 			})
 			.from(this.sessionsTable)

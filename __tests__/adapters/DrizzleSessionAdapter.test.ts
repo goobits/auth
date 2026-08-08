@@ -111,26 +111,36 @@ describe('DrizzleSessionAdapter', () => {
 		expect(result.user?.email).toBe('test@example.com')
 	})
 
-	it('can map application profile fields from the joined session user row', async () => {
-		mockDb.select = () => ({
+	it('selects and maps only configured session user fields', async () => {
+		const select = vi.fn(() => ({
 			from: () => ({
 				innerJoin: () => ({
-					where: () => Promise.resolve([{
-						session: {
-							id: 'session-123',
-							userId: 'user-123',
-							expiresAt: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000)
-						},
-						user: {
-							id: 'user-123',
-							email: 'test@example.com',
-							name: 'Test User',
-							settings: { theme: 'dark' }
-						}
-					}])
+					where: () =>
+						Promise.resolve([
+							{
+								session: {
+									id: 'session-123',
+									userId: 'user-123',
+									expiresAt: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000)
+								},
+								user: {
+									id: 'user-123',
+									email: 'test@example.com',
+									name: 'Test User',
+									settings: { theme: 'dark' }
+								}
+							}
+						])
 				})
 			})
-		})
+		}))
+		mockDb.select = select
+		const userSelection = {
+			email: drizzleUsersTable.email,
+			id: drizzleUsersTable.id,
+			name: drizzleUsersTable.name,
+			settings: drizzleUsersTable.settings
+		}
 		const mapUser = vi.fn((row) => ({
 			id: String(row?.['id']),
 			email: String(row?.['email']),
@@ -142,14 +152,22 @@ describe('DrizzleSessionAdapter', () => {
 		const mappedAdapter = new DrizzleSessionAdapter(mockDb as never, {
 			sessionsTable: drizzleSessionsTable,
 			usersTable: drizzleUsersTable,
+			userSelection,
 			mapUser
 		})
 
 		const result = await mappedAdapter.validateSession('session-123')
 
-		expect(mapUser).toHaveBeenCalledWith(expect.objectContaining({
-			settings: { theme: 'dark' }
-		}))
+		expect(select).toHaveBeenCalledWith({
+			session: drizzleSessionsTable,
+			user: userSelection
+		})
+		expect(userSelection).not.toHaveProperty('passwordHash')
+		expect(mapUser).toHaveBeenCalledWith(
+			expect.objectContaining({
+				settings: { theme: 'dark' }
+			})
+		)
 		expect(result.user?.settings).toEqual({ theme: 'dark' })
 	})
 

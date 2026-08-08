@@ -106,10 +106,12 @@ must enforce one row per `(userId, provider)` so stores and lazy key rotation us
 an atomic upsert.
 
 Applications that keep additional safe profile fields on the joined user row
-can set `session.mapUser` in the Drizzle options. The mapper runs only for
-session validation and must return an auth `User` without passwords, tokens, or
-other private fields. The default mapper remains the package's narrow auth-user
-projection.
+can set `session.userSelection` and `session.mapUser` in the Drizzle options.
+`userSelection` is a Drizzle column map and limits what the validation query
+reads; `mapUser` converts that row to an auth `User`. Selections should include
+only the fields the mapper needs, never passwords, tokens, or other private
+fields. The complete user table and package's narrow auth-user mapper remain the
+defaults.
 
 Application-owned credential transactions can import `openOAuthTokens` and
 `serializeOAuthTokens` from `@goobits/auth/adapters/oauth-token`. Those helpers

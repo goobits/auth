@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import { pgTable, serial, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { jsonb, pgTable, serial, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 
 import type { DrizzleDbLike } from '../src/adapters/drizzleTypes.ts'
 
@@ -8,6 +8,7 @@ export const drizzleUsersTable = pgTable('users', {
 	email: text('email').notNull().unique(),
 	name: text('name'),
 	passwordHash: text('password_hash'),
+	settings: jsonb('settings').default({}),
 	createdAt: timestamp('created_at').defaultNow()
 })
 
@@ -93,8 +94,10 @@ export async function createIntegrationDrizzleFixture(): Promise<IntegrationDbFi
 			email TEXT NOT NULL UNIQUE,
 			name TEXT,
 			password_hash TEXT,
+			settings JSONB DEFAULT '{}'::jsonb,
 			created_at TIMESTAMP DEFAULT now()
 		)`
+		await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS settings JSONB DEFAULT '{}'::jsonb`
 		await client`CREATE TABLE IF NOT EXISTS sessions (
 			id TEXT PRIMARY KEY,
 			user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -143,6 +146,7 @@ export async function createIntegrationDrizzleFixture(): Promise<IntegrationDbFi
 			email TEXT NOT NULL UNIQUE,
 			name TEXT,
 			password_hash TEXT,
+			settings JSONB DEFAULT '{}'::jsonb,
 			created_at TIMESTAMP DEFAULT now()
 		);
 		CREATE TABLE sessions (

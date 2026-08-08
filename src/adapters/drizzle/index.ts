@@ -69,6 +69,7 @@ export type DrizzleAdapterOptions<TSchema extends DrizzleAuthSchema = DrizzleAut
 		sessionRefreshThreshold?: number
 		cookieName?: string
 		secureCookies?: boolean
+		userSelection?: DrizzleTable
 		mapUser?: (row: DrizzleRow | null) => User | null
 	}
 	sanitizeUser?: (user: User | null) => User | null
@@ -132,6 +133,7 @@ export function drizzleAdapter<TSchema extends DrizzleAuthSchema = DrizzleAuthSc
 		...(options.session?.secureCookies !== undefined
 			? { secureCookies: options.session.secureCookies }
 			: {}),
+		...(options.session?.userSelection ? { userSelection: options.session.userSelection } : {}),
 		...(options.session?.mapUser ? { mapUser: options.session.mapUser } : {}),
 		...(options.sanitizeUser ? { sanitizeUser: options.sanitizeUser } : {})
 	})
