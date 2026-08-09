@@ -10,7 +10,7 @@ import type {
 } from '../src/types/index.ts'
 import type { OAuthFlowContext } from '../src/utils/oauth.ts'
 import { MemoryUserAdapter, MockSessionAdapter, MockTokenAdapter } from '../src/testing/index.ts'
-import { TEST_CSRF_SECRET } from './testKit.ts'
+import { createMfaLoginTestConfig, TEST_CSRF_SECRET } from './testKit.ts'
 
 type OAuthCallback = (
 	event: RequestEventLike,
@@ -129,6 +129,41 @@ describe('createAuth OAuth lifecycle', () => {
 			})
 		)
 		expect(createSession).toHaveBeenCalledWith(user.id)
+	})
+
+	it('defers OAuth session creation until an enabled MFA factor is verified', async () => {
+		const session = new MockSessionAdapter()
+		const createSession = vi.spyOn(session, 'createSession')
+		const identity = new MemoryUserAdapter()
+		const user = await createUser(identity, 'mfa-user')
+		await identity.linkIdentity({ userId: user.id, provider: 'google', subject: profile.id })
+		const { store: mfa, verificationTokenAdapter: verificationToken } = createMfaLoginTestConfig()
+
+		createAuth({
+			adapters: {
+				session,
+				user: identity,
+				oauthIdentity: identity,
+				mfa: mfa as never,
+				verificationToken: verificationToken as never
+			},
+			providers: { google: { provider: createProvider() } },
+			mfa: {
+				authorizeSecurityChange: async () => true,
+				login: { challengeRedirect: '/login?mfa=required', secureCookies: false }
+			}
+		})
+
+		await expect(callback()(createEvent(), profile, tokens, context('sign-in'))).resolves.toBe(
+			'/login?mfa=required'
+		)
+		expect(createSession).not.toHaveBeenCalled()
+		expect(verificationToken.replaceForUserAndType).toHaveBeenCalledWith(
+			expect.objectContaining({
+				userId: user.id,
+				metadata: { redirectTo: '/settings/security' }
+			})
+		)
 	})
 
 	it('links an unknown subject only after the application resolves a real user', async () => {

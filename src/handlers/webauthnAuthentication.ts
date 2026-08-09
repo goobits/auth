@@ -121,7 +121,7 @@ export function createWebAuthnLoginVerifyHandler(
 				return jsonResponse({ ok: false, error: 'Unable to resolve authenticated principal' }, 401)
 			}
 
-			userId = await ensureSessionAfterLogin({
+			const completion = await ensureSessionAfterLogin({
 				event,
 				sessionAdapter,
 				userId,
@@ -130,6 +130,7 @@ export function createWebAuthnLoginVerifyHandler(
 				autoCreateSession,
 				onLoginMode
 			})
+			userId = completion.userId
 		} catch (error) {
 			if (error instanceof AuthPrincipalResolutionError) {
 				return jsonResponse({ ok: false, error: error.message }, error.status)

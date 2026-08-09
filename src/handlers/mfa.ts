@@ -2,7 +2,7 @@ import type { VerificationTokenAdapter } from '../adapters/verification-token/Ve
 import type { Session, SessionMetadata, User } from '../types/core.ts'
 import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../mfa/backupCodes.ts'
 import { createOtpAuthURL, generateSecret, verifyTOTP } from '../mfa/totp.ts'
-import type { AuthorizeSecurityChange, RequestEventLike } from '../types/auth.ts'
+import type { AuthorizeSecurityChange, MfaLoginPolicy, RequestEventLike } from '../types/auth.ts'
 import {
 	consumeVerificationTokenRecord,
 	createVerificationToken,
@@ -13,6 +13,7 @@ import { type AssuredSessionAdapter, rotateSessionAssurance } from './_assuredSe
 import { consumeMfaCredentialProof, verifyMfaCredential } from './_mfaCredential.ts'
 import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
 import { readRequestFormData } from '../utils/http.ts'
+import { isSafeRedirectPath } from '../utils/redirect.ts'
 
 const DEFAULT_LOGIN_CHALLENGE_COOKIE = 'goobits_mfa_login'
 const DEFAULT_LOGIN_CHALLENGE_TTL_MS = 5 * 60 * 1000
@@ -57,10 +58,6 @@ type MfaLoginStore = MfaStore & {
 export type MfaLoginConfig = {
 	store: MfaLoginStore
 	verificationTokenAdapter: VerificationTokenAdapter
-	isRequired?: (user: User) => boolean | Promise<boolean>
-	challengeCookieName?: string
-	challengeExpiresInMs?: number
-	secureCookies?: boolean
 	csrf?: { validate: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
 	rateLimit?: HandlerRateLimitConfig
 	onVerified?: (
@@ -74,7 +71,7 @@ export type MfaLoginConfig = {
 		| { allowed: false; error: string; code?: string; status?: number }
 		| void
 		| Promise<{ allowed: false; error: string; code?: string; status?: number } | void>
-}
+} & MfaLoginPolicy
 
 type MfaLoginSessionAdapter = {
 	createSession: (userId: string, metadata?: SessionMetadata) => Promise<Session>
@@ -101,27 +98,52 @@ function challengeMetadata(record: Record<string, unknown> | undefined): Session
 	return metadata
 }
 
+function challengeRedirect(record: Record<string, unknown> | undefined): string | undefined {
+	const redirectTo = record?.['redirectTo']
+	return typeof redirectTo === 'string' &&
+		redirectTo.length <= 1024 &&
+		isSafeRedirectPath(redirectTo)
+		? redirectTo
+		: undefined
+}
+
+function challengeTokenMetadata(
+	sessionMetadata: SessionMetadata,
+	redirectTo: string | undefined
+): Record<string, unknown> {
+	return {
+		...challengeMetadata(sessionMetadata),
+		...(redirectTo && redirectTo.length <= 1024 && isSafeRedirectPath(redirectTo)
+			? { redirectTo }
+			: {})
+	}
+}
+
+export type MfaLoginChallengeResponse = {
+	success: boolean
+	twoFactorRequired?: boolean
+	mfaEnrollmentRequired?: boolean
+	error?: string
+}
+
 /** Starts a short-lived, single-use MFA challenge when the authenticated password requires it. */
 export async function beginMfaLoginChallenge({
 	event,
 	user,
 	sessionMetadata,
+	redirectTo,
 	config
 }: {
 	event: RequestEventLike
 	user: User
 	sessionMetadata: SessionMetadata
+	redirectTo?: string
 	config: MfaLoginConfig
 }): Promise<
 	| { handled: false }
 	| {
 			handled: true
-			response: {
-				success: boolean
-				twoFactorRequired?: boolean
-				mfaEnrollmentRequired?: boolean
-				error?: string
-			}
+			response: MfaLoginChallengeResponse
 	  }
 > {
 	const userId = userIdFromRecord(user)
@@ -147,7 +169,7 @@ export async function beginMfaLoginChallenge({
 		userId,
 		type: VERIFICATION_TOKEN_TYPES.MFA_LOGIN,
 		expiresInMs,
-		metadata: challengeMetadata(sessionMetadata)
+		metadata: challengeTokenMetadata(sessionMetadata, redirectTo)
 	})
 	event.cookies.set(challengeCookieName(config), challenge, {
 		httpOnly: true,
@@ -219,6 +241,7 @@ export function createMfaLoginVerifyHandler(
 			return { success: false, error: 'Invalid authentication code' }
 		}
 		const sessionMetadata = challengeMetadata(consumed.token.metadata)
+		const redirectTo = challengeRedirect(consumed.token.metadata)
 		const hookResult = await config.onVerified?.(consumed.user, {
 			event,
 			formData,
@@ -241,7 +264,8 @@ export function createMfaLoginVerifyHandler(
 
 		return {
 			success: true,
-			user: config.sanitizeUser ? config.sanitizeUser(consumed.user) : consumed.user
+			user: config.sanitizeUser ? config.sanitizeUser(consumed.user) : consumed.user,
+			...(redirectTo ? { redirectTo } : {})
 		}
 	}
 }

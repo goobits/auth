@@ -343,6 +343,7 @@ describe('MFA handlers', () => {
 				emailVerified: true
 			},
 			sessionMetadata: { rememberMe: true },
+			redirectTo: '/library',
 			config: { store, verificationTokenAdapter, secureCookies: false }
 		})
 
@@ -364,7 +365,7 @@ describe('MFA handlers', () => {
 			createRequestEvent({ cookies, method: 'POST', form: { token: '123456' } })
 		)
 
-		expect(result.success).toBe(true)
+		expect(result).toMatchObject({ success: true, redirectTo: '/library' })
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1', {
 			rememberMe: true,
 			mfaVerifiedAt: expect.any(Date)

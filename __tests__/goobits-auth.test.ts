@@ -3,10 +3,7 @@ import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import type { SessionAdapter } from '../src/adapters/session/SessionAdapter.ts'
 import type { WebAuthnAdapter } from '../src/adapters/webauthn/WebAuthnAdapter.ts'
 import { MemoryUserAdapter } from '../src/adapters/memory/user.ts'
-import {
-	GoobitsAuth as CoreGoobitsAuth,
-	type GoobitsAuthConfig
-} from '../src/GoobitsAuth.ts'
+import { GoobitsAuth as CoreGoobitsAuth, type GoobitsAuthConfig } from '../src/GoobitsAuth.ts'
 import type { OAuthProvider } from '../src/providers/OAuthProvider.ts'
 import type { AuthHandlers } from '../src/types/auth.ts'
 import type { Session, User } from '../src/types/index.ts'
@@ -140,6 +137,22 @@ describe('GoobitsAuth', () => {
 		expect(() => new GoobitsAuth(invalidConfig as never)).toThrow(
 			'atomic createCredentialWithinLimit adapter capability'
 		)
+	})
+
+	it('requires single-use verification-token storage when login MFA is enabled', () => {
+		expect(
+			() =>
+				new GoobitsAuth({
+					adapter: {
+						session: createSessionAdapter({ session: null, user: null }),
+						mfa: {}
+					},
+					mfa: {
+						authorizeSecurityChange: async () => true,
+						login: {}
+					}
+				} as never)
+		).toThrow('mfa.login requires adapters.verificationToken')
 	})
 
 	it('exposes named route factories from the core auth instance', () => {

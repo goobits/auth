@@ -5,6 +5,7 @@ import {
 	createMagicLinkVerifyHandler
 } from '../../src/handlers/magicLink.ts'
 import type { RequestEventLike } from '../../src/types/auth.ts'
+import { createMfaLoginTestConfig } from '../testKit.ts'
 
 const MAGIC_LINK_BASE_URL = 'https://auth.example.test'
 const OTP_PEPPER = 'test-only-magic-link-pepper-32-bytes-minimum'
@@ -405,6 +406,56 @@ describe('magic link handlers', () => {
 		expect(payload.ok).toBe(false)
 		expect(payload.error).toContain('Unable to resolve authenticated principal')
 		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
+	})
+
+	it('defers magic-link session creation when the user has MFA enabled', async () => {
+		const magicLinkAdapter = createMagicLinkAdapter()
+		const sendEmail = vi.fn()
+		const user = {
+			id: 'mfa-user',
+			email: 'mfa@example.com',
+			name: 'MFA User',
+			avatar: null,
+			emailVerified: true
+		}
+		const userAdapter = {
+			getUserByEmail: vi.fn(async () => user),
+			getUserById: vi.fn(async () => user),
+			createUser: vi.fn(),
+			updateUser: vi.fn()
+		}
+		const sessionAdapter = {
+			createSession: vi.fn(async (userId: string) => ({ id: 's-mfa', userId })),
+			setSessionCookie: vi.fn()
+		}
+		const { config: mfa, replaceForUserAndType } = createMfaLoginTestConfig()
+		const requestHandler = createTestMagicLinkRequestHandler({
+			magicLinkAdapter,
+			userAdapter,
+			sendEmail
+		})
+
+		await requestHandler(
+			createEvent({ body: { email: user.email, redirectTo: '/library' } }) as RequestEventLike
+		)
+		const token = sendEmail.mock.calls[0]?.[0].token
+		const verifyHandler = createTestMagicLinkVerifyHandler({
+			magicLinkAdapter,
+			userAdapter,
+			sessionAdapter,
+			requireUserConfirmation: false,
+			mfa
+		})
+
+		const response = await verifyHandler(
+			createEvent({ body: { token, redirectTo: '/library' } }) as RequestEventLike
+		)
+
+		expect(await response.json()).toEqual({ ok: true, twoFactorRequired: true })
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
+		expect(replaceForUserAndType).toHaveBeenCalledWith(
+			expect.objectContaining({ metadata: { redirectTo: '/library' } })
+		)
 	})
 
 	it('does not consume a GET link until its browser confirmation is posted', async () => {

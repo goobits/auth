@@ -210,6 +210,7 @@ export function createSigninHandler(
 					event,
 					user,
 					sessionMetadata,
+					redirectTo,
 					config: mfa
 				})
 				if (challenge.handled) return challenge.response

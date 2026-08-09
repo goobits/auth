@@ -12,6 +12,10 @@
   provider rejection, and upstream outage without leaking provider-controlled
   descriptions through exception messages or turning expected failures into
   internal-server errors.
+- 🔐 Managed OAuth and magic-link authentication can now share the same
+  single-use MFA login gate as password authentication; no session is exposed
+  until enabled TOTP or a backup code is verified, while passkey login retains
+  explicit MFA assurance.
 
 ## [0.6.0] - 2026-08-03
 

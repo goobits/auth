@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { AuthPrincipalResolutionError } from '../../src/errors/AuthPrincipalResolutionError.ts'
 import { ensureSessionAfterLogin } from '../../src/handlers/sessionLifecycle.ts'
-import { createRequestEvent } from '../testKit.ts'
+import { createMfaLoginTestConfig, createRequestEvent } from '../testKit.ts'
 
 function createSessionAdapter() {
 	return {
@@ -16,13 +16,13 @@ describe('ensureSessionAfterLogin', () => {
 		const sessionAdapter = createSessionAdapter()
 		const event = createRequestEvent()
 
-		const userId = await ensureSessionAfterLogin({
+		const result = await ensureSessionAfterLogin({
 			event,
 			sessionAdapter: sessionAdapter as never,
 			userId: 'u1'
 		})
 
-		expect(userId).toBe('u1')
+		expect(result).toEqual({ status: 'authenticated', userId: 'u1' })
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1')
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalledWith(event.cookies, {
 			id: 's1',
@@ -73,14 +73,14 @@ describe('ensureSessionAfterLogin', () => {
 		const sessionAdapter = createSessionAdapter()
 		const event = createRequestEvent()
 
-		const userId = await ensureSessionAfterLogin({
+		const result = await ensureSessionAfterLogin({
 			event,
 			sessionAdapter: sessionAdapter as never,
 			userId: 'u2',
 			onLoginMode: 'manual'
 		})
 
-		expect(userId).toBe('u2')
+		expect(result).toEqual({ status: 'authenticated', userId: 'u2' })
 		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
 		expect(sessionAdapter.setSessionCookie).not.toHaveBeenCalled()
 	})
@@ -105,13 +105,45 @@ describe('ensureSessionAfterLogin', () => {
 		}
 		const event = createRequestEvent()
 
-		const userId = await ensureSessionAfterLogin({
+		const result = await ensureSessionAfterLogin({
 			event,
 			sessionAdapter: sessionAdapter as never,
 			userId: 'u4'
 		})
 
-		expect(userId).toBe('u4')
+		expect(result).toEqual({ status: 'authenticated', userId: 'u4' })
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u4')
+	})
+
+	it('defers session creation and preserves the destination when MFA is enabled', async () => {
+		const sessionAdapter = createSessionAdapter()
+		const event = createRequestEvent()
+		const { config: mfa, replaceForUserAndType } = createMfaLoginTestConfig()
+
+		const result = await ensureSessionAfterLogin({
+			event,
+			sessionAdapter: sessionAdapter as never,
+			userId: 'u5',
+			user: {
+				id: 'u5',
+				email: 'u5@example.com',
+				name: 'User Five',
+				avatar: null,
+				emailVerified: true
+			},
+			redirectTo: '/library',
+			mfa
+		})
+
+		expect(result).toMatchObject({
+			status: 'mfa-required',
+			userId: 'u5',
+			redirectTo: '/login?mfa=required',
+			response: { success: true, twoFactorRequired: true }
+		})
+		expect(replaceForUserAndType).toHaveBeenCalledWith(
+			expect.objectContaining({ metadata: { redirectTo: '/library' } })
+		)
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
 	})
 })

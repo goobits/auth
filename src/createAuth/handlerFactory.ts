@@ -12,7 +12,8 @@ import {
 	createMfaEnrollHandler,
 	createMfaStatusHandler,
 	createMfaStepUpHandler,
-	createMfaVerifyHandler
+	createMfaVerifyHandler,
+	type MfaLoginConfig
 } from '../handlers/mfa.ts'
 import { ensureSessionAfterLogin } from '../handlers/sessionLifecycle.ts'
 import { rotateSessionAssurance } from '../handlers/_assuredSession.ts'
@@ -129,6 +130,15 @@ export function createHandlers(
 	} = config
 	const { urlConfig, cookieConfig, autoCreateSession, isAuthenticated } = defaults
 	const onLoginMode: OnLoginMode = hooks.onLoginMode ?? 'augment'
+	const mfaLogin: MfaLoginConfig | undefined = mfa?.login
+		? {
+				...mfa.login,
+				store: adapters.mfa!,
+				verificationTokenAdapter: adapters.verificationToken!,
+				secureCookies: mfa.login.secureCookies ?? cookieConfig.secure,
+				challengeRedirect: mfa.login.challengeRedirect ?? urlConfig.login
+			}
+		: undefined
 	const hasProviders = Object.keys(providers).length > 0
 	const providerInstances = Object.fromEntries(
 		Object.entries(providers as Record<string, OAuthProviderConfig>).map(
@@ -248,12 +258,11 @@ export function createHandlers(
 					throw new AuthPrincipalResolutionError()
 				}
 
-				if (!identity) {
-					const resolvedUser = user ?? (await userAdapter.getUserById(resolvedUserId))
-					if (!resolvedUser || resolvedUser.id !== resolvedUserId) {
-						throw new AuthPrincipalResolutionError()
-					}
+				const resolvedUser = user ?? (await userAdapter.getUserById(resolvedUserId))
+				if (!resolvedUser || resolvedUser.id !== resolvedUserId) {
+					throw new AuthPrincipalResolutionError()
 				}
+				let completionRedirect = redirectTo
 				await oauthCredentialMutations!.connect({
 					userId: resolvedUserId,
 					provider: providerName,
@@ -264,16 +273,22 @@ export function createHandlers(
 					event,
 					completeAuthentication: async () => {
 						if (context.intent === 'sign-in') {
-							await ensureSessionAfterLogin({
+							const completion = await ensureSessionAfterLogin({
 								event,
 								sessionAdapter: adapters.session,
 								userId: resolvedUserId,
+								user: resolvedUser,
+								...(mfaLogin ? { mfa: mfaLogin } : {}),
+								redirectTo: redirectTo || context.redirectTo || urlConfig.afterLogin,
 								...(hooks.getSessionMetadata
 									? { getSessionMetadata: hooks.getSessionMetadata }
 									: {}),
 								autoCreateSession,
 								onLoginMode
 							})
+							if (completion.status !== 'authenticated') {
+								completionRedirect = completion.redirectTo
+							}
 						} else if (context.intent === 'reauth' && currentSession) {
 							await rotateSessionAssurance({
 								sessionAdapter: adapters.session,
@@ -285,7 +300,7 @@ export function createHandlers(
 						}
 					}
 				})
-				return redirectTo
+				return completionRedirect
 			},
 			...(hooks.onError
 				? {
@@ -376,6 +391,7 @@ export function createHandlers(
 			...(config.logger ? { logger: config.logger } : {}),
 			...(normalizedMagicLink['sanitizeUser'] === undefined ? { sanitizeUser } : {}),
 			...(hooks.getSessionMetadata ? { getSessionMetadata: hooks.getSessionMetadata } : {}),
+			...(mfaLogin ? { mfa: mfaLogin } : {}),
 			...(adapters.user ? { userAdapter: adapters.user } : {})
 		}
 		handlers.magicLink = {

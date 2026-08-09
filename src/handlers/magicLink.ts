@@ -29,6 +29,7 @@ import {
 } from './magicLinkUtils.ts'
 import { resolveHandlerRateLimitKey } from './rateLimitKey.ts'
 import { ensureSessionAfterLogin } from './sessionLifecycle.ts'
+import type { MfaLoginConfig } from './mfa.ts'
 
 type MagicLinkTokenAdapter = Pick<
 	MagicLinkAdapter,
@@ -96,6 +97,7 @@ type MagicLinkVerifyConfig = {
 	sanitizeUser?: (user: User | null) => User | null
 	autoCreateSession?: boolean
 	onLoginMode?: OnLoginMode
+	mfa?: MfaLoginConfig
 	key?: (event: RequestEventLike) => string
 	requireUserConfirmation?: boolean
 	confirmationCookieName?: string
@@ -473,20 +475,44 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 			user
 		})
 		if (lifecycleResult?.userId) userId = String(lifecycleResult.userId)
+		let completion
 		try {
-			userId = await ensureSessionAfterLogin({
+			const lifecycleRedirect = lifecycleResult?.redirectTo
+			const postLoginRedirect =
+				lifecycleRedirect && isSafeRedirectPath(lifecycleRedirect)
+					? lifecycleRedirect
+					: redirectTo || redirectAfterLogin
+			completion = await ensureSessionAfterLogin({
 				event,
 				sessionAdapter,
 				userId,
+				user,
 				...(getSessionMetadata ? { getSessionMetadata } : {}),
+				...(config.mfa ? { mfa: config.mfa } : {}),
+				redirectTo: postLoginRedirect,
 				autoCreateSession,
 				onLoginMode
 			})
+			userId = completion.userId
 		} catch (error) {
 			if (error instanceof AuthPrincipalResolutionError) {
 				return jsonResponse({ ok: false, error: error.message }, error.status)
 			}
 			throw error
+		}
+		if (completion.status !== 'authenticated') {
+			if (event.request.method === 'GET') {
+				throw redirect(302, completion.redirectTo)
+			}
+			return jsonResponse(
+				{
+					ok: completion.status === 'mfa-required',
+					...(completion.response.twoFactorRequired ? { twoFactorRequired: true } : {}),
+					...(completion.response.mfaEnrollmentRequired ? { mfaEnrollmentRequired: true } : {}),
+					...(completion.response.error ? { error: completion.response.error } : {})
+				},
+				completion.status === 'mfa-required' ? 200 : 403
+			)
 		}
 
 		if (event.request.method === 'GET') {

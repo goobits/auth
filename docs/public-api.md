@@ -300,6 +300,26 @@ Credential MFA is a two-step flow:
 - complete the short-lived, single-use challenge with
   `createMfaLoginVerifyHandler`; only that handler creates the session
 
+Managed OAuth and magic-link login use the same gate when `mfa.login` is
+configured. This requires `adapters.mfa` and `adapters.verificationToken`:
+
+```ts
+const auth = new GoobitsAuth({
+	adapter: { session, user, oauthIdentity, mfa, verificationToken },
+	mfa: {
+		authorizeSecurityChange,
+		login: { challengeRedirect: '/login?mfa=required' }
+	}
+})
+```
+
+An enabled factor always defers session creation. `isRequired(user)` can also
+require enrollment by application policy. Passkey authentication already
+provides phishing-resistant MFA assurance and therefore completes directly.
+Successful challenge verification returns the validated original
+`redirectTo`, allowing the consuming page action to continue without placing
+OAuth credentials in cookies or verification-token metadata.
+
 Factor enrollment and removal require an application-owned step-up callback:
 
 ```ts
@@ -339,8 +359,8 @@ preserves trusted session context, and refreshes exactly one of primary or MFA
 assurance.
 
 MFA login challenges reuse `VerificationTokenAdapter`. Adapters should preserve
-the optional token metadata when remember-me or session context must survive
-between the password and second-factor requests.
+the optional token metadata when remember-me, session context, or the validated
+post-login path must survive between the primary and second-factor requests.
 
 Magic-link token URLs use a scanner-safe confirmation interstitial by default.
 The GET request does not consume the token; a short-lived, HttpOnly

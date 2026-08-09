@@ -253,9 +253,22 @@ export type AuthorizeSecurityChange = (input: {
 	session: Session | null
 }) => boolean | Promise<boolean>
 
+/** Shared policy for deferring primary login until TOTP or backup-code verification. */
+export type MfaLoginPolicy = {
+	isRequired?: (user: User) => boolean | Promise<boolean>
+	challengeCookieName?: string
+	challengeExpiresInMs?: number
+	secureCookies?: boolean
+	/** Safe application path that renders the pending MFA challenge. */
+	challengeRedirect?: string
+	/** Safe application path that explains required factor enrollment. */
+	enrollmentRedirect?: string
+}
+
 /** Defines totp mfa config options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type TotpMfaConfig = {
 	authorizeSecurityChange: AuthorizeSecurityChange
+	login?: MfaLoginPolicy
 	issuer?: string
 	label?: (userId: string, locals: RequestEventLike['locals']) => string
 	hooks?: {
