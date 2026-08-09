@@ -14,9 +14,9 @@ outside SvelteKit should prefer low-level subpaths such as
 `OAuthProviderButton` is exported from `@goobits/auth/ui`. Pass an `apple` or
 `google` provider plus a localized provider-approved label such as
 `Continue with Apple` or `Continue with Google`; the component owns the current
-provider proportions, colors, and artwork. Its provider-hosted artwork and
-Google Sans font require `https:` images and `https://fonts.gstatic.com` in a
-consumer's content security policy.
+provider proportions, colors, and artwork. Provider marks ship with the package,
+and the component uses local system fonts, so rendering it does not contact
+Google or Apple or require provider-specific content-security-policy entries.
 
 ## Stability
 

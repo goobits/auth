@@ -151,7 +151,11 @@ async function assertDistPackageScope() {
 	}
 
 	const directRoot = await import(new URL('dist/node/index.js', rootUrl).href)
-	assert.equal(typeof directRoot.GoobitsAuth, 'function', 'direct dist import must retain ESM identity')
+	assert.equal(
+		typeof directRoot.GoobitsAuth,
+		'function',
+		'direct dist import must retain ESM identity'
+	)
 }
 
 async function assertUiDistribution() {
@@ -159,9 +163,11 @@ async function assertUiDistribution() {
 		'AuthGate.svelte',
 		'AuthNotification.svelte',
 		'BackupCodesModal.svelte',
+		'OAuthProviderButton.svelte',
 		'QrCode.svelte',
 		'SessionManager.svelte'
 	]
+	const assets = ['assets/apple-mark.svg', 'assets/google-mark.svg']
 
 	for (const output of ['node', 'worker', 'types']) {
 		for (const component of components) {
@@ -169,6 +175,9 @@ async function assertUiDistribution() {
 			await assertDistTarget(`./${target}`)
 			const source = await readFile(new URL(target, rootUrl), 'utf8')
 			assert.doesNotMatch(source, /['"]\.{1,2}\/.+\.ts['"]/, `${target} imports raw TypeScript`)
+		}
+		for (const asset of assets) {
+			await assertDistTarget(`./dist/${output}/ui/${asset}`)
 		}
 		await assertDistTarget(
 			`./dist/${output}/ui/backupCodesModalKeyboard.${output === 'types' ? 'd.ts' : 'js'}`
@@ -185,6 +194,13 @@ async function assertUiDistribution() {
 		assert.doesNotMatch(source, /\.svelte\.css|svelte\/internal|\$app\//)
 		assert.doesNotMatch(source, /['"]\.{1,2}\/.+\.ts['"]/)
 	}
+
+	const providerButton = await readFile(
+		new URL('dist/types/ui/OAuthProviderButton.svelte', rootUrl),
+		'utf8'
+	)
+	assert.doesNotMatch(providerButton, /https?:\/\//, 'OAuth button loads a remote asset')
+	assert.doesNotMatch(providerButton, /@font-face/, 'OAuth button loads a remote font')
 }
 
 async function assertSvelteDistribution() {
@@ -312,7 +328,10 @@ async function assertPackedPackage() {
 			'dist/node/index.js',
 			'dist/worker/index.js',
 			'dist/types/index.d.ts',
-			'dist/types/ui/AuthGate.svelte'
+			'dist/types/ui/AuthGate.svelte',
+			'dist/types/ui/OAuthProviderButton.svelte',
+			'dist/types/ui/assets/apple-mark.svg',
+			'dist/types/ui/assets/google-mark.svg'
 		]) {
 			assert(packedFiles.includes(required), `packed artifact is missing ${required}`)
 		}

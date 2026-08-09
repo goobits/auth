@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### 🔒 Security
+
+- 🎨 `OAuthProviderButton` now ships its Google and Apple marks and uses local
+  system fonts, eliminating third-party image and font requests during render.
+
 ## [0.6.0] - 2026-08-03
 
 ### ⚠️ Breaking

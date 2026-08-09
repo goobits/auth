@@ -8,6 +8,7 @@ const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
 const runtimeDirs = [join(root, 'dist', 'node'), join(root, 'dist', 'worker')]
 const assetDirs = [...runtimeDirs, join(root, 'dist', 'types')]
+const uiAssetExtensions = new Set(['.svelte', '.css', '.svg'])
 
 function movePublishedTargetIntoDistScope(value) {
 	if (typeof value === 'string') {
@@ -38,22 +39,23 @@ function rewriteRelativeTypeScriptImports(source) {
 	return source.replace(/(['"])([.][.]?\/[^'"]+)\.ts\1/g, '$1$2.js$1')
 }
 
-async function copyUiAssets() {
-	const sourceDir = join(root, 'src', 'ui')
+async function copyUiAssets(sourceDir = join(root, 'src', 'ui'), relativeDir = '') {
 	const entries = await readdir(sourceDir, { withFileTypes: true })
 
-	for (const outputDir of assetDirs) {
-		await mkdir(join(outputDir, 'ui'), { recursive: true })
-	}
-
 	for (const entry of entries) {
-		if (!entry.isFile() || !['.svelte', '.css'].includes(extname(entry.name))) {
+		const sourcePath = join(sourceDir, entry.name)
+		const relativePath = join(relativeDir, entry.name)
+		if (entry.isDirectory()) {
+			await copyUiAssets(sourcePath, relativePath)
+			continue
+		}
+		if (!entry.isFile() || !uiAssetExtensions.has(extname(entry.name))) {
 			continue
 		}
 
-		const sourcePath = join(sourceDir, entry.name)
 		for (const outputDir of assetDirs) {
-			const outputPath = join(outputDir, 'ui', entry.name)
+			const outputPath = join(outputDir, 'ui', relativePath)
+			await mkdir(dirname(outputPath), { recursive: true })
 			if (extname(entry.name) === '.svelte') {
 				const source = await readFile(sourcePath, 'utf8')
 				await writeFile(outputPath, rewriteRelativeTypeScriptImports(source))

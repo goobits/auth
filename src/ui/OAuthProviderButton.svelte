@@ -21,12 +21,10 @@
 	}: Props = $props()
 	const classes = $derived(`oauth-provider oauth-provider--${provider} ${className}`.trim())
 
-	// Provider-owned artwork keeps the marks current and avoids shipping a
-	// hand-drawn or stale trademark. The visible label remains application-owned
-	// so consumers can localize the provider-approved call to action.
-	const googleMark = 'https://developers.google.com/static/identity/images/g-logo.png'
-	const appleMark =
-		'https://appleid.cdn-apple.com/appleid/button/logo?size=44&color=black&border=false&border_radius=0&scale=2'
+	const marks = {
+		apple: new URL('./assets/apple-mark.svg', import.meta.url).href,
+		google: new URL('./assets/google-mark.svg', import.meta.url).href
+	} satisfies Record<OAuthProviderBrand, string>
 </script>
 
 <button
@@ -36,25 +34,11 @@
 	disabled={disabled || busy}
 	aria-busy={busy || undefined}
 >
-	<img
-		class="oauth-provider__mark"
-		src={provider === 'apple' ? appleMark : googleMark}
-		alt=""
-		aria-hidden="true"
-	/>
+	<img class="oauth-provider__mark" src={marks[provider]} alt="" aria-hidden="true" />
 	<span>{label}</span>
 </button>
 
 <style>
-	@font-face {
-		font-family: 'Goobits Google Sans';
-		font-style: normal;
-		font-weight: 500;
-		font-display: swap;
-		src: url('https://fonts.gstatic.com/s/googlesans/v70/4Ua_rENHsxJlGDuGo1OIlJfC6l_24rlCK1Yo_Iqcsih3SAyH6cAwhX9RFD48TE63OOYKtrw2IKli.ttf')
-			format('truetype');
-	}
-
 	.oauth-provider {
 		display: flex;
 		align-items: center;
@@ -87,7 +71,7 @@
 		border: 1px solid #747775;
 		background: #fff;
 		color: #1f1f1f;
-		font-family: 'Goobits Google Sans', 'Google Sans', Roboto, Arial, sans-serif;
+		font-family: 'Google Sans', Roboto, Arial, sans-serif;
 		font-size: 14px;
 		font-weight: 500;
 		line-height: 20px;
