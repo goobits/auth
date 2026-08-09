@@ -2,6 +2,8 @@ import { bytesToBase64Url, sha256Bytes } from '@goobits/security/crypto'
 
 const OAUTH_RESPONSE_MAX_BYTES = 64 * 1024
 const OAUTH_REQUEST_TIMEOUT_MS = 10_000
+const OAUTH_ERROR_CODE_MAX_LENGTH = 128
+const OAUTH_ERROR_DESCRIPTION_MAX_LENGTH = 1024
 
 export type OAuthTokenSet = {
 	accessToken: string
@@ -54,16 +56,30 @@ export async function readBoundedResponseText(
 /** A bounded, provider-safe OAuth token endpoint rejection. */
 export class OAuth2RequestError extends Error {
 	readonly code: string
-	readonly description: string | null
+	readonly #description: string | null
 	readonly status: number
+	get description(): string | null {
+		return this.#description
+	}
 
 	constructor(code: string, description: string | null, status: number) {
-		super(description ? `${code}: ${description}` : code)
+		const safeCode = normalizeOAuthErrorCode(code)
+		super(safeCode)
 		this.name = 'OAuth2RequestError'
-		this.code = code
-		this.description = description
-		this.status = status
+		this.code = safeCode
+		this.#description = normalizeOAuthErrorDescription(description)
+		this.status = Number.isInteger(status) && status >= 100 && status <= 599 ? status : 502
 	}
+}
+
+function normalizeOAuthErrorCode(value: string): string {
+	return value.length <= OAUTH_ERROR_CODE_MAX_LENGTH && /^[A-Za-z0-9._-]+$/u.test(value)
+		? value
+		: 'provider_error'
+}
+
+function normalizeOAuthErrorDescription(value: string | null): string | null {
+	return value && value.length <= OAUTH_ERROR_DESCRIPTION_MAX_LENGTH ? value : null
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -72,6 +88,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function optionalString(value: unknown): string | null {
 	return typeof value === 'string' && value.length > 0 ? value : null
+}
+
+/** Performs one bounded-time provider request without exposing transport details. */
+export async function requestOAuthResponse(
+	input: string | URL,
+	init: RequestInit
+): Promise<Response> {
+	try {
+		return await fetch(input, init)
+	} catch {
+		throw new OAuth2RequestError('provider_unavailable', null, 503)
+	}
 }
 
 /** Derives the RFC 7636 S256 challenge for an OAuth PKCE verifier. */
@@ -84,7 +112,7 @@ export async function requestOAuthTokens(
 	endpoint: string,
 	parameters: URLSearchParams
 ): Promise<OAuthTokenSet> {
-	const response = await fetch(endpoint, {
+	const response = await requestOAuthResponse(endpoint, {
 		method: 'POST',
 		headers: {
 			accept: 'application/json',
@@ -112,11 +140,11 @@ export async function requestOAuthTokens(
 		throw new Error('OAuth token response is invalid')
 	}
 
-	const errorCode = optionalString(responseBody['error'])
+	const providerErrorCode = optionalString(responseBody['error'])
 	const errorDescription = optionalString(responseBody['error_description'])
-	if (!response.ok || errorCode) {
+	if (!response.ok || providerErrorCode) {
 		throw new OAuth2RequestError(
-			errorCode ?? `http_${response.status}`,
+			providerErrorCode ?? `http_${response.status}`,
 			errorDescription,
 			response.status
 		)
@@ -148,7 +176,7 @@ export async function requestOAuthTokenRevocation(options: {
 	parameters: URLSearchParams
 	terminalErrorCodes: readonly string[]
 }): Promise<void> {
-	const response = await fetch(options.endpoint, {
+	const response = await requestOAuthResponse(options.endpoint, {
 		method: 'POST',
 		headers: {
 			accept: 'application/json',

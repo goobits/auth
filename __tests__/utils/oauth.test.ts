@@ -117,10 +117,59 @@ describe('oauth cookies', () => {
 				providerInstance: { getUserProfile: vi.fn() } as never,
 				callbacks: {}
 			})
-		).rejects.toThrow('Invalid OAuth flow context')
+		).rejects.toMatchObject({ name: 'OAuthCallbackError', code: 'invalid_callback' })
 		expect(cookies.get('google_oauth_state')).toBeNull()
 		expect(cookies.get('google_oauth_code_verifier')).toBeNull()
 		expect(cookies.get('google_oauth_context')).toBeNull()
+	})
+
+	it('classifies state-bound provider cancellation without calling the provider', async () => {
+		const cookies = new MockCookies()
+		const { state } = createOAuthCookies(cookies, 'google', {
+			intent: 'sign-in',
+			userId: null,
+			secure: true
+		})
+		const provider = { getUserProfile: vi.fn() } as never
+		const onError = vi.fn()
+
+		await expect(
+			handleOAuthCallback({
+				event: {
+					cookies,
+					request: new Request(`https://example.com/callback?error=access_denied&state=${state}`),
+					url: new URL(`https://example.com/callback?error=access_denied&state=${state}`)
+				},
+				provider: 'google',
+				providerInstance: provider,
+				callbacks: { onError }
+			})
+		).rejects.toMatchObject({ name: 'OAuthCallbackError', code: 'cancelled', status: 400 })
+		expect(provider.getUserProfile).not.toHaveBeenCalled()
+		expect(onError).not.toHaveBeenCalled()
+		expect(cookies.get('google_oauth_context')).toBeNull()
+	})
+
+	it('rejects cancellation whose callback state does not match', async () => {
+		const cookies = new MockCookies()
+		createOAuthCookies(cookies, 'google', {
+			intent: 'sign-in',
+			userId: null,
+			secure: true
+		})
+
+		await expect(
+			handleOAuthCallback({
+				event: {
+					cookies,
+					request: new Request('https://example.com/callback?error=access_denied&state=attacker'),
+					url: new URL('https://example.com/callback?error=access_denied&state=attacker')
+				},
+				provider: 'google',
+				providerInstance: { getUserProfile: vi.fn() } as never,
+				callbacks: {}
+			})
+		).rejects.toMatchObject({ name: 'OAuthCallbackError', code: 'invalid_callback' })
 	})
 
 	it('rejects intent context without the matching principal binding', () => {

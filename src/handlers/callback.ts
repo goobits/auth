@@ -7,13 +7,14 @@ import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts
 import type { OAuthProvider } from '../providers/OAuthProvider.ts'
 import type { RequestEventLike } from '../types/auth.ts'
 import type { OAuthProfile, OAuthTokens } from '../types/index.ts'
-import { handleOAuthCallback, type OAuthFlowContext } from '../utils/oauth.ts'
+import { handleOAuthCallback, OAuthCallbackError, type OAuthFlowContext } from '../utils/oauth.ts'
 import { readRequestFormData } from '../utils/http.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 
 type CallbackConfig = {
 	providers: Record<string, OAuthProvider>
 	redirectAfterLogin?: string
+	redirectOnCancellation?: string
 	onAuthenticated: (
 		event: RequestEventLike,
 		profile: OAuthProfile,
@@ -52,7 +53,14 @@ type CallbackConfig = {
  * });
  */
 export function createCallbackHandler(config: CallbackConfig) {
-	const { providers, redirectAfterLogin = '/', onAuthenticated, onError, logger } = config
+	const {
+		providers,
+		redirectAfterLogin = '/',
+		redirectOnCancellation = '/',
+		onAuthenticated,
+		onError,
+		logger
+	} = config
 	const log = resolveLogger(logger)
 
 	const isStatusError = (value: unknown): value is { status: number } =>
@@ -82,13 +90,20 @@ export function createCallbackHandler(config: CallbackConfig) {
 
 			// Extract Apple user data and callback params if present (POST form data)
 			let appleUserData: string | null = null
-			let overrideParams: { code: string | null; state: string | null } | null = null
+			let overrideParams: {
+				code: string | null
+				state: string | null
+				error: string | null
+				errorDescription: string | null
+			} | null = null
 			if (providerInstance.callbackMode === 'form_post' && event.request.method === 'POST') {
 				const formData = await readRequestFormData(event.request)
 				appleUserData = formData.get('user')?.toString() ?? null
 				overrideParams = {
 					code: formData.get('code')?.toString() ?? null,
-					state: formData.get('state')?.toString() ?? null
+					state: formData.get('state')?.toString() ?? null,
+					error: formData.get('error')?.toString() ?? null,
+					errorDescription: formData.get('error_description')?.toString() ?? null
 				}
 			}
 
@@ -120,9 +135,24 @@ export function createCallbackHandler(config: CallbackConfig) {
 			if (err instanceof BodyTooLargeError) {
 				error(413, 'Request body too large')
 			}
+			if (err instanceof OAuthCallbackError) {
+				if (err.code === 'cancelled') {
+					throw redirect(
+						302,
+						isSafeRedirectPath(redirectOnCancellation) ? redirectOnCancellation : '/'
+					)
+				}
+				error(400, 'OAuth authentication failed')
+			}
 			// Handle OAuth2 errors
 			if (err instanceof OAuth2RequestError) {
-				error(400, 'OAuth authentication failed')
+				const status =
+					err.status === 429 || err.status === 503
+						? 503
+						: err.status >= 500 || err.status === 401 || err.status === 403
+							? 502
+							: 400
+				error(status, 'OAuth authentication failed')
 			}
 
 			// Re-throw redirects and errors

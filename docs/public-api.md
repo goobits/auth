@@ -268,6 +268,13 @@ to online access. Set `accessType: 'offline'` only when the application has a
 documented server-side refresh or future-revocation requirement and securely
 stores the returned refresh credential.
 
+Provider descriptions remain available only as a bounded `description`
+property; they are intentionally excluded from the exception message so normal
+error serialization cannot disclose provider-controlled text. Authorization
+cancellation with valid state redirects to `urls.oauthCancelled` (or the login
+URL), while malformed callbacks return `400` and upstream outages return
+`502`/`503`.
+
 Provider instances never flow through the `auth.providers` facade. Built-in
 Google and Apple credentials live in ECMAScript `#private` fields, and the
 facade returns only frozen metadata. Custom `OAuthProvider` subclasses must use

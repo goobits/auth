@@ -7,6 +7,7 @@ export type ResolvedDefaults = {
 		login: string
 		afterLogin: string
 		afterLogout: string
+		oauthCancelled: string
 	}
 	cookieConfig: {
 		secure: boolean
@@ -24,8 +25,7 @@ export function validateConfig(config: AuthConfig): void {
 	}
 	if (config.webauthn) {
 		const adapter = config.adapters.webauthn as
-			| (NonNullable<typeof config.adapters.webauthn> &
-					Partial<WebAuthnCredentialCreationAdapter>)
+			| (NonNullable<typeof config.adapters.webauthn> & Partial<WebAuthnCredentialCreationAdapter>)
 			| undefined
 		if (!adapter) {
 			throw new Error('createAuth webauthn requires adapters.webauthn')
@@ -59,7 +59,8 @@ export function resolveDefaults(config: AuthConfig): ResolvedDefaults {
 		urlConfig: {
 			login: config.urls?.login ?? '/auth',
 			afterLogin: config.urls?.afterLogin ?? '/',
-			afterLogout: config.urls?.afterLogout ?? '/'
+			afterLogout: config.urls?.afterLogout ?? '/',
+			oauthCancelled: config.urls?.oauthCancelled ?? config.urls?.login ?? '/auth'
 		},
 		cookieConfig: {
 			secure: config.cookies?.secure ?? true

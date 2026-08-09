@@ -19,6 +19,8 @@ type OAuthCookieOptions = {
 type OAuthCallbackParams = {
 	code: string | null
 	state: string | null
+	error?: string | null
+	errorDescription?: string | null
 	storedState: string | null
 	storedCodeVerifier: string | null
 }
@@ -26,6 +28,8 @@ type OAuthCallbackParams = {
 type OAuthCallbackOverrides = {
 	code?: string | null
 	state?: string | null
+	error?: string | null
+	errorDescription?: string | null
 }
 
 type OAuthCallbackHandlers = {
@@ -42,6 +46,24 @@ export type OAuthFlowContext = {
 	userId: string | null
 	redirectTo: string
 }
+
+export type OAuthCallbackErrorCode = 'cancelled' | 'invalid_callback' | 'provider_rejected'
+
+/** A safe, typed OAuth authorization callback failure. */
+export class OAuthCallbackError extends Error {
+	readonly code: OAuthCallbackErrorCode
+	readonly status = 400
+
+	constructor(code: OAuthCallbackErrorCode) {
+		super(code)
+		this.name = 'OAuthCallbackError'
+		this.code = code
+	}
+}
+
+const OAUTH_CALLBACK_ERROR_MAX_LENGTH = 128
+const OAUTH_CALLBACK_DESCRIPTION_MAX_LENGTH = 1024
+const OAUTH_CANCELLATION_ERRORS = new Set(['access_denied', 'user_cancelled_authorize'])
 
 /**
  * Create OAuth state and code verifier cookies
@@ -118,15 +140,15 @@ function readOAuthFlowContext(
 	state: string | null
 ): OAuthFlowContext {
 	const raw = cookies.get(`${provider}_oauth_context`)
-	if (!raw || raw.length > 2048) throw new Error('Invalid OAuth flow context')
+	if (!raw || raw.length > 2048) throw new OAuthCallbackError('invalid_callback')
 	let value: unknown
 	try {
 		value = JSON.parse(raw)
 	} catch {
-		throw new Error('Invalid OAuth flow context')
+		throw new OAuthCallbackError('invalid_callback')
 	}
 	if (!value || typeof value !== 'object' || Array.isArray(value)) {
-		throw new Error('Invalid OAuth flow context')
+		throw new OAuthCallbackError('invalid_callback')
 	}
 	const context = value as Record<string, unknown>
 	const intent = context['intent']
@@ -144,7 +166,7 @@ function readOAuthFlowContext(
 		typeof storedContextState !== 'string' ||
 		!constantTimeEqual(storedContextState, state ?? '')
 	) {
-		throw new Error('Invalid OAuth flow context')
+		throw new OAuthCallbackError('invalid_callback')
 	}
 	return { intent, userId, redirectTo }
 }
@@ -159,10 +181,19 @@ function readOAuthFlowContext(
  * @returns {boolean}
  */
 export function validateOAuthCallback(params: OAuthCallbackParams): boolean {
-	const { code, state, storedState, storedCodeVerifier } = params
+	const { code, error, state, storedState, storedCodeVerifier } = params
 
 	const stateMatches = constantTimeEqual(state ?? '', storedState ?? '')
-	return !!(code && storedCodeVerifier && storedState && stateMatches)
+	const hasSingleOutcome = Boolean(code) !== Boolean(error)
+	return !!(hasSingleOutcome && storedCodeVerifier && storedState && stateMatches)
+}
+
+function readCallbackValue(value: string | null, maxLength: number): string | null {
+	if (value === null) return null
+	if (value.length === 0 || value.length > maxLength) {
+		throw new OAuthCallbackError('invalid_callback')
+	}
+	return value
 }
 
 /**
@@ -182,10 +213,23 @@ export function getOAuthCallbackParams(
 ): OAuthCallbackParams {
 	const code = 'code' in overrides ? (overrides.code ?? null) : url.searchParams.get('code')
 	const state = 'state' in overrides ? (overrides.state ?? null) : url.searchParams.get('state')
+	const callbackError =
+		'error' in overrides ? (overrides.error ?? null) : url.searchParams.get('error')
+	const errorDescription =
+		'errorDescription' in overrides
+			? (overrides.errorDescription ?? null)
+			: url.searchParams.get('error_description')
 	const storedState = cookies.get(`${provider}_oauth_state`) ?? null
 	const storedCodeVerifier = cookies.get(`${provider}_oauth_code_verifier`) ?? null
 
-	return { code, state, storedState, storedCodeVerifier }
+	return {
+		code: readCallbackValue(code, 4096),
+		state: readCallbackValue(state, 512),
+		error: readCallbackValue(callbackError, OAUTH_CALLBACK_ERROR_MAX_LENGTH),
+		errorDescription: readCallbackValue(errorDescription, OAUTH_CALLBACK_DESCRIPTION_MAX_LENGTH),
+		storedState,
+		storedCodeVerifier
+	}
 }
 
 /**
@@ -223,12 +267,17 @@ export async function handleOAuthCallback({
 		const params = getOAuthCallbackParams(cookies, url, provider, override)
 
 		if (!validateOAuthCallback(params)) {
-			throw new Error('Invalid OAuth callback parameters')
-		}
-		if (!params.code || !params.storedCodeVerifier) {
-			throw new Error('Missing OAuth parameters')
+			throw new OAuthCallbackError('invalid_callback')
 		}
 		const context = readOAuthFlowContext(cookies, provider, params.state)
+		if (params.error) {
+			throw new OAuthCallbackError(
+				OAUTH_CANCELLATION_ERRORS.has(params.error) ? 'cancelled' : 'provider_rejected'
+			)
+		}
+		if (!params.code || !params.storedCodeVerifier) {
+			throw new OAuthCallbackError('invalid_callback')
+		}
 
 		// Fetch user profile from provider
 		let profile: { profile: OAuthProfile; tokens: OAuthTokens } | null = null
@@ -256,7 +305,7 @@ export async function handleOAuthCallback({
 
 		return profile
 	} catch (error) {
-		if (callbacks.onError) {
+		if (callbacks.onError && !(error instanceof OAuthCallbackError && error.code === 'cancelled')) {
 			await callbacks.onError(error)
 		}
 

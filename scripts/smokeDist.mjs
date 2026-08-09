@@ -177,7 +177,11 @@ async function assertUiDistribution() {
 			assert.doesNotMatch(source, /['"]\.{1,2}\/.+\.ts['"]/, `${target} imports raw TypeScript`)
 		}
 		for (const asset of assets) {
-			await assertDistTarget(`./dist/${output}/ui/${asset}`)
+			const target = `dist/${output}/ui/${asset}`
+			await assertDistTarget(`./${target}`)
+			const source = await readFile(new URL(target, rootUrl), 'utf8')
+			assert.doesNotMatch(source, /<foreignObject|data-figma|xmlns:xlink/u)
+			assert.doesNotMatch(source, /(?:href|src)=["']https?:|url\(https?:/u)
 		}
 		await assertDistTarget(
 			`./dist/${output}/ui/backupCodesModalKeyboard.${output === 'types' ? 'd.ts' : 'js'}`

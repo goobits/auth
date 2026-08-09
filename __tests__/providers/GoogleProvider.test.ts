@@ -225,9 +225,14 @@ describe('GoogleProvider', () => {
 			)
 		)
 
-		await expect(provider.getUserProfile('code', 'verifier')).rejects.toMatchObject<
-			Partial<OAuth2RequestError>
-		>({ name: 'OAuth2RequestError', code: 'invalid_grant', status: 400 })
+		const request = provider.getUserProfile('code', 'verifier')
+		await expect(request).rejects.toMatchObject<Partial<OAuth2RequestError>>({
+			name: 'OAuth2RequestError',
+			code: 'invalid_grant',
+			description: 'Authorization code rejected',
+			message: 'invalid_grant',
+			status: 400
+		})
 	})
 
 	it('rejects a chunked token response before buffering beyond the limit', async () => {
@@ -253,7 +258,7 @@ describe('GoogleProvider', () => {
 		{
 			name: 'non-success user-info response',
 			response: new Response(JSON.stringify({ error: 'invalid_token' }), { status: 401 }),
-			error: 'Google user info request failed (401)'
+			error: 'userinfo_request_failed'
 		},
 		{
 			name: 'malformed user profile',
@@ -291,7 +296,7 @@ describe('GoogleProvider', () => {
 
 		await expect(provider.getUserProfile('code', 'verifier')).rejects.toThrow(error)
 		expect(logger.error).toHaveBeenCalledWith('Error in GoogleProvider.getUserProfile', {
-			errorType: 'Error'
+			errorType: error === 'userinfo_request_failed' ? 'OAuth2RequestError' : 'Error'
 		})
 		expect(JSON.stringify(logger.error.mock.calls)).not.toContain(secret)
 	})

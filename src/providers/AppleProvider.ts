@@ -3,7 +3,9 @@ import { verifyJwtWithJwks } from '@goobits/security/jwt'
 
 import { errorContext, resolveLogger, type Logger } from '../_internal/logger.ts'
 import {
+	OAuth2RequestError,
 	readBoundedResponseText,
+	requestOAuthResponse,
 	requestOAuthTokenRevocation,
 	requestOAuthTokens
 } from '../_internal/oauth2.ts'
@@ -299,10 +301,7 @@ export class AppleProvider extends OAuthProvider {
 		return this.#signingKeyPromise
 	}
 
-	async #verifyIdToken(
-		idTokenValue: string,
-		expectedNonce: string
-	): Promise<AppleIdTokenPayload> {
+	async #verifyIdToken(idTokenValue: string, expectedNonce: string): Promise<AppleIdTokenPayload> {
 		const payload = (await this.#verifySignedApplePayload(idTokenValue, {
 			requiredClaims: ['iss', 'aud', 'sub', 'iat', 'exp', 'email', 'email_verified', 'nonce'],
 			maxTokenAge: '10 minutes',
@@ -447,7 +446,7 @@ async function getAppleJwks(forceRefresh = false): Promise<{ keys: AppleJwk[] }>
 	if (appleJwksFetchPromise) return appleJwksFetchPromise
 	if (now < nextAppleJwksFetchAt) {
 		if (cachedAppleJwks) return { keys: cachedAppleJwks.keys }
-		throw new Error('Apple JWKS fetch is temporarily unavailable')
+		throw new OAuth2RequestError('apple_jwks_unavailable', null, 503)
 	}
 	if (forceRefresh && cachedAppleJwks && now < nextForcedAppleJwksRefreshAt) {
 		return { keys: cachedAppleJwks.keys }
@@ -469,35 +468,42 @@ async function getAppleJwks(forceRefresh = false): Promise<{ keys: AppleJwk[] }>
 }
 
 async function fetchAppleJwks(): Promise<{ keys: AppleJwk[] }> {
-	const response = await fetch(APPLE_JWKS_URL, {
-		signal: AbortSignal.timeout(5000),
-		headers: { accept: 'application/json' }
-	})
-	if (!response.ok) {
-		throw new Error(`Apple JWKS fetch failed (${response.status})`)
+	try {
+		const response = await requestOAuthResponse(APPLE_JWKS_URL, {
+			signal: AbortSignal.timeout(5000),
+			headers: { accept: 'application/json' }
+		})
+		if (!response.ok) {
+			throw new OAuth2RequestError('apple_jwks_unavailable', null, response.status)
+		}
+		const responseText = await readBoundedResponseText(
+			response,
+			APPLE_JWKS_MAX_BYTES,
+			'Apple JWKS response'
+		)
+		const body = JSON.parse(responseText) as { keys?: AppleJwk[] }
+		const keys = Array.isArray(body.keys)
+			? body.keys
+					.filter(
+						(key) =>
+							key.kty === 'RSA' &&
+							typeof key.kid === 'string' &&
+							(!key.use || key.use === 'sig') &&
+							(!key.alg || key.alg === 'RS256')
+					)
+					.slice(0, 10)
+			: []
+		if (keys.length === 0) {
+			throw new OAuth2RequestError('apple_jwks_invalid', null, 502)
+		}
+		cachedAppleJwks = { keys, expiresAt: Date.now() + APPLE_JWKS_TTL_MS }
+		nextAppleJwksFetchAt = 0
+		nextForcedAppleJwksRefreshAt = Date.now() + APPLE_JWKS_UNKNOWN_KEY_COOLDOWN_MS
+		return { keys }
+	} catch (error) {
+		if (error instanceof OAuth2RequestError) throw error
+		throw new OAuth2RequestError('apple_jwks_invalid', null, 502)
 	}
-	const responseText = await readBoundedResponseText(
-		response,
-		APPLE_JWKS_MAX_BYTES,
-		'Apple JWKS response'
-	)
-	const body = JSON.parse(responseText) as { keys?: AppleJwk[] }
-	const keys = Array.isArray(body.keys)
-		? body.keys
-				.filter(
-					(key) =>
-						key.kty === 'RSA' &&
-						typeof key.kid === 'string' &&
-						(!key.use || key.use === 'sig') &&
-						(!key.alg || key.alg === 'RS256')
-				)
-				.slice(0, 10)
-		: []
-	if (keys.length === 0) throw new Error('Apple JWKS response contained no signing keys')
-	cachedAppleJwks = { keys, expiresAt: Date.now() + APPLE_JWKS_TTL_MS }
-	nextAppleJwksFetchAt = 0
-	nextForcedAppleJwksRefreshAt = Date.now() + APPLE_JWKS_UNKNOWN_KEY_COOLDOWN_MS
-	return { keys }
 }
 
 function assertIdentityScopes(scopes: readonly string[]): void {

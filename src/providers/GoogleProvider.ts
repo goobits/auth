@@ -1,6 +1,8 @@
 import {
 	createS256CodeChallenge,
+	OAuth2RequestError,
 	readBoundedResponseText,
+	requestOAuthResponse,
 	requestOAuthTokenRevocation,
 	requestOAuthTokens
 } from '../_internal/oauth2.ts'
@@ -88,12 +90,12 @@ export class GoogleProvider extends OAuthProvider {
 					client_secret: this.#clientSecret
 				})
 			)
-			const googleUserResponse = await fetch(GOOGLE_USERINFO_ENDPOINT, {
+			const googleUserResponse = await requestOAuthResponse(GOOGLE_USERINFO_ENDPOINT, {
 				headers: { Authorization: `Bearer ${tokenSet.accessToken}` },
 				signal: AbortSignal.timeout(10_000)
 			})
 			if (!googleUserResponse.ok) {
-				throw new Error(`Google user info request failed (${googleUserResponse.status})`)
+				throw new OAuth2RequestError('userinfo_request_failed', null, googleUserResponse.status)
 			}
 			const googleUserText = await readBoundedResponseText(
 				googleUserResponse,

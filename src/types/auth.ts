@@ -118,6 +118,7 @@ export type AuthUrls = {
 	login?: string
 	afterLogin?: string
 	afterLogout?: string
+	oauthCancelled?: string
 }
 
 /** Defines auth cookies config options for wiring providers, adapters, cookies, hooks, and route handlers. */

@@ -161,6 +161,7 @@ export function createHandlers(
 		const callbackConfig: Parameters<typeof createCallbackHandler>[0] = {
 			providers: providerInstances,
 			redirectAfterLogin: urlConfig.afterLogin,
+			redirectOnCancellation: urlConfig.oauthCancelled,
 			...(config.logger ? { logger: config.logger } : {}),
 			onAuthenticated: async (event, profile, tokens, context: OAuthFlowContext) => {
 				const providerName = String(event.params['provider'] ?? '')

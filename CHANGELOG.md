@@ -8,6 +8,10 @@
 
 - 🎨 `OAuthProviderButton` now ships its Google and Apple marks and uses local
   system fonts, eliminating third-party image and font requests during render.
+- 🧭 OAuth callbacks now distinguish state-bound cancellation, malformed input,
+  provider rejection, and upstream outage without leaking provider-controlled
+  descriptions through exception messages or turning expected failures into
+  internal-server errors.
 
 ## [0.6.0] - 2026-08-03
 
