@@ -1,5 +1,5 @@
 import type { Cookies } from '@sveltejs/kit'
-import type { Session, SessionMetadata, SessionSummary, User } from '../../types/index.ts'
+import type { AuthSession, SessionMetadata, SessionSummary, User } from '../../types/index.ts'
 import { SessionAdapter } from '../session/SessionAdapter.ts'
 import { clearSessionCookie, writeSessionCookie } from '../session/_sessionCookie.ts'
 import { normalizeSessionMetadata } from '../session/_sessionMetadata.ts'
@@ -12,7 +12,7 @@ export class MemorySessionAdapter extends SessionAdapter {
 	#cookieName: string
 	#secureCookies: boolean
 	#sessionLifetimeMs: number
-	#sessions = new Map<string, Session>()
+	#sessions = new Map<string, AuthSession>()
 	#users: MemoryUserAdapter
 
 	constructor({
@@ -40,12 +40,12 @@ export class MemorySessionAdapter extends SessionAdapter {
 		return this.#cookieName
 	}
 
-	async createSession(userId: string, metadata: SessionMetadata = {}): Promise<Session> {
+	async createSession(userId: string, metadata: SessionMetadata = {}): Promise<AuthSession> {
 		const normalized = normalizeSessionMetadata(metadata)
 		const token = createSessionToken()
 		const verifier = await hashSessionToken(token)
 		const createdAt = normalized.createdAt ?? new Date()
-		const session: Session = {
+		const session: AuthSession = {
 			createdAt,
 			expiresAt: new Date(Date.now() + this.#sessionLifetimeMs),
 			fingerprint: normalized.fingerprint ?? null,
@@ -63,7 +63,7 @@ export class MemorySessionAdapter extends SessionAdapter {
 
 	async validateSession(
 		sessionId: string
-	): Promise<{ session: Session | null; user: User | null }> {
+	): Promise<{ session: AuthSession | null; user: User | null }> {
 		const verifier = await hashSessionToken(sessionId)
 		const session = this.#sessions.get(verifier)
 		if (!session) {
@@ -117,7 +117,7 @@ export class MemorySessionAdapter extends SessionAdapter {
 		}
 	}
 
-	setSessionCookie(cookies: Cookies, session: Session): void {
+	setSessionCookie(cookies: Cookies, session: AuthSession): void {
 		writeSessionCookie(cookies, session, this.#cookieName, this.#secureCookies, this.#cookieDomain)
 	}
 

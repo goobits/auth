@@ -6,7 +6,7 @@ import { MemoryUserAdapter } from '../src/adapters/memory/user.ts'
 import { GoobitsAuth as CoreGoobitsAuth, type GoobitsAuthConfig } from '../src/GoobitsAuth.ts'
 import type { OAuthProvider } from '../src/providers/OAuthProvider.ts'
 import type { AuthHandlers } from '../src/types/auth.ts'
-import type { Session, User } from '../src/types/index.ts'
+import type { AuthSession, User } from '../src/types/index.ts'
 import { createRequestEvent, TEST_CSRF_SECRET } from './testKit.ts'
 
 class GoobitsAuth extends CoreGoobitsAuth {
@@ -46,7 +46,7 @@ function createOAuthAdapters(session: SessionAdapter) {
 }
 
 function createSessionAdapter(validateResult: {
-	session: Session | null
+	session: AuthSession | null
 	user: User | null
 }): SessionAdapter {
 	return {
@@ -214,7 +214,7 @@ describe('GoobitsAuth', () => {
 			emailVerified: true,
 			role: 'admin'
 		}
-		const session: Session = {
+		const session: AuthSession = {
 			id: 's1',
 			userId: 'u1',
 			expiresAt: new Date(Date.now() + 60_000)
@@ -279,7 +279,7 @@ describe('GoobitsAuth', () => {
 			avatar: null,
 			emailVerified: true
 		}
-		const session: Session = {
+		const session: AuthSession = {
 			id: 's-oauth',
 			userId: user.id,
 			expiresAt: new Date(Date.now() + 60_000)
@@ -315,7 +315,7 @@ describe('GoobitsAuth', () => {
 	})
 
 	it('dispatches root-mounted handlers when basePath is empty', async () => {
-		const session: Session = {
+		const session: AuthSession = {
 			id: 's-root',
 			userId: 'u-root',
 			expiresAt: new Date(Date.now() + 60_000)
@@ -471,7 +471,7 @@ describe('GoobitsAuth', () => {
 			avatar: null,
 			emailVerified: true
 		}
-		const session: Session = {
+		const session: AuthSession = {
 			id: 's-cache',
 			userId: user.id,
 			expiresAt: new Date(Date.now() + 60_000)
@@ -497,7 +497,7 @@ describe('GoobitsAuth', () => {
 			role: 'member',
 			settings: { roles: ['editor', 'member', 123] }
 		}
-		const session: Session = {
+		const session: AuthSession = {
 			id: 's2',
 			userId: 'u2',
 			expiresAt: new Date(Date.now() + 60_000)
@@ -539,7 +539,7 @@ describe('GoobitsAuth', () => {
 			emailVerified: true,
 			settings: { roles: ['admin'] }
 		}
-		const session: Session = {
+		const session: AuthSession = {
 			id: 's3',
 			userId: user.id,
 			expiresAt: new Date(Date.now() + 60_000)

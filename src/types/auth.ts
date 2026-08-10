@@ -23,7 +23,7 @@ import type {
 	OAuthFlowIntent,
 	OAuthProfile,
 	OAuthTokens,
-	Session,
+	AuthSession,
 	SessionMetadata,
 	SessionSummary,
 	User
@@ -32,7 +32,7 @@ import type {
 /** Defines auth locals options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthLocals = {
 	user?: User | null
-	session?: Session | null
+	session?: AuthSession | null
 }
 
 /** Defines request event like options for wiring providers, adapters, cookies, hooks, and route handlers. */
@@ -90,7 +90,7 @@ export type OAuthConnectCredentialMutationInput = {
 export type OAuthUnlinkCredentialMutationInput = {
 	userId: string
 	provider: string
-	session: Session
+	session: AuthSession
 	authorizationRequest: Request
 	event: RequestEventLike
 	authorize: () => boolean | Promise<boolean>
@@ -101,7 +101,7 @@ export type OAuthUnlinkCredentialMutationInput = {
 export type WebAuthnRemoveCredentialMutationInput = {
 	userId: string
 	credentialId: string
-	session: Session
+	session: AuthSession
 	authorizationRequest: Request
 	event: RequestEventLike
 	authorize: () => boolean | Promise<boolean>
@@ -190,7 +190,7 @@ export type AuthHooks = {
 	) => SessionMetadata | Promise<SessionMetadata>
 	onSessionValidated?: (
 		event: RequestEventLike,
-		session: Session,
+		session: AuthSession,
 		user: User
 	) => Promise<void> | void
 	onAuthentication?: (
@@ -283,7 +283,7 @@ export type AuthorizeSecurityChange = (input: {
 	action: SecurityChangeAction
 	request: Request
 	userId: string
-	session: Session | null
+	session: AuthSession | null
 }) => boolean | Promise<boolean>
 
 /** Shared policy for deferring primary login until TOTP or backup-code verification. */
@@ -323,7 +323,7 @@ export type AuthorizeOAuthIdentityChange = (input: {
 	action: OAuthIdentityChangeAction
 	request: Request
 	userId: string
-	session: Session | null
+	session: AuthSession | null
 	provider: string
 }) => boolean | Promise<boolean>
 

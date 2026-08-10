@@ -1,7 +1,7 @@
 import type { Cookies } from '@sveltejs/kit'
 import { eq } from 'drizzle-orm'
 
-import type { Session, SessionMetadata, User } from '../../types/index.ts'
+import type { AuthSession, SessionMetadata, User } from '../../types/index.ts'
 import { toDrizzleUser as toUser } from '../_drizzleUser.ts'
 import type { DrizzleDbLike, DrizzleRow, DrizzleTable } from '../drizzleTypes.ts'
 import { normalizeSessionMetadata } from './_sessionMetadata.ts'
@@ -30,7 +30,7 @@ type UsersTable = DrizzleTable & {
 	emailVerified?: DrizzleTable[string]
 }
 
-function toSession(row: DrizzleRow | null): Session | null {
+function toSession(row: DrizzleRow | null): AuthSession | null {
 	if (!row) return null
 	const id = row['id']
 	const userId = row['userId'] ?? row['user_id']
@@ -106,7 +106,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		return user
 	}
 
-	async createSession(userId: string, metadata: SessionMetadata = {}): Promise<Session> {
+	async createSession(userId: string, metadata: SessionMetadata = {}): Promise<AuthSession> {
 		const normalized = normalizeSessionMetadata(metadata)
 		const token = createSessionToken()
 		const verifier = await hashSessionToken(token)
@@ -141,7 +141,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 
 	async validateSession(
 		sessionId: string
-	): Promise<{ session: Session | null; user: User | null }> {
+	): Promise<{ session: AuthSession | null; user: User | null }> {
 		const verifier = await hashSessionToken(sessionId)
 		const [result] = await this.db
 			.select({
@@ -184,7 +184,7 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 		await this.db.delete(this.sessionsTable).where(eq(this.sessionsTable.userId, userId))
 	}
 
-	setSessionCookie(cookies: Cookies, session: Session): void {
+	setSessionCookie(cookies: Cookies, session: AuthSession): void {
 		writeSessionCookie(cookies, session, this.cookieName, this.secureCookies)
 	}
 

@@ -5,7 +5,7 @@ import type {
 	OAuthFlowIntent,
 	OAuthProfile,
 	OAuthTokens,
-	Session,
+	AuthSession,
 	User
 } from '../src/types/index.ts'
 import type { OAuthFlowContext } from '../src/utils/oauth.ts'
@@ -68,7 +68,7 @@ function createProvider() {
 function createEvent({
 	user = null,
 	session = null
-}: { user?: User | null; session?: Session | null } = {}): RequestEventLike {
+}: { user?: User | null; session?: AuthSession | null } = {}): RequestEventLike {
 	return {
 		request: new Request('http://localhost/auth/callback/google'),
 		cookies: {
@@ -286,7 +286,7 @@ describe('createAuth OAuth lifecycle', () => {
 		const createSessionSpy = vi.spyOn(sessionAdapter, 'createSession')
 		const identity = new MemoryUserAdapter()
 		const user = await createUser(identity, 'current-user')
-		const session: Session = {
+		const session: AuthSession = {
 			id: 'current-session',
 			userId: user.id,
 			expiresAt: new Date('2099-01-01T00:00:00.000Z')
@@ -324,7 +324,7 @@ describe('createAuth OAuth lifecycle', () => {
 			provider: 'google',
 			subject: profile.id
 		})
-		const session: Session = {
+		const session: AuthSession = {
 			id: 'current-session',
 			userId: currentUser.id,
 			expiresAt: new Date('2099-01-01T00:00:00.000Z')
@@ -423,7 +423,7 @@ describe('createAuth OAuth lifecycle', () => {
 		const identity = new MemoryUserAdapter()
 		const user = await createUser(identity, 'current-user')
 		await identity.linkIdentity({ userId: user.id, provider: 'google', subject: profile.id })
-		const session: Session = {
+		const session: AuthSession = {
 			id: 'current-session',
 			userId: user.id,
 			expiresAt: new Date('2099-01-01T00:00:00.000Z'),

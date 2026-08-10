@@ -1,6 +1,6 @@
 import type { Cookies } from '@sveltejs/kit'
 
-import type { Session, SessionMetadata, SessionSummary, User } from '../../types/core.ts'
+import type { AuthSession, SessionMetadata, SessionSummary, User } from '../../types/core.ts'
 
 /**
  * Base Session Adapter Interface
@@ -14,18 +14,18 @@ export abstract class SessionAdapter {
 	 * Create a new session for a user
 	 * @param {string} userId - User ID to create session for
 	 * @param {Object} [metadata] - Additional session metadata
-	 * @returns {Promise<import('../../types/core.ts').Session>}
+	 * @returns {Promise<import('../../types/core.ts').AuthSession>}
 	 */
-	abstract createSession(userId: string, metadata?: SessionMetadata): Promise<Session>
+	abstract createSession(userId: string, metadata?: SessionMetadata): Promise<AuthSession>
 
 	/**
 	 * Validate a session and return session + sanitized user
 	 * @param {string} sessionId - Session ID to validate
-	 * @returns {Promise<{session: import('../../types/core.ts').Session | null, user: import('../../types/core.ts').User | null}>}
+	 * @returns {Promise<{session: import('../../types/core.ts').AuthSession | null, user: import('../../types/core.ts').User | null}>}
 	 */
 	abstract validateSession(
 		sessionId: string
-	): Promise<{ session: Session | null; user: User | null }>
+	): Promise<{ session: AuthSession | null; user: User | null }>
 
 	/**
 	 * Invalidate a specific session
@@ -53,10 +53,10 @@ export abstract class SessionAdapter {
 	/**
 	 * Set session cookie
 	 * @param {import('@sveltejs/kit').Cookies} cookies - SvelteKit cookies object
-	 * @param {import('../../types/core.ts').Session} session - Session to set
+	 * @param {import('../../types/core.ts').AuthSession} session - Session to set
 	 * @returns {void}
 	 */
-	abstract setSessionCookie(cookies: Cookies, session: Session): void
+	abstract setSessionCookie(cookies: Cookies, session: AuthSession): void
 
 	/**
 	 * Delete session cookie

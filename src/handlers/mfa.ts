@@ -1,6 +1,6 @@
 import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.ts'
 import type { MfaAdapter } from '../adapters/mfa/MfaAdapter.ts'
-import type { Session, SessionMetadata, User } from '../types/core.ts'
+import type { AuthSession, SessionMetadata, User } from '../types/core.ts'
 import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../mfa/backupCodes.ts'
 import { createOtpAuthURL, generateSecret, matchTOTP } from '../mfa/totp.ts'
 import type {
@@ -102,8 +102,8 @@ export type MfaLoginConfig = {
 	StandaloneSecurityBoundary
 
 type MfaLoginSessionAdapter = {
-	createSession: (userId: string, metadata?: SessionMetadata) => Promise<Session>
-	setSessionCookie: (cookies: RequestEventLike['cookies'], session: Session) => void
+	createSession: (userId: string, metadata?: SessionMetadata) => Promise<AuthSession>
+	setSessionCookie: (cookies: RequestEventLike['cookies'], session: AuthSession) => void
 }
 
 function userIdFromRecord(user: unknown): string | null {

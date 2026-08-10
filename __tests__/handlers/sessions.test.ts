@@ -4,7 +4,7 @@ import {
 	createSessionListHandler,
 	createSessionRevokeHandler
 } from '../../src/handlers/sessions.ts'
-import type { Session, SessionSummary } from '../../src/types/index.ts'
+import type { AuthSession, SessionSummary } from '../../src/types/index.ts'
 
 function createEvent(body: Record<string, unknown> | string | null = null) {
 	const headers = new Headers()
@@ -93,7 +93,7 @@ describe('session handlers', () => {
 			])
 		}
 		const event = createEvent()
-		const currentSession: Session = {
+		const currentSession: AuthSession = {
 			id: 'current-secret-bearer',
 			managementId: 'public-handle',
 			userId: 'u1',

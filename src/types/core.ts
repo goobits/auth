@@ -1,5 +1,5 @@
 /** Describes the auth domain record used for session. */
-export type Session = {
+export type AuthSession = {
 	id: string
 	/** Non-secret handle for listing and revoking a persisted session. */
 	managementId?: string

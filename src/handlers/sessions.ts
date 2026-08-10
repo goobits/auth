@@ -1,7 +1,7 @@
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import { AuthAdapterCapabilityError } from '../errors/AuthPrincipalResolutionError.ts'
 import type { AuthLocals, RequestEventLike } from '../types/auth.ts'
-import type { Session, SessionSummary } from '../types/index.ts'
+import type { AuthSession, SessionSummary } from '../types/index.ts'
 import { jsonResponse, parseRequestData } from '../utils/http.ts'
 
 type SessionManagementAdapter = Partial<
@@ -18,7 +18,7 @@ type SessionHandlerConfig = {
 	sessionAdapter: SessionManagementAdapter
 	isAuthenticated?: (locals: AuthLocals) => boolean
 	getUser?: (locals: AuthLocals) => { id: string }
-	getSession?: (locals: AuthLocals) => Session | null
+	getSession?: (locals: AuthLocals) => AuthSession | null
 }
 
 const toSafeSessionSummary = (session: SessionSummary, currentManagementId?: string) => ({

@@ -2,7 +2,7 @@ import type { Cookies } from '@sveltejs/kit'
 
 import { errorContext, resolveLogger, type Logger } from '../../_internal/logger.ts'
 import { AuthAdapterCapabilityError } from '../../errors/AuthPrincipalResolutionError.ts'
-import type { Session, SessionMetadata, SessionSummary, User } from '../../types/index.ts'
+import type { AuthSession, SessionMetadata, SessionSummary, User } from '../../types/index.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
 import { normalizeSessionMetadata } from './_sessionMetadata.ts'
 import { clearSessionCookie, writeSessionCookie } from './_sessionCookie.ts'
@@ -135,7 +135,7 @@ export class KVSessionAdapter extends SessionAdapter {
 	}
 
 	async validateSession(sessionId: string): Promise<{
-		session: Session | null
+		session: AuthSession | null
 		user: User | null
 	}> {
 		const verifier = await hashSessionToken(sessionId)
