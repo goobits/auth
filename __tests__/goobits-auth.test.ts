@@ -2,7 +2,7 @@ import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import type { WebAuthnAdapter } from '../src/adapters/webauthn/WebAuthnAdapter.ts'
 import type { GoobitsAuthConfig } from '../src/GoobitsAuth.ts'
-import type { Session, User } from '../src/types/index.ts'
+import type { AuthSession, User } from '../src/types/index.ts'
 import {
 	createOAuthAdapters,
 	createProvider,
@@ -109,7 +109,7 @@ describe('GoobitsAuth', () => {
 			emailVerified: true,
 			role: 'admin'
 		}
-		const session: Session = {
+		const session: AuthSession = {
 			id: 's1',
 			userId: 'u1',
 			expiresAt: new Date(Date.now() + 60_000)
@@ -174,7 +174,7 @@ describe('GoobitsAuth', () => {
 			avatar: null,
 			emailVerified: true
 		}
-		const session: Session = {
+		const session: AuthSession = {
 			id: 's-oauth',
 			userId: user.id,
 			expiresAt: new Date(Date.now() + 60_000)
@@ -210,7 +210,7 @@ describe('GoobitsAuth', () => {
 	})
 
 	it('dispatches root-mounted handlers when basePath is empty', async () => {
-		const session: Session = {
+		const session: AuthSession = {
 			id: 's-root',
 			userId: 'u-root',
 			expiresAt: new Date(Date.now() + 60_000)

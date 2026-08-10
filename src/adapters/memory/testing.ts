@@ -1,5 +1,5 @@
 import type { Cookies } from '@sveltejs/kit'
-import type { OAuthTokens, Session, User } from '../../types/index.ts'
+import type { OAuthTokens, AuthSession, User } from '../../types/index.ts'
 import { TokenAdapter } from '../oauth-token/TokenAdapter.ts'
 import { MemorySessionAdapter } from './session.ts'
 import { MemoryUserAdapter } from './user.ts'
@@ -22,7 +22,7 @@ export class MockSessionAdapter extends MemorySessionAdapter {
 		this.#users.setUser(user)
 	}
 
-	setSessionCookie(_cookies: Cookies, _session: Session): void {}
+	setSessionCookie(_cookies: Cookies, _session: AuthSession): void {}
 	deleteSessionCookie(_cookies: Cookies): void {}
 }
 

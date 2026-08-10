@@ -4,9 +4,9 @@ import {
 	hasRecentMfaVerification,
 	hasRecentPrimaryAuthentication
 } from '../../src/security/authorize.ts'
-import type { Session } from '../../src/types/core.ts'
+import type { AuthSession } from '../../src/types/core.ts'
 
-function session(overrides: Partial<Session> = {}): Session {
+function session(overrides: Partial<AuthSession> = {}): AuthSession {
 	return {
 		id: 's1',
 		userId: 'u1',

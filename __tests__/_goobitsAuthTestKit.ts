@@ -5,7 +5,7 @@ import { MemoryUserAdapter } from '../src/adapters/memory/user.ts'
 import { GoobitsAuth as CoreGoobitsAuth, type GoobitsAuthConfig } from '../src/GoobitsAuth.ts'
 import type { OAuthProvider } from '../src/providers/OAuthProvider.ts'
 import type { AuthHandlers } from '../src/types/auth.ts'
-import type { Session, User } from '../src/types/index.ts'
+import type { AuthSession, User } from '../src/types/index.ts'
 import { TEST_CSRF_SECRET } from './testKit.ts'
 
 export class GoobitsAuth extends CoreGoobitsAuth {
@@ -45,7 +45,7 @@ export function createOAuthAdapters(session: SessionAdapter) {
 }
 
 export function createSessionAdapter(validateResult: {
-	session: Session | null
+	session: AuthSession | null
 	user: User | null
 }): SessionAdapter {
 	return {

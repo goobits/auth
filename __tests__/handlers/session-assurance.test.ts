@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { type AssuredSessionAdapter, rotateSessionAssurance } from '../../src/handlers/index.ts'
-import type { Session, SessionMetadata } from '../../src/types/core.ts'
+import type { AuthSession, SessionMetadata } from '../../src/types/core.ts'
 import { createCookies } from '../testKit.ts'
 
-function currentSession(overrides: Partial<Session> = {}): Session {
+function currentSession(overrides: Partial<AuthSession> = {}): AuthSession {
 	return {
 		id: 'current-session',
 		userId: 'user-1',
@@ -21,7 +21,7 @@ function currentSession(overrides: Partial<Session> = {}): Session {
 
 function sessionAdapter() {
 	const createSession = vi.fn(
-		async (userId: string, metadata: SessionMetadata = {}): Promise<Session> => ({
+		async (userId: string, metadata: SessionMetadata = {}): Promise<AuthSession> => ({
 			id: 'replacement-session',
 			userId,
 			expiresAt: new Date('2026-07-31T04:00:00.000Z'),

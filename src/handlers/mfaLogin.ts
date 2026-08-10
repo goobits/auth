@@ -1,4 +1,4 @@
-import type { Session, SessionMetadata, User } from '../types/core.ts'
+import type { AuthSession, SessionMetadata, User } from '../types/core.ts'
 import type { RequestEventLike } from '../types/auth.ts'
 import {
 	consumeVerificationTokenRecord,
@@ -127,8 +127,8 @@ export async function beginMfaLoginChallenge({
 export function createMfaLoginVerifyHandler(
 	config: MfaLoginConfig & {
 		sessionAdapter: {
-			createSession: (userId: string, metadata?: SessionMetadata) => Promise<Session>
-			setSessionCookie: (cookies: RequestEventLike['cookies'], session: Session) => void
+			createSession: (userId: string, metadata?: SessionMetadata) => Promise<AuthSession>
+			setSessionCookie: (cookies: RequestEventLike['cookies'], session: AuthSession) => void
 		}
 		sanitizeUser?: (user: Record<string, unknown>) => unknown
 	}
@@ -216,7 +216,7 @@ export function createMfaLoginVerifyHandler(
 		}
 		let authenticatedUser = inspected.user
 		let redirectTo = challengeRedirect(inspected.token.metadata)
-		let session: Session | null
+		let session: AuthSession | null
 
 		if (config.completeLogin) {
 			session = await config.completeLogin({

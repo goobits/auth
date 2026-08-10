@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SessionAdapter } from '../src/adapters/session/SessionAdapter.ts'
 import { createAuth } from '../src/createAuth.ts'
 import type { RequestEventLike } from '../src/types/auth.ts'
-import type { Session } from '../src/types/index.ts'
+import type { AuthSession } from '../src/types/index.ts'
 import { createRequestEvent, TEST_CSRF_SECRET } from './testKit.ts'
 
 const TEST_SECURITY = { csrf: { secret: TEST_CSRF_SECRET } }
@@ -13,7 +13,7 @@ function createSessionAdapter({
 	validateResult = { session: null, user: null }
 }: {
 	cookieName?: string
-	validateResult?: { session: Session | null; user: { id: string } | null }
+	validateResult?: { session: AuthSession | null; user: { id: string } | null }
 } = {}): SessionAdapter {
 	return {
 		cookieName,

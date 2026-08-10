@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { Session, User } from '../src/types/index.ts'
+import type { AuthSession, User } from '../src/types/index.ts'
 import { createSessionAdapter, GoobitsAuth } from './_goobitsAuthTestKit.ts'
 import { createRequestEvent } from './testKit.ts'
 
@@ -13,7 +13,7 @@ describe('GoobitsAuth session and authorization', () => {
 			avatar: null,
 			emailVerified: true
 		}
-		const session: Session = {
+		const session: AuthSession = {
 			id: 's-cache',
 			userId: user.id,
 			expiresAt: new Date(Date.now() + 60_000)
@@ -39,7 +39,7 @@ describe('GoobitsAuth session and authorization', () => {
 			role: 'member',
 			settings: { roles: ['editor', 'member', 123] }
 		}
-		const session: Session = {
+		const session: AuthSession = {
 			id: 's2',
 			userId: 'u2',
 			expiresAt: new Date(Date.now() + 60_000)
@@ -81,7 +81,7 @@ describe('GoobitsAuth session and authorization', () => {
 			emailVerified: true,
 			settings: { roles: ['admin'] }
 		}
-		const session: Session = {
+		const session: AuthSession = {
 			id: 's3',
 			userId: user.id,
 			expiresAt: new Date(Date.now() + 60_000)

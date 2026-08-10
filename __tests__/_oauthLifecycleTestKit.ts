@@ -5,7 +5,7 @@ import type {
 	OAuthFlowIntent,
 	OAuthProfile,
 	OAuthTokens,
-	Session,
+	AuthSession,
 	User
 } from '../src/types/index.ts'
 import type { OAuthFlowContext } from '../src/utils/oauth.ts'
@@ -40,7 +40,7 @@ export function createProvider() {
 export function createEvent({
 	user = null,
 	session = null
-}: { user?: User | null; session?: Session | null } = {}): RequestEventLike {
+}: { user?: User | null; session?: AuthSession | null } = {}): RequestEventLike {
 	return {
 		request: new Request('http://localhost/auth/callback/google'),
 		cookies: {

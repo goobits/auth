@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { RequestEventLike } from '../src/types/auth.ts'
-import type { OAuthProfile, OAuthTokens, Session } from '../src/types/index.ts'
+import type { OAuthProfile, OAuthTokens, AuthSession } from '../src/types/index.ts'
 import type { OAuthFlowContext } from '../src/utils/oauth.ts'
 import { MemoryUserAdapter, MockSessionAdapter, MockTokenAdapter } from '../src/testing/index.ts'
 import { createMfaLoginTestConfig } from './testKit.ts'
@@ -225,7 +225,7 @@ describe('createAuth OAuth lifecycle', () => {
 		const createSessionSpy = vi.spyOn(sessionAdapter, 'createSession')
 		const identity = new MemoryUserAdapter()
 		const user = await createUser(identity, 'current-user')
-		const session: Session = {
+		const session: AuthSession = {
 			id: 'current-session',
 			userId: user.id,
 			expiresAt: new Date('2099-01-01T00:00:00.000Z')
@@ -263,7 +263,7 @@ describe('createAuth OAuth lifecycle', () => {
 			provider: 'google',
 			subject: profile.id
 		})
-		const session: Session = {
+		const session: AuthSession = {
 			id: 'current-session',
 			userId: currentUser.id,
 			expiresAt: new Date('2099-01-01T00:00:00.000Z')
@@ -362,7 +362,7 @@ describe('createAuth OAuth lifecycle', () => {
 		const identity = new MemoryUserAdapter()
 		const user = await createUser(identity, 'current-user')
 		await identity.linkIdentity({ userId: user.id, provider: 'google', subject: profile.id })
-		const session: Session = {
+		const session: AuthSession = {
 			id: 'current-session',
 			userId: user.id,
 			expiresAt: new Date('2099-01-01T00:00:00.000Z'),

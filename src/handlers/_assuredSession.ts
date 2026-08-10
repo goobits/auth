@@ -1,10 +1,10 @@
 import type { RequestEventLike } from '../types/auth.ts'
-import type { Session, SessionMetadata } from '../types/core.ts'
+import type { AuthSession, SessionMetadata } from '../types/core.ts'
 
 export type AssuredSessionAdapter = {
-	createSession: (userId: string, metadata?: SessionMetadata) => Promise<Session>
+	createSession: (userId: string, metadata?: SessionMetadata) => Promise<AuthSession>
 	invalidateSession: (sessionId: string) => Promise<void>
-	setSessionCookie: (cookies: RequestEventLike['cookies'], session: Session) => void
+	setSessionCookie: (cookies: RequestEventLike['cookies'], session: AuthSession) => void
 }
 
 export type SessionAssuranceKind = 'primary' | 'mfa'
@@ -25,10 +25,10 @@ export async function rotateSessionAssurance({
 	sessionAdapter: AssuredSessionAdapter
 	assurance: SessionAssuranceKind
 	cookies: RequestEventLike['cookies']
-	currentSession: Session
+	currentSession: AuthSession
 	userId: string
 	verifiedAt?: Date
-}): Promise<Session> {
+}): Promise<AuthSession> {
 	if (currentSession.userId !== userId) {
 		throw new Error('@goobits/auth: session assurance principal mismatch')
 	}
