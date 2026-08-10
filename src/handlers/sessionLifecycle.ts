@@ -30,6 +30,7 @@ export async function ensureSessionAfterLogin(input: {
 	user?: User | null
 	mfa?: MfaLoginConfig
 	redirectTo?: string
+	beforeSessionCreate?: () => Promise<void> | void
 	autoCreateSession?: boolean
 	onLoginMode?: OnLoginMode
 }): Promise<SessionLoginResult> {
@@ -42,6 +43,7 @@ export async function ensureSessionAfterLogin(input: {
 		user,
 		mfa,
 		redirectTo,
+		beforeSessionCreate,
 		autoCreateSession = true,
 		onLoginMode = 'augment'
 	} = input
@@ -86,6 +88,7 @@ export async function ensureSessionAfterLogin(input: {
 	}
 
 	if (autoCreateSession && onLoginMode === 'augment') {
+		await beforeSessionCreate?.()
 		const session = hasSessionMetadata
 			? await sessionAdapter.createSession(userId, resolvedMetadata)
 			: await sessionAdapter.createSession(userId)

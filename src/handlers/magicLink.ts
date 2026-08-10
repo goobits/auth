@@ -87,6 +87,7 @@ type MagicLinkVerifyConfig = {
 	allowSignup?: boolean
 	createUser?: (email: string, event: RequestEventLike) => Promise<User>
 	onAuthentication?: AuthHooks['onAuthentication']
+	beforeSessionCreate?: AuthHooks['beforeSessionCreate']
 	getSessionMetadata?: AuthHooks['getSessionMetadata']
 	redirectAfterLogin?: string
 	isAuthenticated?: (locals: AuthLocals) => boolean
@@ -293,6 +294,7 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 		allowSignup = false,
 		createUser,
 		onAuthentication,
+		beforeSessionCreate,
 		getSessionMetadata,
 		redirectAfterLogin = '/',
 		isAuthenticated = (locals: AuthLocals) => !!locals.user,
@@ -469,11 +471,12 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 
 		let userId = user?.id ? String(user.id) : recordUserId
 
-		const lifecycleResult = await onAuthentication?.({
+		const authentication = {
 			event,
-			method: { kind: 'magic-link', email: recordEmail || email },
+			method: { kind: 'magic-link' as const, email: recordEmail || email },
 			user
-		})
+		}
+		const lifecycleResult = await onAuthentication?.(authentication)
 		if (lifecycleResult?.userId) userId = String(lifecycleResult.userId)
 		let completion
 		try {
@@ -490,6 +493,9 @@ export function createMagicLinkVerifyHandler(config: MagicLinkVerifyConfig) {
 				...(getSessionMetadata ? { getSessionMetadata } : {}),
 				...(config.mfa ? { mfa: config.mfa } : {}),
 				redirectTo: postLoginRedirect,
+				...(beforeSessionCreate
+					? { beforeSessionCreate: () => beforeSessionCreate(authentication) }
+					: {}),
 				autoCreateSession,
 				onLoginMode
 			})

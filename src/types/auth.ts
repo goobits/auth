@@ -165,6 +165,8 @@ export type AuthHooks = {
 	onAuthentication?: (
 		input: AuthenticationLifecycleInput
 	) => Promise<AuthenticationLifecycleResult> | AuthenticationLifecycleResult
+	/** Runs after every configured login-assurance gate passes, immediately before Auth creates a session. */
+	beforeSessionCreate?: (input: AuthenticationLifecycleInput) => Promise<void> | void
 
 	// "augment" keeps framework-managed session creation (default).
 	// "manual" lets advanced callers fully manage session creation.

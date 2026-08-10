@@ -18,6 +18,9 @@
   explicit MFA assurance.
 - 🧱 Managed login MFA now rejects manual session mode at startup so application
   hooks cannot expose a session before the second-factor gate executes.
+- 🧭 `hooks.beforeSessionCreate` now gives applications one post-assurance,
+  pre-session boundary for access and login-completion policy without repeating
+  Auth's MFA decision.
 
 ## [0.6.0] - 2026-08-03
 

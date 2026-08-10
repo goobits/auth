@@ -208,6 +208,15 @@ discriminated union and includes the stable provider profile/tokens for OAuth,
 the verified email for magic links, or the verified credential ID and owner ID
 for passkeys.
 
+Keep `onAuthentication` focused on principal resolution and pending-route
+selection. Application work that must happen only after every configured login
+assurance gate passes belongs in
+`hooks.beforeSessionCreate({ event, method, user })`. Auth calls that hook
+exactly once immediately before managed session creation and never while an MFA
+challenge is pending. Throwing from the hook prevents the session. Standalone
+MFA verification handlers should perform the same application completion from
+their `onVerified` callback.
+
 Known identities arrive with `user`. An unknown OAuth sign-in must return a
 real application user ID or a safe pending route. Auth never creates or links a
 user from a matching email claim. Provider linking is a separate authenticated

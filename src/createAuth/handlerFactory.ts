@@ -48,6 +48,7 @@ import type {
 	AuthHandlers,
 	AuthLocals,
 	AuthRoutes,
+	AuthenticationLifecycleInput,
 	MagicLinkConfig,
 	OAuthProviderConfig,
 	OnLoginMode,
@@ -104,7 +105,12 @@ function normalizeMagicLinkConfig(
 		...(settings.key !== undefined ? { key: settings.key } : {})
 	}
 	const onAuthentication = globalHooks?.onAuthentication
-	return onAuthentication ? { ...normalized, onAuthentication } : normalized
+	const beforeSessionCreate = globalHooks?.beforeSessionCreate
+	return {
+		...normalized,
+		...(onAuthentication ? { onAuthentication } : {}),
+		...(beforeSessionCreate ? { beforeSessionCreate } : {})
+	}
 }
 
 function asJsonHandler(
@@ -130,6 +136,7 @@ export function createHandlers(
 	} = config
 	const { urlConfig, cookieConfig, autoCreateSession, isAuthenticated } = defaults
 	const onLoginMode: OnLoginMode = hooks.onLoginMode ?? 'augment'
+	const beforeSessionCreate = hooks.beforeSessionCreate
 	const mfaLogin: MfaLoginConfig | undefined = mfa?.login
 		? {
 				...mfa.login,
@@ -228,7 +235,7 @@ export function createHandlers(
 					}
 				}
 
-				const lifecycleResult = await hooks.onAuthentication?.({
+				const authentication: AuthenticationLifecycleInput = {
 					event,
 					method: {
 						kind: 'oauth',
@@ -238,7 +245,8 @@ export function createHandlers(
 						tokens
 					},
 					user
-				})
+				}
+				const lifecycleResult = await hooks.onAuthentication?.(authentication)
 				const resolvedUserId = lifecycleResult?.userId
 					? String(lifecycleResult.userId)
 					: (user?.id ?? null)
@@ -282,6 +290,12 @@ export function createHandlers(
 								redirectTo: redirectTo || context.redirectTo || urlConfig.afterLogin,
 								...(hooks.getSessionMetadata
 									? { getSessionMetadata: hooks.getSessionMetadata }
+									: {}),
+								...(beforeSessionCreate
+									? {
+											beforeSessionCreate: () =>
+												beforeSessionCreate({ ...authentication, user: resolvedUser })
+										}
 									: {}),
 								autoCreateSession,
 								onLoginMode
@@ -448,6 +462,7 @@ export function createHandlers(
 			onLoginMode,
 			sanitizeUser,
 			...(hooks.getSessionMetadata ? { getSessionMetadata: hooks.getSessionMetadata } : {}),
+			...(beforeSessionCreate ? { beforeSessionCreate } : {}),
 			...(security.audit.emitter ? { emitSecurityEvent: security.audit.emitter } : {}),
 			...(adapters.user ? { userAdapter: adapters.user } : {})
 		}

@@ -33,6 +33,7 @@ export type WebAuthnLoginVerifyHandlerConfig = WebAuthnVerificationConfig & {
 	getSessionMetadata?: AuthHooks['getSessionMetadata']
 	redirectAfterLogin?: string
 	onAuthentication?: AuthHooks['onAuthentication']
+	beforeSessionCreate?: AuthHooks['beforeSessionCreate']
 	sanitizeUser?: (user: User | null) => User | null
 	autoCreateSession?: boolean
 	onLoginMode?: OnLoginMode
@@ -89,6 +90,7 @@ export function createWebAuthnLoginVerifyHandler(
 		getSessionMetadata,
 		redirectAfterLogin = '/',
 		onAuthentication,
+		beforeSessionCreate,
 		sanitizeUser = defaultSanitizeUser,
 		autoCreateSession = true,
 		onLoginMode = 'augment'
@@ -108,15 +110,16 @@ export function createWebAuthnLoginVerifyHandler(
 		let userId = result.credential.userId
 		let lifecycleResult
 		try {
-			lifecycleResult = await onAuthentication?.({
+			const authentication = {
 				event,
 				method: {
-					kind: 'passkey',
+					kind: 'passkey' as const,
 					credentialId: result.credential.credentialId,
 					userId
 				},
 				user
-			})
+			}
+			lifecycleResult = await onAuthentication?.(authentication)
 			if (lifecycleResult?.userId && String(lifecycleResult.userId) !== userId) {
 				return jsonResponse({ ok: false, error: 'Unable to resolve authenticated principal' }, 401)
 			}
@@ -127,6 +130,9 @@ export function createWebAuthnLoginVerifyHandler(
 				userId,
 				...(getSessionMetadata ? { getSessionMetadata } : {}),
 				sessionMetadata: { mfaVerifiedAt: new Date() },
+				...(beforeSessionCreate
+					? { beforeSessionCreate: () => beforeSessionCreate(authentication) }
+					: {}),
 				autoCreateSession,
 				onLoginMode
 			})

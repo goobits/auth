@@ -351,10 +351,12 @@ describe('magic link handlers', () => {
 		const token = sendEmail.mock.calls[0]?.[0].token
 
 		const onAuthentication = vi.fn(async () => ({ userId: 'hook-user' }))
+		const beforeSessionCreate = vi.fn()
 		const verifyHandler = createTestMagicLinkVerifyHandler({
 			magicLinkAdapter,
 			sessionAdapter,
 			onAuthentication,
+			beforeSessionCreate,
 			requireUserConfirmation: false
 		})
 
@@ -363,6 +365,12 @@ describe('magic link handlers', () => {
 
 		expect(payload.ok).toBe(true)
 		expect(onAuthentication).toHaveBeenCalledWith(
+			expect.objectContaining({
+				method: { kind: 'magic-link', email: 'hook@example.com' },
+				user: null
+			})
+		)
+		expect(beforeSessionCreate).toHaveBeenCalledWith(
 			expect.objectContaining({
 				method: { kind: 'magic-link', email: 'hook@example.com' },
 				user: null
@@ -429,6 +437,7 @@ describe('magic link handlers', () => {
 			setSessionCookie: vi.fn()
 		}
 		const { config: mfa, replaceForUserAndType } = createMfaLoginTestConfig()
+		const beforeSessionCreate = vi.fn()
 		const requestHandler = createTestMagicLinkRequestHandler({
 			magicLinkAdapter,
 			userAdapter,
@@ -444,6 +453,7 @@ describe('magic link handlers', () => {
 			userAdapter,
 			sessionAdapter,
 			requireUserConfirmation: false,
+			beforeSessionCreate,
 			mfa
 		})
 
@@ -453,6 +463,7 @@ describe('magic link handlers', () => {
 
 		expect(await response.json()).toEqual({ ok: true, twoFactorRequired: true })
 		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
+		expect(beforeSessionCreate).not.toHaveBeenCalled()
 		expect(replaceForUserAndType).toHaveBeenCalledWith(
 			expect.objectContaining({ metadata: { redirectTo: '/library' } })
 		)

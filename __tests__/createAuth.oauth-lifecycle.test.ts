@@ -109,11 +109,12 @@ describe('createAuth OAuth lifecycle', () => {
 		const user = await createUser(identity, 'existing-user')
 		await identity.linkIdentity({ userId: user.id, provider: 'google', subject: profile.id })
 		const onAuthentication = vi.fn()
+		const beforeSessionCreate = vi.fn()
 
 		createAuth({
 			adapters: { session, user: identity, oauthIdentity: identity },
 			providers: { google: { provider: createProvider() } },
-			hooks: { onAuthentication }
+			hooks: { onAuthentication, beforeSessionCreate }
 		})
 
 		await callback()(createEvent(), profile, tokens, context('sign-in'))
@@ -128,6 +129,12 @@ describe('createAuth OAuth lifecycle', () => {
 				user: expect.objectContaining({ id: user.id })
 			})
 		)
+		expect(beforeSessionCreate).toHaveBeenCalledWith(
+			expect.objectContaining({
+				method: expect.objectContaining({ kind: 'oauth', intent: 'sign-in' }),
+				user: expect.objectContaining({ id: user.id })
+			})
+		)
 		expect(createSession).toHaveBeenCalledWith(user.id)
 	})
 
@@ -138,6 +145,7 @@ describe('createAuth OAuth lifecycle', () => {
 		const user = await createUser(identity, 'mfa-user')
 		await identity.linkIdentity({ userId: user.id, provider: 'google', subject: profile.id })
 		const { store: mfa, verificationTokenAdapter: verificationToken } = createMfaLoginTestConfig()
+		const beforeSessionCreate = vi.fn()
 
 		createAuth({
 			adapters: {
@@ -151,13 +159,15 @@ describe('createAuth OAuth lifecycle', () => {
 			mfa: {
 				authorizeSecurityChange: async () => true,
 				login: { challengeRedirect: '/login?mfa=required', secureCookies: false }
-			}
+			},
+			hooks: { beforeSessionCreate }
 		})
 
 		await expect(callback()(createEvent(), profile, tokens, context('sign-in'))).resolves.toBe(
 			'/login?mfa=required'
 		)
 		expect(createSession).not.toHaveBeenCalled()
+		expect(beforeSessionCreate).not.toHaveBeenCalled()
 		expect(verificationToken.replaceForUserAndType).toHaveBeenCalledWith(
 			expect.objectContaining({
 				userId: user.id,

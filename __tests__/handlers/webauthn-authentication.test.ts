@@ -102,10 +102,12 @@ describe('WebAuthn authentication', () => {
 			setSessionCookie: vi.fn()
 		}
 		const onAuthentication = vi.fn(async () => ({ userId: TEST_USER.id }))
+		const beforeSessionCreate = vi.fn()
 		const handler = createWebAuthnLoginVerifyHandler({
 			webauthnAdapter: adapter,
 			sessionAdapter,
 			onAuthentication,
+			beforeSessionCreate,
 			rpID: 'example.com',
 			origin: 'http://localhost'
 		})
@@ -121,6 +123,16 @@ describe('WebAuthn authentication', () => {
 
 		expect(response.status).toBe(200)
 		expect(onAuthentication).toHaveBeenCalledWith(
+			expect.objectContaining({
+				method: {
+					kind: 'passkey',
+					credentialId: 'AQIDBAcI',
+					userId: TEST_USER.id
+				},
+				user: null
+			})
+		)
+		expect(beforeSessionCreate).toHaveBeenCalledWith(
 			expect.objectContaining({
 				method: {
 					kind: 'passkey',

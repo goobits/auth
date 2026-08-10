@@ -15,19 +15,43 @@ describe('ensureSessionAfterLogin', () => {
 	it('creates a session and sets the cookie when augment mode is active', async () => {
 		const sessionAdapter = createSessionAdapter()
 		const event = createRequestEvent()
+		const beforeSessionCreate = vi.fn(async () => {
+			expect(sessionAdapter.createSession).not.toHaveBeenCalled()
+		})
 
 		const result = await ensureSessionAfterLogin({
 			event,
 			sessionAdapter: sessionAdapter as never,
-			userId: 'u1'
+			userId: 'u1',
+			beforeSessionCreate
 		})
 
 		expect(result).toEqual({ status: 'authenticated', userId: 'u1' })
+		expect(beforeSessionCreate).toHaveBeenCalledOnce()
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1')
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalledWith(event.cookies, {
 			id: 's1',
 			userId: 'u1'
 		})
+	})
+
+	it('does not create a session when the pre-session hook rejects', async () => {
+		const sessionAdapter = createSessionAdapter()
+		const event = createRequestEvent()
+
+		await expect(
+			ensureSessionAfterLogin({
+				event,
+				sessionAdapter: sessionAdapter as never,
+				userId: 'u1',
+				beforeSessionCreate: () => {
+					throw new Error('login completion failed')
+				}
+			})
+		).rejects.toThrow('login completion failed')
+
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
+		expect(sessionAdapter.setSessionCookie).not.toHaveBeenCalled()
 	})
 
 	it('merges application metadata while keeping assurance timestamps protocol-owned', async () => {
@@ -72,31 +96,37 @@ describe('ensureSessionAfterLogin', () => {
 	it('skips session creation in manual mode but still returns the userId', async () => {
 		const sessionAdapter = createSessionAdapter()
 		const event = createRequestEvent()
+		const beforeSessionCreate = vi.fn()
 
 		const result = await ensureSessionAfterLogin({
 			event,
 			sessionAdapter: sessionAdapter as never,
 			userId: 'u2',
+			beforeSessionCreate,
 			onLoginMode: 'manual'
 		})
 
 		expect(result).toEqual({ status: 'authenticated', userId: 'u2' })
 		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
 		expect(sessionAdapter.setSessionCookie).not.toHaveBeenCalled()
+		expect(beforeSessionCreate).not.toHaveBeenCalled()
 	})
 
 	it('skips session creation when autoCreateSession is false', async () => {
 		const sessionAdapter = createSessionAdapter()
 		const event = createRequestEvent()
+		const beforeSessionCreate = vi.fn()
 
 		await ensureSessionAfterLogin({
 			event,
 			sessionAdapter: sessionAdapter as never,
 			userId: 'u3',
+			beforeSessionCreate,
 			autoCreateSession: false
 		})
 
 		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
+		expect(beforeSessionCreate).not.toHaveBeenCalled()
 	})
 
 	it('works without a setSessionCookie implementation', async () => {
@@ -119,6 +149,7 @@ describe('ensureSessionAfterLogin', () => {
 		const sessionAdapter = createSessionAdapter()
 		const event = createRequestEvent()
 		const { config: mfa, replaceForUserAndType } = createMfaLoginTestConfig()
+		const beforeSessionCreate = vi.fn()
 
 		const result = await ensureSessionAfterLogin({
 			event,
@@ -132,6 +163,7 @@ describe('ensureSessionAfterLogin', () => {
 				emailVerified: true
 			},
 			redirectTo: '/library',
+			beforeSessionCreate,
 			mfa
 		})
 
@@ -145,5 +177,6 @@ describe('ensureSessionAfterLogin', () => {
 			expect.objectContaining({ metadata: { redirectTo: '/library' } })
 		)
 		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
+		expect(beforeSessionCreate).not.toHaveBeenCalled()
 	})
 })
