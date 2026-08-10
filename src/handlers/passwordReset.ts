@@ -24,9 +24,9 @@ import {
 	hashVerificationToken,
 	VERIFICATION_TOKEN_TYPES
 } from '../verification/index.ts'
-import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
+import type { HandlerRateLimitConfig } from './rateLimitKey.ts'
 import {
-	createStandaloneSecurityBoundaryValidator,
+	createStandaloneSecurityGate,
 	type StandaloneSecurityBoundary
 } from './_standaloneSecurity.ts'
 
@@ -47,15 +47,9 @@ export function createPasswordResetRequestHandler(
 		logger?: Logger
 	} & StandaloneSecurityBoundary
 ) {
-	const validateRequestBoundary = createStandaloneSecurityBoundaryValidator(
+	const validateRequestSecurity = createStandaloneSecurityGate(
 		'createPasswordResetRequestHandler',
-		{
-			hasCsrf: typeof config.csrf?.validate === 'function',
-			hasRateLimit: typeof config.rateLimit?.check === 'function',
-			...(config.validateExternalSecurityBoundary
-				? { validateExternalSecurityBoundary: config.validateExternalSecurityBoundary }
-				: {})
-		}
+		config
 	)
 	const {
 		userAdapter,
@@ -63,37 +57,14 @@ export function createPasswordResetRequestHandler(
 		sendPasswordResetEmail,
 		resolveUser,
 		expiresInMs,
-		csrf,
-		rateLimit,
 		logger
 	} = config
 
 	const log = resolveLogger(logger)
 
 	return async (event: RequestEventLike) => {
-		if (!(await validateRequestBoundary(event))) {
-			return { error: 'Invalid security boundary', success: false }
-		}
-		if (csrf?.validate) {
-			const valid = await csrf.validate(event)
-			if (!valid) {
-				return {
-					error: csrf.errorMessage || 'Invalid CSRF token',
-					success: false
-				}
-			}
-		}
-
-		if (rateLimit?.check) {
-			const key = resolveHandlerRateLimitKey(event, rateLimit)
-			const result = await rateLimit.check(key)
-			if (!result?.allowed) {
-				return {
-					error: 'Too many attempts. Try again later.',
-					success: false
-				}
-			}
-		}
+		const securityFailure = await validateRequestSecurity(event)
+		if (securityFailure) return securityFailure
 
 		const formData = await readRequestFormData(event.request)
 		const email = formData.get('email')?.toString()
@@ -167,48 +138,17 @@ export function createPasswordResetConfirmHandler(
 		logger?: Logger
 	} & StandaloneSecurityBoundary
 ) {
-	const validateRequestBoundary = createStandaloneSecurityBoundaryValidator(
+	const validateRequestSecurity = createStandaloneSecurityGate(
 		'createPasswordResetConfirmHandler',
-		{
-			hasCsrf: typeof config.csrf?.validate === 'function',
-			hasRateLimit: typeof config.rateLimit?.check === 'function',
-			...(config.validateExternalSecurityBoundary
-				? { validateExternalSecurityBoundary: config.validateExternalSecurityBoundary }
-				: {})
-		}
+		config
 	)
-	const {
-		credentialsProvider,
-		completePasswordReset,
-		redirectTo = '/sign-in',
-		csrf,
-		rateLimit,
-		logger
-	} = config
+	const { credentialsProvider, completePasswordReset, redirectTo = '/sign-in', logger } = config
 
 	const log = resolveLogger(logger)
 
 	return async (event: RequestEventLike) => {
-		if (!(await validateRequestBoundary(event))) {
-			return { error: 'Invalid security boundary', success: false }
-		}
-		if (csrf?.validate && !(await csrf.validate(event))) {
-			return {
-				error: csrf.errorMessage || 'Invalid CSRF token',
-				success: false
-			}
-		}
-
-		if (rateLimit?.check) {
-			const key = resolveHandlerRateLimitKey(event, rateLimit)
-			const result = await rateLimit.check(key)
-			if (!result?.allowed) {
-				return {
-					error: 'Too many attempts. Try again later.',
-					success: false
-				}
-			}
-		}
+		const securityFailure = await validateRequestSecurity(event)
+		if (securityFailure) return securityFailure
 
 		const formData = await readRequestFormData(event.request)
 		const token = formData.get('token')?.toString()

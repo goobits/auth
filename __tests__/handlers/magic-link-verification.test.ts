@@ -1,206 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import {
-	createMagicLinkRequestHandler,
-	createMagicLinkVerifyHandler
-} from '../../src/handlers/magicLink.ts'
 import type { RequestEventLike } from '../../src/types/auth.ts'
 import { createMfaLoginTestConfig } from '../testKit.ts'
+import {
+	createMagicLinkAdapter,
+	createMagicLinkEvent as createEvent,
+	createMagicLinkPrincipalAdapters,
+	createTestMagicLinkRequestHandler,
+	createTestMagicLinkVerifyHandler
+} from './_magicLinkTestContext.ts'
 
-const MAGIC_LINK_BASE_URL = 'https://auth.example.test'
-const OTP_PEPPER = 'test-only-magic-link-pepper-32-bytes-minimum'
-
-function createTestMagicLinkRequestHandler(
-	config: Omit<Parameters<typeof createMagicLinkRequestHandler>[0], 'baseUrl' | 'otpPepper'> & {
-		baseUrl?: string
-		otpPepper?: string | Uint8Array
-	}
-) {
-	return createMagicLinkRequestHandler({
-		baseUrl: MAGIC_LINK_BASE_URL,
-		otpPepper: OTP_PEPPER,
-		...config
-	})
-}
-
-function createTestMagicLinkVerifyHandler(
-	config: Omit<
-		Parameters<typeof createMagicLinkVerifyHandler>[0],
-		'otpPepper' | 'verifyRateLimit'
-	> & {
-		otpPepper?: string | Uint8Array
-		verifyRateLimit?: (key: string) => Promise<{ allowed: boolean }>
-	}
-) {
-	return createMagicLinkVerifyHandler({
-		otpPepper: OTP_PEPPER,
-		verifyRateLimit: async () => ({ allowed: true }),
-		...config
-	})
-}
-
-type MagicLinkTokenRecord = {
-	id?: string
-	userId: string | null
-	email: string
-	tokenHash: string
-	otpHash?: string | null
-	expiresAt: Date
-	metadata?: Record<string, unknown>
-}
-
-function createEvent({
-	method = 'POST',
-	body,
-	url = 'http://localhost/auth',
-	cookieStore = new Map<string, string>()
-}: {
-	method?: string
-	body?: unknown
-	url?: string
-	cookieStore?: Map<string, string>
-} = {}) {
-	const headers = new Headers()
-	let requestBody = body
-	if (body && typeof body !== 'string') {
-		headers.set('content-type', 'application/json')
-		requestBody = JSON.stringify(body)
-	}
-	return {
-		request: new Request(url, {
-			method,
-			body: (requestBody ?? null) as BodyInit | null,
-			headers
-		}),
-		cookies: {
-			get: vi.fn((name: string) => cookieStore.get(name)),
-			set: vi.fn((name: string, value: string) => cookieStore.set(name, value)),
-			delete: vi.fn((name: string) => cookieStore.delete(name))
-		},
-		locals: {},
-		url: new URL(url)
-	}
-}
-
-function createMagicLinkAdapter() {
-	const tokens = new Map<string, MagicLinkTokenRecord>()
-	let counter = 0
-	const findByTokenHash = async (tokenHash: string) => {
-		for (const token of tokens.values()) {
-			if (token.tokenHash === tokenHash) return token
-		}
-		return null
-	}
-	const findByEmailAndOtpHash = async ({ email, otpHash }: { email: string; otpHash: string }) => {
-		for (const token of tokens.values()) {
-			if (token.email === email && token.otpHash === otpHash) return token
-		}
-		return null
-	}
-	const deleteById = async (id: string) => tokens.delete(id)
-	return {
-		createToken: async (token: Omit<MagicLinkTokenRecord, 'id'>) => {
-			const id = `t${++counter}`
-			tokens.set(id, { id, ...token })
-			return tokens.get(id)
-		},
-		findByTokenHash,
-		findByEmailAndOtpHash,
-		deleteById,
-		deleteByEmail: async (email: string) => {
-			for (const [id, token] of tokens.entries()) {
-				if (token.email === email) tokens.delete(id)
-			}
-		},
-		deleteByUserId: async (userId: string) => {
-			for (const [id, token] of tokens.entries()) {
-				if (token.userId === userId) tokens.delete(id)
-			}
-		},
-		consumeByTokenHash: async (tokenHash: string) => {
-			const record = await findByTokenHash(tokenHash)
-			if (record?.id) tokens.delete(record.id)
-			return record
-		},
-		consumeByEmailAndOtpHash: async (params: { email: string; otpHash: string }) => {
-			const record = await findByEmailAndOtpHash(params)
-			if (record?.id) tokens.delete(record.id)
-			return record
-		},
-		_tokens: tokens
-	}
-}
-
-describe('magic link handlers', () => {
-	afterEach(() => {
-		vi.unstubAllEnvs()
-	})
-
-	it('does not send email when user is missing and signup disabled', async () => {
-		const magicLinkAdapter = createMagicLinkAdapter()
-		const sendEmail = vi.fn()
-		const handler = createTestMagicLinkRequestHandler({
-			magicLinkAdapter,
-			sendEmail,
-			allowSignup: false
-		})
-
-		const event = createEvent({ body: { email: 'missing@example.com' } })
-		const response = await handler(event as RequestEventLike)
-		const payload = await response.json()
-
-		expect(payload.ok).toBe(true)
-		expect(sendEmail).not.toHaveBeenCalled()
-		expect(magicLinkAdapter._tokens.size).toBe(0)
-	})
-
-	it('deletes a newly issued token when delivery fails', async () => {
-		const magicLinkAdapter = createMagicLinkAdapter()
-		const handler = createTestMagicLinkRequestHandler({
-			magicLinkAdapter,
-			userAdapter: {
-				getUserByEmail: vi.fn(async (email) => ({ id: 'u1', email }))
-			},
-			sendEmail: vi.fn(async () => {
-				throw new Error('delivery failed')
-			})
-		})
-
-		await expect(
-			handler(createEvent({ body: { email: 'u1@example.com' } }) as RequestEventLike)
-		).rejects.toThrow('delivery failed')
-		expect(magicLinkAdapter._tokens.size).toBe(0)
-	})
-
-	it('requires a canonical HTTPS origin and sufficiently strong OTP pepper', () => {
-		const base = { magicLinkAdapter: createMagicLinkAdapter(), sendEmail: vi.fn() }
-		expect(() =>
-			createMagicLinkRequestHandler({ ...base, baseUrl: 'http://example.test' })
-		).toThrow('HTTPS origin')
-		expect(() => createMagicLinkRequestHandler({ ...base, baseUrl: MAGIC_LINK_BASE_URL })).toThrow(
-			'requires otpPepper'
-		)
-		expect(() =>
-			createMagicLinkRequestHandler({
-				...base,
-				baseUrl: MAGIC_LINK_BASE_URL,
-				otpPepper: 'too-short'
-			})
-		).toThrow('at least 32 bytes')
-	})
+describe('magic link verification', () => {
+	afterEach(() => vi.unstubAllEnvs())
 
 	it('verifies token and creates session', async () => {
 		const magicLinkAdapter = createMagicLinkAdapter()
 		const sendEmail = vi.fn()
-		const userAdapter = {
-			getUserByEmail: vi.fn(async (email) => ({ id: 'u1', email })),
-			getUserById: vi.fn(async (id) => ({ id, email: 'u1@example.com' })),
-			updateUser: vi.fn(async () => {})
-		}
-		const sessionAdapter = {
-			createSession: vi.fn(async (userId) => ({ id: 's1', userId })),
-			setSessionCookie: vi.fn()
-		}
+		const { sessionAdapter, userAdapter } = createMagicLinkPrincipalAdapters()
 
 		const requestHandler = createTestMagicLinkRequestHandler({
 			magicLinkAdapter,
@@ -235,15 +51,7 @@ describe('magic link handlers', () => {
 	it('HMACs OTPs, keeps credentials out of responses, and binds verification to the pepper', async () => {
 		const magicLinkAdapter = createMagicLinkAdapter()
 		const sendEmail = vi.fn()
-		const userAdapter = {
-			getUserByEmail: vi.fn(async (email: string) => ({ id: 'u1', email })),
-			getUserById: vi.fn(async (id: string) => ({ id, email: 'u1@example.com' })),
-			updateUser: vi.fn(async () => {})
-		}
-		const sessionAdapter = {
-			createSession: vi.fn(async (userId: string) => ({ id: 's1', userId })),
-			setSessionCookie: vi.fn()
-		}
+		const { sessionAdapter, userAdapter } = createMagicLinkPrincipalAdapters()
 		const requestHandler = createTestMagicLinkRequestHandler({
 			magicLinkAdapter,
 			userAdapter,
@@ -472,15 +280,7 @@ describe('magic link handlers', () => {
 	it('does not consume a GET link until its browser confirmation is posted', async () => {
 		const magicLinkAdapter = createMagicLinkAdapter()
 		const sendEmail = vi.fn()
-		const userAdapter = {
-			getUserByEmail: vi.fn(async (email) => ({ id: 'u1', email })),
-			getUserById: vi.fn(async (id) => ({ id, email: 'u1@example.com' })),
-			updateUser: vi.fn(async () => {})
-		}
-		const sessionAdapter = {
-			createSession: vi.fn(async (userId) => ({ id: 's1', userId })),
-			setSessionCookie: vi.fn()
-		}
+		const { sessionAdapter, userAdapter } = createMagicLinkPrincipalAdapters()
 
 		const requestHandler = createTestMagicLinkRequestHandler({
 			magicLinkAdapter,

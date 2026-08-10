@@ -1,30 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../src/mfa/totp.ts', () => ({
-	generateSecret: vi.fn(() => 'SECRET'),
-	createOtpAuthURL: vi.fn(() => 'otpauth://totp/test'),
-	matchTOTP: vi.fn()
-}))
-vi.mock('../../src/mfa/backupCodes.ts', () => ({
-	generateBackupCodes: vi.fn(() => ['code1', 'code2']),
-	hashBackupCodes: vi.fn(async () => ['hash1', 'hash2']),
-	verifyBackupCode: vi.fn()
-}))
-
+import { createRotatingSessionAdapter } from './_mfaTestContext.ts'
 import {
-	beginMfaLoginChallenge,
 	createMfaBackupCodeHandler,
 	createMfaDisableHandler,
 	createMfaEnrollHandler,
-	createMfaLoginVerifyHandler,
 	createMfaStatusHandler,
 	createMfaStepUpHandler,
-	createMfaVerifyHandler,
-	type MfaStore
-} from '../../src/handlers/mfa.ts'
+	createMfaVerifyHandler
+} from '../../src/handlers/mfaManagement.ts'
 import * as backup from '../../src/mfa/backupCodes.ts'
 import * as totp from '../../src/mfa/totp.ts'
-import { createCookies, createRequestEvent } from '../testKit.ts'
+import { createMfaStore, createRequestEvent } from '../testKit.ts'
 
 function createEvent({ locals = {}, form = {} } = {}) {
 	return createRequestEvent({
@@ -37,24 +24,6 @@ function createEvent({ locals = {}, form = {} } = {}) {
 
 const authorizeSecurityChange = vi.fn(async () => true)
 
-function createStore(overrides: Partial<MfaStore> = {}): MfaStore {
-	return {
-		activateEnrollment: vi.fn(async () => true),
-		beginEnrollment: vi.fn(async () => true),
-		consumeBackupCode: vi.fn(async () => true),
-		consumeTotpCounter: vi.fn(async () => true),
-		disableMfa: vi.fn(async () => true),
-		getBackupCodes: vi.fn(async () => []),
-		getSecret: vi.fn(async () => 'SECRET'),
-		getStatus: vi.fn(async () => ({
-			backupCodeCount: 8,
-			enabled: true,
-			enabledAt: new Date()
-		})),
-		...overrides
-	}
-}
-
 beforeEach(() => {
 	vi.mocked(totp.matchTOTP).mockReset()
 	vi.mocked(backup.verifyBackupCode).mockReset()
@@ -62,12 +31,12 @@ beforeEach(() => {
 	authorizeSecurityChange.mockResolvedValue(true)
 })
 
-describe('MFA handlers', () => {
+describe('MFA management handlers', () => {
 	it('enroll requires user', async () => {
 		const handler = createMfaEnrollHandler({
 			authorizeSecurityChange,
 			getUserId: () => null,
-			store: createStore(),
+			store: createMfaStore(),
 			issuer: 'Test'
 		})
 		const result = await handler(createEvent())
@@ -75,7 +44,7 @@ describe('MFA handlers', () => {
 	})
 
 	it('enroll atomically stores a pending secret and backup codes after step-up', async () => {
-		const store = createStore()
+		const store = createMfaStore()
 		const handler = createMfaEnrollHandler({
 			authorizeSecurityChange,
 			getUserId: () => 'u1',
@@ -91,7 +60,7 @@ describe('MFA handlers', () => {
 	})
 
 	it('enroll fails closed when step-up is denied or an active factor wins the race', async () => {
-		const store = createStore()
+		const store = createMfaStore()
 		authorizeSecurityChange.mockResolvedValueOnce(false)
 		const denied = createMfaEnrollHandler({
 			authorizeSecurityChange,
@@ -117,7 +86,7 @@ describe('MFA handlers', () => {
 			enabled: true,
 			enabledAt: new Date('2026-01-01T00:00:00.000Z')
 		}
-		const store = createStore({ getStatus: vi.fn(async () => status) })
+		const store = createMfaStore({ getStatus: vi.fn(async () => status) })
 		const handler = createMfaStatusHandler({ getUserId: () => 'u1', store })
 		const result = await handler(createEvent({ locals: { userId: 'u1' } }))
 
@@ -126,7 +95,7 @@ describe('MFA handlers', () => {
 	})
 
 	it('verify rejects invalid token', async () => {
-		const store = createStore()
+		const store = createMfaStore()
 		vi.mocked(totp.matchTOTP).mockResolvedValue(null)
 		const handler = createMfaVerifyHandler({ getUserId: () => 'u1', store })
 		const result = await handler(
@@ -137,7 +106,7 @@ describe('MFA handlers', () => {
 	})
 
 	it('verify fails closed when a pending enrollment loses the activation race', async () => {
-		const store = createStore({ activateEnrollment: vi.fn(async () => false) })
+		const store = createMfaStore({ activateEnrollment: vi.fn(async () => false) })
 		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
 		const handler = createMfaVerifyHandler({ getUserId: () => 'u1', store })
 
@@ -148,7 +117,7 @@ describe('MFA handlers', () => {
 
 	it('reads the pending secret inside the application mutation boundary', async () => {
 		const order: string[] = []
-		const store = createStore({
+		const store = createMfaStore({
 			getSecret: vi.fn(async () => {
 				order.push('secret-read')
 				return 'JBSWY3DPEHPK3PXP'
@@ -168,7 +137,7 @@ describe('MFA handlers', () => {
 	})
 
 	it('runs application lifecycle hooks only after factor state changes succeed', async () => {
-		const store = createStore()
+		const store = createMfaStore()
 		const onEnabled = vi.fn()
 		const onDisabled = vi.fn()
 		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
@@ -201,7 +170,7 @@ describe('MFA handlers', () => {
 	})
 
 	it('disable requires user', async () => {
-		const store = createStore()
+		const store = createMfaStore()
 		const handler = createMfaDisableHandler({
 			authorizeSecurityChange,
 			getUserId: () => null,
@@ -213,7 +182,7 @@ describe('MFA handlers', () => {
 	})
 
 	it('verify rejects missing enrollment secret', async () => {
-		const store = createStore({ getSecret: vi.fn(async () => null) })
+		const store = createMfaStore({ getSecret: vi.fn(async () => null) })
 		const handler = createMfaVerifyHandler({ getUserId: () => 'u1', store })
 		const result = await handler(
 			createEvent({ locals: { userId: 'u1' }, form: { token: '000000' } })
@@ -223,7 +192,7 @@ describe('MFA handlers', () => {
 	})
 
 	it('disable requires step-up and an active factor code', async () => {
-		const store = createStore()
+		const store = createMfaStore()
 		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
 		const consumingAuthorization = vi.fn(async ({ request }: { request: Request }) => {
 			await request.formData()
@@ -245,7 +214,7 @@ describe('MFA handlers', () => {
 	})
 
 	it('disable fails closed when step-up is denied or the factor code is invalid', async () => {
-		const store = createStore()
+		const store = createMfaStore()
 		const handler = createMfaDisableHandler({
 			authorizeSecurityChange,
 			getUserId: () => 'u1',
@@ -268,7 +237,7 @@ describe('MFA handlers', () => {
 
 	it('disable accepts a backup code only when its atomic consume succeeds', async () => {
 		vi.mocked(backup.verifyBackupCode).mockResolvedValue({ valid: true, hash: 'h1' })
-		const store = createStore({
+		const store = createMfaStore({
 			consumeBackupCode: vi.fn(async () => false),
 			getBackupCodes: vi.fn(async () => ['h1'])
 		})
@@ -286,7 +255,7 @@ describe('MFA handlers', () => {
 
 	it('backup code consumes valid code', async () => {
 		vi.mocked(backup.verifyBackupCode).mockResolvedValue({ valid: true, hash: 'h1' })
-		const store = createStore({
+		const store = createMfaStore({
 			getBackupCodes: vi.fn(async () => ['h1'])
 		})
 		const handler = createMfaBackupCodeHandler({ getUserId: () => 'u1', store })
@@ -297,7 +266,7 @@ describe('MFA handlers', () => {
 
 	it('rejects a backup code that loses the atomic consume race', async () => {
 		vi.mocked(backup.verifyBackupCode).mockResolvedValue({ valid: true, hash: 'h1' })
-		const store = createStore({
+		const store = createMfaStore({
 			consumeBackupCode: vi.fn(async () => false),
 			getBackupCodes: vi.fn(async () => ['h1'])
 		})
@@ -308,194 +277,11 @@ describe('MFA handlers', () => {
 		).resolves.toEqual({ success: false, error: 'Invalid backup code' })
 	})
 
-	it('creates a session only after a single-use login challenge passes', async () => {
-		let tokenRecord: {
-			token: {
-				id: string
-				token: string
-				type: string
-				expiresAt: Date
-				metadata?: Record<string, unknown>
-			}
-			user: Record<string, unknown>
-		} | null = null
-		const verificationTokenAdapter = {
-			deleteByUserAndType: vi.fn(async () => undefined),
-			create: vi.fn(async () => undefined),
-			replaceForUserAndType: vi.fn(
-				async (input: {
-					userId: string
-					type: string
-					token: string
-					expiresAt: Date
-					metadata?: Record<string, unknown>
-				}) => {
-					tokenRecord = {
-						token: {
-							id: 'challenge-1',
-							token: input.token,
-							type: input.type,
-							expiresAt: input.expiresAt,
-							...(input.metadata ? { metadata: input.metadata } : {})
-						},
-						user: { id: input.userId, email: 'user@example.com' }
-					}
-				}
-			),
-			findByToken: vi.fn(async ({ token }: { token: string }) =>
-				tokenRecord?.token.token === token ? tokenRecord : null
-			),
-			consumeByToken: vi.fn(async ({ token }: { token: string }) => {
-				if (tokenRecord?.token.token !== token) return null
-				const consumed = tokenRecord
-				tokenRecord = null
-				return consumed
-			}),
-			deleteById: vi.fn(async () => undefined)
-		}
-		const store = createStore()
-		const cookies = createCookies()
-		await beginMfaLoginChallenge({
-			event: createRequestEvent({ cookies }),
-			user: {
-				id: 'u1',
-				email: 'user@example.com',
-				name: 'User',
-				avatar: null,
-				emailVerified: true
-			},
-			sessionMetadata: { rememberMe: true },
-			redirectTo: '/library',
-			config: { store, verificationTokenAdapter, secureCookies: false }
-		})
-
-		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
-		const sessionAdapter = {
-			createSession: vi.fn(async () => ({
-				id: 'session-1',
-				expiresAt: new Date(Date.now() + 60_000)
-			})),
-			setSessionCookie: vi.fn()
-		}
-		const beforeVerify = vi.fn()
-		const onSuccess = vi.fn()
-		const onVerified = vi.fn(async () => {
-			expect(store.consumeTotpCounter).not.toHaveBeenCalled()
-		})
-		const verify = createMfaLoginVerifyHandler({
-			store,
-			verificationTokenAdapter,
-			sessionAdapter,
-			secureCookies: false,
-			validateExternalSecurityBoundary: async () => true,
-			attemptPolicy: { beforeVerify, onSuccess },
-			onVerified
-		})
-		const result = await verify(
-			createRequestEvent({ cookies, method: 'POST', form: { token: '123456' } })
-		)
-
-		expect(result).toMatchObject({ success: true, redirectTo: '/library' })
-		expect(sessionAdapter.createSession).toHaveBeenCalledWith('u1', {
-			rememberMe: true,
-			mfaVerifiedAt: expect.any(Date)
-		})
-		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
-		expect(store.consumeTotpCounter).toHaveBeenCalledWith('u1', 100)
-		expect(beforeVerify).toHaveBeenCalledWith(
-			expect.objectContaining({ challengeId: 'challenge-1', userId: 'u1' })
-		)
-		expect(onVerified).toHaveBeenCalledTimes(1)
-		expect(onSuccess).toHaveBeenCalledTimes(1)
-		expect(cookies.get('goobits_mfa_login')).toBeNull()
-
-		const replay = await verify(
-			createRequestEvent({ cookies, method: 'POST', form: { token: '123456' } })
-		)
-		expect(replay.success).toBe(false)
-		expect(sessionAdapter.createSession).toHaveBeenCalledTimes(1)
-	})
-
-	it('requires an explicit standalone request-security boundary', () => {
-		expect(() =>
-			createMfaLoginVerifyHandler({
-				store: createStore(),
-				verificationTokenAdapter: {} as never,
-				sessionAdapter: {} as never
-			})
-		).toThrow(/CSRF and rate-limit guards, or validateExternalSecurityBoundary/)
-	})
-
-	it('delegates challenge, proof, and session persistence to one optional transaction port', async () => {
-		const cookies = createCookies({ goobits_mfa_login: 'challenge-token' })
-		const record = {
-			token: {
-				id: 'challenge-1',
-				token: 'stored-token-hash',
-				type: 'mfa_login',
-				expiresAt: new Date(Date.now() + 60_000),
-				metadata: { rememberMe: true, redirectTo: '/library' }
-			},
-			user: { id: 'u1', email: 'user@example.com' }
-		}
-		const verificationTokenAdapter = {
-			findByToken: vi.fn(async () => record),
-			consumeByToken: vi.fn(),
-			deleteById: vi.fn(),
-			deleteByUserAndType: vi.fn(),
-			create: vi.fn(),
-			replaceForUserAndType: vi.fn()
-		}
-		const store = createStore()
-		const session = {
-			id: 'session-1',
-			userId: 'u1',
-			expiresAt: new Date(Date.now() + 60_000)
-		}
-		const completeLogin = vi.fn(async () => session)
-		const sessionAdapter = {
-			createSession: vi.fn(),
-			setSessionCookie: vi.fn()
-		}
-		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
-		const verify = createMfaLoginVerifyHandler({
-			store,
-			verificationTokenAdapter,
-			sessionAdapter,
-			completeLogin,
-			validateExternalSecurityBoundary: async () => true
-		})
-
-		await expect(
-			verify(createRequestEvent({ cookies, method: 'POST', form: { token: '123456' } }))
-		).resolves.toMatchObject({ success: true, redirectTo: '/library' })
-		expect(completeLogin).toHaveBeenCalledWith({
-			challengeId: 'challenge-1',
-			userId: 'u1',
-			proof: { method: 'totp', counter: 100 },
-			sessionMetadata: { rememberMe: true, mfaVerifiedAt: expect.any(Date) }
-		})
-		expect(store.consumeTotpCounter).not.toHaveBeenCalled()
-		expect(verificationTokenAdapter.consumeByToken).not.toHaveBeenCalled()
-		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
-		expect(sessionAdapter.setSessionCookie).toHaveBeenCalledWith(cookies, session)
-		expect(cookies.get('goobits_mfa_login')).toBeNull()
-	})
-
 	it('rotates the session after step-up while preserving primary-authentication time', async () => {
 		const primaryAuthenticatedAt = new Date('2026-07-15T10:00:00.000Z')
-		const store = createStore()
+		const store = createMfaStore()
 		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
-		const sessionAdapter = {
-			createSession: vi.fn(async (userId: string, metadata = {}) => ({
-				id: 'replacement-session',
-				userId,
-				expiresAt: new Date(Date.now() + 60_000),
-				...metadata
-			})),
-			invalidateSession: vi.fn(async () => undefined),
-			setSessionCookie: vi.fn()
-		}
+		const sessionAdapter = createRotatingSessionAdapter()
 		const handler = createMfaStepUpHandler({
 			getUserId: () => 'u1',
 			store,
@@ -536,18 +322,9 @@ describe('MFA handlers', () => {
 
 	it('rotates the session after enrollment activation', async () => {
 		const primaryAuthenticatedAt = new Date('2026-07-15T10:00:00.000Z')
-		const store = createStore()
+		const store = createMfaStore()
 		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
-		const sessionAdapter = {
-			createSession: vi.fn(async (userId: string, metadata = {}) => ({
-				id: 'replacement-session',
-				userId,
-				expiresAt: new Date(Date.now() + 60_000),
-				...metadata
-			})),
-			invalidateSession: vi.fn(async () => undefined),
-			setSessionCookie: vi.fn()
-		}
+		const sessionAdapter = createRotatingSessionAdapter()
 		const handler = createMfaVerifyHandler({
 			getUserId: () => 'u1',
 			store,

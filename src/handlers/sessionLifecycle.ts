@@ -3,11 +3,8 @@ import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionE
 import type { AuthHooks, OnLoginMode, RequestEventLike } from '../types/auth.ts'
 import type { SessionMetadata, User } from '../types/core.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
-import {
-	beginMfaLoginChallenge,
-	type MfaLoginChallengeResponse,
-	type MfaLoginConfig
-} from './mfa.ts'
+import { beginMfaLoginChallenge, type MfaLoginChallengeResponse } from './mfaLogin.ts'
+import type { MfaLoginConfig } from './_mfaTypes.ts'
 
 type SessionLoginAdapter = Pick<SessionAdapter, 'createSession'> &
 	Partial<Pick<SessionAdapter, 'setSessionCookie'>>

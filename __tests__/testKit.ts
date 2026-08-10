@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { MfaLoginConfig } from '../src/handlers/mfa.ts'
+import type { MfaLoginConfig, MfaStore } from '../src/handlers/_mfaTypes.ts'
 import type { RequestEventLike } from '../src/types/auth.ts'
 
 export const TEST_CSRF_SECRET = 'auth-test-csrf-secret-that-is-at-least-32-bytes'
@@ -80,9 +80,9 @@ export async function captureRejected<T>(promise: Promise<unknown>): Promise<T> 
 	}
 }
 
-/** Builds the shared enabled-MFA fixture used by login lifecycle tests. */
-export function createMfaLoginTestConfig(options: { challengeRedirect?: string } = {}) {
-	const store = {
+/** Builds the shared adapter-complete MFA store used by handler tests. */
+export function createMfaStore(overrides: Partial<MfaStore> = {}): MfaStore {
+	return {
 		activateEnrollment: vi.fn(async () => true),
 		beginEnrollment: vi.fn(async () => true),
 		consumeBackupCode: vi.fn(async () => true),
@@ -91,11 +91,17 @@ export function createMfaLoginTestConfig(options: { challengeRedirect?: string }
 		getBackupCodes: vi.fn(async () => []),
 		getSecret: vi.fn(async () => 'SECRET'),
 		getStatus: vi.fn(async () => ({
+			backupCodeCount: 8,
 			enabled: true,
-			enabledAt: new Date(),
-			backupCodeCount: 8
-		}))
+			enabledAt: new Date()
+		})),
+		...overrides
 	}
+}
+
+/** Builds the shared enabled-MFA fixture used by login lifecycle tests. */
+export function createMfaLoginTestConfig(options: { challengeRedirect?: string } = {}) {
+	const store = createMfaStore()
 	const replaceForUserAndType = vi.fn(async () => undefined)
 	const verificationTokenAdapter = {
 		replaceForUserAndType,

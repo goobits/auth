@@ -9,10 +9,11 @@ import type { SessionMetadata, User } from '../types/index.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { readRequestFormData } from '../utils/http.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
-import { beginMfaLoginChallenge, type MfaLoginConfig } from './mfa.ts'
-import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
+import { beginMfaLoginChallenge } from './mfaLogin.ts'
+import type { MfaLoginConfig } from './_mfaTypes.ts'
+import type { HandlerRateLimitConfig } from './rateLimitKey.ts'
 import {
-	createStandaloneSecurityBoundaryValidator,
+	createStandaloneSecurityGate,
 	type StandaloneSecurityBoundary
 } from './_standaloneSecurity.ts'
 
@@ -80,21 +81,13 @@ export function createSigninHandler(
 		logger?: Logger
 	} & StandaloneSecurityBoundary
 ) {
-	const validateRequestBoundary = createStandaloneSecurityBoundaryValidator('createSigninHandler', {
-		hasCsrf: typeof config.csrf?.validate === 'function',
-		hasRateLimit: typeof config.rateLimit?.check === 'function',
-		...(config.validateExternalSecurityBoundary
-			? { validateExternalSecurityBoundary: config.validateExternalSecurityBoundary }
-			: {})
-	})
+	const validateRequestSecurity = createStandaloneSecurityGate('createSigninHandler', config)
 	const {
 		credentialsProvider,
 		passwordCredentialAdapter,
 		sessionAdapter,
 		onSignin,
 		authorizeSignin,
-		csrf,
-		rateLimit,
 		redirectTo = '/',
 		sanitizeUser = defaultSanitizeUser,
 		fields,
@@ -108,29 +101,8 @@ export function createSigninHandler(
 	const log = resolveLogger(logger)
 
 	return async (event: RequestEventLike) => {
-		if (!(await validateRequestBoundary(event))) {
-			return { error: 'Invalid security boundary', success: false }
-		}
-		if (csrf?.validate) {
-			const valid = await csrf.validate(event)
-			if (!valid) {
-				return {
-					error: csrf.errorMessage || 'Invalid CSRF token',
-					success: false
-				}
-			}
-		}
-
-		if (rateLimit?.check) {
-			const key = resolveHandlerRateLimitKey(event, rateLimit)
-			const result = await rateLimit.check(key)
-			if (!result?.allowed) {
-				return {
-					error: 'Too many attempts. Try again later.',
-					success: false
-				}
-			}
-		}
+		const securityFailure = await validateRequestSecurity(event)
+		if (securityFailure) return securityFailure
 
 		const formData = await readRequestFormData(event.request)
 		const identifierFieldName = fields?.identifier ?? identifierField ?? fields?.email ?? 'email'
