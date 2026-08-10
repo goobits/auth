@@ -249,7 +249,7 @@ export function resolveSecurity(config: AuthConfig): ResolvedSecurity {
 			},
 			'webauthn.login.options': {
 				csrf: merged.csrf?.mode ?? 'optional',
-				rateLimitWindows: flowWindows('login')
+				rateLimitWindows: flowWindows('passkey-options')
 			},
 			'webauthn.login.verify': {
 				csrf: merged.csrf?.mode ?? 'optional',

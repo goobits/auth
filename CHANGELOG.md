@@ -16,6 +16,9 @@
 
 ### 🔒 Security
 
+- 🔑 Conditional passkey option creation now uses a separate bounded challenge
+  budget, so passive browser autofill does not consume the stricter credential
+  verification attempt budget.
 - 🎨 `OAuthProviderButton` now ships its Google and Apple marks and uses local
   system fonts, eliminating third-party image and font requests during render.
 - 🧭 OAuth callbacks now distinguish state-bound cancellation, malformed input,
