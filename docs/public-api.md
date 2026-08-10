@@ -354,6 +354,9 @@ uses that one mutation path and does not invoke the adapter/hook path in
 parallel. Verification callbacks preserve the existing forms and error
 messages, while allowing the application to serialize proof consumption,
 factor state, session revocation, and audit persistence.
+Custom mutation ports can call `consumeMfaCredentialProof()` from
+`@goobits/auth/handlers` so TOTP counters and backup codes retain the same
+single-use semantics without duplicating proof dispatch.
 
 Passkey registration uses the same callback with the
 `webauthn.register` action. Registration challenges are bound to the

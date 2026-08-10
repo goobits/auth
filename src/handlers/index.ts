@@ -37,6 +37,7 @@ export {
 	type MfaLoginDenial,
 	type MfaStore
 } from './mfa.ts'
+export { consumeMfaCredentialProof } from './_mfaCredential.ts'
 
 // Magic link handlers
 export { createMagicLinkRequestHandler, createMagicLinkVerifyHandler } from './magicLink.ts'
