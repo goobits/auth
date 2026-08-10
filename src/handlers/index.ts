@@ -31,7 +31,10 @@ export {
 	createMfaVerifyHandler,
 	beginMfaLoginChallenge,
 	type MfaConfig,
+	type MfaLoginAttemptContext,
+	type MfaLoginAttemptPolicy,
 	type MfaLoginConfig,
+	type MfaLoginDenial,
 	type MfaStore
 } from './mfa.ts'
 

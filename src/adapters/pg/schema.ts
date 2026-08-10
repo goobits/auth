@@ -63,9 +63,12 @@ CREATE TABLE IF NOT EXISTS auth_mfa_factors (
 	user_id TEXT PRIMARY KEY REFERENCES auth_users(id) ON DELETE CASCADE,
 	secret TEXT NOT NULL,
 	enabled_at TIMESTAMPTZ,
+	last_used_counter BIGINT,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE auth_mfa_factors ADD COLUMN IF NOT EXISTS last_used_counter BIGINT;
 
 CREATE TABLE IF NOT EXISTS auth_mfa_backup_codes (
 	user_id TEXT NOT NULL REFERENCES auth_users(id) ON DELETE CASCADE,

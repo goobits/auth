@@ -37,11 +37,12 @@ export class PgMfaAdapter extends MfaAdapter {
 			await this.#db.query<{ user_id: string }>(
 				`
 			WITH factor AS (
-				INSERT INTO auth_mfa_factors (user_id, secret, enabled_at)
-				VALUES ($1, $2, NULL)
+				INSERT INTO auth_mfa_factors (user_id, secret, enabled_at, last_used_counter)
+				VALUES ($1, $2, NULL, NULL)
 				ON CONFLICT (user_id) DO UPDATE SET
 					secret = EXCLUDED.secret,
 					enabled_at = NULL,
+					last_used_counter = NULL,
 					updated_at = now()
 				WHERE auth_mfa_factors.enabled_at IS NULL
 				RETURNING user_id
@@ -78,11 +79,12 @@ export class PgMfaAdapter extends MfaAdapter {
 		return secret
 	}
 
-	async activateEnrollment(userId: string): Promise<boolean> {
+	async activateEnrollment(userId: string, counter: number): Promise<boolean> {
+		this.assertTotpCounter(counter)
 		const rows = (
 			await this.#db.query<{ user_id: string }>(
 				`UPDATE auth_mfa_factors AS factor
-				 SET enabled_at = now(), updated_at = now()
+				 SET enabled_at = now(), last_used_counter = $2, updated_at = now()
 				 WHERE factor.user_id = $1
 				   AND factor.enabled_at IS NULL
 				   AND EXISTS (
@@ -90,7 +92,7 @@ export class PgMfaAdapter extends MfaAdapter {
 				     WHERE backup.user_id = factor.user_id
 				   )
 				 RETURNING factor.user_id`,
-				[userId]
+				[userId, counter]
 			)
 		).rows
 		return rows.length === 1
@@ -121,6 +123,22 @@ export class PgMfaAdapter extends MfaAdapter {
 			await this.#db.query<{ code_hash: string }>(
 				'DELETE FROM auth_mfa_backup_codes WHERE user_id = $1 AND code_hash = $2 RETURNING code_hash',
 				[userId, hash]
+			)
+		).rows
+		return rows.length === 1
+	}
+
+	async consumeTotpCounter(userId: string, counter: number): Promise<boolean> {
+		this.assertTotpCounter(counter)
+		const rows = (
+			await this.#db.query<{ user_id: string }>(
+				`UPDATE auth_mfa_factors
+				 SET last_used_counter = $2, updated_at = now()
+				 WHERE user_id = $1
+				   AND enabled_at IS NOT NULL
+				   AND (last_used_counter IS NULL OR last_used_counter < $2)
+				 RETURNING user_id`,
+				[userId, counter]
 			)
 		).rows
 		return rows.length === 1

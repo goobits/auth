@@ -213,7 +213,10 @@ describe('memory auth adapters', () => {
 		const adapter = new MemoryMfaAdapter()
 
 		await expect(adapter.beginEnrollment('user-1', 'secret-1', ['hash-1'])).resolves.toBe(true)
-		await expect(adapter.activateEnrollment('user-1')).resolves.toBe(true)
+		await expect(adapter.activateEnrollment('user-1', 100)).resolves.toBe(true)
+		await expect(adapter.consumeTotpCounter('user-1', 101)).resolves.toBe(true)
+		await expect(adapter.consumeTotpCounter('user-1', 101)).resolves.toBe(false)
+		await expect(adapter.consumeTotpCounter('user-1', 100)).resolves.toBe(false)
 		await expect(adapter.beginEnrollment('user-1', 'secret-2', ['hash-2'])).resolves.toBe(false)
 		await expect(adapter.getSecret('user-1')).resolves.toBe('secret-1')
 		await expect(adapter.consumeBackupCode('user-1', 'hash-1')).resolves.toBe(true)

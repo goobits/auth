@@ -11,6 +11,7 @@ type D1MfaAdapterOptions = {
 		userId: string
 		secret: string
 		enabledAt: string
+		lastUsedCounter: string
 		updatedAt: string | null
 	}>
 	backupCodeColumns?: Partial<{
@@ -37,6 +38,7 @@ export class D1MfaAdapter extends MfaAdapter {
 		userId: string
 		secret: string
 		enabledAt: string
+		lastUsedCounter: string
 		updatedAt: string | null
 	}
 	private readonly backupCodeColumns: {
@@ -64,6 +66,7 @@ export class D1MfaAdapter extends MfaAdapter {
 			userId: options.factorColumns?.userId ?? 'user_id',
 			secret: options.factorColumns?.secret ?? 'secret',
 			enabledAt: options.factorColumns?.enabledAt ?? 'enabled_at',
+			lastUsedCounter: options.factorColumns?.lastUsedCounter ?? 'last_used_counter',
 			updatedAt:
 				options.factorColumns?.updatedAt === null
 					? null
@@ -80,6 +83,7 @@ export class D1MfaAdapter extends MfaAdapter {
 			factorUserId: this.factorColumns.userId,
 			factorSecret: this.factorColumns.secret,
 			factorEnabledAt: this.factorColumns.enabledAt,
+			factorLastUsedCounter: this.factorColumns.lastUsedCounter,
 			factorUpdatedAt: this.factorColumns.updatedAt,
 			backupUserId: this.backupCodeColumns.userId,
 			backupHash: this.backupCodeColumns.hash,
@@ -98,11 +102,12 @@ export class D1MfaAdapter extends MfaAdapter {
 			: ''
 		const factor = this.db
 			.prepare(
-				`INSERT INTO ${this.factorsTable} (${this.factorColumns.userId}, ${this.factorColumns.secret}, ${this.factorColumns.enabledAt})
-				 VALUES (?, ?, NULL)
+				`INSERT INTO ${this.factorsTable} (${this.factorColumns.userId}, ${this.factorColumns.secret}, ${this.factorColumns.enabledAt}, ${this.factorColumns.lastUsedCounter})
+				 VALUES (?, ?, NULL, NULL)
 				 ON CONFLICT (${this.factorColumns.userId}) DO UPDATE SET
 				   ${this.factorColumns.secret} = excluded.${this.factorColumns.secret},
-				   ${this.factorColumns.enabledAt} = NULL${updateTimestamp}
+				   ${this.factorColumns.enabledAt} = NULL,
+				   ${this.factorColumns.lastUsedCounter} = NULL${updateTimestamp}
 				 WHERE ${this.factorsTable}.${this.factorColumns.enabledAt} IS NULL
 				 RETURNING ${this.factorColumns.userId} AS user_id`
 			)
@@ -148,13 +153,15 @@ export class D1MfaAdapter extends MfaAdapter {
 		return secret
 	}
 
-	async activateEnrollment(userId: string): Promise<boolean> {
+	async activateEnrollment(userId: string, counter: number): Promise<boolean> {
+		this.assertTotpCounter(counter)
 		const updateTimestamp = this.factorColumns.updatedAt
 			? `, ${this.factorColumns.updatedAt} = CURRENT_TIMESTAMP`
 			: ''
 		const row = await this.db
 			.prepare(
-				`UPDATE ${this.factorsTable} SET ${this.factorColumns.enabledAt} = CURRENT_TIMESTAMP${updateTimestamp}
+				`UPDATE ${this.factorsTable} SET ${this.factorColumns.enabledAt} = CURRENT_TIMESTAMP,
+				   ${this.factorColumns.lastUsedCounter} = ?${updateTimestamp}
 				 WHERE ${this.factorColumns.userId} = ?
 				   AND ${this.factorColumns.enabledAt} IS NULL
 				   AND EXISTS (
@@ -163,7 +170,7 @@ export class D1MfaAdapter extends MfaAdapter {
 				   )
 				 RETURNING ${this.factorColumns.userId} AS user_id`
 			)
-			.bind(userId, userId)
+			.bind(counter, userId, userId)
 			.first()
 		return String(row?.['user_id'] ?? '') === userId
 	}
@@ -207,6 +214,25 @@ export class D1MfaAdapter extends MfaAdapter {
 			.bind(userId, hash)
 			.first()
 		return row?.['code_hash'] === hash
+	}
+
+	async consumeTotpCounter(userId: string, counter: number): Promise<boolean> {
+		this.assertTotpCounter(counter)
+		const updateTimestamp = this.factorColumns.updatedAt
+			? `, ${this.factorColumns.updatedAt} = CURRENT_TIMESTAMP`
+			: ''
+		const row = await this.db
+			.prepare(
+				`UPDATE ${this.factorsTable}
+				 SET ${this.factorColumns.lastUsedCounter} = ?${updateTimestamp}
+				 WHERE ${this.factorColumns.userId} = ?
+				   AND ${this.factorColumns.enabledAt} IS NOT NULL
+				   AND (${this.factorColumns.lastUsedCounter} IS NULL OR ${this.factorColumns.lastUsedCounter} < ?)
+				 RETURNING ${this.factorColumns.userId} AS user_id`
+			)
+			.bind(counter, userId, counter)
+			.first()
+		return String(row?.['user_id'] ?? '') === userId
 	}
 
 	async getStatus(userId: string): Promise<MfaStatus> {

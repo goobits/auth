@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('../../src/mfa/totp.ts', () => ({
 	generateSecret: vi.fn(() => 'SECRET'),
 	createOtpAuthURL: vi.fn(() => 'otpauth://totp/test'),
-	verifyTOTP: vi.fn()
+	matchTOTP: vi.fn()
 }))
 vi.mock('../../src/mfa/backupCodes.ts', () => ({
 	generateBackupCodes: vi.fn(() => ['code1', 'code2']),
@@ -42,6 +42,7 @@ function createStore(overrides: Partial<MfaStore> = {}): MfaStore {
 		activateEnrollment: vi.fn(async () => true),
 		beginEnrollment: vi.fn(async () => true),
 		consumeBackupCode: vi.fn(async () => true),
+		consumeTotpCounter: vi.fn(async () => true),
 		disableMfa: vi.fn(async () => true),
 		getBackupCodes: vi.fn(async () => []),
 		getSecret: vi.fn(async () => 'SECRET'),
@@ -55,7 +56,7 @@ function createStore(overrides: Partial<MfaStore> = {}): MfaStore {
 }
 
 beforeEach(() => {
-	vi.mocked(totp.verifyTOTP).mockReset()
+	vi.mocked(totp.matchTOTP).mockReset()
 	vi.mocked(backup.verifyBackupCode).mockReset()
 	authorizeSecurityChange.mockClear()
 	authorizeSecurityChange.mockResolvedValue(true)
@@ -126,7 +127,7 @@ describe('MFA handlers', () => {
 
 	it('verify rejects invalid token', async () => {
 		const store = createStore()
-		vi.mocked(totp.verifyTOTP).mockResolvedValue(false)
+		vi.mocked(totp.matchTOTP).mockResolvedValue(null)
 		const handler = createMfaVerifyHandler({ getUserId: () => 'u1', store })
 		const result = await handler(
 			createEvent({ locals: { userId: 'u1' }, form: { token: '000000' } })
@@ -137,7 +138,7 @@ describe('MFA handlers', () => {
 
 	it('verify fails closed when a pending enrollment loses the activation race', async () => {
 		const store = createStore({ activateEnrollment: vi.fn(async () => false) })
-		vi.mocked(totp.verifyTOTP).mockResolvedValue(true)
+		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
 		const handler = createMfaVerifyHandler({ getUserId: () => 'u1', store })
 
 		await expect(
@@ -149,7 +150,7 @@ describe('MFA handlers', () => {
 		const store = createStore()
 		const onEnabled = vi.fn()
 		const onDisabled = vi.fn()
-		vi.mocked(totp.verifyTOTP).mockResolvedValue(true)
+		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
 		const verifyEvent = createEvent({
 			locals: { userId: 'u1' },
 			form: { token: '123456' }
@@ -202,7 +203,7 @@ describe('MFA handlers', () => {
 
 	it('disable requires step-up and an active factor code', async () => {
 		const store = createStore()
-		vi.mocked(totp.verifyTOTP).mockResolvedValue(true)
+		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
 		const consumingAuthorization = vi.fn(async ({ request }: { request: Request }) => {
 			await request.formData()
 			return true
@@ -237,7 +238,7 @@ describe('MFA handlers', () => {
 		})
 		expect(store.getSecret).not.toHaveBeenCalled()
 
-		vi.mocked(totp.verifyTOTP).mockResolvedValueOnce(false)
+		vi.mocked(totp.matchTOTP).mockResolvedValueOnce(null)
 		await expect(
 			handler(createEvent({ locals: { userId: 'u1' }, form: { token: '000000' } }))
 		).resolves.toEqual({ success: false, error: 'Invalid authentication code' })
@@ -347,7 +348,7 @@ describe('MFA handlers', () => {
 			config: { store, verificationTokenAdapter, secureCookies: false }
 		})
 
-		vi.mocked(totp.verifyTOTP).mockResolvedValue(true)
+		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
 		const sessionAdapter = {
 			createSession: vi.fn(async () => ({
 				id: 'session-1',
@@ -355,11 +356,19 @@ describe('MFA handlers', () => {
 			})),
 			setSessionCookie: vi.fn()
 		}
+		const beforeVerify = vi.fn()
+		const onSuccess = vi.fn()
+		const onVerified = vi.fn(async () => {
+			expect(store.consumeTotpCounter).not.toHaveBeenCalled()
+		})
 		const verify = createMfaLoginVerifyHandler({
 			store,
 			verificationTokenAdapter,
 			sessionAdapter,
-			secureCookies: false
+			secureCookies: false,
+			validateExternalSecurityBoundary: async () => true,
+			attemptPolicy: { beforeVerify, onSuccess },
+			onVerified
 		})
 		const result = await verify(
 			createRequestEvent({ cookies, method: 'POST', form: { token: '123456' } })
@@ -371,6 +380,12 @@ describe('MFA handlers', () => {
 			mfaVerifiedAt: expect.any(Date)
 		})
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
+		expect(store.consumeTotpCounter).toHaveBeenCalledWith('u1', 100)
+		expect(beforeVerify).toHaveBeenCalledWith(
+			expect.objectContaining({ challengeId: 'challenge-1', userId: 'u1' })
+		)
+		expect(onVerified).toHaveBeenCalledTimes(1)
+		expect(onSuccess).toHaveBeenCalledTimes(1)
 		expect(cookies.get('goobits_mfa_login')).toBeNull()
 
 		const replay = await verify(
@@ -380,10 +395,20 @@ describe('MFA handlers', () => {
 		expect(sessionAdapter.createSession).toHaveBeenCalledTimes(1)
 	})
 
+	it('requires an explicit standalone request-security boundary', () => {
+		expect(() =>
+			createMfaLoginVerifyHandler({
+				store: createStore(),
+				verificationTokenAdapter: {} as never,
+				sessionAdapter: {} as never
+			})
+		).toThrow(/CSRF and rate-limit guards, or validateExternalSecurityBoundary/)
+	})
+
 	it('rotates the session after step-up while preserving primary-authentication time', async () => {
 		const primaryAuthenticatedAt = new Date('2026-07-15T10:00:00.000Z')
 		const store = createStore()
-		vi.mocked(totp.verifyTOTP).mockResolvedValue(true)
+		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
 		const sessionAdapter = {
 			createSession: vi.fn(async (userId: string, metadata = {}) => ({
 				id: 'replacement-session',
@@ -435,7 +460,7 @@ describe('MFA handlers', () => {
 	it('rotates the session after enrollment activation', async () => {
 		const primaryAuthenticatedAt = new Date('2026-07-15T10:00:00.000Z')
 		const store = createStore()
-		vi.mocked(totp.verifyTOTP).mockResolvedValue(true)
+		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
 		const sessionAdapter = {
 			createSession: vi.fn(async (userId: string, metadata = {}) => ({
 				id: 'replacement-session',
@@ -468,7 +493,7 @@ describe('MFA handlers', () => {
 			success: true,
 			mfaVerifiedAt: expect.any(Date)
 		})
-		expect(store.activateEnrollment).toHaveBeenCalledWith('u1')
+		expect(store.activateEnrollment).toHaveBeenCalledWith('u1', 100)
 		expect(sessionAdapter.createSession).toHaveBeenCalledWith(
 			'u1',
 			expect.objectContaining({

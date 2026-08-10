@@ -134,8 +134,13 @@ export async function generateTOTP({
 	return otp
 }
 
-/** Verifies a TOTP token within a configurable time window. */
-export async function verifyTOTP({
+export type TotpMatch = {
+	/** RFC 6238 moving-factor counter matched by the submitted token. */
+	counter: number
+}
+
+/** Returns the moving-factor counter matched within a configurable time window. */
+export async function matchTOTP({
 	secret = '',
 	token = '',
 	digits = 6,
@@ -149,18 +154,26 @@ export async function verifyTOTP({
 	period?: number
 	window?: number
 	time?: number
-} = {}): Promise<boolean> {
-	if (!secret || !token) return false
+} = {}): Promise<TotpMatch | null> {
+	if (!secret || !token) return null
 	if (!Number.isSafeInteger(window) || window < 0 || window > MAX_VERIFICATION_WINDOW) {
 		throw new RangeError(`TOTP window must be an integer from 0 to ${MAX_VERIFICATION_WINDOW}`)
 	}
 	assertTotpParameters(digits, period, time)
-	if (token.length !== digits || !/^\d+$/u.test(token)) return false
-	let valid = false
+	if (token.length !== digits || !/^\d+$/u.test(token)) return null
+	let matchedCounter: number | null = null
 	for (let errorWindow = -window; errorWindow <= window; errorWindow += 1) {
 		const t = time + errorWindow * period * 1000
 		const candidate = await generateTOTP({ secret, time: t, digits, period })
-		valid = constantTimeEqual(candidate, token) || valid
+		if (constantTimeEqual(candidate, token)) {
+			const counter = Math.floor(t / 1000 / period)
+			if (matchedCounter === null || counter > matchedCounter) matchedCounter = counter
+		}
 	}
-	return valid
+	return matchedCounter === null ? null : { counter: matchedCounter }
+}
+
+/** Verifies a TOTP token within a configurable time window. */
+export async function verifyTOTP(input: Parameters<typeof matchTOTP>[0] = {}): Promise<boolean> {
+	return (await matchTOTP(input)) !== null
 }

@@ -10,6 +10,12 @@ export type MfaSecretCodec = {
  * Stores TOTP secrets and backup-code hashes for MFA enrollment.
  */
 export abstract class MfaAdapter {
+	protected assertTotpCounter(counter: number): void {
+		if (!Number.isSafeInteger(counter) || counter < 0) {
+			throw new RangeError('TOTP counter must be a non-negative safe integer')
+		}
+	}
+
 	/**
 	 * Atomically begin or replace a pending MFA enrollment.
 	 * Active factors must not be replaced.
@@ -32,7 +38,7 @@ export abstract class MfaAdapter {
 	 * @param userId User identifier.
 	 * @returns Whether a complete pending enrollment was activated.
 	 */
-	abstract activateEnrollment(userId: string): Promise<boolean>
+	abstract activateEnrollment(userId: string, counter: number): Promise<boolean>
 
 	/**
 	 * Disable MFA and remove related TOTP material.
@@ -55,6 +61,14 @@ export abstract class MfaAdapter {
 	 * @returns Whether the unused code was consumed.
 	 */
 	abstract consumeBackupCode(userId: string, hash: string): Promise<boolean>
+
+	/**
+	 * Atomically accept a TOTP counter only when it is newer than the last accepted counter.
+	 * @param userId User identifier.
+	 * @param counter RFC 6238 moving-factor counter matched by the token.
+	 * @returns Whether the counter was accepted for an enabled factor.
+	 */
+	abstract consumeTotpCounter(userId: string, counter: number): Promise<boolean>
 
 	/**
 	 * Return MFA enrollment status.
