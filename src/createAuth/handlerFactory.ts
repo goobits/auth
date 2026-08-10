@@ -18,7 +18,11 @@ import {
 import { ensureSessionAfterLogin } from '../handlers/sessionLifecycle.ts'
 import { rotateSessionAssurance } from '../handlers/_assuredSession.ts'
 import { AuthPrincipalResolutionError } from '../errors/AuthPrincipalResolutionError.ts'
-import { createSessionListHandler, createSessionRevokeHandler } from '../handlers/sessions.ts'
+import {
+	createCurrentSessionHandler,
+	createSessionListHandler,
+	createSessionRevokeHandler
+} from '../handlers/sessions.ts'
 import {
 	createOAuthIdentityListHandler,
 	createOAuthIdentityUnlinkHandler
@@ -371,6 +375,7 @@ export function createHandlers(
 	}
 
 	const handlers: AuthHandlers = {
+		currentSession: createCurrentSessionHandler({ isAuthenticated, sanitizeUser }),
 		logout: logoutHandler,
 		hooks: handleHooks
 	}
@@ -581,6 +586,10 @@ export function buildRoutes(handlers: AuthHandlers): AuthRoutes {
 			return { GET: handlers.callback, POST: handlers.callback }
 		},
 		logout: () => ({ POST: handlers.logout }),
+		currentSession: () => {
+			if (!handlers.currentSession) throw new Error('Current session handler not configured')
+			return { GET: handlers.currentSession }
+		},
 		magicLink: () => {
 			if (!handlers.magicLink) throw new Error('Magic link handlers not configured')
 			return { POST: handlers.magicLink.request }

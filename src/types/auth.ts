@@ -468,6 +468,7 @@ export type AuthHandlers = {
 	login?: AuthRequestHandler
 	callback?: AuthRequestHandler
 	logout: AuthRequestHandler
+	currentSession?: AuthRequestHandler
 	hooks: (input: {
 		event: RequestEventLike
 		resolve: (e: RequestEventLike) => Promise<Response>
@@ -509,6 +510,7 @@ export type AuthRoutes = {
 	login: () => { GET: AuthRequestHandler }
 	callback: () => { GET: AuthRequestHandler; POST: AuthRequestHandler }
 	logout: () => { POST: AuthRequestHandler }
+	currentSession: () => { GET: AuthRequestHandler }
 	magicLink: () => { POST: AuthRequestHandler }
 	magicLinkVerify: () => { GET: AuthRequestHandler; POST: AuthRequestHandler }
 	passkeyRegisterOptions: () => { POST: AuthRequestHandler }
