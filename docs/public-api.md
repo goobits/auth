@@ -316,6 +316,9 @@ const auth = new GoobitsAuth({
 An enabled factor always defers session creation. `isRequired(user)` can also
 require enrollment by application policy. Passkey authentication already
 provides phishing-resistant MFA assurance and therefore completes directly.
+Managed login MFA owns session creation and cannot be combined with
+`hooks.onLoginMode: 'manual'`; manual integrations must use the standalone MFA
+challenge before exposing their application-owned session.
 Successful challenge verification returns the validated original
 `redirectTo`, allowing the consuming page action to continue without placing
 OAuth credentials in cookies or verification-token metadata.

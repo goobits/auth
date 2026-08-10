@@ -155,6 +155,24 @@ describe('GoobitsAuth', () => {
 		).toThrow('mfa.login requires adapters.verificationToken')
 	})
 
+	it('rejects manual session creation when managed login MFA is enabled', () => {
+		expect(
+			() =>
+				new GoobitsAuth({
+					adapter: {
+						session: createSessionAdapter({ session: null, user: null }),
+						mfa: {},
+						verificationToken: {}
+					},
+					mfa: {
+						authorizeSecurityChange: async () => true,
+						login: {}
+					},
+					hooks: { onLoginMode: 'manual' }
+				} as never)
+		).toThrow('mfa.login requires managed session creation')
+	})
+
 	it('exposes named route factories from the core auth instance', () => {
 		const auth = new GoobitsAuth({
 			adapter: { session: createSessionAdapter({ session: null, user: null }) }

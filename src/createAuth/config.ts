@@ -42,6 +42,9 @@ export function validateConfig(config: AuthConfig): void {
 	if (config.mfa?.login && !config.adapters.verificationToken) {
 		throw new Error('createAuth mfa.login requires adapters.verificationToken')
 	}
+	if (config.mfa?.login && config.hooks?.onLoginMode === 'manual') {
+		throw new Error('createAuth mfa.login requires managed session creation')
+	}
 	if (config.oauth && (!config.providers || Object.keys(config.providers).length === 0)) {
 		throw new Error('createAuth oauth requires at least one OAuth provider')
 	}

@@ -16,6 +16,8 @@
   single-use MFA login gate as password authentication; no session is exposed
   until enabled TOTP or a backup code is verified, while passkey login retains
   explicit MFA assurance.
+- 🧱 Managed login MFA now rejects manual session mode at startup so application
+  hooks cannot expose a session before the second-factor gate executes.
 
 ## [0.6.0] - 2026-08-03
 
