@@ -56,6 +56,14 @@ export type MfaCredentialProof =
 	| { method: 'totp'; counter: number }
 	| { method: 'backup-code'; hash: string }
 
+/** Inputs for atomically consuming an MFA login challenge, proof, and session write. */
+export type MfaLoginCompletionInput = {
+	challengeId: string
+	userId: string
+	proof: MfaCredentialProof
+	sessionMetadata: SessionMetadata
+}
+
 /** Result of an application-owned MFA factor mutation. */
 export type MfaCredentialMutationOutcome = CredentialMutationOutcome | 'invalid-proof'
 
@@ -289,6 +297,12 @@ export type AuthorizeSecurityChange = (input: {
 /** Shared policy for deferring primary login until TOTP or backup-code verification. */
 export type MfaLoginPolicy = {
 	isRequired?: (user: User) => boolean | Promise<boolean>
+	/**
+	 * Optional application transaction port. It must consume the challenge and
+	 * proof and create the returned session atomically, returning null when any
+	 * precondition no longer holds.
+	 */
+	completeLogin?: (input: MfaLoginCompletionInput) => Promise<Session | null>
 	challengeCookieName?: string
 	challengeExpiresInMs?: number
 	secureCookies?: boolean

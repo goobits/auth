@@ -426,6 +426,62 @@ describe('MFA handlers', () => {
 		).toThrow(/CSRF and rate-limit guards, or validateExternalSecurityBoundary/)
 	})
 
+	it('delegates challenge, proof, and session persistence to one optional transaction port', async () => {
+		const cookies = createCookies({ goobits_mfa_login: 'challenge-token' })
+		const record = {
+			token: {
+				id: 'challenge-1',
+				token: 'stored-token-hash',
+				type: 'mfa_login',
+				expiresAt: new Date(Date.now() + 60_000),
+				metadata: { rememberMe: true, redirectTo: '/library' }
+			},
+			user: { id: 'u1', email: 'user@example.com' }
+		}
+		const verificationTokenAdapter = {
+			findByToken: vi.fn(async () => record),
+			consumeByToken: vi.fn(),
+			deleteById: vi.fn(),
+			deleteByUserAndType: vi.fn(),
+			create: vi.fn(),
+			replaceForUserAndType: vi.fn()
+		}
+		const store = createStore()
+		const session = {
+			id: 'session-1',
+			userId: 'u1',
+			expiresAt: new Date(Date.now() + 60_000)
+		}
+		const completeLogin = vi.fn(async () => session)
+		const sessionAdapter = {
+			createSession: vi.fn(),
+			setSessionCookie: vi.fn()
+		}
+		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
+		const verify = createMfaLoginVerifyHandler({
+			store,
+			verificationTokenAdapter,
+			sessionAdapter,
+			completeLogin,
+			validateExternalSecurityBoundary: async () => true
+		})
+
+		await expect(
+			verify(createRequestEvent({ cookies, method: 'POST', form: { token: '123456' } }))
+		).resolves.toMatchObject({ success: true, redirectTo: '/library' })
+		expect(completeLogin).toHaveBeenCalledWith({
+			challengeId: 'challenge-1',
+			userId: 'u1',
+			proof: { method: 'totp', counter: 100 },
+			sessionMetadata: { rememberMe: true, mfaVerifiedAt: expect.any(Date) }
+		})
+		expect(store.consumeTotpCounter).not.toHaveBeenCalled()
+		expect(verificationTokenAdapter.consumeByToken).not.toHaveBeenCalled()
+		expect(sessionAdapter.createSession).not.toHaveBeenCalled()
+		expect(sessionAdapter.setSessionCookie).toHaveBeenCalledWith(cookies, session)
+		expect(cookies.get('goobits_mfa_login')).toBeNull()
+	})
+
 	it('rotates the session after step-up while preserving primary-authentication time', async () => {
 		const primaryAuthenticatedAt = new Date('2026-07-15T10:00:00.000Z')
 		const store = createStore()

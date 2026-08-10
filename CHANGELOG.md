@@ -37,6 +37,8 @@
 - 🧩 MFA activation and removal can use the existing application credential
   mutation port, allowing proof state, factors, sessions, and audit rows to
   commit together without a duplicate hook path.
+- 🔗 MFA login can use an optional `completeLogin` transaction port to consume
+  the challenge and one-time proof in the same commit that creates the session.
 
 ## [0.6.0] - 2026-08-03
 

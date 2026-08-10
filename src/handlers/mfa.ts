@@ -298,34 +298,56 @@ export function createMfaLoginVerifyHandler(
 		if (hookResult?.allowed === false) {
 			return deniedResponse(hookResult)
 		}
-		if (!(await consumeMfaCredentialProof(config.store, userId, proof))) {
-			await config.attemptPolicy?.onFailure?.({
-				...attemptContext,
-				reason: 'credential-already-used'
-			})
-			return { success: false, error: 'Invalid authentication code' }
-		}
-
-		const consumed = await consumeVerificationTokenRecord({
-			adapter: config.verificationTokenAdapter,
-			token: challenge,
-			type: VERIFICATION_TOKEN_TYPES.MFA_LOGIN
-		})
-		if (!consumed || userIdFromRecord(consumed.user) !== userId) {
-			return { success: false, error: 'Invalid or expired login challenge' }
-		}
-		const redirectTo = challengeRedirect(consumed.token.metadata)
-		const session = await config.sessionAdapter.createSession(userId, {
+		const completedSessionMetadata = {
 			...sessionMetadata,
 			mfaVerifiedAt: new Date()
-		})
+		}
+		let authenticatedUser = inspected.user
+		let redirectTo = challengeRedirect(inspected.token.metadata)
+		let session: Session | null
+
+		if (config.completeLogin) {
+			session = await config.completeLogin({
+				challengeId: inspected.token.id,
+				userId,
+				proof,
+				sessionMetadata: completedSessionMetadata
+			})
+			if (!session) {
+				await config.attemptPolicy?.onFailure?.({
+					...attemptContext,
+					reason: 'credential-already-used'
+				})
+				return { success: false, error: 'Invalid authentication code' }
+			}
+		} else {
+			if (!(await consumeMfaCredentialProof(config.store, userId, proof))) {
+				await config.attemptPolicy?.onFailure?.({
+					...attemptContext,
+					reason: 'credential-already-used'
+				})
+				return { success: false, error: 'Invalid authentication code' }
+			}
+
+			const consumed = await consumeVerificationTokenRecord({
+				adapter: config.verificationTokenAdapter,
+				token: challenge,
+				type: VERIFICATION_TOKEN_TYPES.MFA_LOGIN
+			})
+			if (!consumed || userIdFromRecord(consumed.user) !== userId) {
+				return { success: false, error: 'Invalid or expired login challenge' }
+			}
+			authenticatedUser = consumed.user
+			redirectTo = challengeRedirect(consumed.token.metadata)
+			session = await config.sessionAdapter.createSession(userId, completedSessionMetadata)
+		}
 		config.sessionAdapter.setSessionCookie(event.cookies, session)
 		event.cookies.delete(cookieName, { path: '/' })
 		await config.attemptPolicy?.onSuccess?.(attemptContext)
 
 		return {
 			success: true,
-			user: config.sanitizeUser ? config.sanitizeUser(consumed.user) : consumed.user,
+			user: config.sanitizeUser ? config.sanitizeUser(authenticatedUser) : authenticatedUser,
 			...(redirectTo ? { redirectTo } : {})
 		}
 	}
