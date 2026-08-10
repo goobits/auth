@@ -5,6 +5,8 @@ packages:
 blockExoticSubdeps: true
 engineStrict: true
 minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  - nanoid@3.3.18
 minimumReleaseAgeIgnoreMissingTime: false
 minimumReleaseAgeStrict: true
 
@@ -15,5 +17,6 @@ overrides:
   cookie: 0.7.2
   esbuild: 0.28.1
   immutable: ^4.3.9
+  nanoid: 3.3.18
   postcss: 8.5.23
   vite: 8.1.5
