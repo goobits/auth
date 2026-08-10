@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { createOtpAuthURL, generateSecret, generateTOTP, verifyTOTP } from '../../src/mfa/totp.ts'
+import {
+	createOtpAuthURL,
+	generateSecret,
+	generateTOTP,
+	matchTOTP,
+	verifyTOTP
+} from '../../src/mfa/totp.ts'
 
 describe('totp', () => {
 	it('generates and verifies token', async () => {
@@ -8,6 +14,9 @@ describe('totp', () => {
 		const token = await generateTOTP({ secret, time: 1700000000000 })
 		const ok = await verifyTOTP({ secret, token, time: 1700000000000 })
 		expect(ok).toBe(true)
+		await expect(matchTOTP({ secret, token, time: 1700000000000 })).resolves.toEqual({
+			counter: Math.floor(1700000000000 / 1000 / 30)
+		})
 	})
 
 	it('rejects wrong or missing tokens', async () => {
@@ -25,6 +34,9 @@ describe('totp', () => {
 		const token = await generateTOTP({ secret, time: 1700000000000 - 30_000 })
 
 		await expect(verifyTOTP({ secret, token, time: 1700000000000, window: 1 })).resolves.toBe(true)
+		await expect(matchTOTP({ secret, token, time: 1700000000000, window: 1 })).resolves.toEqual({
+			counter: Math.floor((1700000000000 - 30_000) / 1000 / 30)
+		})
 		await expect(verifyTOTP({ secret, token, time: 1700000000000, window: 0 })).resolves.toBe(false)
 	})
 

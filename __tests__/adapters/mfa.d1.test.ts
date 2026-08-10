@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createAesGcmMfaSecretCodec } from '../../src/adapters/mfa/aesGcmMfaSecretCodec.ts'
 import { D1MfaAdapter } from '../../src/adapters/mfa/D1MfaAdapter.ts'
 
-type Factor = { secret: string; enabledAt: string | null }
+type Factor = { secret: string; enabledAt: string | null; lastUsedCounter: number | null }
 type BackupCode = { userId: string; hash: string; createdAt: number }
 
 function createMockD1() {
@@ -17,7 +17,7 @@ function createMockD1() {
 			const [userId, secret] = args.map(String)
 			const current = factors.get(userId)
 			if (current?.enabledAt) return { results: [], meta: { changes: 0 } }
-			factors.set(userId, { secret, enabledAt: null })
+			factors.set(userId, { secret, enabledAt: null, lastUsedCounter: null })
 			return { results: [{ user_id: userId }], meta: { changes: 1 } }
 		}
 		if (
@@ -47,12 +47,27 @@ function createMockD1() {
 			return { results: factor ? [{ secret: factor.secret }] : [], meta: { changes: 0 } }
 		}
 		if (normalized.startsWith('UPDATE auth_mfa_factors SET enabled_at')) {
-			const userId = String(args[0])
+			const counter = Number(args[0])
+			const userId = String(args[1])
 			const factor = factors.get(userId)
 			if (!factor || factor.enabledAt || !backupCodes.some((code) => code.userId === userId)) {
 				return { results: [], meta: { changes: 0 } }
 			}
 			factor.enabledAt = '2026-07-15T12:00:00.000Z'
+			factor.lastUsedCounter = counter
+			return { results: [{ user_id: userId }], meta: { changes: 1 } }
+		}
+		if (normalized.startsWith('UPDATE auth_mfa_factors SET last_used_counter')) {
+			const counter = Number(args[0])
+			const userId = String(args[1])
+			const factor = factors.get(userId)
+			if (
+				!factor?.enabledAt ||
+				(factor.lastUsedCounter !== null && factor.lastUsedCounter >= counter)
+			) {
+				return { results: [], meta: { changes: 0 } }
+			}
+			factor.lastUsedCounter = counter
 			return { results: [{ user_id: userId }], meta: { changes: 1 } }
 		}
 		if (
@@ -162,7 +177,10 @@ describe('D1MfaAdapter', () => {
 			true
 		)
 		expect(d1.ciphertext('u1')).not.toContain('FIRST-SECRET')
-		await expect(adapter.activateEnrollment('u1')).resolves.toBe(true)
+		await expect(adapter.activateEnrollment('u1', 100)).resolves.toBe(true)
+		await expect(adapter.consumeTotpCounter('u1', 101)).resolves.toBe(true)
+		await expect(adapter.consumeTotpCounter('u1', 101)).resolves.toBe(false)
+		await expect(adapter.consumeTotpCounter('u1', 100)).resolves.toBe(false)
 		await expect(adapter.beginEnrollment('u1', 'SECOND-SECRET', ['hash-3'])).resolves.toBe(false)
 		await expect(adapter.getSecret('u1')).resolves.toBe('FIRST-SECRET')
 		await expect(adapter.getStatus('u1')).resolves.toMatchObject({

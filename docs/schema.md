@@ -63,6 +63,26 @@ CREATE INDEX magic_link_tokens_token_hash_idx ON magic_link_tokens (token_hash);
 CREATE INDEX magic_link_tokens_otp_hash_idx ON magic_link_tokens (otp_hash);
 ```
 
+## MFA factors
+
+```sql
+CREATE TABLE mfa_factors (
+  user_id TEXT PRIMARY KEY,
+  secret TEXT NOT NULL,
+  enabled_at TIMESTAMP,
+  last_used_counter BIGINT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+`last_used_counter` stores the greatest successfully accepted RFC 6238 moving
+factor. Enrollment activation writes the confirming counter. Later verification
+must update the row only while `last_used_counter IS NULL OR
+last_used_counter < :counter`; this database predicate makes one code single-use
+under concurrent requests. Existing installations must add the nullable column
+before deploying an adapter that calls `consumeTotpCounter()`.
+
 ## WebAuthn
 
 ```sql

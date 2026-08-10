@@ -34,6 +34,9 @@ describe('pg auth adapters', () => {
 			'CREATE UNIQUE INDEX IF NOT EXISTS auth_oauth_accounts_user_provider_idx'
 		)
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_mfa_factors')
+		expect(pgAuthSchemaSql).toContain(
+			'ALTER TABLE auth_mfa_factors ADD COLUMN IF NOT EXISTS last_used_counter BIGINT'
+		)
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_mfa_backup_codes')
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_webauthn_challenges')
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_webauthn_credentials')
@@ -469,6 +472,7 @@ describe('pg auth adapters', () => {
 	it('stores MFA secrets and backup codes through the postgres bundle', async () => {
 		const queries: Array<{ text: string; values: readonly unknown[] }> = []
 		let storedSecret = ''
+		let lastUsedCounter: number | null = null
 		const db: PgPoolLike = {
 			async query(text, values = []) {
 				queries.push({ text, values })
@@ -477,6 +481,13 @@ describe('pg auth adapters', () => {
 					return { rows: [{ user_id: 'user-1' }] }
 				}
 				if (text.includes('UPDATE auth_mfa_factors AS factor')) {
+					lastUsedCounter = Number(values[1])
+					return { rows: [{ user_id: 'user-1' }] }
+				}
+				if (text.includes('SET last_used_counter')) {
+					const counter = Number(values[1])
+					if (lastUsedCounter !== null && counter <= lastUsedCounter) return { rows: [] }
+					lastUsedCounter = counter
 					return { rows: [{ user_id: 'user-1' }] }
 				}
 				if (text.includes('SELECT user_id, secret, enabled_at FROM auth_mfa_factors')) {
@@ -517,7 +528,10 @@ describe('pg auth adapters', () => {
 		})
 
 		await expect(adapters.mfa.beginEnrollment('user-1', 'SECRET', ['hash-1'])).resolves.toBe(true)
-		await expect(adapters.mfa.activateEnrollment('user-1')).resolves.toBe(true)
+		await expect(adapters.mfa.activateEnrollment('user-1', 100)).resolves.toBe(true)
+		await expect(adapters.mfa.consumeTotpCounter('user-1', 101)).resolves.toBe(true)
+		await expect(adapters.mfa.consumeTotpCounter('user-1', 101)).resolves.toBe(false)
+		await expect(adapters.mfa.consumeTotpCounter('user-1', 100)).resolves.toBe(false)
 		const secret = await adapters.mfa.getSecret('user-1')
 		const backupCodes = await adapters.mfa.getBackupCodes('user-1')
 		const status = await adapters.mfa.getStatus('user-1')

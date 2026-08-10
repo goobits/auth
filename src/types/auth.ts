@@ -51,6 +51,29 @@ export type AuthRequestHandler = (event: RequestEventLike) => Response | Promise
 /** Standard result for an application-owned destructive credential mutation. */
 export type CredentialMutationOutcome = 'success' | 'not-found' | 'forbidden'
 
+/** Verified MFA material whose persisted state must be consumed atomically. */
+export type MfaCredentialProof =
+	| { method: 'totp'; counter: number }
+	| { method: 'backup-code'; hash: string }
+
+/** Result of an application-owned MFA factor mutation. */
+export type MfaCredentialMutationOutcome = CredentialMutationOutcome | 'invalid-proof'
+
+/** Pending MFA enrollment activation executed inside an application mutation boundary. */
+export type MfaActivateCredentialMutationInput = {
+	userId: string
+	event: RequestEventLike
+	verify: () => Promise<Extract<MfaCredentialProof, { method: 'totp' }> | null>
+}
+
+/** MFA removal executed inside an application mutation boundary. */
+export type MfaDisableCredentialMutationInput = {
+	userId: string
+	event: RequestEventLike
+	authorize: () => boolean | Promise<boolean>
+	verify: () => Promise<MfaCredentialProof | null>
+}
+
 /** Verified OAuth connection material supplied to application-owned persistence. */
 export type OAuthConnectCredentialMutationInput = {
 	userId: string
@@ -92,6 +115,14 @@ export type WebAuthnRemoveCredentialMutationInput = {
  * and audit state share one serialized operation.
  */
 export type CredentialMutationPort = {
+	mfa?: {
+		activate: (
+			input: MfaActivateCredentialMutationInput
+		) => Promise<MfaCredentialMutationOutcome> | MfaCredentialMutationOutcome
+		disable: (
+			input: MfaDisableCredentialMutationInput
+		) => Promise<MfaCredentialMutationOutcome> | MfaCredentialMutationOutcome
+	}
 	oauth?: {
 		connect: (
 			input: OAuthConnectCredentialMutationInput

@@ -504,6 +504,7 @@ export function createHandlers(
 
 	if (mfa) {
 		const getUserId = (locals: AuthLocals) => locals.user?.id ?? null
+		const mfaMutations = config.credentialMutations?.mfa
 		const mfaConfig = {
 			authorizeSecurityChange: mfa.authorizeSecurityChange,
 			getUserId,
@@ -516,9 +517,18 @@ export function createHandlers(
 			status: asJsonHandler(createMfaStatusHandler(mfaConfig)),
 			enroll: asJsonHandler(createMfaEnrollHandler(mfaConfig)),
 			verify: asJsonHandler(
-				createMfaVerifyHandler({ ...mfaConfig, sessionAdapter: adapters.session })
+				createMfaVerifyHandler({
+					...mfaConfig,
+					sessionAdapter: adapters.session,
+					...(mfaMutations ? { mutation: mfaMutations.activate } : {})
+				})
 			),
-			disable: asJsonHandler(createMfaDisableHandler(mfaConfig)),
+			disable: asJsonHandler(
+				createMfaDisableHandler({
+					...mfaConfig,
+					...(mfaMutations ? { mutation: mfaMutations.disable } : {})
+				})
+			),
 			backupCode: asJsonHandler(createMfaBackupCodeHandler(mfaConfig)),
 			stepUp: asJsonHandler(
 				createMfaStepUpHandler({ ...mfaConfig, sessionAdapter: adapters.session })

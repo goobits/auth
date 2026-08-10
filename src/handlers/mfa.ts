@@ -1,8 +1,15 @@
 import type { VerificationTokenAdapter } from '../adapters/verification-token/VerificationTokenAdapter.ts'
+import type { MfaAdapter } from '../adapters/mfa/MfaAdapter.ts'
 import type { Session, SessionMetadata, User } from '../types/core.ts'
 import { generateBackupCodes, hashBackupCodes, verifyBackupCode } from '../mfa/backupCodes.ts'
-import { createOtpAuthURL, generateSecret, verifyTOTP } from '../mfa/totp.ts'
-import type { AuthorizeSecurityChange, MfaLoginPolicy, RequestEventLike } from '../types/auth.ts'
+import { createOtpAuthURL, generateSecret, matchTOTP } from '../mfa/totp.ts'
+import type {
+	AuthorizeSecurityChange,
+	CredentialMutationPort,
+	MfaLoginPolicy,
+	RequestEventLike,
+	TotpMfaConfig
+} from '../types/auth.ts'
 import {
 	consumeVerificationTokenRecord,
 	createVerificationToken,
@@ -11,6 +18,11 @@ import {
 } from '../verification/index.ts'
 import { type AssuredSessionAdapter, rotateSessionAssurance } from './_assuredSession.ts'
 import { consumeMfaCredentialProof, verifyMfaCredential } from './_mfaCredential.ts'
+import {
+	createStandaloneSecurityBoundaryValidator,
+	type StandaloneSecurityBoundary
+} from './_standaloneSecurity.ts'
+import { createDefaultMfaCredentialMutations } from '../createAuth/credentialMutations.ts'
 import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
 import { readRequestFormData } from '../utils/http.ts'
 import { isSafeRedirectPath } from '../utils/redirect.ts'
@@ -19,19 +31,17 @@ const DEFAULT_LOGIN_CHALLENGE_COOKIE = 'goobits_mfa_login'
 const DEFAULT_LOGIN_CHALLENGE_TTL_MS = 5 * 60 * 1000
 
 /** Mfa Store typed model for runtime integration. */
-export type MfaStore = {
-	beginEnrollment: (userId: string, secret: string, backupCodes: string[]) => Promise<boolean>
-	activateEnrollment: (userId: string) => Promise<boolean>
-	getSecret: (userId: string) => Promise<string | null>
-	disableMfa: (userId: string) => Promise<boolean>
-	getBackupCodes: (userId: string) => Promise<string[]>
-	consumeBackupCode: (userId: string, hash: string) => Promise<boolean>
-	getStatus: (userId: string) => Promise<{
-		enabled: boolean
-		enabledAt: Date | null
-		backupCodeCount: number
-	}>
-}
+export type MfaStore = Pick<
+	MfaAdapter,
+	| 'activateEnrollment'
+	| 'beginEnrollment'
+	| 'consumeBackupCode'
+	| 'consumeTotpCounter'
+	| 'disableMfa'
+	| 'getBackupCodes'
+	| 'getSecret'
+	| 'getStatus'
+>
 
 /** Mfa Config typed model for runtime integration. */
 export type MfaConfig = {
@@ -39,10 +49,7 @@ export type MfaConfig = {
 	store: MfaStore
 	issuer?: string
 	label?: (userId: string, locals: RequestEventLike['locals']) => string
-	hooks?: {
-		onEnabled?: (input: { userId: string; event: RequestEventLike }) => Promise<void> | void
-		onDisabled?: (input: { userId: string; event: RequestEventLike }) => Promise<void> | void
-	}
+	hooks?: TotpMfaConfig['hooks']
 }
 
 /** Configuration for MFA operations that change a user's factors. */
@@ -50,16 +57,39 @@ type MfaSecurityChangeConfig = MfaConfig & {
 	authorizeSecurityChange: AuthorizeSecurityChange
 }
 
-type MfaLoginStore = MfaStore & {
-	getStatus: NonNullable<MfaStore['getStatus']>
+export type MfaLoginAttemptContext = {
+	challengeId: string
+	event: RequestEventLike
+	user: Record<string, unknown>
+	userId: string
+}
+
+export type MfaLoginDenial = {
+	allowed: false
+	error: string
+	code?: string
+	status?: number
+}
+
+export type MfaLoginAttemptPolicy = {
+	beforeVerify?: (
+		context: MfaLoginAttemptContext
+	) => MfaLoginDenial | void | Promise<MfaLoginDenial | void>
+	onFailure?: (
+		context: MfaLoginAttemptContext & {
+			reason: 'credential-already-used' | 'invalid-credential'
+		}
+	) => Promise<void> | void
+	onSuccess?: (context: MfaLoginAttemptContext) => Promise<void> | void
 }
 
 /** Configuration shared by credential signin and MFA challenge verification. */
 export type MfaLoginConfig = {
-	store: MfaLoginStore
+	store: MfaStore
 	verificationTokenAdapter: VerificationTokenAdapter
 	csrf?: { validate: (event: RequestEventLike) => Promise<boolean>; errorMessage?: string }
 	rateLimit?: HandlerRateLimitConfig
+	attemptPolicy?: MfaLoginAttemptPolicy
 	onVerified?: (
 		user: Record<string, unknown>,
 		context: {
@@ -67,11 +97,9 @@ export type MfaLoginConfig = {
 			formData: FormData
 			sessionMetadata: SessionMetadata
 		}
-	) =>
-		| { allowed: false; error: string; code?: string; status?: number }
-		| void
-		| Promise<{ allowed: false; error: string; code?: string; status?: number } | void>
-} & MfaLoginPolicy
+	) => MfaLoginDenial | void | Promise<MfaLoginDenial | void>
+} & MfaLoginPolicy &
+	StandaloneSecurityBoundary
 
 type MfaLoginSessionAdapter = {
 	createSession: (userId: string, metadata?: SessionMetadata) => Promise<Session>
@@ -192,7 +220,27 @@ export function createMfaLoginVerifyHandler(
 		sanitizeUser?: (user: Record<string, unknown>) => unknown
 	}
 ) {
+	const validateRequestBoundary = createStandaloneSecurityBoundaryValidator(
+		'createMfaLoginVerifyHandler',
+		{
+			hasCsrf: typeof config.csrf?.validate === 'function',
+			hasRateLimit: typeof config.rateLimit?.check === 'function',
+			...(config.validateExternalSecurityBoundary
+				? { validateExternalSecurityBoundary: config.validateExternalSecurityBoundary }
+				: {})
+		}
+	)
+	const deniedResponse = (denial: MfaLoginDenial) => ({
+		success: false as const,
+		error: denial.error,
+		...(denial.code ? { code: denial.code } : {}),
+		...(denial.status ? { status: denial.status } : {})
+	})
+
 	return async (event: RequestEventLike) => {
+		if (!(await validateRequestBoundary(event))) {
+			return { success: false, error: 'Invalid security boundary' }
+		}
 		if (config.csrf && !(await config.csrf.validate(event))) {
 			return { success: false, error: config.csrf.errorMessage ?? 'Invalid CSRF token' }
 		}
@@ -217,6 +265,14 @@ export function createMfaLoginVerifyHandler(
 
 		const userId = userIdFromRecord(inspected.user)
 		if (!userId) return { success: false, error: 'Invalid or expired login challenge' }
+		const attemptContext: MfaLoginAttemptContext = {
+			challengeId: inspected.token.id,
+			event,
+			user: inspected.user,
+			userId
+		}
+		const attemptDenial = await config.attemptPolicy?.beforeVerify?.(attemptContext)
+		if (attemptDenial?.allowed === false) return deniedResponse(attemptDenial)
 		const formData = await readRequestFormData(event.request)
 		const token = formData.get('token')?.toString() ?? ''
 		const backupCode = formData.get('backupCode')?.toString() ?? ''
@@ -226,7 +282,29 @@ export function createMfaLoginVerifyHandler(
 			token,
 			backupCode
 		})
-		if (!proof) return { success: false, error: 'Invalid authentication code' }
+		if (!proof) {
+			await config.attemptPolicy?.onFailure?.({
+				...attemptContext,
+				reason: 'invalid-credential'
+			})
+			return { success: false, error: 'Invalid authentication code' }
+		}
+		const sessionMetadata = challengeMetadata(inspected.token.metadata)
+		const hookResult = await config.onVerified?.(inspected.user, {
+			event,
+			formData,
+			sessionMetadata: { ...sessionMetadata }
+		})
+		if (hookResult?.allowed === false) {
+			return deniedResponse(hookResult)
+		}
+		if (!(await consumeMfaCredentialProof(config.store, userId, proof))) {
+			await config.attemptPolicy?.onFailure?.({
+				...attemptContext,
+				reason: 'credential-already-used'
+			})
+			return { success: false, error: 'Invalid authentication code' }
+		}
 
 		const consumed = await consumeVerificationTokenRecord({
 			adapter: config.verificationTokenAdapter,
@@ -236,31 +314,14 @@ export function createMfaLoginVerifyHandler(
 		if (!consumed || userIdFromRecord(consumed.user) !== userId) {
 			return { success: false, error: 'Invalid or expired login challenge' }
 		}
-
-		if (!(await consumeMfaCredentialProof(config.store, userId, proof))) {
-			return { success: false, error: 'Invalid authentication code' }
-		}
-		const sessionMetadata = challengeMetadata(consumed.token.metadata)
 		const redirectTo = challengeRedirect(consumed.token.metadata)
-		const hookResult = await config.onVerified?.(consumed.user, {
-			event,
-			formData,
-			sessionMetadata: { ...sessionMetadata }
-		})
-		if (hookResult?.allowed === false) {
-			return {
-				success: false,
-				error: hookResult.error,
-				...(hookResult.code ? { code: hookResult.code } : {}),
-				...(hookResult.status ? { status: hookResult.status } : {})
-			}
-		}
 		const session = await config.sessionAdapter.createSession(userId, {
 			...sessionMetadata,
 			mfaVerifiedAt: new Date()
 		})
 		config.sessionAdapter.setSessionCookie(event.cookies, session)
 		event.cookies.delete(cookieName, { path: '/' })
+		await config.attemptPolicy?.onSuccess?.(attemptContext)
 
 		return {
 			success: true,
@@ -327,9 +388,15 @@ export function createMfaEnrollHandler(config: MfaSecurityChangeConfig) {
  * @param config - Configuration for this operation.
  */
 export function createMfaVerifyHandler(
-	config: MfaConfig & { sessionAdapter?: AssuredSessionAdapter }
+	config: MfaConfig & {
+		mutation?: NonNullable<CredentialMutationPort['mfa']>['activate']
+		sessionAdapter?: AssuredSessionAdapter
+	}
 ) {
 	const { getUserId, store } = config
+	const mutation =
+		config.mutation ??
+		createDefaultMfaCredentialMutations({ mfaAdapter: store, hooks: config.hooks }).activate
 	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
 		if (!userId) return { success: false, error: 'Unauthorized' }
@@ -339,16 +406,29 @@ export function createMfaVerifyHandler(
 		}
 		const formData = await readRequestFormData(event.request)
 		const token = formData.get('token')?.toString()
-		const secret = await store.getSecret(userId)
-		if (!secret) return { success: false, error: 'MFA enrollment not started' }
-		const verifyInput: { secret: string; token?: string } = { secret }
-		if (token) verifyInput.token = token
-		const valid = await verifyTOTP(verifyInput)
-		if (!valid) return { success: false, error: 'Invalid code' }
-		if (!(await store.activateEnrollment(userId))) {
+		let enrollmentStarted = true
+		const outcome = await mutation({
+			userId,
+			event,
+			verify: async () => {
+				const secret = await store.getSecret(userId)
+				if (!secret) {
+					enrollmentStarted = false
+					return null
+				}
+				const match = await matchTOTP({ secret, token: token ?? '' })
+				return match ? { method: 'totp', counter: match.counter } : null
+			}
+		})
+		if (outcome === 'invalid-proof') {
+			return {
+				success: false,
+				error: enrollmentStarted ? 'Invalid code' : 'MFA enrollment not started'
+			}
+		}
+		if (outcome !== 'success') {
 			return { success: false, error: 'MFA enrollment not started' }
 		}
-		await config.hooks?.onEnabled?.({ userId, event })
 		if (!config.sessionAdapter || !currentSession) return { success: true }
 		const replacement = await rotateSessionAssurance({
 			sessionAdapter: config.sessionAdapter,
@@ -362,33 +442,43 @@ export function createMfaVerifyHandler(
 }
 
 /** Creates mfa disable handler for auth HTTP handlers. */
-export function createMfaDisableHandler(config: MfaSecurityChangeConfig) {
+export function createMfaDisableHandler(
+	config: MfaSecurityChangeConfig & {
+		mutation?: NonNullable<CredentialMutationPort['mfa']>['disable']
+	}
+) {
 	const { authorizeSecurityChange, getUserId, store } = config
+	const mutation =
+		config.mutation ??
+		createDefaultMfaCredentialMutations({ mfaAdapter: store, hooks: config.hooks }).disable
 	return async (event: RequestEventLike) => {
 		const userId = getUserId(event.locals)
 		if (!userId) return { success: false, error: 'Unauthorized' }
-		if (
-			!(await authorizeSecurityChange({
-				action: 'mfa.disable',
-				request: event.request.clone(),
-				userId,
-				session: event.locals.session ?? null
-			}))
-		) {
-			return { success: false, error: 'Reauthentication required' }
-		}
-
+		const authorizationRequest = event.request.clone()
 		const formData = await readRequestFormData(event.request)
 		const token = formData.get('token')?.toString() ?? ''
 		const backupCode = formData.get('backupCode')?.toString() ?? ''
-		const proof = await verifyMfaCredential({ store, userId, token, backupCode })
-		if (!proof || !(await consumeMfaCredentialProof(store, userId, proof))) {
+		const outcome = await mutation({
+			userId,
+			event,
+			authorize: () =>
+				authorizeSecurityChange({
+					action: 'mfa.disable',
+					request: authorizationRequest,
+					userId,
+					session: event.locals.session ?? null
+				}),
+			verify: () => verifyMfaCredential({ store, userId, token, backupCode })
+		})
+		if (outcome === 'forbidden') {
+			return { success: false, error: 'Reauthentication required' }
+		}
+		if (outcome === 'invalid-proof') {
 			return { success: false, error: 'Invalid authentication code' }
 		}
-		if (!(await store.disableMfa(userId))) {
+		if (outcome !== 'success') {
 			return { success: false, error: 'Multi-factor authentication is not enabled' }
 		}
-		await config.hooks?.onDisabled?.({ userId, event })
 		return { success: true }
 	}
 }

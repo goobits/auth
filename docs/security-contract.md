@@ -65,8 +65,8 @@ before an authentication handler processes their fields.
   - credential MFA challenges that create no session before the second factor
   - stable-subject OAuth lookup with explicit sign-in, link, reauthentication,
     and unlink flows
-  - one normalized credential-mutation port for OAuth connection changes and
-    passkey removal
+  - one normalized credential-mutation port for MFA factor changes, OAuth
+    connection changes, and passkey removal
   - session-level MFA assurance metadata after a successful second factor
   - request-origin, CSRF, and rate-limit policy wiring powered by
     `@goobits/security`
@@ -91,6 +91,7 @@ before an authentication handler processes their fields.
     before privileged routes rely on it
   - when TOTP is enabled, an MFA secret codec backed by
     `@goobits/security/crypto` or a managed KMS, including key rotation
+  - durable monotonic `last_used_counter` storage for TOTP replay prevention
   - a shared 32-byte-or-longer CSRF signing secret and production rate-limit
     store; strict or expiry-checked CSRF also requires a shared CSRF store
   - CSRF plus rate limiting for standalone credential handlers, or one
@@ -102,10 +103,12 @@ before an authentication handler processes their fields.
 
 The default credential-mutation port composes Auth's configured adapters and
 hooks. Applications whose recovery methods span multiple tables or stores
-should supply `credentialMutations.oauth` and/or
-`credentialMutations.webauthn`. Those methods receive an `authorize`
-callback and must invoke it inside the same serialized boundary as the final
-recovery read and mutation. Auth handlers do not run a second mutation path.
+should supply `credentialMutations.mfa`, `credentialMutations.oauth`, and/or
+`credentialMutations.webauthn`. MFA mutation callbacks must keep proof
+consumption, factor state, session revocation, and audit persistence in one
+serialized operation. Identity-removal methods receive an `authorize` callback
+and must invoke it inside the same serialized boundary as the final recovery
+read and mutation. Auth handlers do not run a second mutation path.
 The OAuth connection method must likewise validate `expectedIdentityUserId`
 against its locked read and invoke `completeAuthentication()` before releasing
 that boundary, so a stale callback cannot create a session after unlink.
@@ -170,7 +173,9 @@ factories from `@goobits/auth/security`.
 Password-length enforcement runs before built-in or application-supplied
 hash/verify functions. TOTP verification accepts integer windows from 0 through
 10 and evaluates every candidate with the shared constant-time comparison
-primitive.
+primitive. Authentication accepts a matched counter only through the adapter's
+atomic monotonic compare-and-swap; two concurrent submissions of the same code
+must have exactly one winner.
 
 New backup-code hashes use the `v2:<salt>:<pbkdf2>` format. The v8 migration
 reader accepts earlier unprefixed SHA-256 hashes only long enough for existing

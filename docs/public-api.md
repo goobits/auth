@@ -309,6 +309,13 @@ Credential MFA is a two-step flow:
 - complete the short-lived, single-use challenge with
   `createMfaLoginVerifyHandler`; only that handler creates the session
 
+The standalone verification handler has the same executable request-security
+contract as standalone sign-in and password reset: configure both CSRF and
+request rate limiting, or pass `validateExternalSecurityBoundary` to acknowledge
+an equivalent application boundary. `attemptPolicy` runs only after Auth has
+resolved the trusted challenge owner, so applications can enforce user,
+challenge, and IP limits without trusting a posted username.
+
 Managed OAuth and magic-link login use the same gate when `mfa.login` is
 configured. This requires `adapters.mfa` and `adapters.verificationToken`:
 
@@ -347,7 +354,21 @@ The callback receives an independent request clone and must fail closed unless
 it verifies a fresh credential for the authenticated `userId`. Pending TOTP
 secret and backup-code storage is atomic, an enabled factor cannot be silently
 replaced, and backup codes are accepted only when their atomic single-use
-consume succeeds.
+consume succeeds. Successful TOTP verification returns its RFC 6238 counter;
+`MfaAdapter.consumeTotpCounter()` accepts that counter only when it is newer
+than the last successful counter. Enrollment activation stores its confirming
+counter, so the enrollment code cannot be replayed immediately afterward.
+
+The built-in mutation path composes the MFA adapter with `mfa.hooks`.
+Applications that keep factors, sessions, and audit rows in related stores can
+instead implement `credentialMutations.mfa.activate` and `.disable`; Auth then
+uses that one mutation path and does not invoke the adapter/hook path in
+parallel. Verification callbacks preserve the existing forms and error
+messages, while allowing the application to serialize proof consumption,
+factor state, session revocation, and audit persistence.
+Custom mutation ports can call `consumeMfaCredentialProof()` from
+`@goobits/auth/handlers` so TOTP counters and backup codes retain the same
+single-use semantics without duplicating proof dispatch.
 
 Passkey registration uses the same callback with the
 `webauthn.register` action. Registration challenges are bound to the
@@ -373,6 +394,9 @@ assurance.
 MFA login challenges reuse `VerificationTokenAdapter`. Adapters should preserve
 the optional token metadata when remember-me, session context, or the validated
 post-login path must survive between the primary and second-factor requests.
+An invalid code does not consume the challenge, so the member can correct a
+normal typo without repeating primary authentication. Application `onVerified`
+policy runs before either the proof or challenge is consumed.
 
 Magic-link token URLs use a scanner-safe confirmation interstitial by default.
 The GET request does not consume the token; a short-lived, HttpOnly

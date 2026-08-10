@@ -86,6 +86,7 @@ export function createMfaLoginTestConfig(options: { challengeRedirect?: string }
 		activateEnrollment: vi.fn(async () => true),
 		beginEnrollment: vi.fn(async () => true),
 		consumeBackupCode: vi.fn(async () => true),
+		consumeTotpCounter: vi.fn(async () => true),
 		disableMfa: vi.fn(async () => true),
 		getBackupCodes: vi.fn(async () => []),
 		getSecret: vi.fn(async () => 'SECRET'),

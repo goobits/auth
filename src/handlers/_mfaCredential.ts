@@ -1,14 +1,17 @@
 import { verifyBackupCode } from '../mfa/backupCodes.ts'
-import { verifyTOTP } from '../mfa/totp.ts'
+import { matchTOTP } from '../mfa/totp.ts'
+import type { MfaCredentialProof } from '../types/auth.ts'
 
-type MfaCredentialStore = {
+type MfaCredentialConsumptionStore = {
 	consumeBackupCode: (userId: string, hash: string) => Promise<boolean>
+	consumeTotpCounter: (userId: string, counter: number) => Promise<boolean>
+}
+
+type MfaCredentialStore = MfaCredentialConsumptionStore & {
 	getBackupCodes: (userId: string) => Promise<string[]>
 	getSecret: (userId: string) => Promise<string | null>
 	getStatus: (userId: string) => Promise<{ enabled: boolean }>
 }
-
-type MfaCredentialProof = { method: 'totp' } | { method: 'backup-code'; hash: string }
 
 export async function verifyMfaCredential({
 	store,
@@ -24,7 +27,9 @@ export async function verifyMfaCredential({
 	if (!(await store.getStatus(userId)).enabled) return null
 	if (token) {
 		const secret = await store.getSecret(userId)
-		return secret && (await verifyTOTP({ secret, token })) ? { method: 'totp' } : null
+		if (!secret) return null
+		const match = await matchTOTP({ secret, token })
+		return match ? { method: 'totp', counter: match.counter } : null
 	}
 	if (!backupCode) return null
 	const result = await verifyBackupCode({
@@ -35,9 +40,11 @@ export async function verifyMfaCredential({
 }
 
 export async function consumeMfaCredentialProof(
-	store: MfaCredentialStore,
+	store: MfaCredentialConsumptionStore,
 	userId: string,
 	proof: MfaCredentialProof
 ): Promise<boolean> {
-	return proof.method === 'totp' || (await store.consumeBackupCode(userId, proof.hash))
+	return proof.method === 'totp'
+		? store.consumeTotpCounter(userId, proof.counter)
+		: store.consumeBackupCode(userId, proof.hash)
 }

@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+### ⚠️ Breaking
+
+- 🔐 `MfaAdapter.activateEnrollment()` now receives the matched TOTP counter,
+  and adapters must implement atomic `consumeTotpCounter()`. Persistent factor
+  tables need nullable `last_used_counter` storage before this revision is
+  deployed.
+- 🧱 Standalone `createMfaLoginVerifyHandler()` now requires both CSRF and rate
+  limiting or an executable `validateExternalSecurityBoundary`, matching the
+  existing standalone sign-in, signup, and password-reset contract.
+
 ### 🔒 Security
 
 - 🎨 `OAuthProviderButton` now ships its Google and Apple marks and uses local
@@ -21,6 +31,12 @@
 - 🧭 `hooks.beforeSessionCreate` now gives applications one post-assurance,
   pre-session boundary for access and login-completion policy without repeating
   Auth's MFA decision.
+- 🔁 TOTP proofs now carry their RFC 6238 counter through an atomic monotonic
+  consume, preventing successful-code replay and concurrent double use without
+  narrowing the normal clock-skew window.
+- 🧩 MFA activation and removal can use the existing application credential
+  mutation port, allowing proof state, factors, sessions, and audit rows to
+  commit together without a duplicate hook path.
 
 ## [0.6.0] - 2026-08-03
 
