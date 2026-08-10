@@ -146,6 +146,27 @@ describe('MFA handlers', () => {
 		).resolves.toEqual({ success: false, error: 'MFA enrollment not started' })
 	})
 
+	it('reads the pending secret inside the application mutation boundary', async () => {
+		const order: string[] = []
+		const store = createStore({
+			getSecret: vi.fn(async () => {
+				order.push('secret-read')
+				return 'JBSWY3DPEHPK3PXP'
+			})
+		})
+		vi.mocked(totp.matchTOTP).mockResolvedValue({ counter: 100 })
+		const mutation = vi.fn(async (input) => {
+			order.push('mutation-enter')
+			return (await input.verify()) ? ('success' as const) : ('invalid-proof' as const)
+		})
+		const handler = createMfaVerifyHandler({ getUserId: () => 'u1', store, mutation })
+
+		await expect(
+			handler(createEvent({ locals: { userId: 'u1' }, form: { token: '123456' } }))
+		).resolves.toEqual({ success: true })
+		expect(order).toEqual(['mutation-enter', 'secret-read'])
+	})
+
 	it('runs application lifecycle hooks only after factor state changes succeed', async () => {
 		const store = createStore()
 		const onEnabled = vi.fn()

@@ -406,17 +406,26 @@ export function createMfaVerifyHandler(
 		}
 		const formData = await readRequestFormData(event.request)
 		const token = formData.get('token')?.toString()
-		const secret = await store.getSecret(userId)
-		if (!secret) return { success: false, error: 'MFA enrollment not started' }
+		let enrollmentStarted = true
 		const outcome = await mutation({
 			userId,
 			event,
 			verify: async () => {
+				const secret = await store.getSecret(userId)
+				if (!secret) {
+					enrollmentStarted = false
+					return null
+				}
 				const match = await matchTOTP({ secret, token: token ?? '' })
 				return match ? { method: 'totp', counter: match.counter } : null
 			}
 		})
-		if (outcome === 'invalid-proof') return { success: false, error: 'Invalid code' }
+		if (outcome === 'invalid-proof') {
+			return {
+				success: false,
+				error: enrollmentStarted ? 'Invalid code' : 'MFA enrollment not started'
+			}
+		}
 		if (outcome !== 'success') {
 			return { success: false, error: 'MFA enrollment not started' }
 		}
