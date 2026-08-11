@@ -99,6 +99,8 @@ deletion storage. It does not claim that a generic ORM port can atomically
 enforce application account eligibility and credential caps. Before enabling a
 `webauthn` config block, compose it with the
 `WebAuthnCredentialCreationAdapter` capability documented in the 0.5 migration.
+The Node-only PostgreSQL bundle provides that capability through the bundled
+owner-row-locked registration routine once its schema migration is applied.
 
 When `oauthTokens` exists, configure `oauthTokenEncryption` with either a
 rotation-ready `encryptionKeyringJson` or an application `tokenCodec`. The table

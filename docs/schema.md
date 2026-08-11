@@ -90,7 +90,7 @@ CREATE TABLE webauthn_credentials (
   credential_id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
   public_key TEXT NOT NULL,
-  counter INTEGER NOT NULL DEFAULT 0,
+  counter BIGINT NOT NULL DEFAULT 0,
   transports TEXT,
   name TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -111,6 +111,13 @@ CREATE TABLE webauthn_challenges (
 CREATE INDEX webauthn_challenges_user_idx ON webauthn_challenges (user_id);
 CREATE INDEX webauthn_challenges_expires_idx ON webauthn_challenges (expires_at);
 ```
+
+PostgreSQL integrations that enable registration also need the bundled
+`auth_create_webauthn_credential_within_limit(...)` routine. It locks the
+`auth_users` owner row, rechecks the per-user credential count, and inserts in
+one database boundary. Apply the host application's corresponding Auth
+migration before enabling WebAuthn routes. `BIGINT` is required because valid
+authenticator counters can exceed PostgreSQL `INTEGER`.
 
 ## Session metadata (optional)
 
