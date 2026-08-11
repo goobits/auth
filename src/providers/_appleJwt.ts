@@ -34,7 +34,7 @@ type AppleJwtConfig = {
 	logger: Logger
 }
 
-export const APPLE_ISSUER = 'https://appleid.apple.com'
+const APPLE_ISSUER = 'https://appleid.apple.com'
 export const APPLE_CLOCK_SKEW_SECONDS = 5 * 60
 const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys'
 const APPLE_JWKS_MAX_BYTES = 128 * 1024
