@@ -16,6 +16,9 @@
 
 ### 🔒 Security
 
+- 🔑 Conditional passkey option creation now uses a separate bounded challenge
+  budget, so passive browser autofill does not consume the stricter credential
+  verification attempt budget.
 - 🎨 `OAuthProviderButton` now ships its Google and Apple marks and uses local
   system fonts, eliminating third-party image and font requests during render.
 - 🧭 OAuth callbacks now distinguish state-bound cancellation, malformed input,
@@ -37,6 +40,8 @@
 - 🧩 MFA activation and removal can use the existing application credential
   mutation port, allowing proof state, factors, sessions, and audit rows to
   commit together without a duplicate hook path.
+- 🔗 MFA login can use an optional `completeLogin` transaction port to consume
+  the challenge and one-time proof in the same commit that creates the session.
 
 ## [0.6.0] - 2026-08-03
 

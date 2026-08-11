@@ -1,8 +1,22 @@
 import type { RequestEventLike } from '../types/auth.ts'
+import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
 
 /** Executable application-owned boundary for standalone handlers. */
 export type StandaloneSecurityBoundary = {
 	validateExternalSecurityBoundary?: (event: RequestEventLike) => boolean | Promise<boolean>
+}
+
+export type StandaloneHandlerSecurity = StandaloneSecurityBoundary & {
+	csrf?: {
+		validate?: (event: RequestEventLike) => Promise<boolean>
+		errorMessage?: string
+	}
+	rateLimit?: HandlerRateLimitConfig
+}
+
+export type StandaloneSecurityFailure = {
+	error: string
+	success: false
 }
 
 /**
@@ -24,4 +38,39 @@ export function createStandaloneSecurityBoundaryValidator(
 		)
 	}
 	return async (event) => (await config.validateExternalSecurityBoundary?.(event)) === true
+}
+
+/** Run the shared request-integrity gate used by standalone credential handlers. */
+export function createStandaloneSecurityGate(
+	handlerName: string,
+	config: StandaloneHandlerSecurity
+): (event: RequestEventLike) => Promise<StandaloneSecurityFailure | null> {
+	const validateBoundary = createStandaloneSecurityBoundaryValidator(handlerName, {
+		hasCsrf: typeof config.csrf?.validate === 'function',
+		hasRateLimit: typeof config.rateLimit?.check === 'function',
+		...(config.validateExternalSecurityBoundary
+			? { validateExternalSecurityBoundary: config.validateExternalSecurityBoundary }
+			: {})
+	})
+
+	return async (event) => {
+		if (!(await validateBoundary(event))) {
+			return { error: 'Invalid security boundary', success: false }
+		}
+		if (config.csrf?.validate && !(await config.csrf.validate(event))) {
+			return {
+				error: config.csrf.errorMessage || 'Invalid CSRF token',
+				success: false
+			}
+		}
+		if (config.rateLimit?.check) {
+			const verdict = await config.rateLimit.check(
+				resolveHandlerRateLimitKey(event, config.rateLimit)
+			)
+			if (!verdict?.allowed) {
+				return { error: 'Too many attempts. Try again later.', success: false }
+			}
+		}
+		return null
+	}
 }

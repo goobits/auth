@@ -23,7 +23,7 @@ import type {
 	OAuthFlowIntent,
 	OAuthProfile,
 	OAuthTokens,
-	Session,
+	AuthSession,
 	SessionMetadata,
 	SessionSummary,
 	User
@@ -32,7 +32,7 @@ import type {
 /** Defines auth locals options for wiring providers, adapters, cookies, hooks, and route handlers. */
 export type AuthLocals = {
 	user?: User | null
-	session?: Session | null
+	session?: AuthSession | null
 }
 
 /** Defines request event like options for wiring providers, adapters, cookies, hooks, and route handlers. */
@@ -55,6 +55,14 @@ export type CredentialMutationOutcome = 'success' | 'not-found' | 'forbidden'
 export type MfaCredentialProof =
 	| { method: 'totp'; counter: number }
 	| { method: 'backup-code'; hash: string }
+
+/** Inputs for atomically consuming an MFA login challenge, proof, and session write. */
+export type MfaLoginCompletionInput = {
+	challengeId: string
+	userId: string
+	proof: MfaCredentialProof
+	sessionMetadata: SessionMetadata
+}
 
 /** Result of an application-owned MFA factor mutation. */
 export type MfaCredentialMutationOutcome = CredentialMutationOutcome | 'invalid-proof'
@@ -90,7 +98,7 @@ export type OAuthConnectCredentialMutationInput = {
 export type OAuthUnlinkCredentialMutationInput = {
 	userId: string
 	provider: string
-	session: Session
+	session: AuthSession
 	authorizationRequest: Request
 	event: RequestEventLike
 	authorize: () => boolean | Promise<boolean>
@@ -101,7 +109,7 @@ export type OAuthUnlinkCredentialMutationInput = {
 export type WebAuthnRemoveCredentialMutationInput = {
 	userId: string
 	credentialId: string
-	session: Session
+	session: AuthSession
 	authorizationRequest: Request
 	event: RequestEventLike
 	authorize: () => boolean | Promise<boolean>
@@ -190,7 +198,7 @@ export type AuthHooks = {
 	) => SessionMetadata | Promise<SessionMetadata>
 	onSessionValidated?: (
 		event: RequestEventLike,
-		session: Session,
+		session: AuthSession,
 		user: User
 	) => Promise<void> | void
 	onAuthentication?: (
@@ -283,12 +291,18 @@ export type AuthorizeSecurityChange = (input: {
 	action: SecurityChangeAction
 	request: Request
 	userId: string
-	session: Session | null
+	session: AuthSession | null
 }) => boolean | Promise<boolean>
 
 /** Shared policy for deferring primary login until TOTP or backup-code verification. */
 export type MfaLoginPolicy = {
 	isRequired?: (user: User) => boolean | Promise<boolean>
+	/**
+	 * Optional application transaction port. It must consume the challenge and
+	 * proof and create the returned session atomically, returning null when any
+	 * precondition no longer holds.
+	 */
+	completeLogin?: (input: MfaLoginCompletionInput) => Promise<AuthSession | null>
 	challengeCookieName?: string
 	challengeExpiresInMs?: number
 	secureCookies?: boolean
@@ -323,7 +337,7 @@ export type AuthorizeOAuthIdentityChange = (input: {
 	action: OAuthIdentityChangeAction
 	request: Request
 	userId: string
-	session: Session | null
+	session: AuthSession | null
 	provider: string
 }) => boolean | Promise<boolean>
 

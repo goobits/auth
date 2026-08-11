@@ -5,6 +5,7 @@ import { AuthAdapterCapabilityError } from '../../errors/AuthPrincipalResolution
 import type { D1DatabasePort, D1Row, D1Value } from '../_d1Port.ts'
 import { assertD1Identifiers } from '../_d1Sql.ts'
 import { normalizeSessionMetadata } from './_sessionMetadata.ts'
+import { mapD1SessionUser, type D1UserColumns } from './_d1SessionUser.ts'
 import { clearSessionCookie, writeSessionCookie } from './_sessionCookie.ts'
 import { SessionAdapter } from './SessionAdapter.ts'
 import { parseMfaVerifiedAt, parseSessionTimestamp } from './sessionAssurance.ts'
@@ -31,18 +32,7 @@ type D1SessionOptions = {
 		ip: string | null
 		userAgent: string | null
 	}>
-	userColumns?: Partial<{
-		id: string
-		email: string
-		name: string
-		avatar: string
-		password: string
-		emailVerified: string
-		role: string
-		settings: string
-		createdAt: string
-		updatedAt: string
-	}>
+	userColumns?: Partial<D1UserColumns>
 }
 
 /** Cloudflare D1 session adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
@@ -69,18 +59,7 @@ export class D1SessionAdapter extends SessionAdapter {
 		ip: string | null
 		userAgent: string | null
 	}
-	private userColumns: {
-		id: string
-		email: string
-		name: string
-		avatar: string
-		password: string
-		emailVerified: string
-		role: string
-		settings: string
-		createdAt: string
-		updatedAt: string
-	}
+	private userColumns: D1UserColumns
 
 	constructor(db: D1DatabasePort, options: D1SessionOptions = {}) {
 		super()
@@ -259,7 +238,7 @@ export class D1SessionAdapter extends SessionAdapter {
 			fresh = true
 		}
 
-		const user = this.sanitizeUser(this._mapUserRow(row))
+		const user = this.sanitizeUser(mapD1SessionUser(row, this.userColumns))
 		const userIdRaw = row['user_id']
 		if (typeof userIdRaw !== 'string' && typeof userIdRaw !== 'number') {
 			return { session: null, user: null }
@@ -280,96 +259,6 @@ export class D1SessionAdapter extends SessionAdapter {
 				userAgent: typeof row['session_user_agent'] === 'string' ? row['session_user_agent'] : null
 			},
 			user
-		}
-	}
-
-	_mapUserRow(row: D1Row): User | null {
-		const id = row[this.userColumns['id']] ?? row['id']
-		const email = row[this.userColumns['email']] ?? row['email']
-		const name = row[this.userColumns['name']] ?? row['name']
-
-		// Preserve explicit NULLs from the DB (e.g. avatar_url = null).
-		// Using `??` would treat `null` as "missing" and fall back to undefined, failing validation.
-		const avatar = Object.prototype.hasOwnProperty.call(row, this.userColumns['avatar'])
-			? row[this.userColumns['avatar']]
-			: row['avatar']
-		const emailVerified = row[this.userColumns.emailVerified] ?? row['email_verified']
-		const role = row[this.userColumns.role] ?? row['role']
-		const settings = row[this.userColumns.settings] ?? row['settings']
-		const createdAt = row[this.userColumns.createdAt] ?? row['created_at']
-		const updatedAt = row[this.userColumns.updatedAt] ?? row['updated_at']
-		if (typeof id !== 'string' && typeof id !== 'number') return null
-		if (typeof email !== 'string') return null
-		if (typeof name !== 'string') return null
-		if (avatar !== null && typeof avatar !== 'string') return null
-		if (typeof emailVerified !== 'boolean' && emailVerified !== 0 && emailVerified !== 1) {
-			return null
-		}
-		if (role !== null && role !== undefined && typeof role !== 'string') return null
-		if (settings !== null && settings !== undefined && typeof settings !== 'string') return null
-		if (
-			createdAt !== null &&
-			createdAt !== undefined &&
-			typeof createdAt !== 'string' &&
-			typeof createdAt !== 'number'
-		) {
-			return null
-		}
-		if (
-			updatedAt !== null &&
-			updatedAt !== undefined &&
-			typeof updatedAt !== 'string' &&
-			typeof updatedAt !== 'number'
-		) {
-			return null
-		}
-
-		let parsedSettings: Record<string, unknown> | undefined
-		if (typeof settings === 'string' && settings.trim().length > 0) {
-			try {
-				const decoded: unknown = JSON.parse(settings)
-				if (decoded && typeof decoded === 'object' && !Array.isArray(decoded)) {
-					parsedSettings = decoded as Record<string, unknown>
-				}
-			} catch {
-				// Ignore invalid JSON.
-			}
-		}
-		const createdAtDate = (() => {
-			if (typeof createdAt === 'string') {
-				const parsed = new Date(createdAt)
-				return Number.isNaN(parsed.getTime()) ? undefined : parsed
-			}
-			if (typeof createdAt === 'number') {
-				// sqlite `unixepoch()` defaults are seconds; accept ms too.
-				const ms = createdAt > 1e12 ? createdAt : createdAt * 1000
-				const parsed = new Date(ms)
-				return Number.isNaN(parsed.getTime()) ? undefined : parsed
-			}
-			return undefined
-		})()
-		const updatedAtDate = (() => {
-			if (typeof updatedAt === 'string') {
-				const parsed = new Date(updatedAt)
-				return Number.isNaN(parsed.getTime()) ? undefined : parsed
-			}
-			if (typeof updatedAt === 'number') {
-				const ms = updatedAt > 1e12 ? updatedAt : updatedAt * 1000
-				const parsed = new Date(ms)
-				return Number.isNaN(parsed.getTime()) ? undefined : parsed
-			}
-			return undefined
-		})()
-		return {
-			id: String(id),
-			email,
-			name,
-			avatar,
-			emailVerified: Boolean(emailVerified),
-			...(typeof role === 'string' ? { role } : {}),
-			...(parsedSettings ? { settings: parsedSettings } : {}),
-			...(createdAtDate ? { createdAt: createdAtDate } : {}),
-			...(updatedAtDate ? { updatedAt: updatedAtDate } : {})
 		}
 	}
 

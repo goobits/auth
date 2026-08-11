@@ -1,5 +1,5 @@
 import type { Cookies } from '@sveltejs/kit'
-import type { Session, SessionMetadata, User } from '../../types/index.ts'
+import type { AuthSession, SessionMetadata, User } from '../../types/index.ts'
 import { SessionAdapter } from '../session/SessionAdapter.ts'
 import { clearSessionCookie, writeSessionCookie } from '../session/_sessionCookie.ts'
 import { normalizeSessionMetadata } from '../session/_sessionMetadata.ts'
@@ -52,7 +52,7 @@ export class PgSessionAdapter extends SessionAdapter {
 		return this.#cookieName
 	}
 
-	async createSession(userId: string, metadata: SessionMetadata = {}): Promise<Session> {
+	async createSession(userId: string, metadata: SessionMetadata = {}): Promise<AuthSession> {
 		const normalized = normalizeSessionMetadata(metadata)
 		const token = createSessionToken()
 		const verifier = await hashSessionToken(token)
@@ -86,7 +86,7 @@ export class PgSessionAdapter extends SessionAdapter {
 
 	async validateSession(
 		sessionId: string
-	): Promise<{ session: Session | null; user: User | null }> {
+	): Promise<{ session: AuthSession | null; user: User | null }> {
 		const verifier = await hashSessionToken(sessionId)
 		const row = (
 			await this.#db.query<
@@ -150,7 +150,7 @@ export class PgSessionAdapter extends SessionAdapter {
 		await this.#db.query('DELETE FROM auth_sessions WHERE user_id = $1', [userId])
 	}
 
-	setSessionCookie(cookies: Cookies, session: Session): void {
+	setSessionCookie(cookies: Cookies, session: AuthSession): void {
 		writeSessionCookie(cookies, session, this.#cookieName, this.#secureCookies, this.#cookieDomain)
 	}
 
@@ -159,7 +159,7 @@ export class PgSessionAdapter extends SessionAdapter {
 	}
 }
 
-function toSession(row: SessionRow): Session {
+function toSession(row: SessionRow): AuthSession {
 	return {
 		createdAt: row.created_at,
 		expiresAt: row.expires_at,

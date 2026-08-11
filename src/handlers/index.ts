@@ -25,22 +25,28 @@ export {
 	createMfaBackupCodeHandler,
 	createMfaDisableHandler,
 	createMfaEnrollHandler,
-	createMfaLoginVerifyHandler,
 	createMfaStatusHandler,
 	createMfaStepUpHandler,
-	createMfaVerifyHandler,
+	createMfaVerifyHandler
+} from './mfaManagement.ts'
+export {
+	createMfaLoginVerifyHandler,
 	beginMfaLoginChallenge,
+	type MfaLoginChallengeResponse
+} from './mfaLogin.ts'
+export {
 	type MfaConfig,
 	type MfaLoginAttemptContext,
 	type MfaLoginAttemptPolicy,
 	type MfaLoginConfig,
 	type MfaLoginDenial,
 	type MfaStore
-} from './mfa.ts'
+} from './_mfaTypes.ts'
 export { consumeMfaCredentialProof } from './_mfaCredential.ts'
 
 // Magic link handlers
-export { createMagicLinkRequestHandler, createMagicLinkVerifyHandler } from './magicLink.ts'
+export { createMagicLinkRequestHandler } from './magicLinkRequest.ts'
+export { createMagicLinkVerifyHandler } from './magicLinkVerification.ts'
 
 // WebAuthn handlers
 export {

@@ -1,16 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AuthConfig, RequestEventLike } from '../src/types/auth.ts'
-import type {
-	OAuthFlowIntent,
-	OAuthProfile,
-	OAuthTokens,
-	Session,
-	User
-} from '../src/types/index.ts'
+import type { RequestEventLike } from '../src/types/auth.ts'
+import type { OAuthProfile, OAuthTokens, AuthSession } from '../src/types/index.ts'
 import type { OAuthFlowContext } from '../src/utils/oauth.ts'
 import { MemoryUserAdapter, MockSessionAdapter, MockTokenAdapter } from '../src/testing/index.ts'
-import { createMfaLoginTestConfig, TEST_CSRF_SECRET } from './testKit.ts'
+import { createMfaLoginTestConfig } from './testKit.ts'
+import {
+	context,
+	createAuth,
+	createEvent,
+	createProvider,
+	createUser,
+	profile,
+	tokens
+} from './_oauthLifecycleTestKit.ts'
 
 type OAuthCallback = (
 	event: RequestEventLike,
@@ -28,73 +31,9 @@ vi.mock('../src/handlers/callback.ts', () => ({
 	}
 }))
 
-import { createAuth as createAuthCore } from '../src/createAuth.ts'
-
-function createAuth(config: AuthConfig) {
-	return createAuthCore({
-		...config,
-		security: {
-			...config.security,
-			csrf: { secret: TEST_CSRF_SECRET, ...config.security?.csrf }
-		}
-	})
-}
-
-const profile: OAuthProfile = {
-	id: 'google-subject',
-	email: 'member@example.com',
-	name: 'Member',
-	verified_email: true
-}
-
-const tokens: OAuthTokens = {
-	accessToken: 'access-token',
-	refreshToken: 'refresh-token',
-	scope: 'openid email',
-	accessTokenExpiresAt: '2099-01-01T00:00:00.000Z'
-}
-
-function createProvider() {
-	return {
-		name: 'google',
-		callbackMode: 'query' as const,
-		createAuthorizationURL: () => new URL('https://example.com/auth'),
-		getUserProfile: vi.fn(async () => ({ profile, tokens })),
-		refreshAccessToken: vi.fn(),
-		revokeTokens: vi.fn()
-	}
-}
-
-function createEvent({
-	user = null,
-	session = null
-}: { user?: User | null; session?: Session | null } = {}): RequestEventLike {
-	return {
-		request: new Request('http://localhost/auth/callback/google'),
-		cookies: {
-			get: vi.fn(),
-			set: vi.fn(),
-			delete: vi.fn(),
-			getAll: vi.fn(() => []),
-			serialize: vi.fn()
-		},
-		params: { provider: 'google' },
-		locals: { user, session },
-		url: new URL('http://localhost/auth/callback/google')
-	}
-}
-
 function callback(): OAuthCallback {
 	if (!capturedOnAuthenticated) throw new Error('Missing callback hook')
 	return capturedOnAuthenticated
-}
-
-function context(intent: OAuthFlowIntent, userId: string | null = null): OAuthFlowContext {
-	return { intent, userId, redirectTo: '/settings/security' }
-}
-
-async function createUser(adapter: MemoryUserAdapter, id: string, email = 'member@example.com') {
-	return adapter.createUser({ id, email, name: 'Member', verified_email: true })
 }
 
 describe('createAuth OAuth lifecycle', () => {
@@ -286,7 +225,7 @@ describe('createAuth OAuth lifecycle', () => {
 		const createSessionSpy = vi.spyOn(sessionAdapter, 'createSession')
 		const identity = new MemoryUserAdapter()
 		const user = await createUser(identity, 'current-user')
-		const session: Session = {
+		const session: AuthSession = {
 			id: 'current-session',
 			userId: user.id,
 			expiresAt: new Date('2099-01-01T00:00:00.000Z')
@@ -324,7 +263,7 @@ describe('createAuth OAuth lifecycle', () => {
 			provider: 'google',
 			subject: profile.id
 		})
-		const session: Session = {
+		const session: AuthSession = {
 			id: 'current-session',
 			userId: currentUser.id,
 			expiresAt: new Date('2099-01-01T00:00:00.000Z')
@@ -423,7 +362,7 @@ describe('createAuth OAuth lifecycle', () => {
 		const identity = new MemoryUserAdapter()
 		const user = await createUser(identity, 'current-user')
 		await identity.linkIdentity({ userId: user.id, provider: 'google', subject: profile.id })
-		const session: Session = {
+		const session: AuthSession = {
 			id: 'current-session',
 			userId: user.id,
 			expiresAt: new Date('2099-01-01T00:00:00.000Z'),

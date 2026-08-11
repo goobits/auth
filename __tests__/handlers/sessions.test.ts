@@ -5,7 +5,7 @@ import {
 	createSessionListHandler,
 	createSessionRevokeHandler
 } from '../../src/handlers/sessions.ts'
-import type { Session, SessionSummary } from '../../src/types/index.ts'
+import type { AuthSession, SessionSummary } from '../../src/types/index.ts'
 
 function createEvent(body: Record<string, unknown> | string | null = null) {
 	const headers = new Headers()
@@ -43,8 +43,7 @@ describe('session handlers', () => {
 			fingerprint: 'must-not-leak'
 		}
 		const handler = createCurrentSessionHandler({
-			sanitizeUser: (user) =>
-				user ? ({ id: user.id, email: user.email } as typeof user) : null
+			sanitizeUser: (user) => (user ? ({ id: user.id, email: user.email } as typeof user) : null)
 		})
 
 		const response = await handler(event)
@@ -137,7 +136,7 @@ describe('session handlers', () => {
 			])
 		}
 		const event = createEvent()
-		const currentSession: Session = {
+		const currentSession: AuthSession = {
 			id: 'current-secret-bearer',
 			managementId: 'public-handle',
 			userId: 'u1',

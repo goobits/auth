@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 
 import { MemoryWebAuthnAdapter } from '../../src/adapters/memory/webauthn.ts'
 import type { RequestEventLike } from '../../src/types/auth.ts'
-import type { Session } from '../../src/types/core.ts'
+import type { AuthSession } from '../../src/types/core.ts'
 
 export const TEST_USER = {
 	id: 'u1',
@@ -31,7 +31,7 @@ export function createEvent({
 	method?: string
 	body?: unknown
 	user?: typeof TEST_USER | null
-	session?: Session | null
+	session?: AuthSession | null
 	path?: string
 } = {}): RequestEventLike {
 	const headers = new Headers()

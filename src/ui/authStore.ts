@@ -3,11 +3,11 @@ import { derived, writable } from 'svelte/store'
 import { AUTH_ROUTE_PATHS, resolveAuthRoutePath } from '../_routePaths.ts'
 
 type AuthUser = Record<string, unknown> | null
-type AuthSession = Record<string, unknown> | null
+type AuthSessionPayload = Record<string, unknown> | null
 
 type AuthState = {
 	user: AuthUser
-	session: AuthSession
+	session: AuthSessionPayload
 	isAuthenticated: boolean
 	loading: boolean
 	error: string | null
@@ -76,7 +76,7 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 		update((state) => ({
 			...state,
 			user,
-			session: (result['session'] || null) as AuthSession,
+			session: (result['session'] || null) as AuthSessionPayload,
 			isAuthenticated: true,
 			loading: false
 		}))
@@ -205,7 +205,7 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 					update((state) => ({
 						...state,
 						user: result['user'] as AuthUser,
-						session: (result['session'] || null) as AuthSession,
+						session: (result['session'] || null) as AuthSessionPayload,
 						isAuthenticated: true,
 						loading: false
 					}))

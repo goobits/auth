@@ -397,6 +397,12 @@ post-login path must survive between the primary and second-factor requests.
 An invalid code does not consume the challenge, so the member can correct a
 normal typo without repeating primary authentication. Application `onVerified`
 policy runs before either the proof or challenge is consumed.
+Applications whose challenge, MFA, and session records share a transaction
+boundary can configure `mfa.login.completeLogin`. The port receives the stable
+challenge ID, verified single-use proof, user ID, and trusted session metadata;
+it must atomically consume both credentials and create the returned session.
+Return `null` when any precondition loses a race. When the port is absent, Auth
+retains the adapter-based completion path for backward compatibility.
 
 Magic-link token URLs use a scanner-safe confirmation interstitial by default.
 The GET request does not consume the token; a short-lived, HttpOnly

@@ -1,65 +1,16 @@
-import { error as httpError, redirect } from '@sveltejs/kit'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MemoryCsrfStore } from '@goobits/security/csrf'
-import { BodyTooLargeError } from '@goobits/security/request-body'
 import { applySecurityPolicy, createAuthCsrf } from '../../src/security/policy.ts'
-import type { RequestEventLike } from '../../src/types/auth.ts'
-import { createCookies, createRequestEvent } from '../testKit.ts'
-
-const CSRF_SECRET = 'auth-test-csrf-secret-that-is-at-least-32-bytes'
-
-function csrfSettings(mode: 'required' | 'optional' | 'off') {
-	return {
-		mode,
-		...(mode === 'off' ? {} : { secret: CSRF_SECRET }),
-		cookieName: 'csrf-token',
-		headerName: 'x-csrf-token',
-		checkExpiry: false,
-		httpOnly: false,
-		secureCookies: false
-	}
-}
-
-const requestOriginOff = { mode: 'off' as const, allowedOrigins: [] }
-
-function createEvent({
-	method = 'POST',
-	headers = {},
-	cookies = createCookies(),
-	clientAddress = '127.0.0.1'
-}: {
-	method?: string
-	headers?: Record<string, string>
-	cookies?: ReturnType<typeof createCookies>
-	clientAddress?: string
-} = {}): RequestEventLike {
-	return {
-		...createRequestEvent({
-			url: 'http://localhost/auth/test',
-			method,
-			headers,
-			cookies,
-			locals: { user: null, session: null }
-		}),
-		getClientAddress: () => clientAddress
-	}
-}
-
-function createAuditSettings(emitter: ReturnType<typeof vi.fn>) {
-	return {
-		requestOrigin: requestOriginOff,
-		csrf: csrfSettings('off'),
-		rateLimit: {
-			mode: 'off' as const,
-			windows: [{ name: 'audit', maxEvents: 10, windowMs: 60_000 }],
-			keyPrefix: 'test-audit',
-			trustedProxyHeaders: []
-		},
-		audit: { mode: 'required' as const, emitter },
-		routes: {}
-	}
-}
+import { createCookies } from '../testKit.ts'
+import {
+	CSRF_SECRET,
+	createAuditSettings,
+	createEvent,
+	createPolicySettings,
+	csrfSettings,
+	requestOriginOff
+} from './_policyTestKit.ts'
 
 describe('security policy wrapper', () => {
 	it('blocks missing csrf token when required', async () => {
@@ -67,19 +18,11 @@ describe('security policy wrapper', () => {
 			handler: async () => new Response(JSON.stringify({ ok: true })),
 			routeId: 'magic.request',
 			settings: {
-				requestOrigin: requestOriginOff,
+				...createPolicySettings({ csrfMode: 'required' }),
 				csrf: {
 					...csrfSettings('required'),
 					store: new MemoryCsrfStore()
-				},
-				rateLimit: {
-					mode: 'off',
-					windows: [{ name: 'test', maxEvents: 10, windowMs: 60_000 }],
-					keyPrefix: 'test',
-					trustedProxyHeaders: []
-				},
-				audit: { mode: 'off' },
-				routes: {}
+				}
 			}
 		})
 		const response = await handler(createEvent() as Parameters<typeof handler>[0])
@@ -93,18 +36,7 @@ describe('security policy wrapper', () => {
 		const handler = applySecurityPolicy({
 			handler: async () => new Response(JSON.stringify({ ok: true })),
 			routeId: 'magic.request',
-			settings: {
-				requestOrigin: requestOriginOff,
-				csrf: csrfSettings('off'),
-				rateLimit: {
-					mode: 'required',
-					windows: [{ name: 'test', maxEvents: 1, windowMs: 60_000 }],
-					keyPrefix: 'test',
-					trustedProxyHeaders: []
-				},
-				audit: { mode: 'off' },
-				routes: {}
-			}
+			settings: createPolicySettings({ rateLimitMode: 'required' })
 		})
 		const first = await handler(
 			createEvent({
@@ -188,19 +120,12 @@ describe('security policy wrapper', () => {
 		const handler = applySecurityPolicy({
 			handler: async () => new Response(JSON.stringify({ ok: true })),
 			routeId: 'magic.request',
-			settings: {
-				requestOrigin: requestOriginOff,
-				csrf: csrfSettings('off'),
-				rateLimit: {
-					mode: 'required',
-					windows: [{ name: 'test', maxEvents: 1, windowMs: 60_000 }],
-					keyPrefix: 'test-forwarded',
-					trustedProxyHeaders: ['x-forwarded-for'],
-					forwardedForTrustedProxyHops: 1
-				},
-				audit: { mode: 'off' },
-				routes: {}
-			}
+			settings: createPolicySettings({
+				rateLimitMode: 'required',
+				keyPrefix: 'test-forwarded',
+				trustedProxyHeaders: ['x-forwarded-for'],
+				forwardedForTrustedProxyHops: 1
+			})
 		})
 		const first = await handler(
 			createEvent({
@@ -230,18 +155,7 @@ describe('security policy wrapper', () => {
 		const handler = applySecurityPolicy({
 			handler: async () => new Response(JSON.stringify({ ok: true })),
 			routeId: 'magic.request',
-			settings: {
-				requestOrigin: requestOriginOff,
-				csrf: csrfSettings('optional'),
-				rateLimit: {
-					mode: 'off',
-					windows: [{ name: 'test', maxEvents: 10, windowMs: 60_000 }],
-					keyPrefix: 'test-optional',
-					trustedProxyHeaders: []
-				},
-				audit: { mode: 'off' },
-				routes: {}
-			}
+			settings: createPolicySettings({ csrfMode: 'optional', keyPrefix: 'test-optional' })
 		})
 
 		await expect(handler(createEvent() as Parameters<typeof handler>[0])).resolves.toMatchObject({
@@ -258,18 +172,7 @@ describe('security policy wrapper', () => {
 
 	it('accepts the canonical csrf_token form field', async () => {
 		const cookies = createCookies()
-		const settings = {
-			requestOrigin: requestOriginOff,
-			csrf: csrfSettings('required'),
-			rateLimit: {
-				mode: 'off' as const,
-				windows: [{ name: 'test', maxEvents: 10, windowMs: 60_000 }],
-				keyPrefix: 'test-form',
-				trustedProxyHeaders: []
-			},
-			audit: { mode: 'off' as const },
-			routes: {}
-		}
+		const settings = createPolicySettings({ csrfMode: 'required', keyPrefix: 'test-form' })
 		const token = await createAuthCsrf(settings).generate(
 			createEvent({ method: 'GET', cookies }) as never
 		)
@@ -294,18 +197,11 @@ describe('security policy wrapper', () => {
 		const handler = applySecurityPolicy({
 			handler: async () => new Response(JSON.stringify({ ok: true })),
 			routeId: 'magic.request',
-			settings: {
-				requestOrigin: requestOriginOff,
-				csrf: csrfSettings('off'),
-				rateLimit: {
-					mode: 'required',
-					windows: [{ name: 'test', maxEvents: 1, windowMs: 60_000 }],
-					keyPrefix: 'test-cloudflare',
-					trustedProxyHeaders: ['cf-connecting-ip']
-				},
-				audit: { mode: 'off' },
-				routes: {}
-			}
+			settings: createPolicySettings({
+				rateLimitMode: 'required',
+				keyPrefix: 'test-cloudflare',
+				trustedProxyHeaders: ['cf-connecting-ip']
+			})
 		})
 		const first = await handler(
 			createEvent({
@@ -344,18 +240,11 @@ describe('security policy wrapper', () => {
 		const handler = applySecurityPolicy({
 			handler: async () => new Response(JSON.stringify({ ok: true })),
 			routeId: 'magic.request',
-			settings: {
-				requestOrigin: requestOriginOff,
-				csrf: csrfSettings('off'),
-				rateLimit: {
-					mode: 'required',
-					windows: [{ name: 'test', maxEvents: 1, windowMs: 60_000 }],
-					keyPrefix: 'test-untrusted-forwarded',
-					trustedProxyHeaders: ['cf-connecting-ip']
-				},
-				audit: { mode: 'off' },
-				routes: {}
-			}
+			settings: createPolicySettings({
+				rateLimitMode: 'required',
+				keyPrefix: 'test-untrusted-forwarded',
+				trustedProxyHeaders: ['cf-connecting-ip']
+			})
 		})
 		const first = await handler(
 			createEvent({
@@ -372,82 +261,5 @@ describe('security policy wrapper', () => {
 
 		expect(first.status).toBe(200)
 		expect(secondSameForwardedIp.status).toBe(200)
-	})
-
-	it('uses the shared client bucket when the platform address accessor is unavailable', async () => {
-		const emitter = vi.fn()
-		const inner = vi.fn(async () => new Response(JSON.stringify({ ok: true })))
-		const handler = applySecurityPolicy({
-			handler: inner,
-			routeId: 'sessions.list',
-			settings: createAuditSettings(emitter)
-		})
-		const event = createEvent()
-		event.getClientAddress = () => {
-			throw new Error('Client address unavailable')
-		}
-
-		const response = await handler(event as Parameters<typeof handler>[0])
-
-		expect(response.status).toBe(200)
-		expect(inner).toHaveBeenCalledOnce()
-		expect(emitter).toHaveBeenCalledWith(expect.objectContaining({ ip: 'unknown' }))
-	})
-
-	it('audits redirects as successful control flow', async () => {
-		const emitter = vi.fn()
-		const handler = applySecurityPolicy({
-			handler: async () => {
-				throw redirect(303, '/')
-			},
-			routeId: 'auth.logout',
-			settings: createAuditSettings(emitter)
-		})
-
-		await expect(handler(createEvent() as Parameters<typeof handler>[0])).rejects.toMatchObject({
-			status: 303,
-			location: '/'
-		})
-		expect(emitter).toHaveBeenCalledWith(
-			expect.objectContaining({ name: 'auth.success', severity: 'info', status: 303 })
-		)
-		expect(emitter).not.toHaveBeenCalledWith(expect.objectContaining({ name: 'auth.failure' }))
-	})
-
-	it('preserves expected HTTP failure status and severity in audit events', async () => {
-		const emitter = vi.fn()
-		const handler = applySecurityPolicy({
-			handler: async () => {
-				throw httpError(403, 'Forbidden')
-			},
-			routeId: 'sessions.revoke',
-			settings: createAuditSettings(emitter)
-		})
-
-		await expect(handler(createEvent() as Parameters<typeof handler>[0])).rejects.toMatchObject({
-			status: 403
-		})
-		expect(emitter).toHaveBeenCalledWith(
-			expect.objectContaining({ name: 'auth.failure', severity: 'warn', status: 403 })
-		)
-	})
-
-	it('returns and audits bounded request-body failures as 413', async () => {
-		const emitter = vi.fn()
-		const handler = applySecurityPolicy({
-			handler: async () => {
-				throw new BodyTooLargeError(1_048_576)
-			},
-			routeId: 'webauthn.login.verify',
-			settings: createAuditSettings(emitter)
-		})
-
-		const response = await handler(createEvent() as Parameters<typeof handler>[0])
-
-		expect(response.status).toBe(413)
-		expect(await response.json()).toEqual({ ok: false, error: 'Request body too large' })
-		expect(emitter).toHaveBeenCalledWith(
-			expect.objectContaining({ name: 'auth.failure', severity: 'warn', status: 413 })
-		)
 	})
 })

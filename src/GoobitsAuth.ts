@@ -4,12 +4,12 @@ import { createAuth } from './createAuth.ts'
 import { AUTH_ROUTE_PATHS, matchesAuthRoute, normalizeAuthBasePath } from './_routePaths.ts'
 import { createAuthEvent, type AuthEvent } from './security/events.ts'
 import type { AuthConfig, AuthLocals, AuthRequestHandler, RequestEventLike } from './types/auth.ts'
-import type { Session, User } from './types/index.ts'
+import type { AuthSession, User } from './types/index.ts'
 
 type HandlerMethod = 'GET' | 'POST'
 
 type AuthPrincipal = {
-	session: Session
+	session: AuthSession
 	user: User
 }
 
@@ -64,7 +64,7 @@ function splitRoutedPath(pathname: string, basePath: string): string[] {
 }
 
 function hasSessionPrincipal(locals: AuthLocals): locals is AuthLocals & {
-	session: Session
+	session: AuthSession
 	user: User
 } {
 	return !!locals.session && !!locals.user

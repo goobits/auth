@@ -1,6 +1,6 @@
 import { parseSessionTimestamp } from '../adapters/session/sessionAssurance.ts'
 import type { AuthLocals, RequestEventLike } from '../types/auth.ts'
-import type { Session } from '../types/core.ts'
+import type { AuthSession } from '../types/core.ts'
 import { type AuthEventEmitter, createAuthEvent } from './events.ts'
 
 type Actor = {
@@ -33,7 +33,7 @@ function isRecent(value: unknown, options: SessionAssuranceWindow): boolean {
 
 /** Returns whether the session's primary authentication is still recent enough. */
 export function hasRecentPrimaryAuthentication(
-	session: Session | null | undefined,
+	session: AuthSession | null | undefined,
 	options: SessionAssuranceWindow
 ): boolean {
 	return Boolean(session && isRecent(session.createdAt, options))
@@ -41,7 +41,7 @@ export function hasRecentPrimaryAuthentication(
 
 /** Returns whether the session's MFA verification is still recent enough. */
 export function hasRecentMfaVerification(
-	session: Session | null | undefined,
+	session: AuthSession | null | undefined,
 	options: SessionAssuranceWindow
 ): boolean {
 	return Boolean(session && isRecent(session.mfaVerifiedAt, options))

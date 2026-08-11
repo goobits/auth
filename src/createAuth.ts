@@ -1,10 +1,7 @@
 import { resolveDefaults, validateConfig } from './createAuth/config.ts'
-import {
-	buildActions,
-	buildRoutes,
-	createHandlers,
-	createUtils
-} from './createAuth/handlerFactory.ts'
+import { buildActions } from './createAuth/_actionRegistry.ts'
+import { buildRoutes } from './createAuth/_routeRegistry.ts'
+import { createHandlers, createUtils } from './createAuth/handlerFactory.ts'
 import { applyPolicies, resolveSecurity } from './createAuth/securitySetup.ts'
 import type { OAuthProviderMetadata } from './providers/OAuthProvider.ts'
 import type { AuthConfig, OAuthProviderConfig } from './types/auth.ts'

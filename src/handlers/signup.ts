@@ -9,9 +9,9 @@ import { isSafeRedirectPath } from '../utils/redirect.ts'
 import { readRequestFormData } from '../utils/http.ts'
 import { sanitizeUser as defaultSanitizeUser } from '../utils/sanitize.ts'
 import { createVerificationToken, VERIFICATION_TOKEN_TYPES } from '../verification/index.ts'
-import { resolveHandlerRateLimitKey, type HandlerRateLimitConfig } from './rateLimitKey.ts'
+import type { HandlerRateLimitConfig } from './rateLimitKey.ts'
 import {
-	createStandaloneSecurityBoundaryValidator,
+	createStandaloneSecurityGate,
 	type StandaloneSecurityBoundary
 } from './_standaloneSecurity.ts'
 
@@ -73,13 +73,7 @@ export function createSignupHandler(
 		logger?: Logger
 	} & StandaloneSecurityBoundary
 ) {
-	const validateRequestBoundary = createStandaloneSecurityBoundaryValidator('createSignupHandler', {
-		hasCsrf: typeof config.csrf?.validate === 'function',
-		hasRateLimit: typeof config.rateLimit?.check === 'function',
-		...(config.validateExternalSecurityBoundary
-			? { validateExternalSecurityBoundary: config.validateExternalSecurityBoundary }
-			: {})
-	})
+	const validateRequestSecurity = createStandaloneSecurityGate('createSignupHandler', config)
 	const {
 		credentialsProvider,
 		userAdapter,
@@ -88,8 +82,6 @@ export function createSignupHandler(
 		verificationTokenAdapter,
 		onSignup,
 		sendVerificationEmail,
-		csrf,
-		rateLimit,
 		redirectTo = '/',
 		autoLogin,
 		sanitizeUser = defaultSanitizeUser,
@@ -104,29 +96,8 @@ export function createSignupHandler(
 		autoLogin ?? !(verificationTokenAdapter !== undefined && sendVerificationEmail !== undefined)
 
 	return async (event: RequestEventLike) => {
-		if (!(await validateRequestBoundary(event))) {
-			return { error: 'Invalid security boundary', success: false }
-		}
-		if (csrf?.validate) {
-			const valid = await csrf.validate(event)
-			if (!valid) {
-				return {
-					error: csrf.errorMessage || 'Invalid CSRF token',
-					success: false
-				}
-			}
-		}
-
-		if (rateLimit?.check) {
-			const key = resolveHandlerRateLimitKey(event, rateLimit)
-			const result = await rateLimit.check(key)
-			if (!result?.allowed) {
-				return {
-					error: 'Too many attempts. Try again later.',
-					success: false
-				}
-			}
-		}
+		const securityFailure = await validateRequestSecurity(event)
+		if (securityFailure) return securityFailure
 
 		const formData = await readRequestFormData(event.request)
 		const emailFieldName = fields?.email ?? 'email'

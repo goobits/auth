@@ -7,7 +7,12 @@ import {
 } from '@goobits/security/rate-limit'
 
 /** Authentication flows with package-owned abuse-control policy. */
-export type AuthRateLimitFlow = 'default' | 'login' | 'registration' | 'password-reset'
+export type AuthRateLimitFlow =
+	| 'default'
+	| 'login'
+	| 'passkey-options'
+	| 'registration'
+	| 'password-reset'
 
 /** Shared options accepted by authentication rate-limiter factories. */
 export interface AuthRateLimitConfig {
@@ -22,6 +27,12 @@ export const AUTH_RATE_LIMIT_WINDOWS = {
 	login: [
 		{ name: 'login:burst', windowMs: 60_000, maxEvents: 5 },
 		{ name: 'login:15-min', windowMs: 15 * 60_000, maxEvents: 15 }
+	],
+	// Conditional WebAuthn requests options when the login page loads. Keep
+	// challenge creation bounded without spending the stricter attempt budget.
+	'passkey-options': [
+		{ name: 'passkey-options:burst', windowMs: 60_000, maxEvents: 30 },
+		{ name: 'passkey-options:15-min', windowMs: 15 * 60_000, maxEvents: 120 }
 	],
 	registration: [
 		{ name: 'registration:10-min', windowMs: 10 * 60_000, maxEvents: 3 },

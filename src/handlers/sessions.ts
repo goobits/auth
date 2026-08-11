@@ -1,7 +1,7 @@
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import { AuthAdapterCapabilityError } from '../errors/AuthPrincipalResolutionError.ts'
 import type { AuthLocals, RequestEventLike } from '../types/auth.ts'
-import type { Session, SessionSummary, User } from '../types/index.ts'
+import type { AuthSession, SessionSummary, User } from '../types/index.ts'
 import { jsonResponse, parseRequestData } from '../utils/http.ts'
 
 type SessionManagementAdapter = Partial<
@@ -18,7 +18,7 @@ type SessionHandlerConfig = {
 	sessionAdapter: SessionManagementAdapter
 	isAuthenticated?: (locals: AuthLocals) => boolean
 	getUser?: (locals: AuthLocals) => { id: string }
-	getSession?: (locals: AuthLocals) => Session | null
+	getSession?: (locals: AuthLocals) => AuthSession | null
 }
 
 const toSafeSessionSummary = (session: SessionSummary, currentManagementId?: string) => ({
@@ -38,10 +38,12 @@ const noStore = (response: Response) => {
 }
 
 /** Returns the sanitized current principal without exposing the bearer session id. */
-export function createCurrentSessionHandler(config: {
-	isAuthenticated?: (locals: AuthLocals) => boolean
-	sanitizeUser?: (user: User | null) => User | null
-} = {}) {
+export function createCurrentSessionHandler(
+	config: {
+		isAuthenticated?: (locals: AuthLocals) => boolean
+		sanitizeUser?: (user: User | null) => User | null
+	} = {}
+) {
 	const {
 		isAuthenticated = (locals: AuthLocals) => !!locals.user && !!locals.session,
 		sanitizeUser = (user: User | null) => user
