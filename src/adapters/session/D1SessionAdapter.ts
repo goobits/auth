@@ -2,7 +2,7 @@ import type { Cookies } from '@sveltejs/kit'
 
 import type { SessionMetadata, SessionSummary, User } from '../../types/index.ts'
 import { AuthAdapterCapabilityError } from '../../errors/AuthPrincipalResolutionError.ts'
-import type { D1DatabasePort, D1Row, D1Value } from '../_d1Port.ts'
+import type { D1DatabasePort, D1Value } from '../_d1Port.ts'
 import { assertD1Identifiers } from '../_d1Sql.ts'
 import { normalizeSessionMetadata } from './_sessionMetadata.ts'
 import { mapD1SessionUser, type D1UserColumns } from './_d1SessionUser.ts'

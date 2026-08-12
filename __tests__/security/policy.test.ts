@@ -4,12 +4,10 @@ import { MemoryCsrfStore } from '@goobits/security/csrf'
 import { applySecurityPolicy, createAuthCsrf } from '../../src/security/policy.ts'
 import { createCookies } from '../testKit.ts'
 import {
-	CSRF_SECRET,
 	createAuditSettings,
 	createEvent,
 	createPolicySettings,
-	csrfSettings,
-	requestOriginOff
+	csrfSettings
 } from './_policyTestKit.ts'
 
 describe('security policy wrapper', () => {
