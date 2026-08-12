@@ -56,7 +56,11 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 
 	const resolvedEndpoints: AuthEndpoints = { ...DEFAULT_ENDPOINTS, ...endpoints }
 
-	const { subscribe, set, update } = writable<AuthState>({
+	const {
+		subscribe: subscribeState,
+		set,
+		update
+	} = writable<AuthState>({
 		user: null,
 		session: null,
 		isAuthenticated: false,
@@ -103,6 +107,49 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 		} catch {
 			return { success: response.ok }
 		}
+	}
+	const checkSession = async () => {
+		if (!isBrowser) return
+
+		update((state) => ({ ...state, loading: true }))
+
+		try {
+			const response = await fetcher(`${baseUrl}${resolvedEndpoints.session}`, {
+				method: 'GET',
+				headers: buildHeaders(),
+				credentials: 'include'
+			})
+
+			if (response.status === 204 || !response.ok) {
+				update((state) => ({ ...state, loading: false }))
+				return
+			}
+
+			const result = (await response.json()) as Record<string, unknown>
+
+			if (result['success'] && result['user']) {
+				update((state) => ({
+					...state,
+					user: result['user'] as AuthUser,
+					session: (result['session'] || null) as AuthSessionPayload,
+					isAuthenticated: true,
+					loading: false
+				}))
+			} else {
+				update((state) => ({ ...state, loading: false }))
+			}
+		} catch {
+			update((state) => ({ ...state, loading: false }))
+		}
+	}
+	let didAutoCheck = false
+	const subscribe: typeof subscribeState = (run, invalidate) => {
+		const unsubscribe = subscribeState(run, invalidate)
+		if (isBrowser && autoCheck && !didAutoCheck) {
+			didAutoCheck = true
+			void checkSession()
+		}
+		return unsubscribe
 	}
 
 	const api = {
@@ -182,40 +229,7 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 			}
 		},
 
-		async checkSession() {
-			if (!isBrowser) return
-
-			update((state) => ({ ...state, loading: true }))
-
-			try {
-				const response = await fetcher(`${baseUrl}${resolvedEndpoints.session}`, {
-					method: 'GET',
-					headers: buildHeaders(),
-					credentials: 'include'
-				})
-
-				if (response.status === 204 || !response.ok) {
-					update((state) => ({ ...state, loading: false }))
-					return
-				}
-
-				const result = (await response.json()) as Record<string, unknown>
-
-				if (result['success'] && result['user']) {
-					update((state) => ({
-						...state,
-						user: result['user'] as AuthUser,
-						session: (result['session'] || null) as AuthSessionPayload,
-						isAuthenticated: true,
-						loading: false
-					}))
-				} else {
-					update((state) => ({ ...state, loading: false }))
-				}
-			} catch {
-				update((state) => ({ ...state, loading: false }))
-			}
-		},
+		checkSession,
 
 		async updateProfile(data: Record<string, unknown>) {
 			update((state) => ({ ...state, loading: true, error: null }))
@@ -254,12 +268,8 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 		},
 
 		async refreshSession() {
-			return this.checkSession()
+			return checkSession()
 		}
-	}
-
-	if (isBrowser && autoCheck) {
-		api.checkSession()
 	}
 
 	return api
