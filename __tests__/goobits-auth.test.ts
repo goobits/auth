@@ -299,6 +299,7 @@ describe('GoobitsAuth', () => {
 			{ method: 'POST', path: '/auth/mfa/disable', handler: 'mfa.disable' },
 			{ method: 'POST', path: '/auth/mfa/backup-code', handler: 'mfa.backupCode' },
 			{ method: 'POST', path: '/auth/mfa/step-up', handler: 'mfa.stepUp' },
+			{ method: 'GET', path: '/auth/session', handler: 'session.current' },
 			{ method: 'GET', path: '/auth/sessions', handler: 'sessions.list' },
 			{ method: 'POST', path: '/auth/sessions', handler: 'sessions.revoke' },
 			{ method: 'GET', path: '/auth/oauth/identities', handler: 'oauth.identities' },

@@ -79,6 +79,7 @@ export function createRoutingHarness(basePath = '/auth') {
 		login: handler('login'),
 		callback: handler('callback'),
 		logout: handler('logout'),
+		currentSession: handler('session.current'),
 		hooks: async ({ event, resolve }) => resolve(event),
 		magicLink: {
 			request: handler('magicLink.request'),

@@ -33,7 +33,7 @@ const DEFAULT_ENDPOINTS = {
 	login: '/auth/login',
 	register: '/auth/register',
 	logout: resolveAuthRoutePath('/auth', AUTH_ROUTE_PATHS.signOut),
-	session: '/auth/session',
+	session: resolveAuthRoutePath('/auth', AUTH_ROUTE_PATHS.currentSession),
 	updateProfile: '/auth/profile'
 }
 

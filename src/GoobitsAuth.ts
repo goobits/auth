@@ -295,6 +295,10 @@ export class GoobitsAuth {
 		if (segments.length === 1 && segments[0] === AUTH_ROUTE_PATHS.signOut.slice(1)) {
 			return { method: 'POST', handler: handlers.logout }
 		}
+		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.currentSession)) {
+			if (!handlers.currentSession) return null
+			return { method: 'GET', handler: handlers.currentSession }
+		}
 		if (matchesAuthRoute(segments, AUTH_ROUTE_PATHS.magicLink)) {
 			if (!handlers.magicLink) return null
 			return { method: 'POST', handler: handlers.magicLink.request }

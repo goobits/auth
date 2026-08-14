@@ -4,7 +4,7 @@ import { createMagicLinkRequestHandler } from '../../src/handlers/magicLinkReque
 import { createMagicLinkVerifyHandler } from '../../src/handlers/magicLinkVerification.ts'
 
 export const MAGIC_LINK_BASE_URL = 'https://auth.example.test'
-export const OTP_PEPPER = 'test-only-magic-link-pepper-32-bytes-minimum'
+const OTP_PEPPER = 'test-only-magic-link-pepper-32-bytes-minimum'
 
 export function createTestMagicLinkRequestHandler(
 	config: Omit<Parameters<typeof createMagicLinkRequestHandler>[0], 'baseUrl' | 'otpPepper'> & {
