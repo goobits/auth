@@ -1,8 +1,10 @@
 import { shouldSuppressConsoleArgs } from './__tests__/consoleSuppressions.js'
 
-const wrapConsole = (method) => {
+type SuppressedConsoleMethod = 'error' | 'warn'
+
+const wrapConsole = (method: SuppressedConsoleMethod): void => {
 	const original = console[method]
-	console[method] = (...args) => {
+	console[method] = (...args: unknown[]) => {
 		if (shouldSuppressConsoleArgs(args)) return
 		original(...args)
 	}
