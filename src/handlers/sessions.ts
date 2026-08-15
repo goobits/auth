@@ -1,7 +1,7 @@
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
 import { AuthAdapterCapabilityError } from '../errors/AuthPrincipalResolutionError.ts'
 import type { AuthLocals, RequestEventLike } from '../types/auth.ts'
-import type { AuthSession, SessionSummary } from '../types/index.ts'
+import type { AuthSession, SessionSummary, User } from '../types/index.ts'
 import { jsonResponse, parseRequestData } from '../utils/http.ts'
 
 type SessionManagementAdapter = Partial<
@@ -31,6 +31,50 @@ const toSafeSessionSummary = (session: SessionSummary, currentManagementId?: str
 	userAgent: session.userAgent ?? null,
 	current: currentManagementId === session.id
 })
+
+const noStore = (response: Response) => {
+	response.headers.set('cache-control', 'no-store')
+	return response
+}
+
+/** Returns the sanitized current principal without exposing the bearer session id. */
+export function createCurrentSessionHandler(
+	config: {
+		isAuthenticated?: (locals: AuthLocals) => boolean
+		sanitizeUser?: (user: User | null) => User | null
+	} = {}
+) {
+	const {
+		isAuthenticated = (locals: AuthLocals) => !!locals.user && !!locals.session,
+		sanitizeUser = (user: User | null) => user
+	} = config
+
+	return async (event: RequestEventLike) => {
+		const user = event.locals.user ?? null
+		const session = event.locals.session ?? null
+		if (!isAuthenticated(event.locals) || !user || !session) {
+			return noStore(new Response(null, { status: 204 }))
+		}
+
+		const safeUser = sanitizeUser(user)
+		if (!safeUser) return noStore(new Response(null, { status: 204 }))
+
+		return noStore(
+			jsonResponse({
+				success: true,
+				user: safeUser,
+				session: {
+					userId: session.userId,
+					expiresAt: session.expiresAt,
+					createdAt: session.createdAt ?? null,
+					lastActiveAt: session.lastActiveAt ?? null,
+					mfaVerifiedAt: session.mfaVerifiedAt ?? null,
+					rememberMe: session.rememberMe ?? false
+				}
+			})
+		)
+	}
+}
 
 const isUnsupportedError = (error: unknown): boolean =>
 	error instanceof AuthAdapterCapabilityError ||

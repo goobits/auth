@@ -1,12 +1,16 @@
 import { createLogoutHandler } from '../handlers/logout.ts'
-import { createSessionListHandler, createSessionRevokeHandler } from '../handlers/sessions.ts'
+import {
+	createCurrentSessionHandler,
+	createSessionListHandler,
+	createSessionRevokeHandler
+} from '../handlers/sessions.ts'
 import { createAuthCsrf } from '../security/policy.ts'
 import type { AuthConfig, AuthHandlers, AuthLocals, RequestEventLike } from '../types/auth.ts'
 import type { User } from '../types/index.ts'
 import type { ResolvedDefaults } from './config.ts'
 import type { ResolvedSecurity } from './securitySetup.ts'
 
-type SessionHandlers = Pick<AuthHandlers, 'logout' | 'hooks'> &
+type SessionHandlers = Pick<AuthHandlers, 'logout' | 'hooks' | 'currentSession'> &
 	Partial<Pick<AuthHandlers, 'sessions'>>
 
 export function createSessionHandlers(
@@ -57,6 +61,7 @@ export function createSessionHandlers(
 	}
 
 	return {
+		currentSession: createCurrentSessionHandler({ isAuthenticated, sanitizeUser }),
 		logout,
 		hooks: handleHooks,
 		...(sessions

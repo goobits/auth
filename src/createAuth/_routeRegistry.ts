@@ -15,6 +15,9 @@ export function buildRoutes(handlers: AuthHandlers): AuthRoutes {
 			return { GET: callback, POST: callback }
 		},
 		logout: () => ({ POST: handlers.logout }),
+		currentSession: () => ({
+			GET: requireHandlers(handlers.currentSession, 'Current session')
+		}),
 		magicLink: () => ({
 			POST: requireHandlers(handlers.magicLink, 'Magic link').request
 		}),

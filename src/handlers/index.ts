@@ -61,7 +61,11 @@ export {
 } from '#webauthn-handlers'
 
 // Session management handlers
-export { createSessionListHandler, createSessionRevokeHandler } from './sessions.ts'
+export {
+	createCurrentSessionHandler,
+	createSessionListHandler,
+	createSessionRevokeHandler
+} from './sessions.ts'
 export {
 	type AssuredSessionAdapter,
 	rotateSessionAssurance,

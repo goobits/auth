@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+	createCurrentSessionHandler,
 	createSessionListHandler,
 	createSessionRevokeHandler
 } from '../../src/handlers/sessions.ts'
@@ -31,6 +32,48 @@ function createEvent(body: Record<string, unknown> | string | null = null) {
 }
 
 describe('session handlers', () => {
+	it('returns a no-store sanitized current principal without the bearer session id', async () => {
+		const event = createEvent()
+		event.locals.user = { id: 'u1', email: 'member@example.test', password: 'must-not-leak' }
+		event.locals.session = {
+			id: 'secret-current-bearer',
+			managementId: 'public-management-id',
+			userId: 'u1',
+			expiresAt: new Date(Date.now() + 60_000),
+			fingerprint: 'must-not-leak'
+		}
+		const handler = createCurrentSessionHandler({
+			sanitizeUser: (user) => (user ? ({ id: user.id, email: user.email } as typeof user) : null)
+		})
+
+		const response = await handler(event)
+		const payload = await response.json()
+		const serialized = JSON.stringify(payload)
+
+		expect(response.status).toBe(200)
+		expect(response.headers.get('cache-control')).toBe('no-store')
+		expect(payload).toMatchObject({
+			success: true,
+			user: { id: 'u1', email: 'member@example.test' },
+			session: { userId: 'u1' }
+		})
+		expect(serialized).not.toContain('secret-current-bearer')
+		expect(serialized).not.toContain('public-management-id')
+		expect(serialized).not.toContain('must-not-leak')
+	})
+
+	it('returns a no-store empty response without an authenticated principal', async () => {
+		const event = createEvent()
+		event.locals.user = null
+		event.locals.session = null
+
+		const response = await createCurrentSessionHandler()(event)
+
+		expect(response.status).toBe(204)
+		expect(response.headers.get('cache-control')).toBe('no-store')
+		expect(await response.text()).toBe('')
+	})
+
 	it('lists sessions and marks current', async () => {
 		const sessionAdapter = {
 			listManagedSessions: vi.fn(async () => [

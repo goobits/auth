@@ -4,6 +4,7 @@ export const AUTH_ROUTE_PATHS = {
 	oauthReauthenticate: '/reauth',
 	oauthCallback: '/callback',
 	signOut: '/signout',
+	currentSession: '/session',
 	magicLink: '/magic-link',
 	magicLinkVerify: '/magic-link/verify',
 	passkeyRegisterOptions: '/passkey/register/options',
