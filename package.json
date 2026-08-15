@@ -398,7 +398,7 @@
 	},
 	"devDependencies": {
 		"@sveltejs/kit": "^2.70.2",
-		"@types/node": "^26.1.1",
+		"@types/node": "^26.2.0",
 		"@vitest/coverage-v8": "^4.1.10",
 		"pg-mem": "^3.0.14",
 		"postgres": "^3.4.9",
@@ -414,5 +414,5 @@
 	"overrides": {
 		"cookie": "^0.7.0"
 	},
-	"packageManager": "pnpm@11.18.0"
+	"packageManager": "pnpm@11.21.0"
 }
