@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import type { RequestEventLike } from '../../src/types/auth.ts'
 import { createCookies, createRequestEvent } from '../testKit.ts'
 
-export const CSRF_SECRET = 'auth-test-csrf-secret-that-is-at-least-32-bytes'
+const CSRF_SECRET = 'auth-test-csrf-secret-that-is-at-least-32-bytes'
 
 export function csrfSettings(mode: 'required' | 'optional' | 'off') {
 	return {
@@ -16,7 +16,7 @@ export function csrfSettings(mode: 'required' | 'optional' | 'off') {
 	}
 }
 
-export const requestOriginOff = { mode: 'off' as const, allowedOrigins: [] }
+const requestOriginOff = { mode: 'off' as const, allowedOrigins: [] }
 
 export function createPolicySettings({
 	csrfMode = 'off',
