@@ -32,6 +32,9 @@ importers:
       hash-wasm:
         specifier: ^4.12.0
         version: 4.12.0
+      jose:
+        specifier: ^6.2.8
+        version: 6.2.8
       uqr:
         specifier: ^0.1.3
         version: 0.1.3

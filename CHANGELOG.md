@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+### 🐛 Fixed
+
+- Published packages now declare `jose` directly because the bundled Security
+  JWT implementation imports it at runtime; isolated package installs no
+  longer rely on a workspace-only transitive dependency.
+
 ### ⚠️ Breaking
 
 - 🔐 `MfaAdapter.activateEnrollment()` now receives the matched TOTP counter,
