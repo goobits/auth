@@ -20,3 +20,8 @@ The important files are:
 - `src/lib/auth.ts`
 - `src/hooks.server.ts`
 - `src/routes/auth/[...auth]/+server.ts`
+
+## License
+
+This example follows the repository's Functional Source License, Version 1.1,
+ALv2 Future License. See [the repository license](../../LICENSE).

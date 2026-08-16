@@ -2,7 +2,7 @@
 	"name": "@goobits/auth-sveltekit-quickstart",
 	"private": true,
 	"type": "module",
-	"license": "MIT",
+	"license": "FSL-1.1-ALv2",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/goobits/auth.git",
