@@ -29,6 +29,10 @@ describe('pg auth adapters', () => {
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_mfa_backup_codes')
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_webauthn_challenges')
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_webauthn_credentials')
+		expect(pgAuthSchemaSql).toContain('counter BIGINT NOT NULL DEFAULT 0')
+		expect(pgAuthSchemaSql).toContain(
+			'CREATE OR REPLACE FUNCTION auth_create_webauthn_credential_within_limit'
+		)
 		expect(pgAuthSchemaSql).toContain('CREATE TABLE IF NOT EXISTS auth_magic_link_tokens')
 	})
 

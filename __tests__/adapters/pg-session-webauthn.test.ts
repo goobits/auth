@@ -235,4 +235,54 @@ describe('pg session and WebAuthn adapters', () => {
 		await expect(adapters.webauthn.deleteExpiredChallenges(new Date())).resolves.toBe(2)
 		expect(credential).toEqual({ counter: 1, owner: 'user-1' })
 	})
+
+	it('uses the atomic postgres registration boundary for capped passkey creation', async () => {
+		const calls: Array<{ text: string; values: readonly unknown[] }> = []
+		let outcome = 'created'
+		const db: PgPoolLike = {
+			async query<T extends Record<string, unknown>>(text: string, values = []) {
+				calls.push({ text, values })
+				return { rows: [{ outcome } as T] }
+			}
+		}
+		const adapter = createPgAuthAdapters({
+			cookieName: 'auth',
+			db,
+			mfaSecretCodec,
+			secureCookies: true
+		}).webauthn
+
+		await expect(
+			adapter.createCredentialWithinLimit({
+				counter: 4_294_967_295,
+				credentialId: 'credential-1',
+				maxCredentialsPerUser: 10,
+				name: 'Security key',
+				publicKey: 'public-key',
+				transports: ['usb'],
+				userId: 'user-1'
+			})
+		).resolves.toBe('created')
+		expect(calls[0]?.text).toContain('auth_create_webauthn_credential_within_limit')
+		expect(calls[0]?.values).toEqual([
+			'user-1',
+			'credential-1',
+			'public-key',
+			4_294_967_295,
+			'["usb"]',
+			'Security key',
+			10
+		])
+
+		outcome = 'invalid'
+		await expect(
+			adapter.createCredentialWithinLimit({
+				counter: 0,
+				credentialId: 'credential-2',
+				maxCredentialsPerUser: 10,
+				publicKey: 'public-key',
+				userId: 'user-1'
+			})
+		).rejects.toThrow('invalid WebAuthn credential creation outcome')
+	})
 })

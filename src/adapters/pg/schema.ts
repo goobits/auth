@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS auth_webauthn_credentials (
 	credential_id TEXT PRIMARY KEY,
 	user_id TEXT NOT NULL REFERENCES auth_users(id) ON DELETE CASCADE,
 	public_key TEXT NOT NULL,
-	counter INTEGER NOT NULL DEFAULT 0,
+	counter BIGINT NOT NULL DEFAULT 0,
 	transports JSONB,
 	name TEXT,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -101,6 +101,67 @@ CREATE TABLE IF NOT EXISTS auth_webauthn_credentials (
 );
 
 CREATE INDEX IF NOT EXISTS auth_webauthn_credentials_user_id_idx ON auth_webauthn_credentials(user_id);
+
+CREATE OR REPLACE FUNCTION auth_create_webauthn_credential_within_limit(
+	requested_user_id TEXT,
+	requested_credential_id TEXT,
+	requested_public_key TEXT,
+	requested_counter BIGINT,
+	requested_transports JSONB,
+	requested_name TEXT,
+	requested_limit INTEGER
+) RETURNS TEXT
+LANGUAGE plpgsql
+VOLATILE
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+	inserted_credential_id TEXT;
+BEGIN
+	IF requested_limit < 1 OR requested_limit > 100 THEN
+		RAISE EXCEPTION 'WebAuthn credential limit must be between 1 and 100';
+	END IF;
+
+	-- The owner row is the per-user registration lock. Later reads in this
+	-- function observe credentials committed by a concurrent prior holder.
+	PERFORM id FROM auth_users WHERE id = requested_user_id FOR UPDATE;
+	IF NOT FOUND THEN
+		RETURN 'owner-unavailable';
+	END IF;
+
+	IF EXISTS (
+		SELECT 1 FROM auth_webauthn_credentials
+		WHERE credential_id = requested_credential_id
+	) THEN
+		RETURN 'duplicate';
+	END IF;
+
+	IF (
+		SELECT count(*) FROM auth_webauthn_credentials
+		WHERE user_id = requested_user_id
+	) >= requested_limit THEN
+		RETURN 'limit-reached';
+	END IF;
+
+	INSERT INTO auth_webauthn_credentials
+		(user_id, credential_id, public_key, counter, transports, name)
+	VALUES (
+		requested_user_id,
+		requested_credential_id,
+		requested_public_key,
+		requested_counter,
+		requested_transports,
+		requested_name
+	)
+	ON CONFLICT (credential_id) DO NOTHING
+	RETURNING credential_id INTO inserted_credential_id;
+
+	RETURN CASE
+		WHEN inserted_credential_id IS NULL THEN 'duplicate'
+		ELSE 'created'
+	END;
+END;
+$$;
 
 CREATE TABLE IF NOT EXISTS auth_magic_link_tokens (
 	id TEXT PRIMARY KEY,

@@ -4,8 +4,11 @@ import {
 	type AdvanceWebAuthnCredentialCounterInput,
 	type CreateWebAuthnChallengeInput,
 	type CreateWebAuthnCredentialInput,
+	type CreateWebAuthnCredentialWithinLimitInput,
 	type DeleteWebAuthnCredentialInput,
-	type WebAuthnChallengeRecord
+	type WebAuthnChallengeRecord,
+	type WebAuthnCredentialCreationOutcome,
+	resolveWebAuthnCredentialLimit
 } from '../webauthn/WebAuthnAdapter.ts'
 import {
 	assertCredentialCounterTransition,
@@ -116,6 +119,44 @@ export class PgWebAuthnAdapter extends WebAuthnAdapter {
 			[userId, credentialId, publicKey, counter, transports ? JSON.stringify(transports) : null, name ?? null]
 		)
 		return result.rows.length === 1
+	}
+
+	async createCredentialWithinLimit({
+		userId,
+		credentialId,
+		publicKey,
+		counter,
+		transports,
+		name,
+		maxCredentialsPerUser
+	}: CreateWebAuthnCredentialWithinLimitInput): Promise<WebAuthnCredentialCreationOutcome> {
+		if (!isValidCredentialCounter(counter)) {
+			throw new RangeError('WebAuthn counter must be a non-negative safe integer')
+		}
+		const limit = resolveWebAuthnCredentialLimit(maxCredentialsPerUser)
+		const row = (
+			await this.#db.query<{ outcome: WebAuthnCredentialCreationOutcome }>(
+				`SELECT auth_create_webauthn_credential_within_limit(
+					$1, $2, $3, $4, $5::jsonb, $6, $7
+				) AS outcome`,
+				[
+					userId,
+					credentialId,
+					publicKey,
+					counter,
+					transports ? JSON.stringify(transports) : null,
+					name ?? null,
+					limit
+				]
+			)
+		).rows[0]
+		if (
+			!row ||
+			!['created', 'duplicate', 'limit-reached', 'owner-unavailable'].includes(row.outcome)
+		) {
+			throw new TypeError('Postgres returned an invalid WebAuthn credential creation outcome')
+		}
+		return row.outcome
 	}
 
 	async getCredential(credentialId: string): Promise<WebAuthnCredential | null> {

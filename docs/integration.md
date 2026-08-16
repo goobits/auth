@@ -175,8 +175,10 @@ interface WebAuthnCredentialCreationAdapter {
 Implement that capability with one transaction or owner-scoped lock covering
 account eligibility, the credential count, and the insert. A list-then-insert
 sequence is not atomic. `MemoryWebAuthnAdapter` supplies the full contract for
-single-process development; durable adapters must be composed with the host
-application's transaction boundary before registration is enabled.
+single-process development. `PgWebAuthnAdapter` calls the bundled
+owner-row-locked registration routine; apply its schema/migration before
+registration is enabled. Other durable adapters must be composed with the host
+application's transaction boundary.
 
 For schema requirements (magic link tokens, WebAuthn credentials, session
 metadata columns), see [`schema.md`](./schema.md).

@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config'
 
 import { shouldSuppressConsoleMessage } from './__tests__/consoleSuppressions.js'
-import { resolveViteCacheDirectory } from './scripts/testStorage.ts'
+import { resolveTestArtifactDirectory, resolveViteCacheDirectory } from './scripts/testStorage.ts'
 
 export default defineConfig({
 	cacheDir: resolveViteCacheDirectory(import.meta.dirname),
@@ -13,6 +13,7 @@ export default defineConfig({
 		},
 		coverage: {
 			provider: 'v8',
+			reportsDirectory: resolveTestArtifactDirectory(import.meta.dirname, 'coverage'),
 			reporter: ['text', 'lcov'],
 			include: ['src/**/*.ts'],
 			exclude: ['src/_internal/**', '**/*.d.ts', 'src/index.ts'],
