@@ -373,7 +373,7 @@
 		"drizzle"
 	],
 	"author": "@goobits",
-	"license": "MIT",
+	"license": "FSL-1.1-ALv2",
 	"peerDependencies": {
 		"@sveltejs/kit": "^2.0.0",
 		"drizzle-orm": "^0.45.2",
