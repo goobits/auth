@@ -362,6 +362,8 @@
 		"build:types": "tsc -p tsconfig.build.json",
 		"audit": "node scripts/auditPackage.mjs",
 		"security:check": "pnpm run typecheck && pnpm test && pnpm run audit",
+		"prepack": "node scripts/packDist.mjs restore && pnpm run build && node scripts/packDist.mjs materialize",
+		"postpack": "node scripts/packDist.mjs restore",
 		"prepublishOnly": "pnpm run build && pnpm run security:check"
 	},
 	"keywords": [

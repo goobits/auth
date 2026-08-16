@@ -48,6 +48,8 @@
 - Build output, coverage, and Vite caches now live beneath
   `/temp/frontdesk/goobits`; `dist` remains available through a managed
   external symlink for packaging and smoke tests.
+- Package archives materialize `dist` only while packing, then restore the
+  managed symlink so published JavaScript and declarations are included.
 
 ## [0.6.0] - 2026-08-03
 
