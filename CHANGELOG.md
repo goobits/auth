@@ -43,6 +43,12 @@
 - 🔗 MFA login can use an optional `completeLogin` transaction port to consume
   the challenge and one-time proof in the same commit that creates the session.
 
+### 🧰 Tooling
+
+- Build output, coverage, and Vite caches now live beneath
+  `/temp/frontdesk/goobits`; `dist` remains available through a managed
+  external symlink for packaging and smoke tests.
+
 ## [0.6.0] - 2026-08-03
 
 ### ⚠️ Breaking
