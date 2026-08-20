@@ -14,10 +14,10 @@
 	"dependencies": {
 		"@goobits/auth": "workspace:^",
 		"@sveltejs/kit": "^2.70.2",
-		"svelte": "^5.56.8"
+		"svelte": "^5.56.9"
 	},
 	"devDependencies": {
-		"svelte-check": "^4.7.4",
+		"svelte-check": "^4.7.6",
 		"typescript": "^6.0.3"
 	}
 }

@@ -51,9 +51,10 @@
 
 ### 🧰 Tooling
 
-- Build output, coverage, and Vite caches now live beneath
-  `/temp/frontdesk/goobits`; `dist` remains available through a managed
-  external symlink for packaging and smoke tests.
+- Build output, coverage, and Vite caches now live beneath the operating
+  system's temporary directory (or an absolute `GOOBITS_CACHE_ROOT` outside the
+  project); `dist` remains available through a managed external symlink for
+  packaging and smoke tests.
 - Package archives materialize `dist` only while packing, then restore the
   managed symlink so published JavaScript and declarations are included.
 
