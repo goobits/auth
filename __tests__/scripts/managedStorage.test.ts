@@ -2,6 +2,7 @@ import {
 	lstatSync,
 	mkdtempSync,
 	mkdirSync,
+	readFileSync,
 	readlinkSync,
 	realpathSync,
 	rmSync,
@@ -12,7 +13,11 @@ import path from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { ensureManagedBuildOutput } from '../../scripts/managedBuildOutput.mjs'
+import {
+	ensureManagedBuildOutput,
+	materializeManagedBuildOutput,
+	restoreManagedBuildOutput
+} from '../../scripts/managedBuildOutput.mjs'
 import { resolveManagedStorageRoot } from '../../scripts/managedStorageRoot.mjs'
 
 const temporaryDirectories: string[] = []
@@ -93,5 +98,23 @@ describe('managed artifact storage', () => {
 			'Workspace-local build output must be migrated before use'
 		)
 		expect(lstatSync(path.join(output, 'keep.txt')).isFile()).toBe(true)
+	})
+
+	it('materializes package output and restores the managed link', () => {
+		const projectRoot = makeTemporaryDirectory('auth-storage-project-')
+		const cacheRoot = makeTemporaryDirectory('auth-storage-cache-')
+		vi.stubEnv('GOOBITS_CACHE_ROOT', cacheRoot)
+
+		const output = ensureManagedBuildOutput(projectRoot, 'dist')
+		const target = realpathSync.native(path.resolve(path.dirname(output), readlinkSync(output)))
+		writeFileSync(path.join(target, 'index.js'), 'export {}\n')
+
+		materializeManagedBuildOutput(projectRoot, 'dist')
+		expect(lstatSync(output).isDirectory()).toBe(true)
+		expect(readFileSync(path.join(output, 'index.js'), 'utf8')).toBe('export {}\n')
+
+		restoreManagedBuildOutput(projectRoot, 'dist')
+		expect(lstatSync(output).isSymbolicLink()).toBe(true)
+		expect(realpathSync.native(output)).toBe(target)
 	})
 })

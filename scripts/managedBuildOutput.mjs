@@ -48,9 +48,9 @@ export function ensureManagedBuildOutput(projectRoot, name) {
 export function materializeManagedBuildOutput(projectRoot, name) {
 	const { output, packState, target } = resolveManagedBuildOutput(projectRoot, name)
 	ensureManagedBuildOutput(projectRoot, name)
+	writeFileSync(packState, `${output}\n`)
 	rmSync(output)
 	cpSync(target, output, { recursive: true })
-	writeFileSync(packState, `${output}\n`)
 }
 
 export function restoreManagedBuildOutput(projectRoot, name) {
