@@ -23,7 +23,8 @@ const rootUrl = new URL('../', import.meta.url)
 const root = fileURLToPath(rootUrl)
 const packageJson = JSON.parse(await readFile(new URL('package.json', rootUrl), 'utf8'))
 const published = packageJson.publishConfig
-const nodeOnlySubpaths = new Set(['./adapters/pg', './node', './password/native-packages'])
+const nodeOnlySubpaths = new Set(['./node', './password/native-packages'])
+const serverRuntimeSubpaths = new Set(['./adapters/pg'])
 const uiSubpaths = new Set(['./ui', './ui/qr-code', './ui/theme.css'])
 const runtimeConditions = ['types', 'workerd', 'worker', 'browser', 'node', 'default']
 
@@ -62,7 +63,11 @@ async function assertWorkspaceMap() {
 	for (const [subpath, value] of Object.entries(packageJson.exports)) {
 		for (const target of targets(value)) await assertSourceTarget(target)
 		if (typeof value === 'object') {
-			const expected = nodeOnlySubpaths.has(subpath) ? ['types', 'node'] : runtimeConditions
+			const expected = nodeOnlySubpaths.has(subpath)
+				? ['types', 'node']
+				: serverRuntimeSubpaths.has(subpath)
+					? ['types', 'workerd', 'worker', 'node', 'default']
+					: runtimeConditions
 			assert.deepEqual(Object.keys(value), expected, `${subpath} workspace conditions`)
 		}
 	}
@@ -85,7 +90,9 @@ async function assertPublishedMap() {
 				? runtimeConditions.slice(1)
 				: nodeOnlySubpaths.has(subpath)
 					? ['types', 'node']
-					: runtimeConditions
+					: serverRuntimeSubpaths.has(subpath)
+						? ['types', 'workerd', 'worker', 'node', 'default']
+						: runtimeConditions
 		assert.deepEqual(Object.keys(conditions), expectedConditions, `${subpath} published conditions`)
 		for (const [condition, target] of Object.entries(conditions)) {
 			await assertDistTarget(target)

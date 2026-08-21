@@ -94,7 +94,10 @@
 			},
 			"./adapters/pg": {
 				"types": "./dist/types/adapters/pg/index.d.ts",
-				"node": "./dist/node/adapters/pg/index.js"
+				"workerd": "./dist/worker/adapters/pg/index.js",
+				"worker": "./dist/worker/adapters/pg/index.js",
+				"node": "./dist/node/adapters/pg/index.js",
+				"default": "./dist/worker/adapters/pg/index.js"
 			},
 			"./adapters/verification-token": {
 				"types": "./dist/types/adapters/verification-token/index.d.ts",
@@ -306,7 +309,10 @@
 		"./adapters/memory": "./src/adapters/memory/index.ts",
 		"./adapters/pg": {
 			"types": "./src/adapters/pg/index.ts",
-			"node": "./src/adapters/pg/index.ts"
+			"workerd": "./src/adapters/pg/index.ts",
+			"worker": "./src/adapters/pg/index.ts",
+			"node": "./src/adapters/pg/index.ts",
+			"default": "./src/adapters/pg/index.ts"
 		},
 		"./adapters/verification-token": "./src/adapters/verification-token/index.ts",
 		"./adapters/magic-link": "./src/adapters/magic-link/index.ts",

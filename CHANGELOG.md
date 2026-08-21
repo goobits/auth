@@ -50,6 +50,12 @@
   project); `dist` remains available through a managed external symlink for
   packaging and smoke tests.
 
+### 📦 Distribution
+
+- The PostgreSQL adapter now publishes Worker and Workerd entrypoints in addition
+  to its Node entrypoint. The adapter remains transport-neutral through its
+  minimal query port.
+
 ## [0.6.0] - 2026-08-03
 
 ### ⚠️ Breaking

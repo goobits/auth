@@ -47,7 +47,7 @@ const nodeEntries = toEntryMap(
 	],
 	{ 'password/index': 'src/password/index.node.ts' }
 )
-const workerEntries = toEntryMap(commonEntries, {
+const workerEntries = toEntryMap([...commonEntries, 'src/adapters/pg/index.ts'], {
 	'handlers/webauthn': 'src/handlers/webauthn.worker.ts'
 })
 

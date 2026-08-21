@@ -65,4 +65,23 @@ describe('PostgreSQL auth adapter boundaries', () => {
 		expect(source).not.toContain('CREATE TABLE')
 		expect(source).not.toContain('#db')
 	})
+
+	it('publishes the PostgreSQL adapter for Node and Worker runtimes', async () => {
+		const packageJson = JSON.parse(
+			await readFile(new URL('../../package.json', import.meta.url), 'utf8')
+		) as {
+			exports: Record<string, Record<string, string>>
+			publishConfig: { exports: Record<string, Record<string, string>> }
+		}
+		expect(packageJson.exports['./adapters/pg']).toMatchObject({
+			workerd: './src/adapters/pg/index.ts',
+			worker: './src/adapters/pg/index.ts',
+			node: './src/adapters/pg/index.ts'
+		})
+		expect(packageJson.publishConfig.exports['./adapters/pg']).toMatchObject({
+			workerd: './dist/worker/adapters/pg/index.js',
+			worker: './dist/worker/adapters/pg/index.js',
+			node: './dist/node/adapters/pg/index.js'
+		})
+	})
 })

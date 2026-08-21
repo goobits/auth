@@ -53,7 +53,8 @@ additive options as browser and authenticator behavior evolves.
 - Cloudflare Workers and Pages use the Worker build and WASM-backed password
   hashing. WebAuthn handlers return `501` and must not be enabled there.
 - Node 22+ selects native Argon2 and Node WebAuthn support. `@goobits/auth/node`
-  and `@goobits/auth/adapters/pg` are Node-only.
+  remains Node-only. `@goobits/auth/adapters/pg` supports Node and Worker runtimes
+  through its minimal query port.
 
 ## Core Contract
 

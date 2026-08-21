@@ -35,8 +35,9 @@ type PgAuthAdapters = UserAdapterBundle & {
 	webauthn: PgWebAuthnAdapter
 }
 
-type PgAuthAdaptersFor<T extends MfaSecretCodec | undefined> = PgAuthAdapters &
-	(T extends MfaSecretCodec ? { mfa: PgMfaAdapter } : { mfa?: undefined })
+type PgAuthAdaptersFor<T extends MfaSecretCodec | undefined> = T extends MfaSecretCodec
+	? PgAuthAdapters & { mfa: PgMfaAdapter }
+	: PgAuthAdapters
 
 /** Creates pg auth adapters for auth storage. */
 export function createPgAuthAdapters<T extends MfaSecretCodec | undefined = undefined>(
