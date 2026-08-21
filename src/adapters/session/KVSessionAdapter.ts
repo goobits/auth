@@ -284,6 +284,6 @@ export class KVSessionAdapter extends SessionAdapter {
 	}
 
 	deleteSessionCookie(cookies: Cookies) {
-		clearSessionCookie(cookies, this.cookieName)
+		clearSessionCookie(cookies, this.cookieName, this.secureCookies)
 	}
 }
