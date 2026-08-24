@@ -296,7 +296,7 @@ describe('GoogleProvider', () => {
 
 		await expect(provider.getUserProfile('code', 'verifier')).rejects.toThrow(error)
 		expect(logger.error).toHaveBeenCalledWith('Error in GoogleProvider.getUserProfile', {
-			errorType: error === 'userinfo_request_failed' ? 'OAuth2RequestError' : 'Error'
+			error_type: error === 'userinfo_request_failed' ? 'OAuth2RequestError' : 'Error'
 		})
 		expect(JSON.stringify(logger.error.mock.calls)).not.toContain(secret)
 	})

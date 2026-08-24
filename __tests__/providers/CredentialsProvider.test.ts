@@ -176,7 +176,7 @@ describe('CredentialsProvider', () => {
 		).resolves.toEqual({ user, valid: true })
 		expect(logger.error).toHaveBeenCalledWith(
 			'[CredentialsProvider] Failed to upgrade password hash',
-			{ errorType: 'Error' }
+			{ error_type: 'Error' }
 		)
 	})
 

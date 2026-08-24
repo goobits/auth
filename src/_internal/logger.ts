@@ -9,7 +9,7 @@ export function resolveLogger(logger: Logger | null | undefined): Logger {
 
 /** Keeps thrown values structured and bounded at logging call sites. */
 export function errorContext(error: unknown): Record<string, unknown> {
-	if (!(error instanceof Error)) return { errorType: typeof error }
+	if (!(error instanceof Error)) return { error_type: typeof error }
 	const errorName = /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(error.name) ? error.name : 'Error'
-	return { errorType: errorName }
+	return { error_type: errorName }
 }

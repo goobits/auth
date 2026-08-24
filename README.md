@@ -97,6 +97,8 @@ See the public API and migration guide for the complete capability contracts.
 - Use one durable rate-limit store across production instances.
 - Bridge Auth events into an awaited `@goobits/security/audit` logger with
   `createAuthEventAuditEmitter()`.
+- Supply a request-scoped logger where available. Diagnostic failures use the canonical
+  `error_type` field without exception messages or stacks.
 - Configure secure cookies, trusted proxy headers, alert delivery, encryption
   keys, and required database migrations before deployment.
 - Require fresh application authorization for MFA, passkey, and OAuth identity

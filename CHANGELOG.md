@@ -45,6 +45,8 @@
 
 ### 🧰 Tooling
 
+- 🪵 Diagnostic error logs now use the canonical `error_type` field while retaining bounded,
+  message-free error context.
 - Build output, coverage, and Vite caches now live beneath the operating
   system's temporary directory (or an absolute `GOOBITS_CACHE_ROOT` outside the
   project); `dist` remains available through a managed external symlink for
