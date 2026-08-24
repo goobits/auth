@@ -13,6 +13,7 @@
 	},
 	"dependencies": {
 		"@goobits/auth": "workspace:^",
+		"@goobits/security": "workspace:^",
 		"@sveltejs/kit": "^2.70.2",
 		"svelte": "^5.56.9"
 	},
