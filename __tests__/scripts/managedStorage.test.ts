@@ -17,8 +17,8 @@ import {
 	ensureManagedBuildOutput,
 	materializeManagedBuildOutput,
 	restoreManagedBuildOutput
-} from '../../scripts/managedBuildOutput.mjs'
-import { resolveManagedStorageRoot } from '../../scripts/managedStorageRoot.mjs'
+} from '../../scripts/managedBuildOutput.ts'
+import { resolveManagedStorageRoot } from '../../scripts/managedStorageRoot.ts'
 
 const temporaryDirectories: string[] = []
 

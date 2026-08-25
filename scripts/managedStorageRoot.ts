@@ -3,7 +3,13 @@ import { mkdirSync, realpathSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
-function pathContains(parent, candidate) {
+interface ManagedStorageRoot {
+	cacheRoot: string
+	fingerprint: string
+	project: string
+}
+
+function pathContains(parent: string, candidate: string): boolean {
 	const relativePath = path.relative(parent, candidate)
 	return relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath))
 }
@@ -11,12 +17,10 @@ function pathContains(parent, candidate) {
 /**
  * Resolve writable generated storage outside the source project.
  *
- * @param {string} projectRoot
- * @returns {{ cacheRoot: string, fingerprint: string, project: string }}
  */
-export function resolveManagedStorageRoot(projectRoot) {
+export function resolveManagedStorageRoot(projectRoot: string): ManagedStorageRoot {
 	const project = realpathSync.native(path.resolve(projectRoot))
-	const configured = process.env.GOOBITS_CACHE_ROOT?.trim()
+	const configured = process.env['GOOBITS_CACHE_ROOT']?.trim()
 	if (configured && !path.isAbsolute(configured)) {
 		throw new Error(`GOOBITS_CACHE_ROOT must be absolute: ${configured}`)
 	}

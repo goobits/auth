@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import { resolveManagedStorageRoot } from './managedStorageRoot.mjs'
+import { resolveManagedStorageRoot } from './managedStorageRoot.ts'
 
 const storageNamePattern = /^[a-z0-9][a-z0-9._-]*$/
 

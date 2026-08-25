@@ -20,32 +20,61 @@ import { fileURLToPath } from 'node:url'
 
 const rootUrl = new URL('../', import.meta.url)
 const root = fileURLToPath(rootUrl)
-const packageJson = JSON.parse(await readFile(new URL('package.json', rootUrl), 'utf8'))
+type ConditionalTarget = Record<string, string>
+type ExportTarget = string | ConditionalTarget
+
+interface PublishConfig {
+	access: string
+	main: string
+	types: string
+	imports: Record<string, ConditionalTarget>
+	exports: Record<string, ConditionalTarget>
+}
+
+interface PackageManifest {
+	name: string
+	main: string
+	types: string
+	files: string[]
+	scripts: Record<string, string>
+	imports: Record<string, ConditionalTarget>
+	exports: Record<string, ExportTarget>
+	publishConfig: PublishConfig
+}
+
+interface DistPackageMetadata {
+	type: string
+	imports: Record<string, ConditionalTarget>
+}
+
+const packageJson = JSON.parse(
+	await readFile(new URL('package.json', rootUrl), 'utf8')
+) as PackageManifest
 const published = packageJson.publishConfig
 const nodeOnlySubpaths = new Set(['./node', './password/native-packages'])
 const serverRuntimeSubpaths = new Set(['./adapters/pg'])
 const uiSubpaths = new Set(['./ui', './ui/qr-code', './ui/theme.css'])
 const runtimeConditions = ['types', 'workerd', 'worker', 'browser', 'node', 'default']
 
-function packageSpecifier(subpath) {
+function packageSpecifier(subpath: string): string {
 	return subpath === '.' ? packageJson.name : `${packageJson.name}${subpath.slice(1)}`
 }
 
-function targets(value) {
+function targets(value: ExportTarget): string[] {
 	return typeof value === 'string' ? [value] : Object.values(value)
 }
 
-async function assertSourceTarget(target) {
+async function assertSourceTarget(target: string): Promise<void> {
 	assert.match(target, /^\.\/src\//, `workspace target must live in src: ${target}`)
 	await access(new URL(target, rootUrl))
 }
 
-async function assertDistTarget(target) {
+async function assertDistTarget(target: string): Promise<void> {
 	assert.match(target, /^\.\/dist\//, `published target must live in dist: ${target}`)
 	await access(new URL(target, rootUrl))
 }
 
-async function assertWorkspaceMap() {
+async function assertWorkspaceMap(): Promise<void> {
 	assert.equal(packageJson.main, './src/index.ts')
 	assert.equal(packageJson.types, './src/index.ts')
 	assert.deepEqual(
@@ -76,7 +105,7 @@ async function assertWorkspaceMap() {
 	}
 }
 
-async function assertPublishedMap() {
+async function assertPublishedMap(): Promise<void> {
 	assert.equal(published.main, './dist/node/index.js')
 	assert.equal(published.types, './dist/types/index.d.ts')
 	assert(packageJson.files.includes('dist'), 'published files must include dist')
@@ -115,7 +144,7 @@ async function assertPublishedMap() {
 	}
 }
 
-async function assertRuntimeSeparation() {
+async function assertRuntimeSeparation(): Promise<void> {
 	const nodePassword = await readFile(new URL('dist/node/password/index.js', rootUrl), 'utf8')
 	const workerPassword = await readFile(new URL('dist/worker/password/index.js', rootUrl), 'utf8')
 	const nodeWebAuthn = await readFile(new URL('dist/node/handlers/webauthn.js', rootUrl), 'utf8')
@@ -138,8 +167,10 @@ async function assertRuntimeSeparation() {
 	assert.match(workerProviders, /from ['"]#password['"]/)
 }
 
-async function assertDistPackageScope() {
-	const metadata = JSON.parse(await readFile(new URL('dist/package.json', rootUrl), 'utf8'))
+async function assertDistPackageScope(): Promise<void> {
+	const metadata = JSON.parse(
+		await readFile(new URL('dist/package.json', rootUrl), 'utf8')
+	) as DistPackageMetadata
 	assert.equal(metadata.type, 'module', 'dist/package.json must declare type=module')
 	assert.deepEqual(
 		Object.keys(metadata.imports),
@@ -147,9 +178,11 @@ async function assertDistPackageScope() {
 		'dist/package.json must retain every private package import'
 	)
 	for (const [specifier, conditions] of Object.entries(published.imports)) {
+		const metadataConditions = metadata.imports[specifier]
+		assert(metadataConditions, `dist/package.json is missing ${specifier}`)
 		for (const [condition, target] of Object.entries(conditions)) {
 			assert.equal(
-				metadata.imports[specifier][condition],
+				metadataConditions[condition],
 				target.replace('./dist/', './'),
 				`${specifier} ${condition} must resolve inside the dist package scope`
 			)
@@ -164,7 +197,7 @@ async function assertDistPackageScope() {
 	)
 }
 
-async function assertUiDistribution() {
+async function assertUiDistribution(): Promise<void> {
 	const components = [
 		'AuthGate.svelte',
 		'AuthNotification.svelte',
@@ -213,7 +246,7 @@ async function assertUiDistribution() {
 	assert.doesNotMatch(providerButton, /@font-face/, 'OAuth button loads a remote font')
 }
 
-async function assertSvelteDistribution() {
+async function assertSvelteDistribution(): Promise<void> {
 	for (const output of ['node', 'worker']) {
 		await run('svelte-check', [
 			'--workspace',
@@ -224,8 +257,8 @@ async function assertSvelteDistribution() {
 	}
 }
 
-function run(command, args, cwd = root) {
-	return new Promise((resolve, reject) => {
+function run(command: string, args: string[], cwd: string = root): Promise<string> {
+	return new Promise<string>((resolve, reject) => {
 		const child = spawn(command, args, {
 			cwd,
 			env: { ...process.env, npm_config_update_notifier: 'false' },
@@ -253,9 +286,9 @@ function run(command, args, cwd = root) {
 	})
 }
 
-async function listFiles(directory, prefix = '') {
+async function listFiles(directory: string, prefix = ''): Promise<string[]> {
 	const entries = await readdir(directory, { withFileTypes: true })
-	const files = []
+	const files: string[] = []
 	for (const entry of entries) {
 		const path = join(directory, entry.name)
 		const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name
@@ -268,7 +301,7 @@ async function listFiles(directory, prefix = '') {
 	return files
 }
 
-function packageSmokeSource(subpaths, runtime) {
+function packageSmokeSource(subpaths: string[], runtime: 'node' | 'worker'): string {
 	const specifiers = subpaths.map(packageSpecifier)
 	return `import assert from 'node:assert/strict'
 
@@ -303,14 +336,14 @@ if ('${runtime}' === 'worker') {
 `
 }
 
-async function assertPackedPackage() {
+async function assertPackedPackage(): Promise<void> {
 	const tempDir = await mkdtemp(join(tmpdir(), 'goobits-auth-package-'))
 	try {
 		const stagingRoot = join(tempDir, 'staging')
 		await mkdir(stagingRoot)
 		const stagingScripts = { ...packageJson.scripts }
-		delete stagingScripts.prepack
-		delete stagingScripts.postpack
+		delete stagingScripts['prepack']
+		delete stagingScripts['postpack']
 		await writeFile(
 			join(stagingRoot, 'package.json'),
 			`${JSON.stringify({ ...packageJson, scripts: stagingScripts }, null, '\t')}\n`
@@ -326,12 +359,14 @@ async function assertPackedPackage() {
 		await run('pnpm', ['pack', '--pack-destination', tempDir], stagingRoot)
 		const tarballs = (await readdir(tempDir)).filter((file) => file.endsWith('.tgz'))
 		assert.equal(tarballs.length, 1, 'package verification must produce exactly one tarball')
-		await run('tar', ['-xzf', join(tempDir, tarballs[0]), '-C', tempDir])
+		const tarball = tarballs[0]
+		assert(tarball)
+		await run('tar', ['-xzf', join(tempDir, tarball), '-C', tempDir])
 
 		const installedRoot = join(tempDir, 'package')
 		const installedManifest = JSON.parse(
 			await readFile(join(installedRoot, 'package.json'), 'utf8')
-		)
+		) as PackageManifest
 		assert.equal(installedManifest.main, published.main)
 		assert.equal(installedManifest.types, published.types)
 		assert.deepEqual(installedManifest.imports, published.imports)
@@ -361,8 +396,8 @@ async function assertPackedPackage() {
 		const importableSubpaths = Object.keys(installedManifest.exports).filter(
 			(subpath) => !uiSubpaths.has(subpath)
 		)
-		const nodeSmoke = join(installedRoot, 'smoke-node.mjs')
-		const workerSmoke = join(installedRoot, 'smoke-worker.mjs')
+		const nodeSmoke = join(installedRoot, 'smoke-node.ts')
+		const workerSmoke = join(installedRoot, 'smoke-worker.ts')
 		await writeFile(nodeSmoke, packageSmokeSource(importableSubpaths, 'node'))
 		await writeFile(
 			workerSmoke,
@@ -378,7 +413,7 @@ async function assertPackedPackage() {
 	}
 }
 
-async function linkExternalDistDependencies() {
+async function linkExternalDistDependencies(): Promise<() => Promise<void>> {
 	const distRoot = await realpath(join(root, 'dist'))
 	const relativeDist = relative(root, distRoot)
 	const isExternal = relativeDist.startsWith('..') || isAbsolute(relativeDist)
@@ -389,7 +424,7 @@ async function linkExternalDistDependencies() {
 		await lstat(dependencyLink)
 		return async () => {}
 	} catch (error) {
-		if (error?.code !== 'ENOENT') throw error
+		if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
 	}
 
 	await symlink(join(root, 'node_modules'), dependencyLink, 'dir')

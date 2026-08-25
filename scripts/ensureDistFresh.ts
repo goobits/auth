@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process'
 
-import { isDistFresh, packageRoot } from './sourceFingerprint.mjs'
+import { isDistFresh, packageRoot } from './sourceFingerprint.ts'
 
 if (await isDistFresh()) {
 	console.log('@goobits/auth dist matches its source fingerprint')

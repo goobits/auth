@@ -2,7 +2,7 @@ import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promi
 import { dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { writeSourceFingerprint } from './sourceFingerprint.mjs'
+import { writeSourceFingerprint } from './sourceFingerprint.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
@@ -10,7 +10,13 @@ const runtimeDirs = [join(root, 'dist', 'node'), join(root, 'dist', 'worker')]
 const assetDirs = [...runtimeDirs, join(root, 'dist', 'types')]
 const uiAssetExtensions = new Set(['.svelte', '.css', '.svg'])
 
-function movePublishedTargetIntoDistScope(value) {
+type PublishedTarget = string | { [condition: string]: PublishedTarget }
+
+interface PackageMetadata {
+	publishConfig: { imports: Record<string, PublishedTarget> }
+}
+
+function movePublishedTargetIntoDistScope(value: PublishedTarget): PublishedTarget {
 	if (typeof value === 'string') {
 		if (!value.startsWith('./dist/')) {
 			throw new Error(`Published package import must live in dist: ${value}`)
@@ -25,7 +31,9 @@ function movePublishedTargetIntoDistScope(value) {
 	)
 }
 
-const packageMetadata = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
+const packageMetadata = JSON.parse(
+	await readFile(join(root, 'package.json'), 'utf8')
+) as PackageMetadata
 const distPackageMetadata = `${JSON.stringify(
 	{
 		type: 'module',
@@ -35,11 +43,14 @@ const distPackageMetadata = `${JSON.stringify(
 	'\t'
 )}\n`
 
-function rewriteRelativeTypeScriptImports(source) {
+function rewriteRelativeTypeScriptImports(source: string): string {
 	return source.replace(/(['"])([.][.]?\/[^'"]+)\.ts\1/g, '$1$2.js$1')
 }
 
-async function copyUiAssets(sourceDir = join(root, 'src', 'ui'), relativeDir = '') {
+async function copyUiAssets(
+	sourceDir: string = join(root, 'src', 'ui'),
+	relativeDir = ''
+): Promise<void> {
 	const entries = await readdir(sourceDir, { withFileTypes: true })
 
 	for (const entry of entries) {
@@ -66,7 +77,7 @@ async function copyUiAssets(sourceDir = join(root, 'src', 'ui'), relativeDir = '
 	}
 }
 
-async function writeRuntimeUiBarrels() {
+async function writeRuntimeUiBarrels(): Promise<void> {
 	const source = await readFile(join(root, 'src', 'ui', 'index.ts'), 'utf8')
 	const barrel = rewriteRelativeTypeScriptImports(source).replace(/^export type .*;\n/gm, '')
 
@@ -75,14 +86,14 @@ async function writeRuntimeUiBarrels() {
 	}
 }
 
-async function copyRuntimeDeclarations(subpath) {
+async function copyRuntimeDeclarations(subpath: string): Promise<void> {
 	const sourceDir = join(root, 'dist', 'types', subpath)
 	for (const outputDir of runtimeDirs) {
 		await cp(sourceDir, join(outputDir, subpath), { recursive: true })
 	}
 }
 
-async function rewriteDeclarations(directory) {
+async function rewriteDeclarations(directory: string): Promise<void> {
 	const entries = await readdir(directory, { withFileTypes: true })
 	for (const entry of entries) {
 		const path = join(directory, entry.name)
