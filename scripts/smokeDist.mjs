@@ -3,7 +3,6 @@ import { spawn } from 'node:child_process'
 import {
 	access,
 	cp,
-	copyFile,
 	lstat,
 	mkdir,
 	mkdtemp,
@@ -309,7 +308,13 @@ async function assertPackedPackage() {
 	try {
 		const stagingRoot = join(tempDir, 'staging')
 		await mkdir(stagingRoot)
-		await copyFile(join(root, 'package.json'), join(stagingRoot, 'package.json'))
+		const stagingScripts = { ...packageJson.scripts }
+		delete stagingScripts.prepack
+		delete stagingScripts.postpack
+		await writeFile(
+			join(stagingRoot, 'package.json'),
+			`${JSON.stringify({ ...packageJson, scripts: stagingScripts }, null, '\t')}\n`
+		)
 		for (const entry of packageJson.files) {
 			await cp(join(root, entry), join(stagingRoot, entry), {
 				dereference: true,

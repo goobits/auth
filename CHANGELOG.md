@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+### 🐛 Fixed
+
+- Published packages now declare `jose` directly because the bundled Security
+  JWT implementation imports it at runtime; isolated package installs no
+  longer rely on a workspace-only transitive dependency.
+
 ### ⚠️ Breaking
 
 - 🔐 `MfaAdapter.activateEnrollment()` now receives the matched TOTP counter,
@@ -51,6 +57,8 @@
   system's temporary directory (or an absolute `GOOBITS_CACHE_ROOT` outside the
   project); `dist` remains available through a managed external symlink for
   packaging and smoke tests.
+- Package archives materialize `dist` only while packing, then restore the
+  managed symlink so published JavaScript and declarations are included.
 
 ### 📦 Distribution
 
