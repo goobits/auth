@@ -6,6 +6,8 @@
 
 ### 🐛 Fixed
 
+- Active-session management now renders its loading state during server-side
+  output instead of briefly claiming that no sessions exist before hydration.
 - Published packages now declare `jose` directly because the bundled Security
   JWT implementation imports it at runtime; isolated package installs no
   longer rely on a workspace-only transitive dependency.

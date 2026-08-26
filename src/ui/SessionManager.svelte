@@ -25,7 +25,7 @@
 	} = $props()
 
 	let sessions = $state<SessionRecord[] | null>(null)
-	let loading = $state(false)
+	let loading = $state(true)
 	let revokingId = $state<string | null>(null)
 	let error = $state<string | null>(null)
 	let didApplyInitialSessions = false
