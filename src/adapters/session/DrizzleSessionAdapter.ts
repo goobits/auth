@@ -189,6 +189,6 @@ export class DrizzleSessionAdapter extends SessionAdapter {
 	}
 
 	deleteSessionCookie(cookies: Cookies): void {
-		clearSessionCookie(cookies, this.cookieName)
+		clearSessionCookie(cookies, this.cookieName, this.secureCookies)
 	}
 }

@@ -117,11 +117,11 @@ describe('createLogoutHandler', () => {
 			}) as unknown as RequestEventLike
 
 		await captureRedirect(first(event() as never))
-		expect(firstLogger.error).toHaveBeenCalledWith('Error during logout', { errorType: 'first' })
+		expect(firstLogger.error).toHaveBeenCalledWith('Error during logout', { error_type: 'first' })
 		expect(secondLogger.error).not.toHaveBeenCalled()
 
 		await captureRedirect(second(event() as never))
-		expect(secondLogger.error).toHaveBeenCalledWith('Error during logout', { errorType: 'second' })
+		expect(secondLogger.error).toHaveBeenCalledWith('Error during logout', { error_type: 'second' })
 		expect(firstLogger.error).toHaveBeenCalledOnce()
 	})
 })

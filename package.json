@@ -94,7 +94,10 @@
 			},
 			"./adapters/pg": {
 				"types": "./dist/types/adapters/pg/index.d.ts",
-				"node": "./dist/node/adapters/pg/index.js"
+				"workerd": "./dist/worker/adapters/pg/index.js",
+				"worker": "./dist/worker/adapters/pg/index.js",
+				"node": "./dist/node/adapters/pg/index.js",
+				"default": "./dist/worker/adapters/pg/index.js"
 			},
 			"./adapters/verification-token": {
 				"types": "./dist/types/adapters/verification-token/index.d.ts",
@@ -306,7 +309,10 @@
 		"./adapters/memory": "./src/adapters/memory/index.ts",
 		"./adapters/pg": {
 			"types": "./src/adapters/pg/index.ts",
-			"node": "./src/adapters/pg/index.ts"
+			"workerd": "./src/adapters/pg/index.ts",
+			"worker": "./src/adapters/pg/index.ts",
+			"node": "./src/adapters/pg/index.ts",
+			"default": "./src/adapters/pg/index.ts"
 		},
 		"./adapters/verification-token": "./src/adapters/verification-token/index.ts",
 		"./adapters/magic-link": "./src/adapters/magic-link/index.ts",
@@ -348,22 +354,22 @@
 		"check": "pnpm run typecheck && pnpm run test:coverage && pnpm run build",
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage",
-		"test:dist": "node scripts/smokeDist.mjs",
+		"test:dist": "node scripts/smokeDist.ts",
 		"test:watch": "vitest watch",
 		"test:ui": "vitest --ui",
 		"test:integration": "vitest run __tests__/integration",
 		"test:postgres": "node -e \"if (!process.env.DATABASE_URL) { console.error('DATABASE_URL is required'); process.exit(1) }\" && vitest run __tests__/integration --maxWorkers=1",
-		"typecheck": "tsc -p tsconfig.json --noEmit && pnpm run typecheck:svelte",
+		"typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.scripts.json && pnpm run typecheck:svelte",
 		"typecheck:svelte": "svelte-check --workspace . --tsconfig ./tsconfig.json --fail-on-warnings",
-		"check:dist-fresh": "node scripts/checkDistFresh.mjs",
-		"ensure:dist": "node scripts/ensureDistFresh.mjs",
-		"build": "node scripts/cleanDist.mjs && tsup && pnpm run build:types && node scripts/finalizeDist.mjs",
+		"check:dist-fresh": "node scripts/checkDistFresh.ts",
+		"ensure:dist": "node scripts/ensureDistFresh.ts",
+		"build": "node scripts/cleanDist.ts && tsup && pnpm run build:types && node scripts/finalizeDist.ts",
 		"postbuild": "pnpm run test:dist",
 		"build:types": "tsc -p tsconfig.build.json",
-		"audit": "node scripts/auditPackage.mjs",
+		"audit": "node scripts/auditPackage.ts",
 		"security:check": "pnpm run typecheck && pnpm test && pnpm run audit",
-		"prepack": "node scripts/packDist.mjs restore && pnpm run build && node scripts/packDist.mjs materialize",
-		"postpack": "node scripts/packDist.mjs restore",
+		"prepack": "node scripts/packDist.ts restore && pnpm run build && node scripts/packDist.ts materialize",
+		"postpack": "node scripts/packDist.ts restore",
 		"prepublishOnly": "pnpm run build && pnpm run security:check"
 	},
 	"keywords": [

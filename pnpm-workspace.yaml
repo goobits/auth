@@ -1,6 +1,7 @@
 packages:
   - '.'
   - '../security'
+  - 'examples/sveltekit-quickstart'
 
 blockExoticSubdeps: true
 engineStrict: true

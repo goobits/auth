@@ -25,10 +25,12 @@ export function writeSessionCookie(
 export function clearSessionCookie(
 	cookies: Cookies,
 	cookieName: string,
+	secureCookies: boolean,
 	cookieDomain?: string
 ): void {
 	cookies.delete(cookieName, {
 		...(cookieDomain ? { domain: cookieDomain } : {}),
-		path: '/'
+		path: '/',
+		secure: secureCookies
 	})
 }

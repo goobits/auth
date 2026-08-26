@@ -333,6 +333,6 @@ export class D1SessionAdapter extends SessionAdapter {
 	}
 
 	deleteSessionCookie(cookies: Cookies) {
-		clearSessionCookie(cookies, this.cookieName)
+		clearSessionCookie(cookies, this.cookieName, this.secureCookies)
 	}
 }

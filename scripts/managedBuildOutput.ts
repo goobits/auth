@@ -12,11 +12,17 @@ import {
 } from 'node:fs'
 import path from 'node:path'
 
-import { resolveManagedStorageRoot } from './managedStorageRoot.mjs'
+import { resolveManagedStorageRoot } from './managedStorageRoot.ts'
 
 const outputNamePattern = /^[a-z0-9][a-z0-9._-]*$/
 
-function resolveManagedBuildOutput(projectRoot, name) {
+interface ManagedBuildOutput {
+	output: string
+	packState: string
+	target: string
+}
+
+function resolveManagedBuildOutput(projectRoot: string, name: string): ManagedBuildOutput {
 	if (!outputNamePattern.test(name)) throw new Error(`Managed output name is invalid: ${name}`)
 	const { cacheRoot, fingerprint, project } = resolveManagedStorageRoot(projectRoot)
 	const target = path.join(cacheRoot, 'build-storage', fingerprint, 'build', 'outputs', name)
@@ -26,7 +32,7 @@ function resolveManagedBuildOutput(projectRoot, name) {
 	return { output, packState, target }
 }
 
-export function ensureManagedBuildOutput(projectRoot, name) {
+export function ensureManagedBuildOutput(projectRoot: string, name: string): string {
 	const { output, target } = resolveManagedBuildOutput(projectRoot, name)
 
 	try {
@@ -39,13 +45,13 @@ export function ensureManagedBuildOutput(projectRoot, name) {
 			throw new Error(`Managed build link has the wrong target: ${output} -> ${currentTarget}`)
 		}
 	} catch (error) {
-		if (error?.code !== 'ENOENT') throw error
+		if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
 		symlinkSync(target, output, 'dir')
 	}
 	return output
 }
 
-export function materializeManagedBuildOutput(projectRoot, name) {
+export function materializeManagedBuildOutput(projectRoot: string, name: string): void {
 	const { output, packState, target } = resolveManagedBuildOutput(projectRoot, name)
 	ensureManagedBuildOutput(projectRoot, name)
 	writeFileSync(packState, `${output}\n`)
@@ -53,7 +59,7 @@ export function materializeManagedBuildOutput(projectRoot, name) {
 	cpSync(target, output, { recursive: true })
 }
 
-export function restoreManagedBuildOutput(projectRoot, name) {
+export function restoreManagedBuildOutput(projectRoot: string, name: string): string {
 	const { output, packState, target } = resolveManagedBuildOutput(projectRoot, name)
 	if (!existsSync(packState)) return ensureManagedBuildOutput(projectRoot, name)
 	if (readFileSync(packState, 'utf8').trim() !== output) {

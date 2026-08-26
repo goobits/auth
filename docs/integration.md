@@ -230,7 +230,7 @@ working recovery or MFA challenge when the insert fails and is unsupported.
 | `D1SessionAdapter`, `D1UserAdapter`, … | Cloudflare D1             | Hand-rolled SQL; takes a `D1Database` instance and table names.                                                                                 |
 | `KVSessionAdapter`, `KVTokenAdapter`   | Cloudflare KV             | For environments where D1 isn't available.                                                                                                      |
 | `CookieTokenAdapter`                   | Encrypted cookie          | OAuth-token storage only; requires an encryption key. It is not a session adapter.                                                              |
-| `createPgAuthAdapters(options)`        | PostgreSQL                | Node-only bundle with verification-token storage; requires an application-owned `mfaSecretCodec`.                                               |
+| `createPgAuthAdapters(options)`        | PostgreSQL                | Node and Worker bundle with verification-token storage; requires an application-owned `mfaSecretCodec`.                                         |
 
 If your storage doesn't fit any of these, extend the base class directly.
 

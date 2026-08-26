@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import type { SpawnOptions } from 'node:child_process'
 import { cp, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -8,8 +9,8 @@ const tempDir = await mkdtemp(join(tmpdir(), 'goobits-auth-audit-'))
 const auditEnv = { ...process.env }
 delete auditEnv['npm_config_recursive']
 
-function run(command, args, options) {
-	return new Promise((resolve, reject) => {
+function run(command: string, args: string[], options: SpawnOptions): Promise<void> {
+	return new Promise<void>((resolve, reject) => {
 		const child = spawn(command, args, {
 			stdio: 'inherit',
 			...options

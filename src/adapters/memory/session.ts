@@ -122,6 +122,6 @@ export class MemorySessionAdapter extends SessionAdapter {
 	}
 
 	deleteSessionCookie(cookies: Cookies): void {
-		clearSessionCookie(cookies, this.#cookieName, this.#cookieDomain)
+		clearSessionCookie(cookies, this.#cookieName, this.#secureCookies, this.#cookieDomain)
 	}
 }

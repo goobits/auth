@@ -100,6 +100,18 @@ describe('GoobitsAuth', () => {
 		})
 	})
 
+	it('exposes the configured CSRF token lifecycle', async () => {
+		const auth = new GoobitsAuth({
+			adapter: { session: createSessionAdapter({ session: null, user: null }) }
+		})
+		const event = createRequestEvent({ url: 'http://localhost/account' })
+
+		const token = await auth.getOrCreateCsrfToken(event as never)
+
+		expect(token).toBeTypeOf('string')
+		expect(await auth.getOrCreateCsrfToken(event as never)).toBe(token)
+	})
+
 	it('populates event.locals.auth via handle()', async () => {
 		const user: User = {
 			id: 'u1',

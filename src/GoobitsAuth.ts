@@ -3,6 +3,7 @@ import { error, type Handle, redirect } from '@sveltejs/kit'
 import { createAuth } from './createAuth.ts'
 import { AUTH_ROUTE_PATHS, matchesAuthRoute, normalizeAuthBasePath } from './_routePaths.ts'
 import { createAuthEvent, type AuthEvent } from './security/events.ts'
+import { createAuthCsrf } from './security/policy.ts'
 import type { AuthConfig, AuthLocals, AuthRequestHandler, RequestEventLike } from './types/auth.ts'
 import type { AuthSession, User } from './types/index.ts'
 
@@ -77,6 +78,7 @@ function resolveUserAuthRoles(user: User): string[] {
 /** High-level SvelteKit auth facade with handlers, hooks, and role guards. */
 export class GoobitsAuth {
 	private readonly core: CoreAuth
+	private readonly csrf: ReturnType<typeof createAuthCsrf> | null
 	private readonly routing: Required<GoobitsAuthRoutingConfig>
 	private readonly defaultHandlers: AuthHandlersBundle
 	private readonly resolveAuthRoles: AuthRoleResolver
@@ -88,6 +90,9 @@ export class GoobitsAuth {
 			adapters: adapter
 		} as AuthConfig
 		this.core = createAuth(authConfig)
+		this.csrf = this.core.security.csrf.mode === 'off'
+			? null
+			: createAuthCsrf(this.core.security)
 		this.resolveAuthRoles = resolveAuthRoles ?? resolveUserAuthRoles
 		const basePath = normalizeAuthBasePath(routing?.basePath ?? '/auth')
 		this.routing = {
@@ -126,6 +131,14 @@ export class GoobitsAuth {
 	/** Named route factories for applications that mount individual auth endpoints. */
 	get routes(): CoreAuth['routes'] {
 		return this.core.routes
+	}
+
+	/**
+	 * Returns the CSRF token for the request's current session binding, replacing
+	 * a missing or stale token through the same policy and store as auth routes.
+	 */
+	async getOrCreateCsrfToken(event: RequestEventLike): Promise<string | null> {
+		return this.csrf ? this.csrf.getOrCreate(event as never) : null
 	}
 
 	/**

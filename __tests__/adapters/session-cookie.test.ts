@@ -36,7 +36,7 @@ describe('session cookie policy', () => {
 			false,
 			'.bandamp.org'
 		)
-		clearSessionCookie(jar as never, 'auth', '.bandamp.org')
+		clearSessionCookie(jar as never, 'auth', false, '.bandamp.org')
 
 		expect(jar.set).toHaveBeenCalledWith(
 			'auth',
@@ -45,7 +45,8 @@ describe('session cookie policy', () => {
 		)
 		expect(jar.delete).toHaveBeenCalledWith('auth', {
 			domain: '.bandamp.org',
-			path: '/'
+			path: '/',
+			secure: false
 		})
 	})
 })

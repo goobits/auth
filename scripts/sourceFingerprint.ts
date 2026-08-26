@@ -12,13 +12,13 @@ const requiredInputs = [
 	'package.json',
 	'tsconfig.build.json',
 	'tsup.config.ts',
-	'scripts/finalizeDist.mjs',
-	'scripts/sourceFingerprint.mjs'
+	'scripts/finalizeDist.ts',
+	'scripts/sourceFingerprint.ts'
 ]
 const workspaceInputs = ['../security/src', '../security/package.json']
 const requiredOutputs = ['dist/node/index.js', 'dist/worker/index.js', 'dist/types/index.d.ts']
 
-async function exists(path) {
+async function exists(path: string): Promise<boolean> {
 	try {
 		await access(path)
 		return true
@@ -27,7 +27,7 @@ async function exists(path) {
 	}
 }
 
-async function collectFiles(path, output) {
+async function collectFiles(path: string, output: string[]): Promise<void> {
 	const details = await stat(path)
 	if (details.isFile()) {
 		output.push(path)
@@ -41,8 +41,8 @@ async function collectFiles(path, output) {
 	}
 }
 
-async function createSourceFingerprint() {
-	const files = []
+async function createSourceFingerprint(): Promise<string> {
+	const files: string[] = []
 	for (const input of requiredInputs) {
 		await collectFiles(join(packageRoot, input), files)
 	}
@@ -65,11 +65,11 @@ async function createSourceFingerprint() {
 	return fingerprint.digest('hex')
 }
 
-export async function writeSourceFingerprint() {
+export async function writeSourceFingerprint(): Promise<void> {
 	await writeFile(fingerprintPath, `${await createSourceFingerprint()}\n`)
 }
 
-export async function isDistFresh() {
+export async function isDistFresh(): Promise<boolean> {
 	for (const output of requiredOutputs) {
 		if (!(await exists(join(packageRoot, output)))) return false
 	}
