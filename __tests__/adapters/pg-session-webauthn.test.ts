@@ -63,6 +63,105 @@ describe('pg session and WebAuthn adapters', () => {
 		expect(session.expiresAt.getTime() - Date.now()).toBeGreaterThan(59_000)
 		expect(session.expiresAt.getTime() - Date.now()).toBeLessThanOrEqual(60_000)
 		expect(storedSessionId).not.toBe(session.id)
+		expect(session.managementId).toBe(storedSessionId)
+	})
+
+	it('restores the non-bearer management handle when validating a session', async () => {
+		let storedVerifier = ''
+		const db: PgPoolLike = {
+			async query(text, values = []) {
+				if (text.includes('FROM auth_sessions s')) {
+					storedVerifier = String(values[0])
+					return {
+						rows: [
+							{
+								avatar: null,
+								created_at: new Date('2026-01-01T00:00:00.000Z'),
+								email: 'owner@example.com',
+								email_verified: true,
+								expires_at: new Date('2099-01-01T00:00:00.000Z'),
+								fingerprint: null,
+								id: storedVerifier,
+								ip: null,
+								last_active_at: null,
+								mfa_verified_at: null,
+								name: 'Owner',
+								password: null,
+								role: 'user',
+								settings: {},
+								updated_at: new Date('2026-01-01T00:00:00.000Z'),
+								user_agent: null,
+								user_created_at: new Date('2026-01-01T00:00:00.000Z'),
+								user_id: 'user-1',
+								user_id_for_user: 'user-1'
+							}
+						]
+					}
+				}
+				if (text.includes('UPDATE auth_sessions SET last_active_at')) return { rows: [] }
+				throw new Error(`Unexpected query: ${text}`)
+			}
+		}
+		const sessionAdapter = createPgAuthAdapters({
+			cookieName: 'auth',
+			db,
+			secureCookies: true
+		}).session
+
+		const result = await sessionAdapter.validateSession('bearer-token')
+
+		expect(result.session?.id).toBe('bearer-token')
+		expect(result.session?.managementId).toBe(storedVerifier)
+		expect(result.session?.managementId).not.toBe(result.session?.id)
+	})
+
+	it('lists safe session handles and scopes managed revocation to the owner', async () => {
+		const queries: Array<{ text: string; values: readonly unknown[] }> = []
+		const db: PgPoolLike = {
+			async query(text, values = []) {
+				queries.push({ text, values })
+				if (text.includes('SELECT id, user_id, expires_at')) {
+					return {
+						rows: [
+							{
+								created_at: new Date('2026-01-01T00:00:00.000Z'),
+								expires_at: new Date('2099-01-01T00:00:00.000Z'),
+								id: 'stored-verifier',
+								ip: '127.0.0.1',
+								last_active_at: new Date('2026-02-01T00:00:00.000Z'),
+								user_agent: 'vitest',
+								user_id: values[0]
+							}
+						]
+					}
+				}
+				if (text.includes('DELETE FROM auth_sessions')) return { rows: [] }
+				throw new Error(`Unexpected query: ${text}`)
+			}
+		}
+		const sessionAdapter = createPgAuthAdapters({
+			cookieName: 'auth',
+			db,
+			secureCookies: true
+		}).session
+
+		const sessions = await sessionAdapter.listManagedSessions('user-1')
+		await sessionAdapter.revokeManagedSession('user-1', sessions[0]!.id)
+
+		expect(sessions).toEqual([
+			{
+				createdAt: new Date('2026-01-01T00:00:00.000Z'),
+				expiresAt: new Date('2099-01-01T00:00:00.000Z'),
+				id: 'stored-verifier',
+				ip: '127.0.0.1',
+				lastActiveAt: new Date('2026-02-01T00:00:00.000Z'),
+				userAgent: 'vitest',
+				userId: 'user-1'
+			}
+		])
+		expect(queries[0]?.values).toEqual(['user-1'])
+		expect(queries[1]?.text).toContain('WHERE id = $1 AND user_id = $2')
+		expect(queries[1]?.values).toEqual(['stored-verifier', 'user-1'])
 	})
 
 	it('creates WebAuthn challenges and credentials through the postgres bundle', async () => {

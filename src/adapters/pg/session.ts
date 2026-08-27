@@ -1,5 +1,5 @@
 import type { Cookies } from '@sveltejs/kit'
-import type { AuthSession, SessionMetadata, User } from '../../types/index.ts'
+import type { AuthSession, SessionMetadata, SessionSummary, User } from '../../types/index.ts'
 import { SessionAdapter } from '../session/SessionAdapter.ts'
 import { clearSessionCookie, writeSessionCookie } from '../session/_sessionCookie.ts'
 import { normalizeSessionMetadata } from '../session/_sessionMetadata.ts'
@@ -18,6 +18,11 @@ type SessionRow = {
 	user_agent: string | null
 	user_id: string
 }
+
+type ManagedSessionRow = Pick<
+	SessionRow,
+	'id' | 'user_id' | 'expires_at' | 'created_at' | 'last_active_at' | 'ip' | 'user_agent'
+>
 
 /** Postgres session adapter for sessions, users, tokens, MFA, magic links, or WebAuthn records. */
 export class PgSessionAdapter extends SessionAdapter {
@@ -80,6 +85,9 @@ export class PgSessionAdapter extends SessionAdapter {
 		return {
 			...toSession(requireRow(row)),
 			id: token,
+			// The stored SHA-256 verifier cannot authenticate as the bearer token, so it is safe
+			// to reuse as the stable owner-scoped session-management handle.
+			managementId: verifier,
 			...(normalized.rememberMe !== undefined ? { rememberMe: normalized.rememberMe } : {})
 		}
 	}
@@ -131,7 +139,7 @@ export class PgSessionAdapter extends SessionAdapter {
 			verifier
 		])
 		return {
-			session: { ...toSession(row), id: sessionId },
+			session: { ...toSession(row), id: sessionId, managementId: verifier },
 			user: toUser({
 				...row,
 				created_at: row.user_created_at,
@@ -148,6 +156,33 @@ export class PgSessionAdapter extends SessionAdapter {
 
 	async invalidateUserSessions(userId: string): Promise<void> {
 		await this.#db.query('DELETE FROM auth_sessions WHERE user_id = $1', [userId])
+	}
+
+	override async listManagedSessions(userId: string): Promise<SessionSummary[]> {
+		const result = await this.#db.query<ManagedSessionRow>(
+			`
+			SELECT id, user_id, expires_at, created_at, last_active_at, ip, user_agent
+			FROM auth_sessions
+			WHERE user_id = $1
+		`,
+			[userId]
+		)
+		return result.rows.map((row) => ({
+			id: row.id,
+			userId: row.user_id,
+			expiresAt: row.expires_at,
+			createdAt: row.created_at,
+			lastActiveAt: row.last_active_at,
+			ip: row.ip,
+			userAgent: row.user_agent
+		}))
+	}
+
+	override async revokeManagedSession(userId: string, managementId: string): Promise<void> {
+		await this.#db.query('DELETE FROM auth_sessions WHERE id = $1 AND user_id = $2', [
+			managementId,
+			userId
+		])
 	}
 
 	setSessionCookie(cookies: Cookies, session: AuthSession): void {
