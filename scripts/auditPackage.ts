@@ -29,7 +29,17 @@ function run(command: string, args: string[], options: SpawnOptions): Promise<vo
 try {
 	await cp(join(root, 'package.json'), join(tempDir, 'package.json'))
 	await cp(join(root, 'pnpm-lock.yaml'), join(tempDir, 'pnpm-lock.yaml'))
-	await run('pnpm', ['audit', '--prod', '--audit-level', 'high'], { cwd: tempDir, env: auditEnv })
+	await run(
+		'pnpm',
+		[
+			'audit',
+			'--prod',
+			'--audit-level',
+			'high',
+			'--registry=https://registry.npmjs.org/'
+		],
+		{ cwd: tempDir, env: auditEnv }
+	)
 } finally {
 	await rm(tempDir, { recursive: true, force: true })
 }
