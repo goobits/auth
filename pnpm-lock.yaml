@@ -25,9 +25,6 @@ importers:
       '@simplewebauthn/server':
         specifier: ^13.3.2
         version: 13.3.2
-      drizzle-orm:
-        specifier: ^0.45.2
-        version: 0.45.2(postgres@3.4.9)
       hash-wasm:
         specifier: ^4.12.0
         version: 4.12.0
@@ -50,6 +47,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.1.10
         version: 4.1.10(vitest@4.1.10)
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(postgres@3.4.9)
       pg-mem:
         specifier: ^3.0.14
         version: 3.0.14(postgres@3.4.9)
