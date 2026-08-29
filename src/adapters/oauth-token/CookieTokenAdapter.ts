@@ -91,13 +91,6 @@ export class CookieTokenAdapter extends TokenAdapter {
 		})
 	}
 
-	async refreshTokens(
-		_userId: string,
-		_provider: string
-	): Promise<import('../../types/index.ts').OAuthTokens | null> {
-		throw new Error('refreshTokens not implemented - use provider-specific refresh logic')
-	}
-
 	async deleteTokens(_userId: string, provider: string) {
 		if (!this._cookies) {
 			throw new Error('Cookies not set. Call _setCookies() first.')

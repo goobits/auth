@@ -1,5 +1,5 @@
 import type { OAuthTokens } from '../../types/index.ts'
-import { resolveLogger, type Logger } from '../../_internal/logger.ts'
+import type { Logger } from '../../_internal/logger.ts'
 import type { D1DatabasePort } from '../_d1Port.ts'
 import { assertD1Identifier } from '../_d1Sql.ts'
 import type { OAuthTokenCodec, OAuthTokenEncryptionOptions } from './OAuthTokenCodec.ts'
@@ -13,7 +13,6 @@ export class D1TokenAdapter extends TokenAdapter {
 	private tokensTable: string
 	private readonly tokenCodec: OAuthTokenCodec | null
 	private columns: { userId: string; provider: string; tokens: string }
-	private readonly logger: Logger
 
 	constructor(
 		db: D1DatabasePort,
@@ -27,7 +26,6 @@ export class D1TokenAdapter extends TokenAdapter {
 		this.db = db
 		this.tokensTable = assertD1Identifier(options.tokensTable || 'oauth_tokens', 'tokensTable')
 		this.tokenCodec = resolveOAuthTokenCodec(options, 'D1TokenAdapter')
-		this.logger = resolveLogger(options.logger)
 		this.columns = {
 			userId: assertD1Identifier(options.columns?.['userId'] || 'user_id', 'oauthTokens.userId'),
 			provider: assertD1Identifier(
@@ -76,11 +74,6 @@ export class D1TokenAdapter extends TokenAdapter {
 			context: { userId, provider },
 			reseal: (ciphertext) => this.writeTokens(userId, provider, ciphertext)
 		})
-	}
-
-	async refreshTokens(userId: string, provider: string) {
-		this.logger.warn('refreshTokens not implemented - use provider-specific refresh logic')
-		return this.getTokens(userId, provider)
 	}
 
 	async deleteTokens(userId: string, provider: string) {

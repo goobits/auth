@@ -147,6 +147,12 @@ getTokens(userId: string, provider: string): Promise<OAuthTokens | null>
 deleteTokens(userId: string, provider: string): Promise<void>
 ```
 
+OAuth providers own credential refresh. Call `OAuthProvider.refreshAccessToken()`
+with the retained refresh token, then persist the returned token set with
+`storeTokens()`. The deprecated `TokenAdapter.refreshTokens()` method remains
+temporarily for source compatibility and always throws instead of returning
+stale credentials.
+
 Only needed if you want refresh-token-driven re-auth or downstream API
 calls using the user's OAuth tokens. The Drizzle bundle accepts a rotation-ready
 `oauthTokenEncryption` keyring or custom codec, binds ciphertext to the user and

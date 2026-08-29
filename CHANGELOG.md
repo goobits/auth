@@ -6,6 +6,9 @@
 
 ### 🐛 Fixed
 
+- OAuth token storage adapters now consistently reject the deprecated
+  `refreshTokens()` compatibility method instead of returning stale credentials;
+  provider adapters remain the sole owner of credential refresh.
 - Session refreshes now clear stale client identity after anonymous,
   unauthorized, malformed, or unavailable session responses, and Auth Gate
   treats an explicit `user={null}` as anonymous instead of falling back to the

@@ -28,15 +28,22 @@ export abstract class TokenAdapter {
 	): Promise<import('../../types/core.ts').OAuthTokens | null>
 
 	/**
-	 * Refresh OAuth tokens
+	 * @deprecated Token persistence cannot refresh provider credentials. Call
+	 * `OAuthProvider.refreshAccessToken()` and persist the returned tokens with
+	 * `storeTokens()`.
+	 *
 	 * @param {string} userId - User ID
 	 * @param {string} provider - Provider name
-	 * @returns {Promise<import('../../types/core.ts').OAuthTokens>}
+	 * @throws Always. Retained temporarily for source compatibility.
 	 */
-	abstract refreshTokens(
-		userId: string,
-		provider: string
-	): Promise<import('../../types/core.ts').OAuthTokens | null>
+	async refreshTokens(
+		_userId: string,
+		_provider: string
+	): Promise<import('../../types/core.ts').OAuthTokens | null> {
+		throw new Error(
+			'TokenAdapter.refreshTokens is unsupported; call OAuthProvider.refreshAccessToken and storeTokens'
+		)
+	}
 
 	/**
 	 * Delete OAuth tokens

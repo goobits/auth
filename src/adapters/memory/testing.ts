@@ -38,10 +38,6 @@ export class MockTokenAdapter extends TokenAdapter {
 		return this.#tokens.get(`${userId}:${provider}`) ?? null
 	}
 
-	async refreshTokens(userId: string, provider: string): Promise<OAuthTokens | null> {
-		return this.getTokens(userId, provider)
-	}
-
 	async deleteTokens(userId: string, provider: string): Promise<void> {
 		this.#tokens.delete(`${userId}:${provider}`)
 	}
