@@ -25,20 +25,20 @@
 
 {#if visible}
 	<div class="auth-notification" role="alert">
-		<div class="notification-content">
-			<div class="notification-icon">
+		<div class="auth-notification__content">
+			<div class="auth-notification__icon">
 				<Check size={18} />
 			</div>
 
-			<div class="notification-body">
-				<h3>{title}</h3>
-				<p>{message}</p>
+			<div class="auth-notification__body">
+				<h3 class="auth-notification__title">{title}</h3>
+				<p class="auth-notification__message">{message}</p>
 				{#if ctaLabel}
-					<button type="button" class="cta-button" onclick={onCta}>{ctaLabel}</button>
+					<button type="button" class="auth-notification__action" onclick={onCta}>{ctaLabel}</button>
 				{/if}
 			</div>
 
-			<button type="button" class="close-button" onclick={close} aria-label="Close notification"
+			<button type="button" class="auth-notification__close" onclick={close} aria-label="Close notification"
 				><X size={18} /></button
 			>
 		</div>
@@ -56,9 +56,9 @@
 		box-shadow: var(--auth-shadow-lg, 0 12px 30px rgba(0, 0, 0, 0.35));
 		border: 1px solid var(--auth-success-border, rgba(34, 197, 94, 0.3));
 		z-index: var(--auth-z-toast, 1200);
-		animation: slideIn 0.3s ease-out;
+		animation: auth-notification-slide-in 0.3s ease-out;
 	}
-	@keyframes slideIn {
+	@keyframes auth-notification-slide-in {
 		from {
 			transform: translateX(100%);
 			opacity: 0;
@@ -68,12 +68,12 @@
 			opacity: 1;
 		}
 	}
-	.notification-content {
+	.auth-notification__content {
 		display: flex;
 		gap: 1rem;
 		padding: 1.25rem;
 	}
-	.notification-icon {
+	.auth-notification__icon {
 		flex-shrink: 0;
 		width: 28px;
 		height: 28px;
@@ -85,17 +85,17 @@
 		color: #fff;
 		font-weight: 700;
 	}
-	.notification-body h3 {
+	.auth-notification__title {
 		margin: 0 0 0.5rem 0;
 		font-size: 1.125rem;
 		color: var(--auth-text-primary, #f5f5f5);
 	}
-	.notification-body p {
+	.auth-notification__message {
 		margin: 0;
 		color: var(--auth-text-secondary, rgba(255, 255, 255, 0.7));
 		line-height: 1.5;
 	}
-	.cta-button {
+	.auth-notification__action {
 		margin-top: 0.75rem;
 		padding: 0.5rem 0.75rem;
 		background: var(--auth-accent, #8b5cf6);
@@ -104,7 +104,7 @@
 		border-radius: var(--auth-radius-sm, 10px);
 		cursor: pointer;
 	}
-	.close-button {
+	.auth-notification__close {
 		background: none;
 		border: none;
 		color: var(--auth-text-secondary, rgba(255, 255, 255, 0.7));
@@ -112,7 +112,7 @@
 		padding: 0.25rem 0.5rem;
 		border-radius: var(--auth-radius-sm, 10px);
 	}
-	.close-button:hover {
+	.auth-notification__close:hover {
 		background: var(--auth-bg-secondary, rgba(255, 255, 255, 0.06));
 		color: var(--auth-text-primary, #f5f5f5);
 	}

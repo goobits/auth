@@ -104,58 +104,58 @@
 </script>
 
 {#if visible}
-	<div class="modal-overlay" role="presentation">
+	<div class="backup-codes-modal" role="presentation">
 		<div
-			class="modal-content"
+			class="backup-codes-modal__dialog"
 			bind:this={modalEl}
 			tabindex="-1"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="backup-codes-modal-title"
 		>
-			<div class="modal-header">
-				<h2 id="backup-codes-modal-title">
+			<div class="backup-codes-modal__header">
+				<h2 class="backup-codes-modal__title" id="backup-codes-modal-title">
 					{isNewEnrollment ? 'Save Your Backup Codes' : 'New Backup Codes Generated'}
 				</h2>
-				<button type="button" class="close-button" onclick={close} aria-label="Close dialog"
+				<button type="button" class="backup-codes-modal__close" onclick={close} aria-label="Close dialog"
 					><X size={18} /></button
 				>
 			</div>
 
-			<div class="modal-body">
-				<div class="warning-box">
-					<div class="icon"><AlertTriangle size={20} /></div>
+			<div class="backup-codes-modal__body">
+				<div class="backup-codes-modal__warning">
+					<div class="backup-codes-modal__warning-icon"><AlertTriangle size={20} /></div>
 					<div>
 						<strong>Important:</strong>
 						<p>Save these backup codes in a secure location. Each code can only be used once.</p>
 						{#if !isNewEnrollment}
-							<p class="warning-text">Your previous backup codes have been invalidated.</p>
+							<p class="backup-codes-modal__warning-text">Your previous backup codes have been invalidated.</p>
 						{/if}
 					</div>
 				</div>
 
-				<div class="backup-codes-container">
+				<div class="backup-codes-modal__codes">
 					{#each backupCodes as code, index}
-						<div class="backup-code">
-							<span class="code-number">{index + 1}.</span>
-							<span class="code-value">{code}</span>
+						<div class="backup-codes-modal__code">
+							<span class="backup-codes-modal__code-number">{index + 1}.</span>
+							<span class="backup-codes-modal__code-value">{code}</span>
 						</div>
 					{/each}
 				</div>
 
-				<div class="action-buttons">
-					<button type="button" class="secondary-button" onclick={handleDownload}>
+				<div class="backup-codes-modal__actions">
+					<button type="button" class="backup-codes-modal__button backup-codes-modal__button--secondary" onclick={handleDownload}>
 						Download Codes
 					</button>
-					<button type="button" class="secondary-button" onclick={handleCopyToClipboard}>
+					<button type="button" class="backup-codes-modal__button backup-codes-modal__button--secondary" onclick={handleCopyToClipboard}>
 						Copy to Clipboard
 					</button>
 				</div>
 				{#if copyStatus}
-					<p class="copy-status">{copyStatus}</p>
+					<p class="backup-codes-modal__copy-status">{copyStatus}</p>
 				{/if}
 
-				<div class="acknowledgment">
+				<div class="backup-codes-modal__acknowledgment">
 					<label class="checkbox-label">
 						<input class="checkbox-label__control" type="checkbox" bind:checked={acknowledged} />
 						<span class="checkbox-label__text"
@@ -165,10 +165,10 @@
 				</div>
 			</div>
 
-			<div class="modal-footer">
+			<div class="backup-codes-modal__footer">
 				<button
 					type="button"
-					class="primary-button"
+					class="backup-codes-modal__button backup-codes-modal__button--primary"
 					onclick={handleAcknowledge}
 					disabled={!acknowledged}
 				>
@@ -180,7 +180,7 @@
 {/if}
 
 <style>
-	.modal-overlay {
+	.backup-codes-modal {
 		position: fixed;
 		inset: 0;
 		background-color: rgba(0, 0, 0, 0.5);
@@ -190,7 +190,7 @@
 		z-index: var(--auth-z-modal, 1000);
 		padding: 1rem;
 	}
-	.modal-content {
+	.backup-codes-modal__dialog {
 		background: var(--auth-surface, #111);
 		border-radius: var(--auth-radius-lg, 16px);
 		box-shadow: var(--auth-shadow-xl, 0 20px 50px rgba(0, 0, 0, 0.4));
@@ -200,7 +200,7 @@
 		overflow-y: auto;
 		outline: none;
 	}
-	.modal-header {
+	.backup-codes-modal__header {
 		padding: 1.5rem;
 		border-bottom: 1px solid var(--auth-border, rgba(255, 255, 255, 0.1));
 		display: flex;
@@ -208,12 +208,12 @@
 		justify-content: space-between;
 		gap: 1rem;
 	}
-	.modal-header h2 {
+	.backup-codes-modal__title {
 		margin: 0;
 		color: var(--auth-text-primary, #f5f5f5);
 		font-size: 1.5rem;
 	}
-	.close-button {
+	.backup-codes-modal__close {
 		appearance: none;
 		border: 0;
 		background: transparent;
@@ -226,13 +226,13 @@
 		min-height: 44px;
 		border-radius: 0.5rem;
 	}
-	.close-button:hover {
+	.backup-codes-modal__close:hover {
 		background: var(--auth-bg-secondary, rgba(255, 255, 255, 0.06));
 	}
-	.modal-body {
+	.backup-codes-modal__body {
 		padding: 1.5rem;
 	}
-	.warning-box {
+	.backup-codes-modal__warning {
 		display: flex;
 		gap: 1rem;
 		padding: 1rem;
@@ -241,7 +241,7 @@
 		border-radius: var(--auth-radius-md, 12px);
 		margin-bottom: 1.5rem;
 	}
-	.warning-box .icon {
+	.backup-codes-modal__warning-icon {
 		font-weight: 700;
 		width: 24px;
 		height: 24px;
@@ -253,11 +253,11 @@
 		color: #000;
 		flex-shrink: 0;
 	}
-	.warning-text {
+	.backup-codes-modal__warning-text {
 		color: var(--auth-error-text, #ff6b6b);
 		font-weight: 500;
 	}
-	.backup-codes-container {
+	.backup-codes-modal__codes {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
 		gap: 0.75rem;
@@ -267,11 +267,11 @@
 		margin-bottom: 1rem;
 	}
 	@media (max-width: 480px) {
-		.backup-codes-container {
+		.backup-codes-modal__codes {
 			grid-template-columns: 1fr;
 		}
 	}
-	.backup-code {
+	.backup-codes-modal__code {
 		display: flex;
 		gap: 0.5rem;
 		font-family:
@@ -279,20 +279,20 @@
 			monospace;
 		font-size: 1rem;
 	}
-	.code-number {
+	.backup-codes-modal__code-number {
 		color: var(--auth-text-secondary, rgba(255, 255, 255, 0.6));
 	}
-	.code-value {
+	.backup-codes-modal__code-value {
 		color: var(--auth-text-primary, #f5f5f5);
 		font-weight: 600;
 	}
-	.action-buttons {
+	.backup-codes-modal__actions {
 		display: flex;
 		gap: 0.75rem;
 		margin-bottom: 0.75rem;
 		flex-wrap: wrap;
 	}
-	.secondary-button {
+	.backup-codes-modal__button {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;
@@ -306,14 +306,14 @@
 		cursor: pointer;
 		transition: all 0.2s ease;
 	}
-	.secondary-button:hover {
+	.backup-codes-modal__button--secondary:hover {
 		background-color: var(--auth-bg-secondary, rgba(255, 255, 255, 0.06));
 	}
-	.copy-status {
+	.backup-codes-modal__copy-status {
 		color: var(--auth-text-secondary, rgba(255, 255, 255, 0.6));
 		margin: 0 0 1rem;
 	}
-	.acknowledgment {
+	.backup-codes-modal__acknowledgment {
 		padding: 1rem;
 		background-color: var(--auth-bg-secondary, rgba(255, 255, 255, 0.04));
 		border-radius: var(--auth-radius-md, 12px);
@@ -337,13 +337,13 @@
 	.checkbox-label__text {
 		line-height: 1.45;
 	}
-	.modal-footer {
+	.backup-codes-modal__footer {
 		padding: 1.5rem;
 		border-top: 1px solid var(--auth-border, rgba(255, 255, 255, 0.1));
 		display: flex;
 		justify-content: flex-end;
 	}
-	.primary-button {
+	.backup-codes-modal__button--primary {
 		padding: 0.75rem 2rem;
 		background-color: var(--auth-accent, #8b5cf6);
 		color: white;
@@ -355,7 +355,7 @@
 		cursor: pointer;
 		transition: all 0.2s ease;
 	}
-	.primary-button:disabled {
+	.backup-codes-modal__button--primary:disabled {
 		background-color: var(--auth-bg-tertiary, rgba(255, 255, 255, 0.1));
 		cursor: not-allowed;
 		opacity: 0.6;
