@@ -2,7 +2,7 @@
 	import AuthGate from '../../../src/ui/AuthGate.svelte'
 
 	let {
-		user = null,
+		user = undefined,
 		loading = false,
 		onUnauthenticated = () => {}
 	}: {

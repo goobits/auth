@@ -18,7 +18,7 @@
 		unauthenticated?: Snippet
 	} = $props()
 
-	const resolvedUser = $derived(user ?? $auth.user ?? null)
+	const resolvedUser = $derived(user === undefined ? ($auth.user ?? null) : user)
 	const resolvedLoading = $derived(loading ?? $auth.loading ?? false)
 
 	$effect(() => {

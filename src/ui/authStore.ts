@@ -75,6 +75,16 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 		return mergeHeaders(base, extra)
 	}
 
+	const clearAuthentication = () => {
+		set({
+			user: null,
+			session: null,
+			isAuthenticated: false,
+			loading: false,
+			error: null
+		})
+	}
+
 	const applyAuthSuccess = (result: Record<string, unknown>) => {
 		const user = (result['customer'] || result['user'] || null) as AuthUser
 		update((state) => ({
@@ -121,7 +131,7 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 			})
 
 			if (response.status === 204 || !response.ok) {
-				update((state) => ({ ...state, loading: false }))
+				clearAuthentication()
 				return
 			}
 
@@ -136,10 +146,10 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 					loading: false
 				}))
 			} else {
-				update((state) => ({ ...state, loading: false }))
+				clearAuthentication()
 			}
 		} catch {
-			update((state) => ({ ...state, loading: false }))
+			clearAuthentication()
 		}
 	}
 	let didAutoCheck = false
@@ -209,22 +219,10 @@ export function createAuthStore(options: AuthStoreOptions = {}) {
 
 			try {
 				const result = await postAuth(resolvedEndpoints.logout)
-				set({
-					user: null,
-					session: null,
-					isAuthenticated: false,
-					loading: false,
-					error: null
-				})
+				clearAuthentication()
 				return { success: (result as { success?: boolean }).success || true }
 			} catch {
-				set({
-					user: null,
-					session: null,
-					isAuthenticated: false,
-					loading: false,
-					error: null
-				})
+				clearAuthentication()
 				return { success: true }
 			}
 		},

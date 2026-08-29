@@ -6,6 +6,10 @@
 
 ### 🐛 Fixed
 
+- Session refreshes now clear stale client identity after anonymous,
+  unauthorized, malformed, or unavailable session responses, and Auth Gate
+  treats an explicit `user={null}` as anonymous instead of falling back to the
+  global store.
 - Backup-code dialogs now reliably capture focus after mounting and restore it
   to the opener when closed.
 - Server-provided active sessions now clear the Session Manager's busy state
