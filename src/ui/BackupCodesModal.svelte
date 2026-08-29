@@ -87,11 +87,9 @@
 		acknowledged = false
 		copyStatus = ''
 
-		const focusTimer = setTimeout(() => {
-			modalEl?.focus({ preventScroll: true })
-		}, 0)
-
-		return () => clearTimeout(focusTimer)
+		queueMicrotask(() => {
+			if (visible && hasCapturedFocus) modalEl?.focus({ preventScroll: true })
+		})
 	})
 
 	onMount(() => {

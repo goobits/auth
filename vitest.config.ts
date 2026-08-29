@@ -1,9 +1,11 @@
+import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { defineConfig } from 'vitest/config'
 
 import { shouldSuppressConsoleMessage } from './__tests__/consoleSuppressions.js'
 import { resolveTestArtifactDirectory, resolveViteCacheDirectory } from './scripts/testStorage.ts'
 
 export default defineConfig({
+	plugins: [svelte()],
 	cacheDir: resolveViteCacheDirectory(import.meta.dirname),
 	test: {
 		...(process.env.CI ? {} : { maxWorkers: 2 }),
@@ -15,7 +17,7 @@ export default defineConfig({
 			provider: 'v8',
 			reportsDirectory: resolveTestArtifactDirectory(import.meta.dirname, 'coverage'),
 			reporter: ['text', 'lcov'],
-			include: ['src/**/*.ts'],
+			include: ['src/**/*.{ts,svelte}'],
 			exclude: ['src/_internal/**', '**/*.d.ts', 'src/index.ts'],
 			// Keep the broad published runtime surface from regressing. Raise these
 			// floors as optional adapters gain coverage; never silently lower them.
@@ -26,5 +28,6 @@ export default defineConfig({
 				statements: 60
 			}
 		}
-	}
+	},
+	resolve: { conditions: ['browser'] }
 })

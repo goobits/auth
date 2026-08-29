@@ -6,6 +6,10 @@
 
 ### 🐛 Fixed
 
+- Backup-code dialogs now reliably capture focus after mounting and restore it
+  to the opener when closed.
+- Server-provided active sessions now clear the Session Manager's busy state
+  without making a redundant client request.
 - Active-session management now renders its loading state during server-side
   output instead of briefly claiming that no sessions exist before hydration.
 - Published packages now declare `jose` directly because the bundled Security
@@ -53,6 +57,8 @@
 
 ### 🧰 Tooling
 
+- Published Svelte UI now has mounted behavioral coverage and participates in
+  the package coverage gate.
 - Package checks now enforce BEM selector naming and focused component style
   ownership across the standalone UI surface.
 - 🪵 Diagnostic error logs now use the canonical `error_type` field while retaining bounded,
