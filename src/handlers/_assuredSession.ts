@@ -60,7 +60,15 @@ export async function rotateSessionAssurance({
 	try {
 		await sessionAdapter.invalidateSession(currentSession.id)
 	} catch (error) {
-		await sessionAdapter.invalidateSession(replacement.id).catch(() => undefined)
+		try {
+			await sessionAdapter.invalidateSession(replacement.id)
+		} catch(cleanupError) {
+			throw new AggregateError(
+				[ error, cleanupError ],
+				'Existing-session invalidation and replacement-session rollback both failed.',
+				{ cause: cleanupError }
+			)
+		}
 		throw error
 	}
 	sessionAdapter.setSessionCookie(cookies, replacement)

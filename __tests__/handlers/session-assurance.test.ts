@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { type AssuredSessionAdapter, rotateSessionAssurance } from '../../src/handlers/index.ts'
+import {
+	type AssuredSessionAdapter,
+	rotateSessionAssurance
+} from '../../src/handlers/_assuredSession.ts'
 import type { AuthSession, SessionMetadata } from '../../src/types/core.ts'
 import { createCookies } from '../testKit.ts'
 
@@ -138,6 +141,28 @@ describe('rotateSessionAssurance', () => {
 		).rejects.toThrow(/store unavailable/)
 		expect(adapter.invalidateSession).toHaveBeenNthCalledWith(1, 'current-session')
 		expect(adapter.invalidateSession).toHaveBeenNthCalledWith(2, 'replacement-session')
+		expect(adapter.setSessionCookie).not.toHaveBeenCalled()
+	})
+
+	it('reports both the invalidation and replacement rollback failures', async() => {
+		const invalidationError = new Error('store unavailable')
+		const rollbackError = new Error('rollback unavailable')
+		const { adapter } = sessionAdapter()
+		vi.mocked(adapter.invalidateSession)
+			.mockRejectedValueOnce(invalidationError)
+			.mockRejectedValueOnce(rollbackError)
+
+		await expect(
+			rotateSessionAssurance({
+				sessionAdapter: adapter,
+				assurance: 'primary',
+				cookies: createCookies(),
+				currentSession: currentSession(),
+				userId: 'user-1'
+			})
+		).rejects.toMatchObject({
+			errors: [ invalidationError, rollbackError ]
+		})
 		expect(adapter.setSessionCookie).not.toHaveBeenCalled()
 	})
 })
