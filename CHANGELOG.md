@@ -53,6 +53,8 @@
 
 ### 🧰 Tooling
 
+- Package checks now enforce BEM selector naming and focused component style
+  ownership across the standalone UI surface.
 - 🪵 Diagnostic error logs now use the canonical `error_type` field while retaining bounded,
   message-free error context.
 - Build output, coverage, and Vite caches now live beneath the operating

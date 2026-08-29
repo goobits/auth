@@ -351,7 +351,8 @@
 		"./verification": "./src/verification/index.ts"
 	},
 	"scripts": {
-		"check": "pnpm run typecheck && pnpm run test:coverage && pnpm run build",
+		"check": "pnpm run typecheck && pnpm run check:css && pnpm run test:coverage && pnpm run build",
+		"check:css": "node scripts/checkCssConventions.ts",
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage",
 		"test:dist": "node scripts/smokeDist.ts",
@@ -370,7 +371,7 @@
 		"security:check": "pnpm run typecheck && pnpm test && pnpm run audit",
 		"prepack": "node scripts/packDist.ts restore && pnpm run build && node scripts/packDist.ts materialize",
 		"postpack": "node scripts/packDist.ts restore",
-		"prepublishOnly": "pnpm run build && pnpm run security:check"
+		"prepublishOnly": "pnpm run check:css && pnpm run build && pnpm run security:check"
 	},
 	"keywords": [
 		"auth",
