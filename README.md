@@ -1,139 +1,113 @@
-# @goobits/auth
+<h1 align="center">@goobits/auth</h1>
 
-Pluggable authentication for SvelteKit with a class-first API and durable
-adapters for sessions, users, credentials, OAuth identities and tokens, MFA,
-and WebAuthn.
+<p align="center"><strong>Pluggable authentication for SvelteKit with explicit storage and security boundaries.</strong></p>
+<p align="center">Compose sessions, credentials, OAuth identities, MFA, and WebAuthn through explicit application-owned adapter capabilities.</p>
 
-## Start Here
+<p align="center">
+  <a href="#why-auth">Why Auth</a> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#public-surface">Public surface</a> ·
+  <a href="#security-boundary">Security</a>
+</p>
+
+---
+
+## Why Auth
+
+`@goobits/auth` provides a class-first SvelteKit authentication layer without
+claiming ownership of an application's database, product permissions, or
+deployment policy. A normal integration creates one `GoobitsAuth` instance,
+wires its handle into `hooks.server.ts`, and mounts its managed handlers under an
+application route.
+
+Storage is capability-based. Use the included Drizzle, PostgreSQL, or memory
+adapters, or implement the documented contracts for sessions, users,
+credentials, OAuth identities and tokens, verification tokens, magic links,
+MFA, and WebAuthn.
+
+## Quick start
+
+Requires Node.js 22 or a supported Worker runtime.
 
 ```bash
 pnpm add @goobits/auth
 ```
 
-- [`docs/quickstart.md`](docs/quickstart.md) owns the complete SvelteKit setup.
-- [`docs/public-api.md`](docs/public-api.md) is the exported API reference.
-- [`docs/integration.md`](docs/integration.md) covers custom storage adapters.
-- [`docs/security-contract.md`](docs/security-contract.md) defines application
-  and library security responsibilities.
+The complete supported setup is maintained in [Quick start](docs/quickstart.md).
+It covers the application schema, one `GoobitsAuth` instance,
+`hooks.server.ts`, and the catch-all auth route. Do not copy isolated snippets
+without also applying the security contract.
 
-A normal SvelteKit integration creates one `GoobitsAuth` instance, wires
-`auth.handle()` into `hooks.server.ts`, and mounts `auth.handlers` at
-`src/routes/auth/[...auth]/+server.ts`. Use `drizzleAdapter(db, { schema })` for
-Drizzle or provide the documented adapter capabilities for another store.
+## Public surface
 
-## Entrypoints
+The main package, managed handlers, cookie behavior, and UI are SvelteKit-first.
+Focused subpaths include:
 
-The main `@goobits/auth` entrypoint, route handlers, cookie adapters, and UI
-helpers are SvelteKit-first. Framework-neutral primitives are available through
-focused subpaths:
+| Import family | Responsibility |
+| --- | --- |
+| `@goobits/auth/adapters/*` | Database, session, OAuth, token, MFA, WebAuthn, Drizzle, PostgreSQL, and memory capabilities |
+| `@goobits/auth/providers` | Authentication provider contracts |
+| `@goobits/auth/password` | Runtime-selected password hashing |
+| `@goobits/auth/mfa`, `/qr` | MFA and QR primitives |
+| `@goobits/auth/security`, `/verification` | Auth-specific verification boundaries |
+| `@goobits/auth/handlers`, `/login-context`, `/client` | Managed flow integration |
+| `@goobits/auth/ui`, `@goobits/auth/ui/qr-code`, `@goobits/auth/ui/theme.css` | Svelte UI, QR component, and theme CSS |
+| `@goobits/auth/testing`, `/errors`, `/types` | Test helpers, errors, and public types |
 
-- `@goobits/auth/security`
-- `@goobits/auth/verification`
-- `@goobits/auth/password`
-- `@goobits/auth/mfa`
-- `@goobits/auth/adapters/pg`
-- `@goobits/auth/testing`
+First-party workspaces consume checked-out source entrypoints. Registry releases
+consume compiled JavaScript and declarations from `dist`.
 
-Generic HTTP credentials, CSRF, cryptography, logging, redaction, and rate-limit
-counters remain owned by their `@goobits/security/*` entrypoints.
+## Runtime boundaries
 
-## Stability And Distribution
+- Node.js 22+ selects native Argon2 and Node WebAuthn support.
+- Workers use the Worker password implementation. WebAuthn handlers currently
+  return `501` there and must not be enabled.
+- `@goobits/auth/node` is Node-only.
+- The PostgreSQL adapter uses a minimal query port in Node and Worker runtimes.
 
-Documented exports are stable for the `0.6.x` line. WebAuthn and MFA may receive
-additive options as browser and authenticator behavior evolves.
+Use the package export map and [public API](docs/public-api.md) as the exact
+surface; internal source paths are not public entrypoints.
 
-- First-party TypeScript workspaces consume checked-out `src/` entrypoints so
-  application checks cannot use stale generated output.
-- Registry installations consume compiled JavaScript and declarations from
-  `dist`; raw TypeScript and release tooling are excluded.
-- `pnpm run build` rebuilds the compiled package when a workspace needs `dist`.
+## Security boundary
 
-## Runtime Targets
+The `secure` profile requires request-origin verification and required
+rate-limit and audit modes; in production it also requires a shared rate-limit
+store and an explicit audit emitter. `strict` requires built-in CSRF and an
+explicit audit emitter in every runtime. Applications still own transactions,
+database constraints and migrations, TLS, headers, trusted-proxy topology and
+configuration, secrets, key rotation, alert delivery, and route-level product
+authorization.
 
-- Cloudflare Workers and Pages use the Worker build and WASM-backed password
-  hashing. WebAuthn handlers return `501` and must not be enabled there.
-- Node 22+ selects native Argon2 and Node WebAuthn support. `@goobits/auth/node`
-  remains Node-only. `@goobits/auth/adapters/pg` supports Node and Worker runtimes
-  through its minimal query port.
+Credential-changing flows require fresh application authorization. Password
+reset, token consumption, passkey limits, and cross-store credential mutations
+need application-owned atomic operations. Session stores persist verifier hashes
+rather than bearer cookie values, and OAuth identity links use stable provider
+subjects rather than mutable email claims.
 
-## Core Contract
-
-- `GoobitsAuth` owns the SvelteKit handle, managed handlers, named route
-  factories, session lookup, route-role guards, and security-event pipeline.
-- The `secure` profile requires request-origin verification, shared production
-  rate limiting, and an awaited audit emitter. Signed CSRF tokens additionally
-  require `security.csrf.secret`; secure deployments may explicitly disable the
-  token layer only while origin verification remains required. `strict`
-  requires both boundaries.
-- `requireAuthRole()` gates website/session roles; product permissions remain an
-  application concern.
-- `drizzleAdapter()` returns the required session, user, and password-credential
-  capabilities plus optional OAuth identity/token, magic-link, MFA, and
-  WebAuthn storage capabilities when their tables are configured. Enabling
-  passkey registration additionally requires an application-owned atomic
-  `createCredentialWithinLimit()` capability.
-- Password hashes are available only through `PasswordCredentialAdapter`, never
-  through general user-profile methods.
-- Password-reset completion and token consumption require application-owned
-  atomic operations; unsafe find-then-delete compatibility paths are not kept.
-- Session stores persist verifier hashes rather than bearer cookie values, and
-  managed-session APIs use separate opaque identifiers.
-- OAuth token storage requires a rotation-ready keyring or application-owned
-  codec and a unique `(userId, provider)` constraint.
-- OAuth ownership uses a provider's stable subject through the dedicated
-  `OAuthIdentityAdapter`; mutable email claims never link accounts implicitly.
-- OAuth sign-in, provider linking, reauthentication, and unlinking are separate
-  flows. Identity changes require application-owned fresh authorization.
-- Applications must refuse an unlink that would remove the account's last
-  usable sign-in method.
-- `credentialMutations` lets applications put assurance, cross-store recovery
-  checks, credential persistence, session revocation, and audit state behind
-  one serialized transaction boundary.
-
-See the public API and migration guide for the complete capability contracts.
-
-## Production Expectations
-
-- Use one durable rate-limit store across production instances.
-- Bridge Auth events into an awaited `@goobits/security/audit` logger with
-  `createAuthEventAuditEmitter()`.
-- Supply a request-scoped logger where available. Diagnostic failures use the canonical
-  `error_type` field without exception messages or stacks.
-- Configure secure cookies, trusted proxy headers, alert delivery, encryption
-  keys, and required database migrations before deployment.
-- Require fresh application authorization for MFA, passkey, and OAuth identity
-  changes.
-- Offer conditional passkey autofill only after
-  `supportsConditionalPasskeys()` confirms browser support.
-- Rotate a current session through `rotateSessionAssurance()` after a trusted
-  primary- or second-factor verification instead of rewriting session metadata
-  in application code.
-- Keep route-level product authorization, TLS, headers, secrets, and key
-  rotation in the host application or edge.
+Read the [security contract](docs/security-contract.md) before production use.
 
 ## Documentation
 
-- [`docs/quickstart.md`](docs/quickstart.md) — SvelteKit setup.
-- [`docs/public-api.md`](docs/public-api.md) — exported API and capability
-  reference.
-- [`docs/integration.md`](docs/integration.md) — custom adapter contract.
-- [`docs/security-contract.md`](docs/security-contract.md) — profiles, defaults,
-  and production responsibilities.
-- [`docs/schema.md`](docs/schema.md) — schema requirements.
-- [`docs/testing.md`](docs/testing.md) — test helpers and expectations.
-- [`docs/migrations/0.6-breaking.md`](docs/migrations/0.6-breaking.md) —
-  session-bound CSRF, request-origin, and secret-safe provider migration.
-- [`docs/migrations/0.5-breaking.md`](docs/migrations/0.5-breaking.md) — atomic
-  passkey-registration adapter migration from 0.4.
-- [`docs/migrations/0.4-breaking.md`](docs/migrations/0.4-breaking.md) — OAuth
-  identity and authentication-lifecycle migration from 0.3.
-- [`docs/migrations/0.3-breaking.md`](docs/migrations/0.3-breaking.md) — earlier
-  migration from pre-0.3 integrations.
-- [`examples/sveltekit-quickstart/`](examples/sveltekit-quickstart/) — minimal
-  application wiring.
+- [Quick start](docs/quickstart.md)
+- [Public API](docs/public-api.md)
+- [Custom adapters](docs/integration.md)
+- [Security contract](docs/security-contract.md)
+- [Schema requirements](docs/schema.md)
+- [Testing](docs/testing.md)
+- [SvelteKit example](examples/sveltekit-quickstart/)
+
+## Development
+
+```bash
+pnpm install --frozen-lockfile
+pnpm check
+```
+
+PostgreSQL integration tests additionally require `DATABASE_URL` and run through
+the dedicated `test:postgres` script.
 
 ## License
 
-Licensed under the Functional Source License, Version 1.1, ALv2 Future License.
-Each released version becomes available under Apache License 2.0 two years after
-that version is made available. See [LICENSE](./LICENSE).
+[FSL-1.1-ALv2](LICENSE) © [Goobits](https://github.com/goobits). Each version
+becomes additionally available under Apache 2.0 on the second anniversary of
+the date that version is made available.
