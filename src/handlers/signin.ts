@@ -1,4 +1,4 @@
-import { redirect } from '@sveltejs/kit'
+import { isRedirect, redirect } from '@sveltejs/kit'
 
 import type { PasswordCredentialAdapter } from '../adapters/database/PasswordCredentialAdapter.ts'
 import type { SessionAdapter } from '../adapters/session/SessionAdapter.ts'
@@ -215,18 +215,8 @@ export function createSigninHandler(
 				user: safeUser
 			}
 		} catch (error) {
+			if (isRedirect(error)) throw error
 			log.error('[Signin] Error', errorContext(error))
-
-			// Check if this is a redirect (don't treat as error)
-			if (
-				error &&
-				typeof error === 'object' &&
-				'status' in error &&
-				((error as { status?: number }).status === 302 ||
-					(error as { status?: number }).status === 303)
-			) {
-				throw error
-			}
 
 			return {
 				error: 'An error occurred during signin',
