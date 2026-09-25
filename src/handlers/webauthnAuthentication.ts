@@ -1,5 +1,5 @@
 import {
-	type AuthenticatorTransportFuture,
+	type AuthenticatorTransport,
 	generateAuthenticationOptions
 } from '@simplewebauthn/server'
 import { redirect } from '@sveltejs/kit'
@@ -177,7 +177,7 @@ export function createWebAuthnStepUpOptionsHandler(
 					credential
 				): credential is {
 					id: string
-					transports?: AuthenticatorTransportFuture[]
+					transports?: AuthenticatorTransport[]
 				} => credential !== null
 			)
 		if (allowCredentials.length === 0) {

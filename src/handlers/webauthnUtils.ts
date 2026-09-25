@@ -1,7 +1,7 @@
 import { base64UrlToBytes, bytesToBase64Url } from '@goobits/security/crypto'
 import {
 	type AuthenticationResponseJSON,
-	type AuthenticatorTransportFuture,
+	type AuthenticatorTransport,
 	type RegistrationResponseJSON
 } from '@simplewebauthn/server'
 import { z } from 'zod'
@@ -106,7 +106,7 @@ export function toCredentialRecord(value: Record<string, unknown> | null): Crede
 
 export function credentialDescriptorFromRecord(
 	cred: Record<string, unknown>
-): { id: string; transports?: AuthenticatorTransportFuture[] } | null {
+): { id: string; transports?: AuthenticatorTransport[] } | null {
 	const id = cred['credentialId'] ?? cred['credential_id']
 	const transports = cred['transports']
 	if (typeof id !== 'string') return null
@@ -115,13 +115,11 @@ export function credentialDescriptorFromRecord(
 			return { id }
 		}
 		const filtered = transports.filter(
-			(entry): entry is AuthenticatorTransportFuture =>
+			(entry): entry is AuthenticatorTransport =>
 				entry === 'ble' ||
-				entry === 'cable' ||
 				entry === 'hybrid' ||
 				entry === 'internal' ||
 				entry === 'nfc' ||
-				entry === 'smart-card' ||
 				entry === 'usb'
 		)
 		return filtered.length > 0 ? { id, transports: filtered } : { id }
@@ -131,16 +129,14 @@ export function credentialDescriptorFromRecord(
 
 export function toAuthenticatorTransports(
 	transports: string[] | null | undefined
-): AuthenticatorTransportFuture[] | undefined {
+): AuthenticatorTransport[] | undefined {
 	if (!transports) return undefined
 	const filtered = transports.filter(
-		(entry): entry is AuthenticatorTransportFuture =>
+		(entry): entry is AuthenticatorTransport =>
 			entry === 'ble' ||
-			entry === 'cable' ||
 			entry === 'hybrid' ||
 			entry === 'internal' ||
 			entry === 'nfc' ||
-			entry === 'smart-card' ||
 			entry === 'usb'
 	)
 	return filtered.length > 0 ? filtered : undefined
