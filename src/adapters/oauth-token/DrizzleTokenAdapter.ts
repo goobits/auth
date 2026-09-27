@@ -98,10 +98,6 @@ export class DrizzleTokenAdapter extends TokenAdapter {
 		})
 	}
 
-	async refreshTokens(_userId: string, _provider: string): Promise<OAuthTokens | null> {
-		throw new Error('refreshTokens not implemented - use provider-specific refresh logic')
-	}
-
 	async deleteTokens(userId: string, provider: string): Promise<void> {
 		await this.db
 			.delete(this.tokensTable)

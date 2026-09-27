@@ -115,6 +115,7 @@
 	$effect(() => {
 		if (!didApplyInitialSessions) {
 			sessions = initialSessions
+			if (initialSessions) loading = false
 			didApplyInitialSessions = true
 		}
 

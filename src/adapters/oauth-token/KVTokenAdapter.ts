@@ -48,13 +48,6 @@ export class KVTokenAdapter extends TokenAdapter {
 		})
 	}
 
-	async refreshTokens(
-		_userId: string,
-		_provider: string
-	): Promise<import('../../types/index.ts').OAuthTokens | null> {
-		throw new Error('refreshTokens not implemented - use provider-specific refresh logic')
-	}
-
 	async deleteTokens(userId: string, provider: string) {
 		await this.namespace.delete(this._key(userId, provider))
 	}

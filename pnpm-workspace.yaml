@@ -12,6 +12,8 @@ allowBuilds:
   esbuild: true
 
 overrides:
+  svelte: 5.57.0
+  devalue: 5.9.2
   '@sveltejs/kit': 2.70.3
   cookie: 0.7.2
   esbuild: 0.28.1

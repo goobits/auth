@@ -76,6 +76,7 @@ describe('createSigninHandler', () => {
 	})
 
 	it('creates session and redirects on success', async () => {
+		const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 		const credentialsProvider = {
 			authenticate: vi.fn().mockResolvedValue({ user: { id: 'u1' }, valid: true })
 		}
@@ -92,7 +93,8 @@ describe('createSigninHandler', () => {
 			passwordCredentialAdapter: {},
 			sessionAdapter,
 			redirectTo: '/dashboard',
-			getSessionMetadata: () => ({ fingerprint: 'fp-1' })
+			getSessionMetadata: () => ({ fingerprint: 'fp-1' }),
+			logger
 		})
 
 		const error = await captureRejected<{ status?: number; headers?: Headers; location?: string }>(
@@ -112,6 +114,7 @@ describe('createSigninHandler', () => {
 			expect.objectContaining({ rememberMe: false, fingerprint: 'fp-1' })
 		)
 		expect(sessionAdapter.setSessionCookie).toHaveBeenCalled()
+		expect(logger.error).not.toHaveBeenCalled()
 	})
 
 	it('provides request context to the existing hook and honors a typed denial', async () => {

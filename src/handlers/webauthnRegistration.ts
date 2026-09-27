@@ -1,5 +1,5 @@
 import {
-	type AuthenticatorTransportFuture,
+	type AuthenticatorTransport,
 	generateRegistrationOptions,
 	type GenerateRegistrationOptionsOpts,
 	verifyRegistrationResponse
@@ -109,7 +109,7 @@ export function createWebAuthnRegisterOptionsHandler(
 					credential
 				): credential is {
 					id: string
-					transports?: AuthenticatorTransportFuture[]
+					transports?: AuthenticatorTransport[]
 				} => credential !== null
 			)
 
